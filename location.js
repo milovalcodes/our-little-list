@@ -306,9 +306,22 @@ function frameLocations(known, animate = false) {
 }
 
 function markerIcon(person, isLive) {
+  const artwork = person === 'her'
+    ? `<svg class="map-character" viewBox="0 0 48 48" aria-hidden="true">
+        <g class="sun-rays" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.8">
+          <path d="M24 3v5M24 40v5M3 24h5M40 24h5M9.2 9.2l3.6 3.6M35.2 35.2l3.6 3.6M38.8 9.2l-3.6 3.6M12.8 35.2l-3.6 3.6"/>
+        </g>
+        <circle cx="24" cy="24" r="13.5" fill="#ffd45e" stroke="currentColor" stroke-width="2"/>
+        <path d="M17.2 23c1.3-1.2 3.2-1.2 4.5 0M26.3 23c1.3-1.2 3.2-1.2 4.5 0M20 28.2c2.5 2.2 5.5 2.2 8 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/>
+      </svg>`
+    : `<svg class="map-character" viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M33.8 6.2c-8.7 1.3-15.3 8.8-15.3 17.8 0 9.1 6.7 16.6 15.5 17.8A19 19 0 1 1 33.8 6.2Z" fill="#cbd4ff" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/>
+        <path d="M15.3 21.8c1.3-1.1 3.1-1.1 4.4 0M14.7 20l-1.5-1M20.3 20l1.5-1M14.7 27.6c1.8 1.7 3.9 1.7 5.7 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/>
+        <circle cx="35.8" cy="13" r="1.25" fill="#fff3bd"/><circle cx="39" cy="19" r=".8" fill="#fff3bd"/>
+      </svg>`;
   return window.L.divIcon({
     className: 'couple-marker-wrap',
-    html: `<span class="couple-marker ${person} ${isLive ? 'live' : 'last-known'}"></span>`,
+    html: `<span class="couple-marker ${person} ${isLive ? 'live' : 'last-known'}">${artwork}</span>`,
     iconSize: [52, 52],
     iconAnchor: [26, 48]
   });
