@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
   <title>Find Each Other · Our Little List</title>
-  <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon.svg"><link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3ynhHdq2x5pIuMZbZq3Y/Y0QvM7xQ=" crossorigin="anonymous">
 </head>
 <body class="profile-page" data-app="location">
@@ -15,7 +15,7 @@
     </section>
 
     <section class="proximity-card" aria-live="polite">
-      <div class="proximity-orbit" aria-hidden="true"><span>☀️</span><i></i><span>🌙</span></div>
+      <div class="proximity-orbit" aria-hidden="true"><span class="celestial-crop sun-crop"><img src="sun-moon-personalized.png" alt=""></span><i></i><span class="celestial-crop moon-crop"><img src="sun-moon-personalized.png" alt=""></span></div>
       <p class="tiny-kicker" id="distance-label">our little distance</p>
       <h2 id="proximity-message">Waiting for both of you</h2>
       <p id="proximity-detail">Share your spot, then your person can join you here.</p>
@@ -51,4 +51,3 @@
   <script src="shared.js"></script><script type="module" src="location.js"></script><script type="module" src="live-notes.js"></script>
 </body>
 </html>
-

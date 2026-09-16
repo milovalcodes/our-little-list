@@ -8,7 +8,6 @@
   "background_color": "#fff7df",
   "theme_color": "#18264c",
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "sun-moon-personalized.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }
   ]
 }
-
