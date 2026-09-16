@@ -1,7 +1,7 @@
 {
   "name": "Our Little List",
   "short_name": "Little List",
-  "description": "A shared little universe for reminders, groceries, notes, and finding each other.",
+  "description": "Our lists, reminders, notes, and map.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

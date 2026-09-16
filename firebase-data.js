@@ -25,9 +25,9 @@ export async function createDataLayer({ onItems, onAuth, collectionName = 'items
     friendlyError(error){
       const code=error?.code||'';
       if(code.includes('invalid-credential'))return 'That email or password does not match.';
-      if(code.includes('email-already-in-use'))return 'That shared space already exists—tap Sign in instead.';
-      if(code.includes('weak-password'))return 'Choose a password with at least 6 characters.';
-      return 'Something went sideways. Please try again.';
+      if(code.includes('email-already-in-use'))return 'Account already exists. Sign in instead.';
+      if(code.includes('weak-password'))return 'Password needs 6 characters.';
+      return 'Nope. Try again.';
     }
   };
 
@@ -50,6 +50,6 @@ function createLocalLayer(onItems,onAuth,collectionName){
     async set(id,item){const current=items.find(entry=>entry.id===id);if(current)Object.assign(current,item);else items.push({id,...item});publish();},
     async update(id,changes){const item=items.find(entry=>entry.id===id);if(item)Object.assign(item,changes);publish();},
     async remove(id){items=items.filter(entry=>entry.id!==id);publish();},
-    async signIn(){},async createAccount(){},async signOut(){},friendlyError(){return 'Firebase is not connected yet.';}
+    async signIn(){},async createAccount(){},async signOut(){},friendlyError(){return 'sync is offline.';}
   };
 }

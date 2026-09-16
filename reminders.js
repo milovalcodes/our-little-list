@@ -2,7 +2,7 @@ import { createDataLayer } from './firebase-data.js';
 import { setupAuthUI, applyViewerTheme, toast, dateKey } from './ui-helpers.js';
 
 const params=new URLSearchParams(location.search);const sender=params.get('from')==='him'?'him':'her';const recipient=sender==='her'?'him':'her';
-applyViewerTheme(sender);document.querySelector('.back-to-side').href=`${sender}.html`;document.getElementById('reminder-heading').textContent=`Give ${recipient} a little nudge`;
+applyViewerTheme(sender);document.querySelector('.back-to-side').href=`${sender}.html`;document.getElementById('reminder-heading').textContent=`Remind ${recipient}`;
 const $=id=>document.getElementById(id);let day='today';let time='09:00';let data;
 data=await createDataLayer({collectionName:'reminders',onItems(){},onAuth(user){setupAuthUI(data,user);}});if(data.mode==='local')setupAuthUI(data,{local:true});
 
@@ -11,9 +11,9 @@ document.querySelectorAll('#day-choices .choice').forEach(button=>button.addEven
 document.querySelectorAll('#time-choices .choice').forEach(button=>button.addEventListener('click',()=>select('time-choices',button,button.dataset.time)));
 
 $('reminder-form').addEventListener('submit',async event=>{
-  event.preventDefault();const chosen=makeDate();if(!chosen){toast('Pick the exact day and time first ♡');return;}
+  event.preventDefault();const chosen=makeDate();if(!chosen){toast('pick a day and time first');return;}
   await data.add({sender,recipient,title:$('reminder-title').value.trim(),note:$('reminder-note').value.trim(),scheduledAt:chosen.toISOString(),delivered:false,createdAt:Date.now()});
-  event.target.hidden=true;$('sent-state').hidden=false;$('sent-copy').textContent=`We’ll nudge ${recipient} ${friendly(chosen)}.`;
+  event.target.hidden=true;$('sent-state').hidden=false;$('sent-copy').textContent=`${recipient} gets it ${friendly(chosen)}.`;
 });
 $('another-reminder').addEventListener('click',()=>{location.reload();});
 

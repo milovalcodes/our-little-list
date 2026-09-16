@@ -5,20 +5,20 @@
   <title>Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page" data-app="tasks">
-  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back to my sky</a><span class="mini-brand">under the same sky ☀︎☾</span></header>
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">shared brain cell ☀︎☾</span></header>
   <main class="app-shell feature-shell">
     <section class="feature-hero list-hero">
-      <span class="feature-icon">✓</span><p class="tiny-kicker">ours together</p><h1>Our little list</h1>
-      <p>One shared brain for both of us. Add it once, then whoever gets there first can check it off.</p>
+      <span class="feature-icon">✓</span><p class="tiny-kicker">very advanced technology</p><h1>The list</h1>
+      <p>put stuff here. cross stuff out. revolutionary.</p>
     </section>
 
     <nav class="tabs" aria-label="List sections">
-      <button class="tab active" data-tab="tasks">To do</button><button class="tab" data-tab="grocery">Groceries</button><button class="tab" data-tab="done">Little wins</button>
+      <button class="tab active" data-tab="tasks">To do</button><button class="tab" data-tab="grocery">Groceries</button><button class="tab" data-tab="done">Done</button>
     </nav>
 
     <section class="composer-card compact-composer">
       <form id="shared-task-form">
-        <label><span id="task-prompt">What needs doing?</span><div class="inline-add"><input id="shared-task-title" required maxlength="100" placeholder="Put it here so neither of us has to hold it…"><button type="submit" aria-label="Add">+</button></div></label>
+        <label><span id="task-prompt">What needs doing?</span><div class="inline-add"><input id="shared-task-title" required maxlength="100" placeholder="type it before it leaves your brain"><button type="submit" aria-label="Add">+</button></div></label>
         <div class="soft-options" id="task-options">
           <button type="button" class="soft-chip active" data-when="whenever">whenever</button><button type="button" class="soft-chip" data-when="today">today-ish</button><button type="button" class="soft-chip" data-when="tomorrow">tomorrow</button>
         </div>
@@ -26,11 +26,10 @@
     </section>
 
     <section class="list-card">
-      <div class="list-heading"><div><p class="tiny-kicker" id="list-kicker">things waiting for us</p><h2 id="list-title">To do</h2></div><span class="count-bubble" id="item-count">0 left</span></div>
-      <div class="empty-state" id="empty-state"><span>✦</span><strong>Nothing waiting here</strong><p>Clear skies. That feels pretty nice.</p></div>
+      <div class="list-heading"><div><p class="tiny-kicker" id="list-kicker">the stuff</p><h2 id="list-title">To do</h2></div><span class="count-bubble" id="item-count">0 left</span></div>
+      <div class="empty-state" id="empty-state"><span>✦</span><strong>Nothing here</strong><p>suspicious.</p></div>
       <ul class="task-list" id="task-list"></ul>
     </section>
-    <p class="local-note">Shared syncing turns on as soon as Firebase is connected.</p>
   </main>
 
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="tasks.js?v=4"></script><script type="module" src="live-notes.js"></script>

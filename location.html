@@ -7,23 +7,23 @@
   <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page" data-app="location">
-  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back to my sky</a><span class="mini-brand">our shared orbit ☀︎☾</span></header>
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">where are u ☀︎☾</span></header>
   <main class="app-shell map-shell">
     <section class="feature-hero map-hero">
-      <span class="feature-icon">📍</span><p class="tiny-kicker">just for a little while</p><h1>Find each other</h1>
-      <p>Turn it on when you’re meeting up. You choose how long, and either of you can disappear from the map whenever you want.</p>
+      <span class="feature-icon">📍</span><p class="tiny-kicker">temporary. behave.</p><h1>Where are we?</h1>
+      <p>share for a bit. turn it off whenever.</p>
     </section>
 
     <section class="proximity-card" aria-live="polite">
       <div class="proximity-orbit" aria-hidden="true"><span class="profile-orbit"><img src="sun-profile.png" alt=""></span><i></i><span class="profile-orbit"><img src="moon-profile.png" alt=""></span></div>
-      <p class="tiny-kicker" id="distance-label">our little distance</p>
-      <h2 id="proximity-message">Waiting for both of you</h2>
-      <p id="proximity-detail">Share your spot, then your person can join you here.</p>
+      <p class="tiny-kicker" id="distance-label">distance report</p>
+      <h2 id="proximity-message">Need both locations</h2>
+      <p id="proximity-detail">one of you has to go first.</p>
     </section>
 
     <section class="share-card">
-      <div class="share-heading"><div><p class="tiny-kicker">my little signal</p><h2 id="share-title">I’m not sharing right now</h2></div><span class="privacy-lock">🔒</span></div>
-      <p class="share-explainer">When live sharing ends, your last spot stays softly pinned until you hide it.</p>
+      <div class="share-heading"><div><p class="tiny-kicker">my location</p><h2 id="share-title">Not sharing</h2></div><span class="privacy-lock">🔒</span></div>
+      <p class="share-explainer">Last known location stays until you hide it.</p>
       <div class="share-durations" role="group" aria-label="Choose sharing time">
         <button type="button" class="duration-chip active" data-minutes="15">15 min</button>
         <button type="button" class="duration-chip" data-minutes="60">1 hour</button>
@@ -38,13 +38,13 @@
     </section>
 
     <section class="map-card">
-      <div class="map-heading"><div><p class="tiny-kicker">where we are</p><h2>Our map</h2></div><div class="map-heading-actions"><span class="map-updated" id="map-updated">No live spots yet</span><button class="recenter-map" id="recenter-map" type="button" hidden>bring us back</button></div></div>
+      <div class="map-heading"><div><p class="tiny-kicker">the evidence</p><h2>Map</h2></div><div class="map-heading-actions"><span class="map-updated" id="map-updated">Nobody here yet</span><button class="recenter-map" id="recenter-map" type="button" hidden>back to us</button></div></div>
       <div id="couple-map" aria-label="Map showing both shared locations"></div>
       <div class="last-known-row" id="last-known-row" aria-live="polite"></div>
       <div class="map-legend"><span><i class="her-dot"></i> her</span><span><i class="him-dot"></i> him</span></div>
     </section>
 
-    <p class="location-fine-print">For the smoothest live updates, keep this page open while you’re on the way. iPhone and Android browsers may pause website location when the page is in the background.</p>
+    <p class="location-fine-print">keep this page open for live updates.</p>
   </main>
   <div id="auth-root"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>

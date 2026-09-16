@@ -12,6 +12,6 @@ if(viewer==='her'||viewer==='him'){
 
 function show(note){
   const icons={heart:'💛',sun:'☀️',moon:'🌙',star:'✦'};document.querySelector('.incoming-note')?.remove();
-  const popup=document.createElement('aside');popup.className='incoming-note';popup.innerHTML=`<button aria-label="Close">×</button><span>${icons[note.mood]||'💌'}</span><div><small>a tiny note from your person</small><p></p></div>`;popup.querySelector('p').textContent=note.body;popup.querySelector('button').addEventListener('click',()=>popup.remove());document.body.append(popup);setTimeout(()=>popup.remove(),10000);
+  const popup=document.createElement('aside');popup.className='incoming-note';popup.innerHTML=`<button aria-label="Close">×</button><span>${icons[note.mood]||'💌'}</span><div><small>your person says</small><p></p></div>`;popup.querySelector('p').textContent=note.body;popup.querySelector('button').addEventListener('click',()=>popup.remove());document.body.append(popup);setTimeout(()=>popup.remove(),10000);
 }
 

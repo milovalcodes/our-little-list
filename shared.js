@@ -20,9 +20,9 @@ const standalone = window.matchMedia('(display-mode: standalone)').matches || wi
 const isApplePhone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isAndroidPhone = /Android/i.test(navigator.userAgent);
 
-if (installHint && standalone) installHint.textContent = 'Already under your little sky ☀︎☾';
+if (installHint && standalone) installHint.textContent = 'already installed. nice.';
 if (installHint && !standalone && isApplePhone) installHint.textContent = 'On iPhone: Share → Add to Home Screen';
-if (installHint && !standalone && isAndroidPhone) installHint.textContent = 'Download the Android app above ♡';
+if (installHint && !standalone && isAndroidPhone) installHint.textContent = 'tap the button. ignore Android being dramatic.';
 
 window.addEventListener('beforeinstallprompt', event => {
   event.preventDefault();
@@ -40,5 +40,5 @@ installButton?.addEventListener('click', async () => {
 
 window.addEventListener('appinstalled', () => {
   if (installButton) installButton.hidden = true;
-  if (installHint) installHint.textContent = 'Installed — welcome to your little universe ☀︎☾';
+  if (installHint) installHint.textContent = 'installed 👍';
 });

@@ -41,7 +41,7 @@ document.querySelectorAll('.tab').forEach(button => {
     byId('task-prompt').textContent = grocery ? 'What should we grab?' : 'What needs doing?';
     byId('shared-task-title').placeholder = grocery
       ? 'oat milk, batteries, tiny treats…'
-      : 'Put it here so neither of us has to hold it…';
+      : 'type it before it leaves your brain';
     byId('task-options').hidden = grocery || tab === 'done';
     document.querySelector('.compact-composer').hidden = tab === 'done';
     render();
@@ -70,7 +70,7 @@ byId('shared-task-form').addEventListener('submit', async event => {
     createdAt: Date.now()
   });
   event.target.reset();
-  toast(tab === 'grocery' ? 'Added to our basket 🛒' : 'Added to our shared brain ♡');
+  toast(tab === 'grocery' ? 'on the grocery list 🛒' : 'added 🫡');
 });
 
 byId('task-list').addEventListener('click', async event => {
@@ -102,9 +102,9 @@ function render() {
   byId('empty-state').hidden = list.length > 0;
 
   const labels = {
-    tasks: ['things waiting for us', 'To do', '✦', 'Nothing waiting here', 'Clear skies. That feels pretty nice.'],
-    grocery: ['our shared basket', 'Groceries', '🛒', 'The basket is empty', 'Maybe we already have everything.'],
-    done: ['look at us go', 'Little wins', '✨', 'No finished things yet', 'The first little win is waiting.']
+    tasks: ['the stuff', 'To do', '✦', 'Nothing here', 'suspicious.'],
+    grocery: ['food, probably', 'Groceries', '🛒', 'No groceries', 'we will remember eventually.'],
+    done: ['the evidence', 'Done', '✨', 'Nothing done yet', 'okay then.']
   }[tab];
 
   byId('list-kicker').textContent = labels[0];
