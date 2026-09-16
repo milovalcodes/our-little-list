@@ -6,7 +6,7 @@ applyViewerTheme(sender);document.querySelector('.back-to-side').href=`${sender}
 const $=id=>document.getElementById(id);let data;
 data=await createDataLayer({collectionName:'notes',onItems(){},onAuth(user){setupAuthUI(data,user);}});if(data.mode==='local')setupAuthUI(data,{local:true});
 
-const moods={heart:'💗',sun:'☀️',flower:'🌷',star:'✦'};
+const moods={heart:'💛',sun:'☀️',moon:'🌙',star:'✦'};
 document.querySelectorAll('#note-starters button').forEach(button=>button.addEventListener('click',()=>{$('note-body').value=button.textContent;updatePreview();}));
 $('note-body').addEventListener('input',updatePreview);document.querySelectorAll('[name="mood"]').forEach(input=>input.addEventListener('change',updatePreview));
 function updatePreview(){const mood=document.querySelector('[name="mood"]:checked').value;$('preview-mood').textContent=moods[mood];$('preview-body').textContent=$('note-body').value.trim()||'thinking of you ♡';}
@@ -17,3 +17,4 @@ $('note-form').addEventListener('submit',async event=>{
   event.target.hidden=true;document.querySelector('.note-starters').hidden=true;document.querySelectorAll('.note-maker>.maker-question').forEach(el=>el.hidden=true);$('sent-state').hidden=false;$('sent-copy').textContent=`A little ${moods[mood]} is waiting for ${recipient}.`;
 });
 $('another-note').addEventListener('click',()=>location.reload());
+

@@ -1,13 +1,14 @@
 {
   "name": "Our Little List",
   "short_name": "Little List",
-  "description": "A shared home for reminders, groceries, and little helpful nudges.",
+  "description": "A shared little universe for reminders, groceries, notes, and finding each other.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#fff9f4",
-  "theme_color": "#f3a3bc",
+  "background_color": "#fff7df",
+  "theme_color": "#18264c",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }
+

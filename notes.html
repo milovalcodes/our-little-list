@@ -5,7 +5,7 @@
   <title>A Tiny Note</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon.svg"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page" data-app="notes">
-  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back to my side</a><span class="mini-brand">tiny notes 💌</span></header>
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back to my sky</a><span class="mini-brand">tiny notes across the sky ✦</span></header>
   <main class="app-shell feature-shell note-shell">
     <section class="feature-hero note-hero"><span class="feature-icon">💌</span><p class="tiny-kicker">a little thought, quietly delivered</p><h1 id="note-heading">Send a tiny note</h1><p>Not a whole conversation. Just a sweet little “I thought of you” that can appear on their phone.</p></section>
     <section class="note-maker">
@@ -16,14 +16,15 @@
       <p class="maker-question">…or make it yours</p>
       <form id="note-form">
         <textarea id="note-body" required maxlength="180" placeholder="A tiny thought for you…"></textarea>
-        <div class="note-mood-row"><span>wrap it in</span><label><input type="radio" name="mood" value="heart" checked> 💗</label><label><input type="radio" name="mood" value="sun"> ☀️</label><label><input type="radio" name="mood" value="flower"> 🌷</label><label><input type="radio" name="mood" value="star"> ✦</label></div>
+        <div class="note-mood-row"><span>wrap it in</span><label><input type="radio" name="mood" value="heart" checked> 💛</label><label><input type="radio" name="mood" value="sun"> ☀️</label><label><input type="radio" name="mood" value="moon"> 🌙</label><label><input type="radio" name="mood" value="star"> ✦</label></div>
         <button class="primary-action roomy-action" id="note-submit" type="submit">Send this tiny note</button>
       </form>
       <div class="sent-state" id="sent-state" hidden><span>💌</span><h2>Sent softly</h2><p id="sent-copy">Your note is on its way.</p><button class="create-space" id="another-note" type="button">send another little thought</button></div>
     </section>
-    <section class="note-preview"><p class="tiny-kicker">how it feels</p><div class="phone-popup"><span id="preview-mood">💗</span><div><strong>A tiny note from your person</strong><p id="preview-body">thinking of you ♡</p></div></div></section>
+    <section class="note-preview"><p class="tiny-kicker">how it feels</p><div class="phone-popup"><span id="preview-mood">💛</span><div><strong>A tiny note from your person</strong><p id="preview-body">thinking of you ♡</p></div></div></section>
     <p class="local-note">In-app popups work with live syncing. Background phone popups need Web Push connected after publishing.</p>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="notes.js"></script><script type="module" src="live-notes.js"></script>
 </body>
 </html>
+

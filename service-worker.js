@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v5';
+const CACHE = 'our-little-list-sun-moon-v6';
 const ASSETS = ['./','./index.html','./her.html','./him.html','./tasks.html','./reminders.html','./notes.html','./location.html','./styles.css','./shared.js','./tasks.js','./reminders.js','./notes.js','./location.js','./live-notes.js','./ui-helpers.js','./firebase-data.js','./firebase-config.js','./icon.svg','./manifest.webmanifest'];
 
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))));
@@ -27,3 +27,4 @@ self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(clients.openWindow(event.notification.data?.url || './index.html'));
 });
+

@@ -9,7 +9,7 @@ const standalone = window.matchMedia('(display-mode: standalone)').matches || wi
 const isApplePhone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isAndroidPhone = /Android/i.test(navigator.userAgent);
 
-if (installHint && standalone) installHint.textContent = 'Already cozy on this phone ♡';
+if (installHint && standalone) installHint.textContent = 'Already under your little sky ☀︎☾';
 if (installHint && !standalone && isApplePhone) installHint.textContent = 'On iPhone: Share → Add to Home Screen';
 if (installHint && !standalone && isAndroidPhone) installHint.textContent = 'On Android: tap Install app in Chrome';
 
@@ -29,5 +29,6 @@ installButton?.addEventListener('click', async () => {
 
 window.addEventListener('appinstalled', () => {
   if (installButton) installButton.hidden = true;
-  if (installHint) installHint.textContent = 'Installed — welcome home ♡';
+  if (installHint) installHint.textContent = 'Installed — welcome to your little universe ☀︎☾';
 });
+

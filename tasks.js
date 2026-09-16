@@ -102,7 +102,7 @@ function render() {
   byId('empty-state').hidden = list.length > 0;
 
   const labels = {
-    tasks: ['things waiting for us', 'To do', '☁', 'Nothing waiting here', 'That feels pretty nice.'],
+    tasks: ['things waiting for us', 'To do', '✦', 'Nothing waiting here', 'Clear skies. That feels pretty nice.'],
     grocery: ['our shared basket', 'Groceries', '🛒', 'The basket is empty', 'Maybe we already have everything.'],
     done: ['look at us go', 'Little wins', '✨', 'No finished things yet', 'The first little win is waiting.']
   }[tab];
@@ -137,3 +137,4 @@ function prettyDue(value) {
   if (value === dateKey(tomorrow)) return 'tomorrow';
   return value;
 }
+
