@@ -51,8 +51,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .door-arrow { margin-top:22px; font-weight:800; }
 .landing-foot { text-align:center; color:#9b7788; font-size:.86rem; margin:28px 0 0; }
 .install-corner { margin:24px auto 0; text-align:center; }
+.install-actions { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:10px; }
 .install-corner button { border:0; border-radius:999px; padding:12px 18px; background:#5b3b4c; color:white; font-weight:850; cursor:pointer; box-shadow:0 9px 22px rgba(82,52,68,.16); }
 .install-corner p { margin:10px 0 0; color:#927684; font-size:.8rem; font-weight:750; }
+.android-download { min-height:58px; display:inline-flex; align-items:center; gap:11px; padding:8px 14px 8px 9px; border:1px solid rgba(255,255,255,.42); border-radius:999px; color:#fff8dd; background:linear-gradient(135deg,#17264d,#293f77); box-shadow:0 12px 28px rgba(18,31,68,.25); text-decoration:none; text-align:left; transition:transform .16s ease,filter .16s ease; }
+.android-download:hover { filter:brightness(1.07) saturate(1.05); transform:translateY(-2px); }
+.android-download:active { transform:translateY(1px); }
+.download-orbit { width:40px; height:40px; flex:0 0 40px; display:grid; place-items:center; border-radius:50%; color:#5c3a1d; background:#ffd45e; font-weight:900; letter-spacing:-.15em; box-shadow:inset 0 0 0 2px rgba(255,255,255,.5); }
+.download-copy { display:grid; line-height:1.08; }
+.download-copy strong { font-size:.91rem; letter-spacing:.01em; }
+.download-copy small { margin-top:4px; color:#dce4ff; font-size:.71rem; font-weight:700; }
+.download-arrow { margin-left:3px; font-size:1.2rem; font-weight:900; }
 .sky-doodle { position:fixed; pointer-events:none; z-index:1; font-size:3rem; opacity:.35; animation:floaty 6s ease-in-out infinite; }
 .d1 { left:5vw; top:11vh; color:#ed7aa5; }
 .d2 { right:6vw; top:16vh; color:#527da1; animation-delay:-2s; }
@@ -441,6 +450,8 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
   .person-door { min-height:300px; padding:24px 25px 27px; border-radius:30px; }
   .door-sparkle.profile-mini { width:68px; height:68px; border-radius:22px; }
   .person-door strong { font-size:clamp(3.2rem,16vw,4.9rem); margin-bottom:13px; }
+  .android-download { width:min(100%,340px); justify-content:flex-start; }
+  .download-arrow { margin-left:auto; }
   .door-note { max-width:290px; font-size:.94rem; }
   .door-arrow { margin-top:17px; }
   .app-shell { width:min(100% - 20px,840px); }

@@ -22,7 +22,7 @@ const isAndroidPhone = /Android/i.test(navigator.userAgent);
 
 if (installHint && standalone) installHint.textContent = 'Already under your little sky ☀︎☾';
 if (installHint && !standalone && isApplePhone) installHint.textContent = 'On iPhone: Share → Add to Home Screen';
-if (installHint && !standalone && isAndroidPhone) installHint.textContent = 'On Android: tap Install app in Chrome';
+if (installHint && !standalone && isAndroidPhone) installHint.textContent = 'Download the Android app above ♡';
 
 window.addEventListener('beforeinstallprompt', event => {
   event.preventDefault();
