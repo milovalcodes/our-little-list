@@ -14,6 +14,11 @@ let expiryTimer = null;
 let data;
 let map;
 const markers = {};
+let lastMapLocations = [];
+let lastFrameSignature = '';
+let mapWasMoved = false;
+let framingMap = false;
+let mapResizeObserver = null;
 
 applyViewerTheme(viewer);
 document.querySelector('.back-to-side').href = `${viewer}.html`;
@@ -42,6 +47,11 @@ document.querySelectorAll('.duration-chip').forEach(button => {
 byId('share-location').addEventListener('click', startSharing);
 byId('stop-sharing').addEventListener('click', () => stopSharing(true));
 byId('hide-last-location').addEventListener('click', () => stopSharing(true));
+byId('recenter-map').addEventListener('click', () => {
+  mapWasMoved = false;
+  byId('recenter-map').hidden = true;
+  frameLocations(lastMapLocations, true);
+});
 window.addEventListener('pagehide', () => {
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
 });
@@ -212,16 +222,48 @@ function initializeMap() {
     byId('couple-map').innerHTML = '<p class="map-fallback">The pretty map could not load, but your distance message will still work.</p>';
     return;
   }
-  map = window.L.map('couple-map', { zoomControl: false, attributionControl: true }).setView([39.5, -98.35], 3);
+  const mapNode = byId('couple-map');
+  map = window.L.map(mapNode, {
+    zoomControl: false,
+    attributionControl: true,
+    dragging: true,
+    touchZoom: true,
+    bounceAtZoomLimits: false
+  }).setView([39.5, -98.35], 3);
   window.L.control.zoom({ position: 'bottomright' }).addTo(map);
   window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
+    keepBuffer: 4,
+    updateWhenIdle: true,
+    crossOrigin: true,
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
+
+  const rememberManualMove = () => {
+    if (framingMap) return;
+    mapWasMoved = true;
+    byId('recenter-map').hidden = lastMapLocations.length === 0;
+  };
+  map.on('dragstart', rememberManualMove);
+  map.on('zoomstart', rememberManualMove);
+
+  const refreshMapSize = () => window.requestAnimationFrame(() => map?.invalidateSize({ animate: false, pan: false }));
+  refreshMapSize();
+  window.setTimeout(refreshMapSize, 250);
+  window.addEventListener('resize', refreshMapSize, { passive: true });
+  window.addEventListener('orientationchange', () => window.setTimeout(refreshMapSize, 250), { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) window.setTimeout(refreshMapSize, 100);
+  });
+  if ('ResizeObserver' in window) {
+    mapResizeObserver = new ResizeObserver(refreshMapSize);
+    mapResizeObserver.observe(mapNode);
+  }
 }
 
 function updateMap(known, now) {
   if (!map) return;
+  lastMapLocations = known;
   ['her', 'him'].forEach(person => {
     const point = known.find(item => item.id === person);
     if (!point && markers[person]) {
@@ -244,11 +286,23 @@ function updateMap(known, now) {
     }
   });
 
-  if (known.length === 1) map.setView([known[0].lat, known[0].lng], 15);
-  if (known.length > 1) {
+  const frameSignature = known.map(point => `${point.id}:${Number(point.lat).toFixed(5)}:${Number(point.lng).toFixed(5)}`).sort().join('|');
+  if (!mapWasMoved && frameSignature !== lastFrameSignature) frameLocations(known, Boolean(lastFrameSignature));
+  lastFrameSignature = frameSignature;
+  if (known.length === 0) byId('recenter-map').hidden = true;
+}
+
+function frameLocations(known, animate = false) {
+  if (!map || known.length === 0) return;
+  framingMap = true;
+  map.stop();
+  if (known.length === 1) {
+    map.setView([known[0].lat, known[0].lng], 15, { animate });
+  } else {
     const bounds = window.L.latLngBounds(known.map(point => [point.lat, point.lng]));
-    map.fitBounds(bounds.pad(0.35), { maxZoom: 17, animate: true });
+    map.fitBounds(bounds.pad(0.35), { maxZoom: 17, animate });
   }
+  window.setTimeout(() => { framingMap = false; }, animate ? 400 : 50);
 }
 
 function markerIcon(person, isLive) {

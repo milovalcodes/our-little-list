@@ -1,8 +1,8 @@
-const CACHE = 'our-little-list-ui-v8';
+const CACHE = 'our-little-list-map-v9';
 const ASSETS = ['./','./index.html','./her.html','./him.html','./tasks.html','./reminders.html','./notes.html','./location.html','./styles.css','./shared.js','./tasks.js','./reminders.js','./notes.js','./location.js','./live-notes.js','./ui-helpers.js','./firebase-data.js','./firebase-config.js','./sun-moon-personalized.png','./sun-profile.png','./moon-profile.png','./manifest.webmanifest'];
 
-self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))));
-self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))));
+self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));
+self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(fetch(event.request).then(response => {

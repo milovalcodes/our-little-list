@@ -1,5 +1,16 @@
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+  const alreadyControlled = Boolean(navigator.serviceWorker.controller);
+  let refreshingForUpdate = false;
+  if (alreadyControlled) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshingForUpdate) return;
+      refreshingForUpdate = true;
+      window.location.reload();
+    });
+  }
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').then(registration => registration.update()).catch(() => {});
+  });
 }
 
 let pendingInstallPrompt = null;
@@ -31,4 +42,3 @@ window.addEventListener('appinstalled', () => {
   if (installButton) installButton.hidden = true;
   if (installHint) installHint.textContent = 'Installed — welcome to your little universe ☀︎☾';
 });
-
