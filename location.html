@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <title>Find Each Other · Our Little List</title>
+  <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon.svg"><link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3ynhHdq2x5pIuMZbZq3Y/Y0QvM7xQ=" crossorigin="anonymous">
+</head>
+<body class="profile-page" data-app="location">
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back to my side</a><span class="mini-brand">our little map ♡</span></header>
+  <main class="app-shell map-shell">
+    <section class="feature-hero map-hero">
+      <span class="feature-icon">📍</span><p class="tiny-kicker">just for a little while</p><h1>Find each other</h1>
+      <p>Turn it on when you’re meeting up. You choose how long, and either of you can disappear from the map whenever you want.</p>
+    </section>
+
+    <section class="proximity-card" aria-live="polite">
+      <div class="proximity-orbit" aria-hidden="true"><span>🌷</span><i></i><span>🌙</span></div>
+      <p class="tiny-kicker" id="distance-label">our little distance</p>
+      <h2 id="proximity-message">Waiting for both of you</h2>
+      <p id="proximity-detail">Share your spot, then your person can join you here.</p>
+    </section>
+
+    <section class="share-card">
+      <div class="share-heading"><div><p class="tiny-kicker">my little signal</p><h2 id="share-title">I’m not sharing right now</h2></div><span class="privacy-lock">🔒</span></div>
+      <p class="share-explainer">When live sharing ends, your last spot stays softly pinned until you hide it.</p>
+      <div class="share-durations" role="group" aria-label="Choose sharing time">
+        <button type="button" class="duration-chip active" data-minutes="15">15 min</button>
+        <button type="button" class="duration-chip" data-minutes="60">1 hour</button>
+        <button type="button" class="duration-chip" data-minutes="180">3 hours</button>
+      </div>
+      <div class="share-actions">
+        <button class="primary-action share-location" id="share-location" type="button">Share my spot</button>
+        <button class="stop-sharing" id="stop-sharing" type="button" hidden>Stop sharing now</button>
+        <button class="hide-last-location" id="hide-last-location" type="button" hidden>Hide my last spot too</button>
+      </div>
+      <p class="location-error" id="location-error" role="alert"></p>
+    </section>
+
+    <section class="map-card">
+      <div class="map-heading"><div><p class="tiny-kicker">where we are</p><h2>Our map</h2></div><span class="map-updated" id="map-updated">No live spots yet</span></div>
+      <div id="couple-map" aria-label="Map showing both shared locations"></div>
+      <div class="last-known-row" id="last-known-row" aria-live="polite"></div>
+      <div class="map-legend"><span><i class="her-dot"></i> her</span><span><i class="him-dot"></i> him</span></div>
+    </section>
+
+    <p class="location-fine-print">For the smoothest live updates, keep this page open while you’re on the way. iPhone and Android browsers may pause website location when the page is in the background.</p>
+  </main>
+  <div id="auth-root"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script src="shared.js"></script><script type="module" src="location.js"></script><script type="module" src="live-notes.js"></script>
+</body>
+</html>

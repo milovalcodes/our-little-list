@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <title>Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon.svg"><link rel="stylesheet" href="styles.css">
+</head>
+<body class="profile-page" data-app="tasks">
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back to my side</a><span class="mini-brand">our little list ♡</span></header>
+  <main class="app-shell feature-shell">
+    <section class="feature-hero list-hero">
+      <span class="feature-icon">✓</span><p class="tiny-kicker">ours together</p><h1>Our little list</h1>
+      <p>One shared brain for both of us. Add it once, then whoever gets there first can check it off.</p>
+    </section>
+
+    <nav class="tabs" aria-label="List sections">
+      <button class="tab active" data-tab="tasks">To do</button><button class="tab" data-tab="grocery">Groceries</button><button class="tab" data-tab="done">Little wins</button>
+    </nav>
+
+    <section class="composer-card compact-composer">
+      <form id="shared-task-form">
+        <label><span id="task-prompt">What needs doing?</span><div class="inline-add"><input id="shared-task-title" required maxlength="100" placeholder="Put it here so neither of us has to hold it…"><button type="submit" aria-label="Add">+</button></div></label>
+        <div class="soft-options" id="task-options">
+          <button type="button" class="soft-chip active" data-when="whenever">whenever</button><button type="button" class="soft-chip" data-when="today">today-ish</button><button type="button" class="soft-chip" data-when="tomorrow">tomorrow</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="list-card">
+      <div class="list-heading"><div><p class="tiny-kicker" id="list-kicker">things waiting for us</p><h2 id="list-title">To do</h2></div><span class="count-bubble" id="item-count">0 left</span></div>
+      <div class="empty-state" id="empty-state"><span>☁</span><strong>Nothing waiting here</strong><p>That feels pretty nice.</p></div>
+      <ul class="task-list" id="task-list"></ul>
+    </section>
+    <p class="local-note">Shared syncing turns on as soon as Firebase is connected.</p>
+  </main>
+
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="tasks.js?v=4"></script><script type="module" src="live-notes.js"></script>
+</body>
+</html>

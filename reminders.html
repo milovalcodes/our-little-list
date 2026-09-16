@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <title>A Little Reminder</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon.svg"><link rel="stylesheet" href="styles.css">
+</head>
+<body class="profile-page" data-app="reminders">
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back to my side</a><span class="mini-brand">a gentle nudge ⏰</span></header>
+  <main class="app-shell feature-shell">
+    <section class="feature-hero reminder-hero"><span class="feature-icon">⏰</span><p class="tiny-kicker">no stiff calendar energy</p><h1 id="reminder-heading">Give them a little nudge</h1><p>Just tell us roughly when. You can be exact only if you feel like it.</p></section>
+
+    <section class="playful-maker">
+      <form id="reminder-form">
+        <div class="maker-step"><span class="step-number">1</span><div><p class="maker-question" id="what-question">What should the nudge say?</p><input id="reminder-title" required maxlength="100" placeholder="Don’t forget your water bottle 💧"></div></div>
+        <div class="maker-step"><span class="step-number">2</span><div><p class="maker-question">What kind of day?</p><div class="choice-cloud" id="day-choices"><button type="button" class="choice active" data-day="today">today</button><button type="button" class="choice" data-day="tomorrow">tomorrow</button><button type="button" class="choice" data-day="weekend">this weekend</button><button type="button" class="choice" data-day="custom">pick a day…</button></div><input id="custom-day" class="exact-input" type="date" hidden></div></div>
+        <div class="maker-step"><span class="step-number">3</span><div><p class="maker-question">Around when?</p><div class="choice-cloud" id="time-choices"><button type="button" class="choice active" data-time="09:00">morning-ish</button><button type="button" class="choice" data-time="13:00">after lunch</button><button type="button" class="choice" data-time="19:00">this evening</button><button type="button" class="choice" data-time="custom">a specific time…</button></div><input id="custom-time" class="exact-input" type="time" hidden></div></div>
+        <label class="little-note-field"><span>Anything extra? (optional)</span><input id="reminder-note" maxlength="140" placeholder="Love you—future you will be glad 💕"></label>
+        <button class="primary-action roomy-action" id="reminder-submit" type="submit">Send the little nudge ✨</button>
+      </form>
+      <div class="sent-state" id="sent-state" hidden><span>💛</span><h2>Nudge safely tucked away</h2><p id="sent-copy"></p><button class="create-space" id="another-reminder" type="button">make another one</button></div>
+    </section>
+    <p class="local-note">Once push delivery is connected, this becomes a phone notification at the chosen time.</p>
+  </main>
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="reminders.js"></script><script type="module" src="live-notes.js"></script>
+</body>
+</html>
