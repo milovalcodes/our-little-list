@@ -31,16 +31,22 @@ window.addEventListener('beforeinstallprompt', event => {
   if (installButton && !standalone) installButton.hidden = false;
 });
 
-installButton?.addEventListener('click', async () => {
+window.requestLittleInstall = async () => {
+  if (standalone) return { status:'installed' };
   if (!pendingInstallPrompt) {
     if (installHint && isApplePhone) installHint.textContent = 'Safari share button → Add to Home Screen. the sacred sequence.';
     else if (installHint) installHint.textContent = 'browser menu → Add to Home screen. Android made it a side quest.';
-    return;
+    return { status:isApplePhone?'manual-ios':'manual' };
   }
   await pendingInstallPrompt.prompt();
-  await pendingInstallPrompt.userChoice;
+  const choice=await pendingInstallPrompt.userChoice;
   pendingInstallPrompt = null;
-  installButton.hidden = true;
+  if (installButton) installButton.hidden = true;
+  return { status:choice.outcome };
+};
+
+installButton?.addEventListener('click', async () => {
+  await window.requestLittleInstall();
 });
 
 window.addEventListener('appinstalled', () => {

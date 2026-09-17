@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-website-first-v14';
+const CACHE = 'our-little-list-permission-buttons-v15';
 const ASSETS = ['./','./index.html','./her.html','./him.html','./tasks.html','./reminders.html','./notes.html','./location.html','./activity.html','./phone-check.html','./styles.css','./shared.js','./dashboard.js','./activity.js','./phone-check.js','./tasks.js','./reminders.js','./notes.js','./location.js','./live-notes.js','./ui-helpers.js','./firebase-data.js','./firebase-config.js','./sun-moon-personalized.png','./sun-profile.png','./moon-profile.png','./manifest.webmanifest'];
 
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));

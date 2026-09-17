@@ -255,6 +255,8 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 .status-row strong { color:var(--page-text); }
 .status-row p { margin:4px 0 0; color:var(--page-muted); line-height:1.45; font-size:.88rem; }
 .status-row .small-action { margin-top:10px; }
+.permission-help { padding:10px 12px; border-radius:13px; background:color-mix(in srgb,var(--accent-pale) 62%,transparent); color:var(--page-text)!important; font-weight:700; }
+.small-action:disabled { opacity:.58; cursor:default; }
 .status-foot { text-align:center; color:var(--page-muted); font-size:.8rem; line-height:1.5; }
 
 /* Our little map */

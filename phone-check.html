@@ -8,13 +8,13 @@
   <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">bureau of phone cooperation</span></header>
   <main class="app-shell feature-shell status-shell">
     <section class="feature-hero status-hero"><span class="feature-icon">📡</span><p class="tiny-kicker">extremely serious diagnostics</p><h1>Is this thing on?</h1><p>making sure the phone is not quietly betraying us.</p></section>
-    <section class="status-card">
-      <div class="status-row"><span class="status-symbol" id="sync-symbol">…</span><div><strong>Shared sync</strong><p id="sync-status">asking the cloud politely</p></div></div>
-      <div class="status-row"><span class="status-symbol" id="online-symbol">…</span><div><strong>Internet</strong><p id="online-status">checking</p></div></div>
-      <div class="status-row"><span class="status-symbol" id="install-symbol">…</span><div><strong>Home screen</strong><p id="install-status">checking</p></div></div>
-      <div class="status-row"><span class="status-symbol" id="notification-symbol">…</span><div><strong>Popups & tiny noises</strong><p id="notification-status">checking</p><button class="small-action" id="ask-notifications" type="button" hidden>allow them</button></div></div>
-      <div class="status-row"><span class="status-symbol" id="location-symbol">…</span><div><strong>Location</strong><p id="location-status">checking</p><button class="small-action" id="ask-location" type="button">check location</button></div></div>
-      <div class="status-row"><span class="status-symbol warning">◐</span><div><strong>Background mode</strong><p>the website may nap when the screen locks. rude, but normal. opening it again catches everything up.</p></div></div>
+    <section class="status-card" aria-live="polite">
+      <div class="status-row"><span class="status-symbol" id="sync-symbol">…</span><div><strong>Shared sync</strong><p id="sync-status">asking the cloud politely</p><button class="small-action" id="check-sync" type="button">test sync</button><p class="permission-help" id="sync-help" hidden></p></div></div>
+      <div class="status-row"><span class="status-symbol" id="online-symbol">…</span><div><strong>Internet</strong><p id="online-status">checking</p><button class="small-action" id="check-online" type="button">recheck</button><p class="permission-help" id="online-help" hidden></p></div></div>
+      <div class="status-row"><span class="status-symbol" id="install-symbol">…</span><div><strong>Home screen</strong><p id="install-status">checking</p><button class="small-action" id="ask-install" type="button">install / show me</button><p class="permission-help" id="install-help" hidden></p></div></div>
+      <div class="status-row"><span class="status-symbol" id="notification-symbol">…</span><div><strong>Popups & tiny noises</strong><p id="notification-status">checking</p><button class="small-action" id="ask-notifications" type="button">ask phone</button><p class="permission-help" id="notification-help" hidden></p></div></div>
+      <div class="status-row"><span class="status-symbol" id="location-symbol">…</span><div><strong>Location</strong><p id="location-status">checking</p><button class="small-action" id="ask-location" type="button">ask phone</button><p class="permission-help" id="location-help" hidden></p></div></div>
+      <div class="status-row"><span class="status-symbol warning" id="background-symbol">◐</span><div><strong>Background mode</strong><p id="background-status">the website may nap when the screen locks. rude, but normal.</p><button class="small-action" id="ask-background" type="button">keep page awake</button><p class="permission-help" id="background-help" hidden></p></div></div>
     </section>
     <p class="status-foot">green means cooperative. yellow means “the browser has opinions.”</p>
   </main>
