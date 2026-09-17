@@ -12,9 +12,10 @@ $('note-body').addEventListener('input',updatePreview);document.querySelectorAll
 function updatePreview(){const mood=document.querySelector('[name="mood"]:checked').value;$('preview-mood').textContent=moods[mood];$('preview-body').textContent=$('note-body').value.trim()||'thinking of u ♡';}
 
 $('note-form').addEventListener('submit',async event=>{
-  event.preventDefault();const mood=document.querySelector('[name="mood"]:checked').value;
-  await data.add({sender,recipient,body:$('note-body').value.trim(),mood,read:false,createdAt:Date.now()});
-  event.target.hidden=true;document.querySelector('.note-starters').hidden=true;document.querySelectorAll('.note-maker>.maker-question').forEach(el=>el.hidden=true);$('sent-state').hidden=false;$('sent-copy').textContent=`${recipient} got the ${moods[mood]}.`;
+  event.preventDefault();const mood=document.querySelector('[name="mood"]:checked').value;const body=$('note-body').value.trim();
+  await data.add({sender,recipient,from:sender,to:recipient,body,message:body,mood,read:false,createdAt:Date.now()});
+  const push=await data.push(recipient,{title:sender==='her'?'the sun says ☀️':'the moon says 🌙',body,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'note',body,from:sender,url:'notes'}}).catch(()=>({sent:false}));
+  event.target.hidden=true;document.querySelector('.note-starters').hidden=true;document.querySelectorAll('.note-maker>.maker-question').forEach(el=>el.hidden=true);$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`${recipient} got the ${moods[mood]} and a twinkle.`:`saved. ${recipient}'s phone still needs notifications turned on.`;
 });
 $('another-note').addEventListener('click',()=>location.reload());
 

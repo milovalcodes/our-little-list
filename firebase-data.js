@@ -5,7 +5,7 @@ const configured = firebaseConfig?.apiKey && !firebaseConfig.apiKey.startsWith('
 export async function createDataLayer({ onItems, onAuth, collectionName = 'items' }) {
   if (!configured) return createLocalLayer(onItems,onAuth,collectionName);
 
-  const [{initializeApp,getApps,getApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut},{getFirestore,collection,onSnapshot,addDoc,setDoc,updateDoc,deleteDoc,doc}] = await Promise.all([
+  const [{initializeApp,getApps,getApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut},{getFirestore,collection,onSnapshot,addDoc,setDoc,updateDoc,deleteDoc,doc,getDoc}] = await Promise.all([
     import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js'),
     import('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js'),
     import('https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js')
@@ -19,6 +19,18 @@ export async function createDataLayer({ onItems, onAuth, collectionName = 'items
     set:(id,item)=>setDoc(doc(itemsCollection(),id),item,{merge:true}),
     update:(id,changes)=>updateDoc(doc(itemsCollection(),id),changes),
     remove:id=>deleteDoc(doc(itemsCollection(),id)),
+    async push(person,message){
+      const device=await getDoc(doc(db,'households',auth.currentUser.uid,'devices',person));
+      const token=device.data()?.expoPushToken;
+      if(typeof token!=='string'||!/^(ExponentPushToken|ExpoPushToken)\[/.test(token))return {sent:false,reason:'not-registered'};
+      await fetch('https://exp.host/--/api/v2/push/send',{
+        method:'POST',
+        mode:'no-cors',
+        headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({to:token,...message})
+      });
+      return {sent:true};
+    },
     signIn:(email,password)=>signInWithEmailAndPassword(auth,email,password),
     createAccount:(email,password)=>createUserWithEmailAndPassword(auth,email,password),
     signOut:()=>signOut(auth),
@@ -46,10 +58,11 @@ function createLocalLayer(onItems,onAuth,collectionName){
   queueMicrotask(()=>{onAuth(null);onItems([...items]);});
   return {
     mode:'local',
-    async add(item){items.push({id:crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random()}`,...item});publish();},
+    async add(item){const id=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random()}`;items.push({id,...item});publish();return{id};},
     async set(id,item){const current=items.find(entry=>entry.id===id);if(current)Object.assign(current,item);else items.push({id,...item});publish();},
     async update(id,changes){const item=items.find(entry=>entry.id===id);if(item)Object.assign(item,changes);publish();},
     async remove(id){items=items.filter(entry=>entry.id!==id);publish();},
+    async push(){return{sent:false,reason:'not-registered'};},
     async signIn(){},async createAccount(){},async signOut(){},friendlyError(){return 'sync is offline.';}
   };
 }

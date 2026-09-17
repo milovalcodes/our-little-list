@@ -69,6 +69,15 @@ byId('shared-task-form').addEventListener('submit', async event => {
     done: false,
     createdAt: Date.now()
   });
+  const recipient = viewer === 'her' ? 'him' : 'her';
+  void data.push(recipient,{
+    title:tab==='grocery'?'grocery list update 🛒':'new thing on the list ✓',
+    body:title,
+    sound:'twinkle.wav',
+    channelId:'our-twinkles',
+    priority:'high',
+    data:{kind:'item',title,from:viewer,url:'tasks'}
+  }).catch(()=>{});
   event.target.reset();
   toast(tab === 'grocery' ? 'on the grocery list 🛒' : 'added 🫡');
 });
