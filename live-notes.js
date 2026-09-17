@@ -17,7 +17,7 @@ async function boot(viewer){
     if(started)return;started=true;
     layer.listenTo('items',items=>watchFresh('items',items,item=>item.addedBy===other,{icon:'✓',label:'new on our list',body:item=>item.title,url:`tasks.html?as=${viewer}`}));
     layer.listenTo('reminders',items=>watchFresh('reminders',items,item=>item.recipient===viewer,{icon:'⏰',label:'a reminder for you',body:item=>item.title,url:`reminders.html?from=${viewer}`}));
-    layer.listenTo('dates',items=>watchFresh('dates',items,item=>item.addedBy===other,{icon:'✦',label:'new date idea',body:item=>item.title,url:`dates.html?as=${viewer}`}));
+    layer.listenTo('dates',items=>watchFresh('dates',items,item=>item.addedBy===other&&!item.imported,{icon:'✦',label:'new date idea',body:item=>item.title,url:`dates.html?as=${viewer}`}));
     layer.listenTo('statuses',items=>watchStatus(items));
     if(!document.body.dataset.viewer){touchPresence();window.setInterval(touchPresence,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)touchPresence();});}
   }

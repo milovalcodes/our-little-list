@@ -33,7 +33,7 @@ function renderBadge(){
     ...buckets.items.filter(item=>item.addedBy===other&&Number(item.createdAt)>since),
     ...buckets.notes.filter(note=>note.recipient===viewer&&Number(note.createdAt)>since),
     ...buckets.reminders.filter(reminder=>reminder.recipient===viewer&&Number(reminder.createdAt)>since),
-    ...buckets.dates.filter(idea=>idea.addedBy===other&&Number(idea.createdAt)>since),
+    ...buckets.dates.filter(idea=>idea.addedBy===other&&!idea.imported&&Number(idea.createdAt)>since),
     ...buckets.statuses.filter(status=>(status.person===other||status.id===other)&&Number(status.updatedAt)>since)
   ];
   badge.hidden=incoming.length===0;
