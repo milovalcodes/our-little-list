@@ -28,6 +28,7 @@ export async function createDataLayer({ onItems, onAuth, collectionName = 'items
     addTo:(name,item)=>addDoc(namedCollection(name),item),
     setTo:(name,id,item)=>setDoc(doc(namedCollection(name),id),item,{merge:true}),
     updateIn:(name,id,changes)=>updateDoc(doc(namedCollection(name),id),changes),
+    removeFrom:(name,id)=>deleteDoc(doc(namedCollection(name),id)),
     async push(person,message){
       const device=await getDoc(doc(db,'households',auth.currentUser.uid,'devices',person));
       const token=device.data()?.expoPushToken;
@@ -94,6 +95,11 @@ function createLocalLayer(onItems,onAuth,collectionName){
       localStorage.setItem(storageKey,JSON.stringify({items:named}));
     },
     async updateIn(name,id,changes){return this.setTo(name,id,changes);},
+    async removeFrom(name,id){
+      const storageKey=`our-little-list-${name}-v1`;let named=[];
+      try{named=JSON.parse(localStorage.getItem(storageKey))?.items||[];}catch(_){named=[];}
+      named=named.filter(item=>item.id!==id);localStorage.setItem(storageKey,JSON.stringify({items:named}));
+    },
     async push(){return{sent:false,reason:'not-registered'};},
     async signIn(){},async createAccount(){},async signOut(){},friendlyError(){return 'sync is offline.';}
   };

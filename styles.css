@@ -305,6 +305,15 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 .activity-row p { margin:0; color:var(--page-muted); font-size:.79rem; }
 .activity-row strong { display:block; margin:3px 0; color:var(--page-text); line-height:1.35; }
 .activity-row small { color:var(--page-muted); font-size:.73rem; }
+.activity-row-copy { min-width:0; }
+.activity-row-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:11px; }
+.activity-row-actions button { min-height:34px; border:0; border-radius:999px; padding:7px 11px; color:var(--accent-deep); background:color-mix(in srgb,var(--accent-pale) 76%,white); font-size:.7rem; font-weight:850; cursor:pointer; }
+.activity-row-actions .delete-for-us { color:#9b465a; background:#fff0f3; }
+.activity-row-actions .delete-for-us.confirming { color:white; background:#b6475f; animation:tinyShake .35s ease both; }
+.activity-row.is-removing { pointer-events:none; animation:activityLeave .2s ease both; }
+.him-theme .activity-row-actions button { color:#e3d6ff; background:rgba(255,255,255,.09); }
+.him-theme .activity-row-actions .delete-for-us { color:#ffabbc; background:rgba(177,56,83,.2); }
+.him-theme .activity-row-actions .delete-for-us.confirming { color:white; background:#b6475f; }
 
 /* Phone cooperation bureau */
 .status-card { padding:12px 24px; }
@@ -608,6 +617,7 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 @keyframes buttonSpin { to{rotate:360deg} }
 @keyframes cardArrive { from{opacity:0;translate:0 12px} }
 @keyframes rowArrive { from{opacity:0;translate:-8px 0} }
+@keyframes activityLeave { to{opacity:0;translate:12px 0;scale:.98} }
 @keyframes successPop { from{scale:.7} }
 @keyframes softPulse { 50%{box-shadow:0 0 0 9px color-mix(in srgb,#4dc582 8%,transparent)} }
 @keyframes portraitFloat { 50%{translate:0 -4px;rotate:2deg} }
