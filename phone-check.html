@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <title>Is This Thing On · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+</head>
+<body class="profile-page" data-app="phone-check">
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">bureau of phone cooperation</span></header>
+  <main class="app-shell feature-shell status-shell">
+    <section class="feature-hero status-hero"><span class="feature-icon">📡</span><p class="tiny-kicker">extremely serious diagnostics</p><h1>Is this thing on?</h1><p>making sure the phone is not quietly betraying us.</p></section>
+    <section class="status-card">
+      <div class="status-row"><span class="status-symbol" id="sync-symbol">…</span><div><strong>Shared sync</strong><p id="sync-status">asking the cloud politely</p></div></div>
+      <div class="status-row"><span class="status-symbol" id="online-symbol">…</span><div><strong>Internet</strong><p id="online-status">checking</p></div></div>
+      <div class="status-row"><span class="status-symbol" id="install-symbol">…</span><div><strong>Home screen</strong><p id="install-status">checking</p></div></div>
+      <div class="status-row"><span class="status-symbol" id="notification-symbol">…</span><div><strong>Popups & tiny noises</strong><p id="notification-status">checking</p><button class="small-action" id="ask-notifications" type="button" hidden>allow them</button></div></div>
+      <div class="status-row"><span class="status-symbol" id="location-symbol">…</span><div><strong>Location</strong><p id="location-status">checking</p><button class="small-action" id="ask-location" type="button">check location</button></div></div>
+      <div class="status-row"><span class="status-symbol warning">◐</span><div><strong>Background mode</strong><p>the website may nap when the screen locks. rude, but normal. opening it again catches everything up.</p></div></div>
+    </section>
+    <p class="status-foot">green means cooperative. yellow means “the browser has opinions.”</p>
+  </main>
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="phone-check.js"></script>
+</body>
+</html>

@@ -90,7 +90,7 @@ byId('task-list').addEventListener('click', async event => {
   if (!item) return;
 
   if (button.dataset.action === 'toggle') {
-    await data.update(item.id, { done: !item.done, doneBy: !item.done ? viewer : '' });
+    await data.update(item.id, { done: !item.done, doneBy: !item.done ? viewer : '', doneAt: !item.done ? Date.now() : 0 });
   }
   if (button.dataset.action === 'delete') await data.remove(item.id);
 });

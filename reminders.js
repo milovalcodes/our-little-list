@@ -17,7 +17,7 @@ $('reminder-form').addEventListener('submit',async event=>{
   const reminderId=record?.id||`web-${Date.now()}`;
   const push=await data.push(recipient,{title:'new reminder ⏰',body:`${title} · ${friendly(chosen)}`,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'reminder-created',title,dueAt,from:sender,reminderId,url:'reminders'}}).catch(()=>({sent:false}));
   if(push.sent)void data.push(recipient,{data:{kind:'schedule-reminder',title,dueAt,from:sender,reminderId},contentAvailable:true,priority:'high'}).catch(()=>{});
-  event.target.hidden=true;$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`${recipient} got it and will get another twinkle ${friendly(chosen)}.`:`saved. ${recipient}'s phone still needs notifications turned on.`;
+  event.target.hidden=true;$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`future ${recipient} has been warned. ominous.`:`saved to the receipts. future ${recipient} can no longer claim ignorance.`;
 });
 $('another-reminder').addEventListener('click',()=>{location.reload();});
 

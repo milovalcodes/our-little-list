@@ -12,13 +12,18 @@ export async function createDataLayer({ onItems, onAuth, collectionName = 'items
   ]);
   const app=getApps().length?getApp():initializeApp(firebaseConfig); const auth=getAuth(app); const db=getFirestore(app); let unsubscribe=null;
 
-  const itemsCollection=()=>collection(db,'households',auth.currentUser.uid,collectionName);
+  const namedCollection=name=>collection(db,'households',auth.currentUser.uid,name);
+  const itemsCollection=()=>namedCollection(collectionName);
   const layer={
     mode:'firebase',
     add:item=>addDoc(itemsCollection(),item),
     set:(id,item)=>setDoc(doc(itemsCollection(),id),item,{merge:true}),
     update:(id,changes)=>updateDoc(doc(itemsCollection(),id),changes),
     remove:id=>deleteDoc(doc(itemsCollection(),id)),
+    listenTo:(name,callback)=>onSnapshot(namedCollection(name),snapshot=>callback(snapshot.docs.map(entry=>({id:entry.id,...entry.data()})))),
+    addTo:(name,item)=>addDoc(namedCollection(name),item),
+    setTo:(name,id,item)=>setDoc(doc(namedCollection(name),id),item,{merge:true}),
+    updateIn:(name,id,changes)=>updateDoc(doc(namedCollection(name),id),changes),
     async push(person,message){
       const device=await getDoc(doc(db,'households',auth.currentUser.uid,'devices',person));
       const token=device.data()?.expoPushToken;
@@ -62,6 +67,27 @@ function createLocalLayer(onItems,onAuth,collectionName){
     async set(id,item){const current=items.find(entry=>entry.id===id);if(current)Object.assign(current,item);else items.push({id,...item});publish();},
     async update(id,changes){const item=items.find(entry=>entry.id===id);if(item)Object.assign(item,changes);publish();},
     async remove(id){items=items.filter(entry=>entry.id!==id);publish();},
+    listenTo(name,callback){
+      const storageKey=`our-little-list-${name}-v1`;
+      const read=()=>{try{return JSON.parse(localStorage.getItem(storageKey))?.items||[];}catch(_){return[];}};
+      queueMicrotask(()=>callback(read()));
+      const handler=event=>{if(event.key===storageKey)callback(read());};
+      window.addEventListener('storage',handler);
+      return()=>window.removeEventListener('storage',handler);
+    },
+    async addTo(name,item){
+      const storageKey=`our-little-list-${name}-v1`;let named=[];
+      try{named=JSON.parse(localStorage.getItem(storageKey))?.items||[];}catch(_){named=[];}
+      const id=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random()}`;
+      named.push({id,...item});localStorage.setItem(storageKey,JSON.stringify({items:named}));return{id};
+    },
+    async setTo(name,id,item){
+      const storageKey=`our-little-list-${name}-v1`;let named=[];
+      try{named=JSON.parse(localStorage.getItem(storageKey))?.items||[];}catch(_){named=[];}
+      const current=named.find(entry=>entry.id===id);if(current)Object.assign(current,item);else named.push({id,...item});
+      localStorage.setItem(storageKey,JSON.stringify({items:named}));
+    },
+    async updateIn(name,id,changes){return this.setTo(name,id,changes);},
     async push(){return{sent:false,reason:'not-registered'};},
     async signIn(){},async createAccount(){},async signOut(){},friendlyError(){return 'sync is offline.';}
   };

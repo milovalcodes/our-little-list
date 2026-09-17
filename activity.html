@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <title>The Receipts · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+</head>
+<body class="profile-page" data-app="activity">
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">peer-reviewed evidence ✦</span></header>
+  <main class="app-shell feature-shell activity-shell">
+    <section class="feature-hero activity-hero"><span class="feature-icon">✦</span><p class="tiny-kicker">what happened while you blinked</p><h1>The receipts</h1><p>notes, reminders, and list lore. all in one suspiciously useful place.</p></section>
+
+    <section class="presence-strip" aria-live="polite">
+      <span class="presence-face"><img id="other-face" src="sun-profile.png" alt=""></span>
+      <div><p class="tiny-kicker" id="presence-kicker">checking the astral plane</p><strong id="presence-status">one sec…</strong></div>
+      <span class="presence-dot" id="presence-dot" aria-hidden="true"></span>
+    </section>
+
+    <section class="activity-card">
+      <div class="activity-heading"><div><p class="tiny-kicker">recent-ish</p><h2>Us, apparently</h2></div><button id="mark-seen" type="button">mark all seen</button></div>
+      <div class="empty-state" id="activity-empty"><span>🛸</span><strong>No lore yet</strong><p>suspiciously peaceful.</p></div>
+      <ol class="activity-list" id="activity-list"></ol>
+    </section>
+  </main>
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="activity.js"></script>
+</body>
+</html>

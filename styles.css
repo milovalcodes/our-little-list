@@ -162,6 +162,10 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 .location-tool { grid-column:1/-1; min-height:220px; background:linear-gradient(120deg,#c8f0e7,#a9dcd7 55%,#b8cedf); color:#244e56; }
 .location-tool::after { content:'⌁'; position:absolute; right:32px; top:-75px; font-size:18rem; opacity:.11; rotate:-12deg; }
 .location-tool .tool-icon { margin-bottom:0; }
+.activity-tool { background:linear-gradient(145deg,#ffe8b4,#f6bd86); color:#674220; }
+.status-tool { background:linear-gradient(145deg,#dce6ff,#bfcdf1); color:#314666; }
+.activity-badge { position:absolute; top:22px; right:22px; min-width:31px; height:31px; padding:0 8px; display:grid; place-items:center; border-radius:999px; background:#ff567f; color:white; font-weight:900; font-size:.77rem; box-shadow:0 8px 20px rgba(141,49,78,.23); }
+.activity-badge[hidden] { display:none!important; }
 .tool-icon { width:58px; height:58px; display:grid; place-items:center; border-radius:19px; background:rgba(255,255,255,.46); font-size:1.7rem; margin-bottom:auto; }
 .tool-kicker { margin-top:25px; font-size:.75rem; text-transform:none; letter-spacing:.035em; font-weight:800; opacity:.68; }
 .tool-card strong { display:block; margin:7px 0 10px; font-size:clamp(1.8rem,4vw,2.8rem); line-height:1; letter-spacing:-.025em; }
@@ -219,7 +223,39 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 .incoming-note>span { font-size:2rem; }
 .incoming-note small { color:#8b7480; font-weight:800; }
 .incoming-note p { margin:3px 0 0; color:#513745; font-weight:760; }
+.incoming-note { cursor:pointer; }
 @keyframes note-arrive { from { opacity:0; translate:-50% -25px; scale:.97; } }
+
+/* The receipts */
+.presence-strip,.activity-card,.status-card { margin-top:16px; background:var(--paper); border:1px solid rgba(255,255,255,.9); border-radius:28px; box-shadow:0 14px 38px rgba(66,48,57,.08); }
+.presence-strip { display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; padding:18px 20px; }
+.presence-face { width:48px; height:48px; border-radius:17px; overflow:hidden; background:var(--accent-pale); }
+.presence-face img { width:100%; height:100%; object-fit:cover; display:block; }
+.presence-strip strong { color:var(--page-text); }
+.presence-dot { width:13px; height:13px; border-radius:50%; background:#b5a8ad; box-shadow:0 0 0 6px color-mix(in srgb,#b5a8ad 16%,transparent); }
+.presence-dot.online { background:#4dc582; box-shadow:0 0 0 6px color-mix(in srgb,#4dc582 18%,transparent); }
+.activity-card { padding:25px; }
+.activity-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.activity-heading h2 { margin:0; color:var(--page-text); font-size:1.8rem; }
+.activity-heading button,.small-action { border:0; border-radius:999px; background:var(--accent-pale); color:var(--accent-deep); padding:9px 12px; font-weight:850; font-size:.75rem; cursor:pointer; }
+.activity-list { list-style:none; padding:0; margin:20px 0 0; display:grid; gap:9px; }
+.activity-row { display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; padding:14px; border-radius:19px; background:color-mix(in srgb,var(--accent-pale) 58%,white); }
+.activity-icon { width:38px; height:38px; display:grid; place-items:center; border-radius:13px; background:white; font-size:1.15rem; }
+.activity-row p { margin:0; color:var(--page-muted); font-size:.79rem; }
+.activity-row strong { display:block; margin:3px 0; color:var(--page-text); line-height:1.35; }
+.activity-row small { color:var(--page-muted); font-size:.73rem; }
+
+/* Phone cooperation bureau */
+.status-card { padding:12px 24px; }
+.status-row { display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:start; padding:18px 0; border-bottom:1px dashed color-mix(in srgb,var(--accent) 20%,transparent); }
+.status-row:last-child { border-bottom:0; }
+.status-symbol { width:34px; height:34px; display:grid; place-items:center; border-radius:50%; background:#eee5e8; color:#796a70; font-weight:950; }
+.status-symbol.okay { background:#d9f5e4; color:#27764b; }
+.status-symbol.warning { background:#fff0c8; color:#8a6117; }
+.status-row strong { color:var(--page-text); }
+.status-row p { margin:4px 0 0; color:var(--page-muted); line-height:1.45; font-size:.88rem; }
+.status-row .small-action { margin-top:10px; }
+.status-foot { text-align:center; color:var(--page-muted); font-size:.8rem; line-height:1.5; }
 
 /* Our little map */
 /* Leaflet's required layout rules live here too, so the PWA and Android WebView
@@ -482,6 +518,8 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
   .soft-chip,.choice,.duration-chip,.note-starters button { padding:10px 12px; }
   .share-heading h2,.map-heading h2 { font-size:1.45rem; }
   .map-legend { gap:12px; flex-wrap:wrap; }
+  .activity-card,.status-card { padding:18px; }
+  .activity-heading { align-items:center; }
 }
 
 @media (max-width:720px) {
