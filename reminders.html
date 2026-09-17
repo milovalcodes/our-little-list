@@ -5,19 +5,19 @@
   <title>A Little Reminder</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page" data-app="reminders">
-  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">alarm department ⏰</span></header>
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">little reminders ⏰</span></header>
   <main class="app-shell feature-shell">
-    <section class="feature-hero reminder-hero"><span class="feature-icon">⏰</span><p class="tiny-kicker">because brains are fake</p><h1 id="reminder-heading">Remind them</h1><p>what, when, done.</p></section>
+    <section class="feature-hero reminder-hero"><span class="feature-icon">⏰</span><p class="tiny-kicker">for later</p><h1 id="reminder-heading">Remind them</h1><p>a little nudge at the right time.</p></section>
 
     <section class="playful-maker">
       <form id="reminder-form">
         <div class="maker-step"><span class="step-number">1</span><div><p class="maker-question" id="what-question">What?</p><input id="reminder-title" required maxlength="100" placeholder="bring the water bottle"></div></div>
         <div class="maker-step"><span class="step-number">2</span><div><p class="maker-question">What day?</p><div class="choice-cloud" id="day-choices"><button type="button" class="choice active" data-day="today">today</button><button type="button" class="choice" data-day="tomorrow">tomorrow</button><button type="button" class="choice" data-day="weekend">weekend</button><button type="button" class="choice" data-day="custom">pick one…</button></div><input id="custom-day" class="exact-input" type="date" hidden></div></div>
         <div class="maker-step"><span class="step-number">3</span><div><p class="maker-question">What time?</p><div class="choice-cloud" id="time-choices"><button type="button" class="choice active" data-time="09:00">morning-ish</button><button type="button" class="choice" data-time="13:00">after lunch</button><button type="button" class="choice" data-time="19:00">evening</button><button type="button" class="choice" data-time="custom">exact time…</button></div><input id="custom-time" class="exact-input" type="time" hidden></div></div>
-        <label class="little-note-field"><span>Anything else?</span><input id="reminder-note" maxlength="140" placeholder="context, threats, etc."></label>
-        <button class="primary-action roomy-action" id="reminder-submit" type="submit">warn future us</button>
+        <label class="little-note-field"><span>Anything else?</span><input id="reminder-note" maxlength="140" placeholder="anything helpful"></label>
+        <button class="primary-action roomy-action" id="reminder-submit" type="submit">set reminder</button>
       </form>
-      <div class="sent-state" id="sent-state" hidden><span>🫡</span><h2>okay, scheduled</h2><p id="sent-copy"></p><button class="create-space" id="another-reminder" type="button">another one</button></div>
+      <div class="sent-state" id="sent-state" hidden><span>🫡</span><h2>all set</h2><p id="sent-copy"></p><button class="create-space" id="another-reminder" type="button">another one</button></div>
     </section>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="reminders.js"></script><script type="module" src="live-notes.js"></script>

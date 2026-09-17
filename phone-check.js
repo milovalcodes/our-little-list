@@ -11,12 +11,12 @@ applyViewerTheme(viewer);
 document.querySelector('.back-to-side').href=`${viewer}.html`;
 data=await createDataLayer({collectionName:'presence',onItems(){},onAuth(user){
   setupAuthUI(data,user);
-  setStatus('sync',Boolean(user),user?'the cloud is doing its little job':'sign in so both phones see the same nonsense');
+  setStatus('sync',Boolean(user),user?'connected to our shared space.':'sign in so both phones can see the same things.');
   if(user)void data.set(viewer,{person:viewer,lastSeenAt:Date.now(),page:'phone-check'});
 }});
 if(data.mode==='local'){
   setupAuthUI(data,{local:true});
-  setStatus('sync',false,'local-only mode. this phone is freelancing.');
+  setStatus('sync',false,'only saved on this phone.');
 }
 
 function setStatus(name,okay,text){
@@ -27,17 +27,21 @@ function setStatus(name,okay,text){
   $(`${name}-status`).textContent=text;
 }
 function setFailure(name,text){const symbol=$(`${name}-symbol`);symbol.textContent='×';symbol.classList.remove('okay','warning');symbol.classList.add('failed');$(`${name}-status`).textContent=text;}
-function help(name,text,tone=''){const el=$(`${name}-help`);el.textContent=tone==='fail'?`probable fix: ${text}`:text;el.hidden=false;el.classList.toggle('fail',tone==='fail');}
+function help(name,text,tone=''){const el=$(`${name}-help`);el.textContent=tone==='fail'?`try this: ${text}`:text;el.hidden=false;el.classList.toggle('fail',tone==='fail');}
 function clearHelp(name){$(`${name}-help`).hidden=true;}
 function busy(button,on,label='thinking…'){if(on){button.dataset.normalText=button.textContent;button.textContent=label;button.disabled=true;button.classList.add('is-busy');}else{button.textContent=button.dataset.normalText||button.textContent;button.disabled=false;button.classList.remove('is-busy');delete button.dataset.normalText;}}
+async function locationPermission(){
+  try{return (await navigator.permissions?.query({name:'geolocation'}))?.state||'unknown';}
+  catch(_){return 'unknown';}
+}
 
 function renderOnline(){
-  if(navigator.onLine){setStatus('online',true,'connected. huge day for technology.');clearHelp('online');}
-  else{setFailure('online','offline. the cloud has been dismissed.');help('online','turn on Wi-Fi or mobile data, then tap recheck.','fail');}
+  if(navigator.onLine){setStatus('online',true,'online and ready.');clearHelp('online');}
+  else{setFailure('online','offline right now.');help('online','turn on Wi-Fi or mobile data, then tap recheck.','fail');}
 }
 function renderInstall(){
   const installed=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-  setStatus('install',installed,installed?'living on the home screen rent-free.':isApple?'not installed yet. Safari requires the sacred share-button ritual.':'not installed yet. Android might give us a real button.');
+  setStatus('install',installed,installed?'on your home screen.':isApple?'not on your Home Screen yet.':'not on your home screen yet.');
   $('ask-install').textContent=installed?'already installed ✓':'install / show me';
   $('ask-install').disabled=installed;
 }
@@ -50,9 +54,9 @@ function renderNotifications(){
   }
   const permission=Notification.permission;
   if(permission==='denied'){
-    setFailure('notification','blocked in phone settings. the browser remembers grudges.');
+    setFailure('notification','blocked in phone settings.');
     help('notification',isApple?'iPhone Settings → Notifications → this web app → Allow Notifications.':'Chrome Settings → Site settings → Notifications → allow this site.','fail');
-  }else{setStatus('notification',permission==='granted',permission==='granted'?'allowed. the tiny noise department is operational.':'not asked yet. it has manners, apparently.');if(permission==='granted')clearHelp('notification');}
+  }else{setStatus('notification',permission==='granted',permission==='granted'?'allowed. popups are ready.':'ready to ask your phone.');if(permission==='granted')clearHelp('notification');}
   button.textContent=permission==='granted'?'test popup':permission==='denied'?'how to unblock':'ask phone';
 }
 async function renderLocation(){
@@ -62,7 +66,7 @@ async function renderLocation(){
     const result=await navigator.permissions?.query({name:'geolocation'});
     if(result){
       if(result.state==='denied'){setFailure('location','blocked in phone settings.');help('location',isApple?'iPhone Settings → Privacy & Security → Location Services → this web app → While Using.':'tap the site-settings icon near the address bar → Permissions → Location → Allow.','fail');}
-      else{setStatus('location',result.state==='granted',result.state==='granted'?'allowed. geography survives.':'ready to ask your phone.');if(result.state==='granted')clearHelp('location');}
+      else{setStatus('location',result.state==='granted',result.state==='granted'?'allowed. location is ready.':'ready to ask your phone.');if(result.state==='granted')clearHelp('location');}
       button.textContent=result.state==='granted'?'test location':result.state==='denied'?'how to unblock':'ask phone';
       result.onchange=renderLocation;
     }else setStatus('location',false,'tap below and the phone should ask.');
@@ -74,28 +78,28 @@ function renderBackground(){
   $('background-symbol').textContent=active?'✓':'◐';
   $('background-symbol').classList.toggle('okay',active);
   $('background-symbol').classList.toggle('warning',!active);
-  $('background-status').textContent=active?'staying awake while this page is visible. tiny victory.':supported?'we can keep the screen awake while this page is open. lock-screen magic is still forbidden.':'this browser cannot keep a website awake. opening it again catches everything up.';
+  $('background-status').textContent=active?'staying awake while this page is visible.':supported?'we can keep the screen awake while this page is open.':'this browser cannot stay awake in the background. opening it again catches everything up.';
   $('ask-background').textContent=active?'let it nap again':supported?'keep page awake':'what can i do?';
 }
 
 $('check-sync').addEventListener('click',async()=>{
   clearHelp('sync');busy($('check-sync'),true,'testing…');
-  try{await data.set(viewer,{person:viewer,lastSeenAt:Date.now(),page:'phone-check'});setStatus('sync',data.mode!=='local',data.mode==='local'?'still local-only. this phone remains an independent nation.':'sync works. the cloud accepted our paperwork.');help('sync','saved a tiny test ping. nothing dramatic happened, which is ideal.');}
-  catch(_){setFailure('sync','sync test failed. the cloud is being weird.');help('sync','check the internet, then try again.','fail');}
+  try{await data.set(viewer,{person:viewer,lastSeenAt:Date.now(),page:'phone-check'});setStatus('sync',data.mode!=='local',data.mode==='local'?'still only on this phone.':'sync works. both phones can share updates.');help('sync','test update saved.');}
+  catch(_){setFailure('sync','sync test failed.');help('sync','check the internet, then try again.','fail');}
   busy($('check-sync'),false);
 });
 $('check-online').addEventListener('click',async()=>{
   clearHelp('online');busy($('check-online'),true,'checking…');
-  try{const response=await fetch(`./service-worker.js?internet-check=${Date.now()}`,{cache:'no-store'});setStatus('online',response.ok,response.ok?'connected. huge day for technology.':'connected, but the website answered strangely.');help('online',response.ok?'the website answered. certified online.':'try refreshing in a second.');}
-  catch(_){setFailure('online','offline. the cloud has been dismissed.');help('online','turn Wi-Fi or mobile data on, then bully this button again.','fail');}
+  try{const response=await fetch(`./service-worker.js?internet-check=${Date.now()}`,{cache:'no-store'});setStatus('online',response.ok,response.ok?'online and ready.':'connected, but the website answered strangely.');help('online',response.ok?'the website answered.':'try refreshing in a second.');}
+  catch(_){setFailure('online','offline right now.');help('online','turn Wi-Fi or mobile data on, then try again.','fail');}
   busy($('check-online'),false);
 });
 $('ask-install').addEventListener('click',async()=>{
   clearHelp('install');busy($('ask-install'),true,'asking phone…');
   const result=await window.requestLittleInstall?.();
-  if(result?.status==='accepted'||result?.status==='installed')help('install','done. it lives here now. no rent.');
-  else if(result?.status==='dismissed')help('install','you said not now. emotionally devastating, but reversible.');
-  else if(isApple)help('install','tap Safari’s Share button, then “Add to Home Screen,” then “Add.” Apple has assigned us a small quest.');
+  if(result?.status==='accepted'||result?.status==='installed')help('install','done. it is on this phone now.');
+  else if(result?.status==='dismissed')help('install','not added yet. you can try again whenever.');
+  else if(isApple)help('install','tap Safari’s Share button, then “Add to Home Screen,” then “Add.”');
   else help('install','open the browser menu (⋮), then tap “Add to Home screen” or “Install app.”');
   busy($('ask-install'),false);renderInstall();
 });
@@ -107,15 +111,32 @@ $('ask-notifications').addEventListener('click',async()=>{
   renderNotifications();
   if(Notification.permission==='granted'){
     window.playLittleTwinkle?.();
-    try{const registration=await navigator.serviceWorker.ready;await registration.showNotification('permission acquired 🫡',{body:'the tiny noise department lives.',icon:'./sun-moon-personalized.png',badge:'./sun-moon-personalized.png',data:{url:`./phone-check.html?as=${viewer}`}});help('notification','test sent. if nothing appeared, check Focus / Do Not Disturb too.');}
-    catch(_){help('notification','permission is allowed. this browser declined the test popup, because of course it did.');}
+    try{const registration=await navigator.serviceWorker.ready;await registration.showNotification('notifications are ready ♡',{body:'this is the test popup.',icon:'./sun-moon-personalized.png',badge:'./sun-moon-personalized.png',data:{url:`./phone-check.html?as=${viewer}`}});help('notification','test sent. if nothing appeared, check Focus / Do Not Disturb too.');}
+    catch(_){help('notification','permission is allowed, but the test popup did not appear.');}
   }
 });
 $('ask-location').addEventListener('click',()=>{
   clearHelp('location');
   if(!navigator.geolocation)return;
   busy($('ask-location'),true,'asking phone…');
-  navigator.geolocation.getCurrentPosition(()=>{busy($('ask-location'),false);setStatus('location',true,'allowed. geography survives.');$('ask-location').textContent='test location';help('location','location works. the test coordinates were discarded immediately.');},problem=>{busy($('ask-location'),false);renderLocation();help('location',problem.code===1?(isApple?'iPhone Settings → Privacy & Security → Location Services → this web app or Safari → While Using.':'tap the site icon by the address bar → Permissions → Location → Allow while using.'):problem.code===3?'try somewhere with a better view of the sky.':'check Location Services and try again.','fail');},{timeout:12000,maximumAge:0,enableHighAccuracy:false});
+  navigator.geolocation.getCurrentPosition(
+    ()=>{
+      busy($('ask-location'),false);setStatus('location',true,'allowed and working.');$('ask-location').textContent='test again';
+      help('location','GPS answered. the test coordinates were discarded immediately.');
+    },
+    async problem=>{
+      busy($('ask-location'),false);
+      const permission=await locationPermission();
+      if(problem.code===1||permission==='denied'){
+        setFailure('location','location was not allowed.');$('ask-location').textContent='how to unblock';
+        help('location',isApple?'iPhone Settings → Privacy & Security → Location Services → this web app or Safari → While Using.':'tap the site icon by the address bar → Permissions → Location → Allow while using.','fail');
+        return;
+      }
+      setStatus('location',true,'permission allowed. GPS needs another try.');$('ask-location').textContent='retry GPS';
+      help('location',problem.code===3?'permission is on. wait a moment or move near a window, then retry — nothing was saved.':'permission is on. make sure the phone’s main Location switch is enabled, then retry.');
+    },
+    {timeout:8000,maximumAge:600000,enableHighAccuracy:false}
+  );
 });
 $('ask-background').addEventListener('click',async()=>{
   clearHelp('background');

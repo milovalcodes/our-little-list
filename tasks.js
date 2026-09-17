@@ -68,7 +68,7 @@ byId('shared-task-form').addEventListener('submit', async event => {
     const recipient=viewer==='her'?'him':'her';
     void data.push(recipient,{title:tab==='grocery'?'grocery list update 🛒':'new thing on the list ✓',body:title,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'item',title,from:viewer,url:'tasks'}}).catch(()=>{});
     event.target.reset();toast(tab==='grocery'?'on the grocery list 🛒':'added 🫡');
-  }catch(_){showFailure('the list refused to accept that. dramatic.','check the internet, then tap try again. Your text is still here.');}
+  }catch(_){showFailure('that did not get added.','check the internet, then try again. Your text is still here.');}
   finally{setButtonBusy(submit,false);}
 });
 
@@ -102,9 +102,9 @@ function render() {
   byId('empty-state').hidden = list.length > 0;
 
   const labels = {
-    tasks: ['the stuff', 'To do', '✦', 'Nothing here', 'suspicious.'],
-    grocery: ['food, probably', 'Groceries', '🛒', 'No groceries', 'we will remember eventually.'],
-    done: ['the evidence', 'Done', '✨', 'Nothing done yet', 'okay then.']
+    tasks: ['our things', 'To do', '✦', 'Nothing here', 'all clear for now.'],
+    grocery: ['to pick up', 'Groceries', '🛒', 'No groceries', 'nothing on the list yet.'],
+    done: ['finished', 'Done', '✨', 'Nothing done yet', 'we’ll get there.']
   }[tab];
 
   byId('list-kicker').textContent = labels[0];

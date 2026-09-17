@@ -8,14 +8,14 @@ async function boot(viewer){
   const other=viewer==='her'?'him':'her';const shown=new Set();const known={items:null,reminders:null};let layer;let started=false;
   layer=await createDataLayer({collectionName:'notes',onAuth(user){if(user)start();},onItems(notes){
     const incoming=notes.filter(note=>note.recipient===viewer&&!note.read&&!shown.has(`note-${note.id}`)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];
-    if(!incoming)return;shown.add(`note-${incoming.id}`);announce({icon:{heart:'💛',sun:'☀️',moon:'🌙',star:'✦'}[incoming.mood]||'💌',label:'your person says',body:incoming.body,url:`notes.html?from=${viewer}`});window.setTimeout(()=>void layer.update(incoming.id,{read:true,readAt:Date.now()}).catch(()=>{}),1200);
+    if(!incoming)return;shown.add(`note-${incoming.id}`);announce({icon:{heart:'💛',sun:'☀️',moon:'🌙',star:'✦'}[incoming.mood]||'💌',label:'a note for you',body:incoming.body,url:`notes.html?from=${viewer}`});window.setTimeout(()=>void layer.update(incoming.id,{read:true,readAt:Date.now()}).catch(()=>{}),1200);
   }});
   if(layer.mode==='local')start();
 
   function start(){
     if(started)return;started=true;
-    layer.listenTo('items',items=>watchFresh('items',items,item=>item.addedBy===other,{icon:'✓',label:'the shared brain cell moved',body:item=>item.title,url:`tasks.html?as=${viewer}`}));
-    layer.listenTo('reminders',items=>watchFresh('reminders',items,item=>item.recipient===viewer,{icon:'⏰',label:'future you has paperwork',body:item=>item.title,url:`reminders.html?from=${viewer}`}));
+    layer.listenTo('items',items=>watchFresh('items',items,item=>item.addedBy===other,{icon:'✓',label:'new on our list',body:item=>item.title,url:`tasks.html?as=${viewer}`}));
+    layer.listenTo('reminders',items=>watchFresh('reminders',items,item=>item.recipient===viewer,{icon:'⏰',label:'a reminder for you',body:item=>item.title,url:`reminders.html?from=${viewer}`}));
     if(!document.body.dataset.viewer){touchPresence();window.setInterval(touchPresence,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)touchPresence();});}
   }
   function touchPresence(){void layer.setTo('presence',viewer,{person:viewer,lastSeenAt:Date.now(),page:document.body.dataset.app||'somewhere'}).catch(()=>{});}

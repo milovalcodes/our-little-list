@@ -13,14 +13,14 @@ document.querySelectorAll('#time-choices .choice').forEach(button=>button.addEve
 $('reminder-form').addEventListener('submit',async event=>{
   event.preventDefault();const chosen=makeDate();if(!chosen){toast('pick a day and time first');return;}
   const title=$('reminder-title').value.trim();const dueAt=chosen.getTime();
-  const submit=$('reminder-submit');setButtonBusy(submit,true,'warning future us…');
+  const submit=$('reminder-submit');setButtonBusy(submit,true,'setting it…');
   try{
     const record=await data.add({sender,recipient,from:sender,to:recipient,title,note:$('reminder-note').value.trim(),scheduledAt:chosen.toISOString(),dueAt,delivered:false,createdAt:Date.now()});
     const reminderId=record?.id||`web-${Date.now()}`;
     const push=await data.push(recipient,{title:'new reminder ⏰',body:`${title} · ${friendly(chosen)}`,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'reminder-created',title,dueAt,from:sender,reminderId,url:'reminders'}}).catch(()=>({sent:false}));
     if(push.sent)void data.push(recipient,{data:{kind:'schedule-reminder',title,dueAt,from:sender,reminderId},contentAvailable:true,priority:'high'}).catch(()=>{});
-    event.target.hidden=true;$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`future ${recipient} has been warned. ominous.`:`saved to the receipts. future ${recipient} can no longer claim ignorance.`;
-  }catch(_){showFailure('the reminder fell out of the timeline.','check the internet and try again. Everything you typed is still here.');}
+    event.target.hidden=true;$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`${recipient} will get it ${friendly(chosen)}.`:`saved here for ${friendly(chosen)}.`;
+  }catch(_){showFailure('the reminder did not save.','check the internet and try again. Everything you typed is still here.');}
   finally{if(!event.target.hidden)setButtonBusy(submit,false);}
 });
 $('another-reminder').addEventListener('click',()=>{location.reload();});

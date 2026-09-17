@@ -48,9 +48,9 @@ export async function createDataLayer({ onItems, onAuth, collectionName = 'items
       if(code.includes('invalid-credential'))return 'That email or password does not match.';
       if(code.includes('email-already-in-use'))return 'Account already exists. Sign in instead.';
       if(code.includes('weak-password'))return 'Password needs 6 characters.';
-      if(code.includes('network'))return 'The phone cannot reach the login cloud.';
-      if(code.includes('too-many-requests'))return 'Too many tries. The login needs a little nap.';
-      return 'Nope. Try again.';
+      if(code.includes('network'))return 'This phone cannot connect right now.';
+      if(code.includes('too-many-requests'))return 'Too many tries. Wait a minute and try again.';
+      return 'That did not work. Try again.';
     }
   };
 
@@ -101,9 +101,9 @@ function createLocalLayer(onItems,onAuth,collectionName){
 
 function announceReady(){document.dispatchEvent(new CustomEvent('littlelist:dataready'));}
 function announceError(problem,stage){
-  const code=String(problem?.code||'');let message='the cloud tripped over its own shoelaces.';let solution='check the internet, then try again.';
+  const code=String(problem?.code||'');let message='we could not load the shared stuff.';let solution='check the internet, then try again.';
   if(code.includes('permission-denied')){message='the shared stuff is locked right now.';solution='sign out and back in. If it keeps happening, the database rules need attention.';}
-  else if(code.includes('unauthenticated')){message='the login expired while nobody was looking.';solution='reload and sign in again.';}
-  else if(code.includes('unavailable')||code.includes('network')||stage==='start'){message='the shared brain cell cannot reach the cloud.';solution='turn on Wi-Fi or mobile data, then try again.';}
+  else if(code.includes('unauthenticated')){message='the login expired.';solution='reload and sign in again.';}
+  else if(code.includes('unavailable')||code.includes('network')||stage==='start'){message='we cannot reach the shared space.';solution='turn on Wi-Fi or mobile data, then try again.';}
   document.dispatchEvent(new CustomEvent('littlelist:dataerror',{detail:{message,solution,code}}));
 }

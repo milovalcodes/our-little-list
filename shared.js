@@ -17,11 +17,11 @@ const syncBackedPage=Boolean(document.getElementById('auth-root'));
 let thinkingTimeout=null;
 
 window.littleLoading={
-  show(message='consulting the shared brain cell…'){
+  show(message='getting our stuff…'){
     let screen=document.querySelector('.thinking-screen');
     if(!screen){
       screen=document.createElement('aside');screen.className='thinking-screen';screen.setAttribute('role','status');screen.setAttribute('aria-live','polite');
-      screen.innerHTML='<div class="celestial-loader" aria-hidden="true"><span>☀</span><i>✦</i><span>☾</span></div><strong></strong><p>this should only take a tiny second.</p>';
+      screen.innerHTML='<div class="celestial-loader" aria-hidden="true"><span>☀</span><i>✦</i><span>☾</span></div><strong></strong><p>one tiny second.</p>';
       document.body.append(screen);
     }
     screen.querySelector('strong').textContent=message;screen.classList.remove('is-leaving');
@@ -32,19 +32,19 @@ window.littleLoading={
   }
 };
 
-window.showLittleFailure=(message='something went sideways.',solution='check the internet and try again.',options={})=>{
+window.showLittleFailure=(message='something did not work.',solution='check the internet and try again.',options={})=>{
   const {reload=false}=options;
   document.querySelector('.global-failure')?.remove();
   const card=document.createElement('aside');card.className='global-failure';card.setAttribute('role','alert');
   card.innerHTML='<span class="failure-icon">×</span><div><strong></strong><p></p></div><button type="button"></button><button class="failure-close" type="button" aria-label="Close">×</button>';
-  card.querySelector('strong').textContent=message;card.querySelector('p').textContent=`probable fix: ${solution}`;
+  card.querySelector('strong').textContent=message;card.querySelector('p').textContent=`try this: ${solution}`;
   const action=card.querySelector('button:not(.failure-close)');action.textContent=reload?'try again':'got it';action.addEventListener('click',()=>reload?location.reload():card.remove());card.querySelector('.failure-close').addEventListener('click',()=>card.remove());
   document.body.append(card);
 };
 
 if(syncBackedPage){
   window.littleLoading.show();
-  thinkingTimeout=window.setTimeout(()=>{window.littleLoading.hide();window.showLittleFailure('the shared brain cell is taking suspiciously long.','check the internet, then tap try again.',{reload:true});},10000);
+  thinkingTimeout=window.setTimeout(()=>{window.littleLoading.hide();window.showLittleFailure('this is taking a while.','check the internet, then tap try again.',{reload:true});},10000);
 }
 document.addEventListener('littlelist:dataready',()=>window.littleLoading.hide());
 document.addEventListener('littlelist:dataerror',event=>{
@@ -60,9 +60,9 @@ const isApplePhone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isAndroidPhone = /Android/i.test(navigator.userAgent);
 
 if (installButton && standalone) installButton.hidden = true;
-if (installHint && standalone) installHint.textContent = 'already installed. huge for us.';
+if (installHint && standalone) installHint.textContent = 'already on this phone ♡';
 if (installHint && !standalone && isApplePhone) installHint.textContent = 'On iPhone: Share → Add to Home Screen';
-if (installHint && !standalone && isAndroidPhone) installHint.textContent = 'tap the button. ignore Android being dramatic.';
+if (installHint && !standalone && isAndroidPhone) installHint.textContent = 'tap the button to add it to your phone.';
 
 window.addEventListener('beforeinstallprompt', event => {
   event.preventDefault();
@@ -73,8 +73,8 @@ window.addEventListener('beforeinstallprompt', event => {
 window.requestLittleInstall = async () => {
   if (standalone) return { status:'installed' };
   if (!pendingInstallPrompt) {
-    if (installHint && isApplePhone) installHint.textContent = 'Safari share button → Add to Home Screen. the sacred sequence.';
-    else if (installHint) installHint.textContent = 'browser menu → Add to Home screen. Android made it a side quest.';
+    if (installHint && isApplePhone) installHint.textContent = 'Safari Share → Add to Home Screen.';
+    else if (installHint) installHint.textContent = 'browser menu → Add to Home screen.';
     return { status:isApplePhone?'manual-ios':'manual' };
   }
   await pendingInstallPrompt.prompt();

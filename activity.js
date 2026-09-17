@@ -14,7 +14,7 @@ $('mark-seen').addEventListener('click',markSeen);
 function start(){
   if(started)return;started=true;
   ['notes','reminders','presence'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));
-  void data.setTo('presence',viewer,{person:viewer,lastSeenAt:Date.now(),page:'receipts'}).catch(()=>{});
+  void data.setTo('presence',viewer,{person:viewer,lastSeenAt:Date.now(),page:'activity'}).catch(()=>{});
   window.setTimeout(markIncomingRead,900);
   window.setInterval(renderPresence,30000);
 }
@@ -23,10 +23,10 @@ function events(){
   const all=[];
   buckets.items.forEach(item=>{
     all.push({id:`item-${item.id}`,at:Number(item.createdAt)||0,icon:item.type==='grocery'?'🛒':'✓',who:item.addedBy,kind:item.type==='grocery'?'put on groceries':'put on the list',text:item.title});
-    if(item.done&&item.doneAt)all.push({id:`done-${item.id}`,at:Number(item.doneAt),icon:'🫡',who:item.doneBy,kind:'defeated a task',text:item.title});
+    if(item.done&&item.doneAt)all.push({id:`done-${item.id}`,at:Number(item.doneAt),icon:'🫡',who:item.doneBy,kind:'finished',text:item.title});
   });
-  buckets.notes.forEach(note=>all.push({id:`note-${note.id}`,at:Number(note.createdAt)||0,icon:{heart:'💛',sun:'☀️',moon:'🌙',star:'✦'}[note.mood]||'💌',who:note.sender,kind:'launched a tiny note',text:note.body,status:note.recipient===viewer?(note.read?'seen by you':'new for you'):(note.read?'seen':'delivered to the website')}));
-  buckets.reminders.forEach(reminder=>all.push({id:`reminder-${reminder.id}`,at:Number(reminder.createdAt)||0,icon:'⏰',who:reminder.sender,kind:'weaponized the future',text:reminder.title,status:reminder.dueAt?`for ${friendlyDate(reminder.dueAt)}`:''}));
+  buckets.notes.forEach(note=>all.push({id:`note-${note.id}`,at:Number(note.createdAt)||0,icon:{heart:'💛',sun:'☀️',moon:'🌙',star:'✦'}[note.mood]||'💌',who:note.sender,kind:'sent a note',text:note.body,status:note.recipient===viewer?(note.read?'seen by you':'new for you'):(note.read?'seen':'delivered')}));
+  buckets.reminders.forEach(reminder=>all.push({id:`reminder-${reminder.id}`,at:Number(reminder.createdAt)||0,icon:'⏰',who:reminder.sender,kind:'set a reminder',text:reminder.title,status:reminder.dueAt?`for ${friendlyDate(reminder.dueAt)}`:''}));
   return all.filter(item=>item.at).sort((a,b)=>b.at-a.at).slice(0,80);
 }
 
@@ -39,11 +39,11 @@ function render(){
 function renderPresence(){
   const person=buckets.presence.find(item=>item.id===other||item.person===other);const age=person?Date.now()-Number(person.lastSeenAt||0):Infinity;const here=age<120000;
   $('presence-dot').classList.toggle('online',here);
-  $('presence-kicker').textContent=here?'currently haunting the website':'last known internet activity';
-  $('presence-status').textContent=here?`${other} is here right now`:(person?`${other} was here ${timeAgo(person.lastSeenAt)}`:`${other} has left no digital footprints yet`);
+  $('presence-kicker').textContent=here?'here now':'last seen';
+  $('presence-status').textContent=here?`${other} is here right now`:(person?`${other} was here ${timeAgo(person.lastSeenAt)}`:`no visit from ${other} yet`);
 }
 
-function markSeen(){localStorage.setItem(seenKey,String(Date.now()));$('mark-seen').textContent='seen. legally.';window.setTimeout(()=>$('mark-seen').textContent='mark all seen',1600);markIncomingRead();}
+function markSeen(){localStorage.setItem(seenKey,String(Date.now()));$('mark-seen').textContent='all seen ✓';window.setTimeout(()=>$('mark-seen').textContent='mark all seen',1600);markIncomingRead();}
 function markIncomingRead(){
   buckets.notes.filter(note=>note.recipient===viewer&&!note.read).forEach(note=>void data.updateIn('notes',note.id,{read:true,readAt:Date.now()}).catch(()=>{}));
   buckets.reminders.filter(reminder=>reminder.recipient===viewer&&!reminder.seenAt).forEach(reminder=>void data.updateIn('reminders',reminder.id,{seenAt:Date.now()}).catch(()=>{}));

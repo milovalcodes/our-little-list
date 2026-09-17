@@ -13,12 +13,12 @@ function updatePreview(){const mood=document.querySelector('[name="mood"]:checke
 
 $('note-form').addEventListener('submit',async event=>{
   event.preventDefault();const mood=document.querySelector('[name="mood"]:checked').value;const body=$('note-body').value.trim();
-  const submit=$('note-submit');setButtonBusy(submit,true,'launching…');
+  const submit=$('note-submit');setButtonBusy(submit,true,'sending…');
   try{
     await data.add({sender,recipient,from:sender,to:recipient,body,message:body,mood,read:false,createdAt:Date.now()});
     const push=await data.push(recipient,{title:sender==='her'?'the sun says ☀️':'the moon says 🌙',body,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'note',body,from:sender,url:'notes'}}).catch(()=>({sent:false}));
-    event.target.hidden=true;document.querySelector('.note-starters').hidden=true;document.querySelectorAll('.note-maker>.maker-question').forEach(el=>el.hidden=true);$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`launched the ${moods[mood]}. technology has peaked.`:`saved to the receipts. the popup will ambush ${recipient} next time the site wakes up.`;
-  }catch(_){showFailure('the note got stuck in the launch tube.','check the internet and try sending it again. The note is still here.');}
+    event.target.hidden=true;document.querySelector('.note-starters').hidden=true;document.querySelectorAll('.note-maker>.maker-question').forEach(el=>el.hidden=true);$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`sent with a ${moods[mood]}`:`saved here. ${recipient} will see it next time the site opens.`;
+  }catch(_){showFailure('the note did not send.','check the internet and try again. The note is still here.');}
   finally{if(!event.target.hidden)setButtonBusy(submit,false);}
 });
 $('another-note').addEventListener('click',()=>location.reload());

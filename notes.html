@@ -5,23 +5,23 @@
   <title>A Tiny Note</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page" data-app="notes">
-  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">tiny note machine ✦</span></header>
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">little notes ✦</span></header>
   <main class="app-shell feature-shell note-shell">
-    <section class="feature-hero note-hero"><span class="feature-icon">💌</span><p class="tiny-kicker">low-effort affection</p><h1 id="note-heading">Send a note</h1><p>a popup. not a conversation.</p></section>
+    <section class="feature-hero note-hero"><span class="feature-icon">💌</span><p class="tiny-kicker">just because</p><h1 id="note-heading">Send a note</h1><p>something small for their screen.</p></section>
     <section class="note-maker">
-      <p class="maker-question">steal one</p>
+      <p class="maker-question">pick one</p>
       <div class="note-starters" id="note-starters">
         <button type="button">thinking of u ♡</button><button type="button">proud of u</button><button type="button">miss ur face</button><button type="button">drink water pls</button><button type="button">hurry up i miss u</button>
       </div>
-      <p class="maker-question">or type</p>
+      <p class="maker-question">or write your own</p>
       <form id="note-form">
         <textarea id="note-body" required maxlength="180" placeholder="say a thing"></textarea>
         <div class="note-mood-row"><span>add</span><label><input type="radio" name="mood" value="heart" checked> 💛</label><label><input type="radio" name="mood" value="sun"> ☀️</label><label><input type="radio" name="mood" value="moon"> 🌙</label><label><input type="radio" name="mood" value="star"> ✦</label></div>
         <button class="primary-action roomy-action" id="note-submit" type="submit">send it</button>
       </form>
-      <div class="sent-state" id="sent-state" hidden><span>💌</span><h2>sent lol</h2><p id="sent-copy">it’s on the way.</p><button class="create-space" id="another-note" type="button">send another</button></div>
+      <div class="sent-state" id="sent-state" hidden><span>💌</span><h2>sent ♡</h2><p id="sent-copy">it’s on the way.</p><button class="create-space" id="another-note" type="button">send another</button></div>
     </section>
-    <section class="note-preview"><p class="tiny-kicker">preview</p><div class="phone-popup"><span id="preview-mood">💛</span><div><strong>from your person</strong><p id="preview-body">thinking of u ♡</p></div></div></section>
+    <section class="note-preview"><p class="tiny-kicker">preview</p><div class="phone-popup"><span id="preview-mood">💛</span><div><strong>a little note</strong><p id="preview-body">thinking of u ♡</p></div></div></section>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="notes.js"></script><script type="module" src="live-notes.js"></script>
 </body>

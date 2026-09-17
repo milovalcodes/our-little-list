@@ -61,7 +61,7 @@ function startSharing() {
   error.textContent = '';
   if (!navigator.geolocation) {
     error.textContent = 'location is not available on this phone.';
-    showFailure('this phone has misplaced geography.','try another browser or check that Location Services are on.');
+    showFailure('location is not available on this phone.','try another browser or check that Location Services are on.');
     return;
   }
   if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
@@ -71,7 +71,7 @@ function startSharing() {
   }
 
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-  setButtonBusy(byId('share-location'),true,'asking the sky…');shareUntil = Date.now() + minutes * 60 * 1000;
+  setButtonBusy(byId('share-location'),true,'finding you…');shareUntil = Date.now() + minutes * 60 * 1000;
   setSharingState(true);
   expiryTimer = window.setTimeout(() => stopSharing(false, true), minutes * 60 * 1000);
   watchId = navigator.geolocation.watchPosition(savePosition, handleLocationError, {
@@ -128,7 +128,7 @@ async function stopSharing(removeSpot, expired = false) {
       toast('location off 👍');
     } catch (_) {
       byId('location-error').textContent = 'could not remove it. try again.';
-      showFailure('the old location did not leave politely.','check the internet and tap “hide my last spot” again.');
+      showFailure('the last location did not clear.','check the internet and tap “hide my last spot” again.');
     }
   } else if (expired) {
     toast('live sharing ended. last spot kept.');
@@ -164,7 +164,7 @@ function renderLocations() {
   renderLastKnown(known, active);
 
   if (!knownHer && !knownHim) {
-    setProximity('Need both locations', 'one of you has to go first.', 'distance report');
+    setProximity('Need both spots', 'one of us has to share first.', 'distance');
     byId('map-updated').textContent = 'Nobody here yet';
     return;
   }
@@ -191,17 +191,17 @@ function renderLocations() {
 
   const lastPerson = knownHer ? 'her' : 'him';
   const lastPoint = knownHer || knownHim;
-  setProximity('One old pin', `${lastPerson === viewer ? 'your' : 'their'} last spot was ${timeAgo(lastPoint.updatedAt)}.`, 'last known');
+  setProximity('One last spot', `${lastPerson === viewer ? 'your' : 'their'} last spot was ${timeAgo(lastPoint.updatedAt)}.`, 'last known');
 }
 
 function renderLiveDistance(her, him) {
   const meters = distanceMeters(her, him);
   const friendly = friendlyDistance(meters);
-  if (meters <= 75) setProximity('together at last :)', `${friendly} apart. basically touching.`, 'made it');
+  if (meters <= 75) setProximity('together at last :)', `${friendly} apart.`, 'made it');
   else if (meters <= 500) setProximity('almost together', `${friendly} to go.`, 'so close');
   else if (meters <= 2000) setProximity('getting closer', `${friendly} between you.`, 'on the way');
   else if (meters <= 10000) setProximity('on the way', `${friendly} between you.`, 'getting there');
-  else setProximity('far away. rude.', `${friendly} between you.`, 'tragic');
+  else setProximity('still a bit away', `${friendly} between you.`, 'for now');
 }
 
 function renderLastKnown(known, active) {
@@ -226,7 +226,7 @@ function setProximity(message, detail, label) {
 
 function initializeMap() {
   if (!window.L) {
-    byId('couple-map').innerHTML = '<p class="map-fallback">map failed. classic.</p>';
+    byId('couple-map').innerHTML = '<p class="map-fallback">the map did not load.</p>';
     return;
   }
   const mapNode = byId('couple-map');
