@@ -1,5 +1,5 @@
 import { createDataLayer } from './firebase-data.js';
-import { setupAuthUI, applyViewerTheme, escapeHtml, toast, dateKey } from './ui-helpers.js';
+import { setupAuthUI, applyViewerTheme, escapeHtml, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
 
 const params = new URLSearchParams(window.location.search);
 const viewer = params.get('as') === 'him' ? 'him' : 'her';
@@ -50,6 +50,7 @@ document.querySelectorAll('.tab').forEach(button => {
 
 byId('shared-task-form').addEventListener('submit', async event => {
   event.preventDefault();
+  const submit=event.submitter||event.currentTarget.querySelector('[type="submit"]');
   const title = byId('shared-task-title').value.trim();
   if (!title) return;
 
@@ -61,25 +62,14 @@ byId('shared-task-form').addEventListener('submit', async event => {
     due = dateKey(chosenDate);
   }
 
-  await data.add({
-    title,
-    type: tab === 'grocery' ? 'grocery' : 'task',
-    due,
-    addedBy: viewer,
-    done: false,
-    createdAt: Date.now()
-  });
-  const recipient = viewer === 'her' ? 'him' : 'her';
-  void data.push(recipient,{
-    title:tab==='grocery'?'grocery list update 🛒':'new thing on the list ✓',
-    body:title,
-    sound:'twinkle.wav',
-    channelId:'our-twinkles',
-    priority:'high',
-    data:{kind:'item',title,from:viewer,url:'tasks'}
-  }).catch(()=>{});
-  event.target.reset();
-  toast(tab === 'grocery' ? 'on the grocery list 🛒' : 'added 🫡');
+  setButtonBusy(submit,true,'…');
+  try{
+    await data.add({title,type:tab==='grocery'?'grocery':'task',due,addedBy:viewer,done:false,createdAt:Date.now()});
+    const recipient=viewer==='her'?'him':'her';
+    void data.push(recipient,{title:tab==='grocery'?'grocery list update 🛒':'new thing on the list ✓',body:title,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'item',title,from:viewer,url:'tasks'}}).catch(()=>{});
+    event.target.reset();toast(tab==='grocery'?'on the grocery list 🛒':'added 🫡');
+  }catch(_){showFailure('the list refused to accept that. dramatic.','check the internet, then tap try again. Your text is still here.');}
+  finally{setButtonBusy(submit,false);}
 });
 
 byId('task-list').addEventListener('click', async event => {
@@ -89,10 +79,11 @@ byId('task-list').addEventListener('click', async event => {
   const item = items.find(entry => entry.id === row?.dataset.id);
   if (!item) return;
 
-  if (button.dataset.action === 'toggle') {
-    await data.update(item.id, { done: !item.done, doneBy: !item.done ? viewer : '', doneAt: !item.done ? Date.now() : 0 });
-  }
-  if (button.dataset.action === 'delete') await data.remove(item.id);
+  button.disabled=true;button.classList.add('is-busy');
+  try{
+    if(button.dataset.action==='toggle')await data.update(item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
+    if(button.dataset.action==='delete')await data.remove(item.id);
+  }catch(_){showFailure('the list edit did not stick.','check the internet and try the button again.');button.disabled=false;button.classList.remove('is-busy');}
 });
 
 function visibleItems() {

@@ -13,6 +13,45 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   });
 }
 
+const syncBackedPage=Boolean(document.getElementById('auth-root'));
+let thinkingTimeout=null;
+
+window.littleLoading={
+  show(message='consulting the shared brain cell…'){
+    let screen=document.querySelector('.thinking-screen');
+    if(!screen){
+      screen=document.createElement('aside');screen.className='thinking-screen';screen.setAttribute('role','status');screen.setAttribute('aria-live','polite');
+      screen.innerHTML='<div class="celestial-loader" aria-hidden="true"><span>☀</span><i>✦</i><span>☾</span></div><strong></strong><p>this should only take a tiny second.</p>';
+      document.body.append(screen);
+    }
+    screen.querySelector('strong').textContent=message;screen.classList.remove('is-leaving');
+  },
+  hide(){
+    const screen=document.querySelector('.thinking-screen');if(!screen)return;
+    screen.classList.add('is-leaving');window.setTimeout(()=>screen.remove(),260);window.clearTimeout(thinkingTimeout);
+  }
+};
+
+window.showLittleFailure=(message='something went sideways.',solution='check the internet and try again.',options={})=>{
+  const {reload=false}=options;
+  document.querySelector('.global-failure')?.remove();
+  const card=document.createElement('aside');card.className='global-failure';card.setAttribute('role','alert');
+  card.innerHTML='<span class="failure-icon">×</span><div><strong></strong><p></p></div><button type="button"></button><button class="failure-close" type="button" aria-label="Close">×</button>';
+  card.querySelector('strong').textContent=message;card.querySelector('p').textContent=`probable fix: ${solution}`;
+  const action=card.querySelector('button:not(.failure-close)');action.textContent=reload?'try again':'got it';action.addEventListener('click',()=>reload?location.reload():card.remove());card.querySelector('.failure-close').addEventListener('click',()=>card.remove());
+  document.body.append(card);
+};
+
+if(syncBackedPage){
+  window.littleLoading.show();
+  thinkingTimeout=window.setTimeout(()=>{window.littleLoading.hide();window.showLittleFailure('the shared brain cell is taking suspiciously long.','check the internet, then tap try again.',{reload:true});},10000);
+}
+document.addEventListener('littlelist:dataready',()=>window.littleLoading.hide());
+document.addEventListener('littlelist:dataerror',event=>{
+  window.littleLoading.hide();
+  const detail=event.detail||{};window.showLittleFailure(detail.message,detail.solution,{reload:true});
+});
+
 let pendingInstallPrompt = null;
 const installButton = document.getElementById('install-app');
 const installHint = document.getElementById('install-hint');

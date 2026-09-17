@@ -1,5 +1,5 @@
 import { createDataLayer } from './firebase-data.js';
-import { setupAuthUI, applyViewerTheme, toast, dateKey } from './ui-helpers.js';
+import { setupAuthUI, applyViewerTheme, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
 
 const params=new URLSearchParams(location.search);const sender=params.get('from')==='him'?'him':'her';const recipient=sender==='her'?'him':'her';
 applyViewerTheme(sender);document.querySelector('.back-to-side').href=`${sender}.html`;document.getElementById('reminder-heading').textContent=`Remind ${recipient}`;
@@ -13,11 +13,15 @@ document.querySelectorAll('#time-choices .choice').forEach(button=>button.addEve
 $('reminder-form').addEventListener('submit',async event=>{
   event.preventDefault();const chosen=makeDate();if(!chosen){toast('pick a day and time first');return;}
   const title=$('reminder-title').value.trim();const dueAt=chosen.getTime();
-  const record=await data.add({sender,recipient,from:sender,to:recipient,title,note:$('reminder-note').value.trim(),scheduledAt:chosen.toISOString(),dueAt,delivered:false,createdAt:Date.now()});
-  const reminderId=record?.id||`web-${Date.now()}`;
-  const push=await data.push(recipient,{title:'new reminder ⏰',body:`${title} · ${friendly(chosen)}`,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'reminder-created',title,dueAt,from:sender,reminderId,url:'reminders'}}).catch(()=>({sent:false}));
-  if(push.sent)void data.push(recipient,{data:{kind:'schedule-reminder',title,dueAt,from:sender,reminderId},contentAvailable:true,priority:'high'}).catch(()=>{});
-  event.target.hidden=true;$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`future ${recipient} has been warned. ominous.`:`saved to the receipts. future ${recipient} can no longer claim ignorance.`;
+  const submit=$('reminder-submit');setButtonBusy(submit,true,'warning future us…');
+  try{
+    const record=await data.add({sender,recipient,from:sender,to:recipient,title,note:$('reminder-note').value.trim(),scheduledAt:chosen.toISOString(),dueAt,delivered:false,createdAt:Date.now()});
+    const reminderId=record?.id||`web-${Date.now()}`;
+    const push=await data.push(recipient,{title:'new reminder ⏰',body:`${title} · ${friendly(chosen)}`,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'reminder-created',title,dueAt,from:sender,reminderId,url:'reminders'}}).catch(()=>({sent:false}));
+    if(push.sent)void data.push(recipient,{data:{kind:'schedule-reminder',title,dueAt,from:sender,reminderId},contentAvailable:true,priority:'high'}).catch(()=>{});
+    event.target.hidden=true;$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`future ${recipient} has been warned. ominous.`:`saved to the receipts. future ${recipient} can no longer claim ignorance.`;
+  }catch(_){showFailure('the reminder fell out of the timeline.','check the internet and try again. Everything you typed is still here.');}
+  finally{if(!event.target.hidden)setButtonBusy(submit,false);}
 });
 $('another-reminder').addEventListener('click',()=>{location.reload();});
 

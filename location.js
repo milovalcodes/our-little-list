@@ -1,5 +1,5 @@
 import { createDataLayer } from './firebase-data.js';
-import { setupAuthUI, applyViewerTheme, toast } from './ui-helpers.js';
+import { setupAuthUI, applyViewerTheme, toast, setButtonBusy, showFailure } from './ui-helpers.js';
 
 const params = new URLSearchParams(window.location.search);
 const viewer = params.get('as') === 'him' ? 'him' : 'her';
@@ -61,15 +61,17 @@ function startSharing() {
   error.textContent = '';
   if (!navigator.geolocation) {
     error.textContent = 'location is not available on this phone.';
+    showFailure('this phone has misplaced geography.','try another browser or check that Location Services are on.');
     return;
   }
   if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
     error.textContent = 'open the live website to share location.';
+    showFailure('location only works on the secure live website.','open the GitHub Pages link, then try again.');
     return;
   }
 
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-  shareUntil = Date.now() + minutes * 60 * 1000;
+  setButtonBusy(byId('share-location'),true,'asking the sky…');shareUntil = Date.now() + minutes * 60 * 1000;
   setSharingState(true);
   expiryTimer = window.setTimeout(() => stopSharing(false, true), minutes * 60 * 1000);
   watchId = navigator.geolocation.watchPosition(savePosition, handleLocationError, {
@@ -93,6 +95,7 @@ async function savePosition(position) {
   try {
     await data.set(viewer, point);
     byId('location-error').textContent = '';
+    setButtonBusy(byId('share-location'),false);
   } catch (_) {
     byId('location-error').textContent = 'location update failed. trying again.';
   }
@@ -105,6 +108,9 @@ function handleLocationError(problem) {
     3: 'that took too long. try again.'
   };
   byId('location-error').textContent = messages[problem.code] || 'location sharing failed.';
+  setButtonBusy(byId('share-location'),false);
+  const solution=problem.code===1?'open the phone checker and allow Location, then try again.':problem.code===3?'move near a window or outside, then try again.':'check Location Services and the internet, then try again.';
+  showFailure(messages[problem.code]||'location sharing failed.',solution);
   stopSharing(false);
 }
 
@@ -122,6 +128,7 @@ async function stopSharing(removeSpot, expired = false) {
       toast('location off 👍');
     } catch (_) {
       byId('location-error').textContent = 'could not remove it. try again.';
+      showFailure('the old location did not leave politely.','check the internet and tap “hide my last spot” again.');
     }
   } else if (expired) {
     toast('live sharing ended. last spot kept.');
