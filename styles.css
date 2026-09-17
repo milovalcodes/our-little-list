@@ -108,6 +108,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .quick-form label > span,.grocery-composer label > span { display:block; margin:0 0 7px 3px; font-size:.82rem; font-weight:800; color:var(--page-muted); }
 .wide-field { grid-column:1/-1; }
 input,select { width:100%; min-height:50px; border:2px solid color-mix(in srgb,var(--accent-soft) 70%,white); background:rgba(255,255,255,.82); color:var(--page-text); border-radius:15px; padding:11px 13px; outline:none; font-size:16px; }
+select option { color:#3f3440; background:#fffaf5; }
 input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent); }
 .primary-action { grid-column:1/-1; min-height:52px; border:0; border-radius:999px; background:linear-gradient(135deg,var(--accent),var(--accent-deep)); color:white; font-weight:850; cursor:pointer; box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 27%,transparent); transition:transform .16s ease,filter .16s ease,box-shadow .16s ease; }
 .primary-action:hover { filter:saturate(1.06) brightness(1.03); transform:translateY(-1px); }
