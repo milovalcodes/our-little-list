@@ -1,8 +1,9 @@
 import { createDataLayer } from './firebase-data.js';
 import { setupAuthUI, applyViewerTheme, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
+import { personName } from './profile-store.js';
 
 const params=new URLSearchParams(location.search);const sender=params.get('from')==='him'?'him':'her';const recipient=sender==='her'?'him':'her';
-applyViewerTheme(sender);document.querySelector('.back-to-side').href=`${sender}.html`;document.getElementById('reminder-heading').textContent=`Remind ${recipient}`;
+applyViewerTheme(sender);document.querySelector('.back-to-side').href=`${sender}.html`;setNames();
 const $=id=>document.getElementById(id);let day='today';let time='09:00';let data;
 data=await createDataLayer({collectionName:'reminders',onItems(){},onAuth(user){setupAuthUI(data,user);}});if(data.mode==='local')setupAuthUI(data,{local:true});
 
@@ -19,7 +20,7 @@ $('reminder-form').addEventListener('submit',async event=>{
     const reminderId=record?.id||`web-${Date.now()}`;
     const push=await data.push(recipient,{title:'new reminder ⏰',body:`${title} · ${friendly(chosen)}`,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'reminder-created',title,dueAt,from:sender,reminderId,url:'reminders'}}).catch(()=>({sent:false}));
     if(push.sent)void data.push(recipient,{data:{kind:'schedule-reminder',title,dueAt,from:sender,reminderId},contentAvailable:true,priority:'high'}).catch(()=>{});
-    event.target.hidden=true;$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`${recipient} will get it ${friendly(chosen)}.`:`saved here for ${friendly(chosen)}.`;
+    event.target.hidden=true;$('sent-state').hidden=false;$('sent-copy').textContent=push.sent?`${personName(recipient)} will get it ${friendly(chosen)}.`:`saved here for ${friendly(chosen)}.`;
   }catch(_){showFailure('the reminder did not save.','check the internet and try again. Everything you typed is still here.');}
   finally{if(!event.target.hidden)setButtonBusy(submit,false);}
 });
@@ -33,3 +34,5 @@ function makeDate(){
   const chosenTime=time==='custom'?$('custom-time').value:time;if(!chosenTime)return null;const[h,min]=chosenTime.split(':').map(Number);value.setHours(h,min,0,0);return value;
 }
 function friendly(value){return new Intl.DateTimeFormat(undefined,{weekday:'long',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(value);}
+function setNames(){document.getElementById('reminder-heading').textContent=`Remind ${personName(recipient)}`;}
+window.addEventListener('littlelist:profile',setNames);

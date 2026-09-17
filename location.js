@@ -1,5 +1,6 @@
 import { createDataLayer } from './firebase-data.js';
 import { setupAuthUI, applyViewerTheme, toast, setButtonBusy, showFailure } from './ui-helpers.js';
+import { personName } from './profile-store.js';
 
 const params = new URLSearchParams(window.location.search);
 const viewer = params.get('as') === 'him' ? 'him' : 'her';
@@ -185,7 +186,7 @@ function renderLocations() {
 
   if (her || him) {
     const present = her ? 'her' : 'him';
-    setProximity(`Waiting for ${present === 'her' ? 'him' : 'her'}…`, `${present === viewer ? 'you are' : 'they are'} on the map.`, 'one down, one to go');
+    setProximity(`Waiting for ${personName(present === 'her' ? 'him' : 'her')}…`, `${present === viewer ? 'you are' : `${personName(present)} is`} on the map.`, 'one down, one to go');
     return;
   }
 
@@ -207,15 +208,15 @@ function renderLiveDistance(her, him) {
 function renderLastKnown(known, active) {
   byId('last-known-row').innerHTML = ['her', 'him'].map(person => {
     const point = known.find(item => item.id === person);
-    if (!point) return `<span class="known-pill missing"><b>${person}</b> no spot yet</span>`;
+    if (!point) return `<span class="known-pill missing"><b>${personName(person)}</b> no spot yet</span>`;
     const live = active.some(item => item.id === person);
-    return `<span class="known-pill ${live ? 'live' : 'last'}"><b>${person}</b> ${live ? 'live now' : `last seen ${timeAgo(point.updatedAt)}`}</span>`;
+    return `<span class="known-pill ${live ? 'live' : 'last'}"><b>${personName(person)}</b> ${live ? 'live now' : `last seen ${timeAgo(point.updatedAt)}`}</span>`;
   }).join('');
 }
 
 function lastSeenSummary(point, now) {
   const live = Number(point.shareUntil) > now;
-  return `${point.id} ${live ? 'live now' : `last seen ${timeAgo(point.updatedAt)}`}`;
+  return `${personName(point.id)} ${live ? 'live now' : `last seen ${timeAgo(point.updatedAt)}`}`;
 }
 
 function setProximity(message, detail, label) {
@@ -281,13 +282,13 @@ function updateMap(known, now) {
     const isLive = Number(point.shareUntil) > now;
     const icon = markerIcon(person, isLive);
     if (!markers[person]) {
-      markers[person] = window.L.marker([point.lat, point.lng], { icon }).addTo(map).bindTooltip(isLive ? person : `${person} · last known`, { direction: 'top', offset: [0, -42] });
+      markers[person] = window.L.marker([point.lat, point.lng], { icon }).addTo(map).bindTooltip(isLive ? personName(person) : `${personName(person)} · last known`, { direction: 'top', offset: [0, -42] });
       markers[person].isLive = isLive;
     } else {
       markers[person].setLatLng([point.lat, point.lng]);
       if (markers[person].isLive !== isLive) {
         markers[person].setIcon(icon);
-        markers[person].setTooltipContent(isLive ? person : `${person} · last known`);
+        markers[person].setTooltipContent(isLive ? personName(person) : `${personName(person)} · last known`);
         markers[person].isLive = isLive;
       }
     }
@@ -363,3 +364,4 @@ function timeAgo(timestamp) {
 }
 
 window.setInterval(renderLocations, 15000);
+window.addEventListener('littlelist:profile',renderLocations);

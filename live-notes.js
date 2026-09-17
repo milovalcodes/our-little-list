@@ -1,11 +1,12 @@
 import { createDataLayer } from './firebase-data.js';
+import { personName } from './profile-store.js';
 
 const params=new URLSearchParams(location.search);
 const viewer=document.body.dataset.viewer||params.get('as')||params.get('from');
 if(viewer==='her'||viewer==='him')boot(viewer);
 
 async function boot(viewer){
-  const other=viewer==='her'?'him':'her';const shown=new Set();const known={items:null,reminders:null};let layer;let started=false;
+  const other=viewer==='her'?'him':'her';const shown=new Set();const known={items:null,reminders:null,dates:null};let knownStatusAt=null;let layer;let started=false;
   layer=await createDataLayer({collectionName:'notes',onAuth(user){if(user)start();},onItems(notes){
     const incoming=notes.filter(note=>note.recipient===viewer&&!note.read&&!shown.has(`note-${note.id}`)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];
     if(!incoming)return;shown.add(`note-${incoming.id}`);announce({icon:{heart:'💛',sun:'☀️',moon:'🌙',star:'✦'}[incoming.mood]||'💌',label:'a note for you',body:incoming.body,url:`notes.html?from=${viewer}`});window.setTimeout(()=>void layer.update(incoming.id,{read:true,readAt:Date.now()}).catch(()=>{}),1200);
@@ -16,12 +17,20 @@ async function boot(viewer){
     if(started)return;started=true;
     layer.listenTo('items',items=>watchFresh('items',items,item=>item.addedBy===other,{icon:'✓',label:'new on our list',body:item=>item.title,url:`tasks.html?as=${viewer}`}));
     layer.listenTo('reminders',items=>watchFresh('reminders',items,item=>item.recipient===viewer,{icon:'⏰',label:'a reminder for you',body:item=>item.title,url:`reminders.html?from=${viewer}`}));
+    layer.listenTo('dates',items=>watchFresh('dates',items,item=>item.addedBy===other,{icon:'✦',label:'new date idea',body:item=>item.title,url:`dates.html?as=${viewer}`}));
+    layer.listenTo('statuses',items=>watchStatus(items));
     if(!document.body.dataset.viewer){touchPresence();window.setInterval(touchPresence,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)touchPresence();});}
   }
   function touchPresence(){void layer.setTo('presence',viewer,{person:viewer,lastSeenAt:Date.now(),page:document.body.dataset.app||'somewhere'}).catch(()=>{});}
   function watchFresh(name,items,isIncoming,copy){
     const ids=new Set(items.map(item=>item.id));if(known[name]===null){known[name]=ids;return;}
     items.filter(item=>!known[name].has(item.id)&&isIncoming(item)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,1).forEach(item=>announce({icon:copy.icon,label:copy.label,body:copy.body(item),url:copy.url}));known[name]=ids;
+  }
+  function watchStatus(items){
+    const item=items.find(entry=>entry.id===other||entry.person===other);const updatedAt=Number(item?.updatedAt)||0;
+    if(knownStatusAt===null){knownStatusAt=updatedAt;return;}
+    if(updatedAt>knownStatusAt)announce({icon:item.emoji||'●',label:`${personName(other)} updated their status`,body:item.text?`${item.category||'currently'} ${item.text}`:(item.state||'updated'),url:`status.html?as=${viewer}`});
+    knownStatusAt=Math.max(knownStatusAt,updatedAt);
   }
 }
 

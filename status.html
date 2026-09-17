@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <title>Our Status</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+</head>
+<body class="profile-page" data-app="status">
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">our status ●</span></header>
+  <main class="app-shell feature-shell status-shell">
+    <section class="feature-hero status-hero"><span class="feature-icon">●</span><p class="tiny-kicker">current nonsense</p><h1>Right now</h1><p>a tiny update. no whole conversation required.</p></section>
+
+    <section class="status-pair" id="status-pair" aria-live="polite"></section>
+
+    <section class="composer-card status-editor">
+      <div class="composer-heading"><div><p class="tiny-kicker">your turn</p><h2>Set your status</h2></div><span class="status-edit-spark">✦</span></div>
+      <form id="status-form">
+        <fieldset class="status-fieldset"><legend>availability</legend>
+          <div class="status-choices">
+            <button class="status-choice active" data-state="online" type="button"><i></i> around</button>
+            <button class="status-choice" data-state="away" type="button"><i></i> afk-ish</button>
+            <button class="status-choice" data-state="dnd" type="button"><i></i> busy</button>
+            <button class="status-choice" data-state="invisible" type="button"><i></i> lurking</button>
+          </div>
+        </fieldset>
+
+        <div class="status-custom-grid">
+          <label><span>what kind of update?</span><select id="status-category">
+            <option value="listening to">listening to</option><option value="watching">watching</option><option value="craving">craving</option><option value="thinking about">thinking about</option><option value="feeling">feeling</option><option value="custom">write my own label</option>
+          </select></label>
+          <label id="custom-category-wrap" hidden><span>your label</span><input id="status-custom-category" maxlength="28" placeholder="currently obsessed with"></label>
+        </div>
+        <label><span>the actual status</span><input id="status-text" maxlength="90" placeholder="a song, movie, snack, thought…"></label>
+        <div class="status-emoji-row" aria-label="Pick an emoji">
+          <button class="status-emoji active" data-emoji="🎧" type="button">🎧</button><button class="status-emoji" data-emoji="🍿" type="button">🍿</button><button class="status-emoji" data-emoji="🍜" type="button">🍜</button><button class="status-emoji" data-emoji="🫠" type="button">🫠</button><button class="status-emoji" data-emoji="💛" type="button">💛</button><button class="status-emoji" data-emoji="✦" type="button">✦</button>
+        </div>
+        <label><span>clear the custom bit</span><select id="status-expiry"><option value="0">when I clear it</option><option value="1">in 1 hour</option><option value="4">in 4 hours</option><option value="today">tonight</option></select></label>
+        <div class="status-actions"><button class="primary-action" id="status-save" type="submit">save status</button><button class="create-space" id="status-clear" type="button">clear custom bit</button></div>
+      </form>
+    </section>
+  </main>
+  <div id="auth-root"></div><script src="shared.js"></script><script src="profile-lock.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="status.js"></script><script type="module" src="live-notes.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <title>Our Names · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+</head>
+<body class="profile-page profile-setup-page">
+  <header class="app-topbar"><a class="home-link" href="index.html">← back</a><span class="mini-brand">our profiles ☀︎☾</span></header>
+  <main class="app-shell feature-shell profile-setup-shell">
+    <section class="feature-hero profile-setup-hero"><span class="feature-icon">♡</span><p class="tiny-kicker">the two of us</p><h1>Our names</h1><p>these show up around the whole site.</p></section>
+    <section class="profile-setup-card">
+      <form id="profile-form">
+        <div class="profile-name-grid">
+          <label class="profile-name-person sun-name-person"><img src="sun-profile.png" alt=""><span>Sun name</span><input id="sun-name" required maxlength="24" autocomplete="off" placeholder="her name"></label>
+          <label class="profile-name-person moon-name-person"><img src="moon-profile.png" alt=""><span>Moon name</span><input id="moon-name" required maxlength="24" autocomplete="off" placeholder="his name"></label>
+        </div>
+        <p class="profile-save-note" id="profile-save-note" role="status"></p>
+        <button class="primary-action roomy-action" id="profile-save" type="submit">save our names</button>
+      </form>
+    </section>
+  </main>
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profiles.js"></script>
+</body>
+</html>

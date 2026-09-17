@@ -8,10 +8,10 @@
   <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page him-theme" data-viewer="him">
-  <header class="app-topbar"><a class="home-link" href="index.html">← choose a side</a><a class="switch-link" href="her.html">switch to her sun ☀️</a></header>
+  <header class="app-topbar"><a class="home-link" href="index.html">← choose a side</a><a class="switch-link" href="her.html" data-person-name="sun" data-person-fallback="her" data-person-format="switch to {name} ☀️">switch to her ☀️</a></header>
   <main class="app-shell dashboard-shell">
     <section class="hello-card dashboard-hello">
-      <div><p class="tiny-kicker">moon side</p><h1>hi nerd 🌙</h1><p class="hello-note">what do we need to remember today?</p></div>
+      <div><p class="tiny-kicker">moon side</p><h1 data-person-name="moon" data-person-fallback="nerd" data-person-format="hi {name} 🌙">hi nerd 🌙</h1><p class="hello-note">what do we need to remember today?</p></div>
       <div class="mood-sticker profile-portrait"><img src="moon-profile.png" alt="The moon half of us"></div>
     </section>
 
@@ -21,28 +21,36 @@
         <p>things to do and things to buy.</p><span class="tool-go">open →</span>
       </a>
       <a class="tool-card reminder-tool" href="reminders.html?from=him">
-        <span class="tool-icon">⏰</span><span class="tool-kicker">for later</span><strong>Remind her</strong>
-        <p>send her a little nudge.</p><span class="tool-go">set it →</span>
+        <span class="tool-icon">⏰</span><span class="tool-kicker">for later</span><strong data-person-name="sun" data-person-fallback="her" data-person-format="Remind {name}">Remind her</strong>
+        <p data-person-name="sun" data-person-fallback="her" data-person-format="send {name} a little nudge.">send her a little nudge.</p><span class="tool-go">set it →</span>
       </a>
       <a class="tool-card note-tool" href="notes.html?from=him">
-        <span class="tool-icon">💌</span><span class="tool-kicker">a little hi</span><strong>Send her a note</strong>
-        <p>leave something sweet on her screen.</p><span class="tool-go">write one →</span>
+        <span class="tool-icon">💌</span><span class="tool-kicker">a little hi</span><strong data-person-name="sun" data-person-fallback="her" data-person-format="Send {name} a note">Send her a note</strong>
+        <p>put a tiny thing on her screen.</p><span class="tool-go">write one →</span>
       </a>
       <a class="tool-card location-tool" href="location.html?as=him">
-        <span class="tool-icon">📍</span><span class="tool-kicker">where’s the sun</span><strong>Find her</strong>
+        <span class="tool-icon">📍</span><span class="tool-kicker">where’s the sun</span><strong data-person-name="sun" data-person-fallback="her" data-person-format="Find {name}">Find her</strong>
         <p>share your spot and see how close she is.</p><span class="tool-go">map →</span>
       </a>
       <a class="tool-card activity-tool" href="activity.html?as=him">
         <span class="tool-icon">✦</span><span class="activity-badge" id="activity-badge" hidden>0</span><span class="tool-kicker">lately</span><strong>What’s new</strong>
-        <p>see what she added.</p><span class="tool-go">look →</span>
+        <p data-person-name="sun" data-person-fallback="she" data-person-format="see what {name} added.">see what she added.</p><span class="tool-go">look →</span>
+      </a>
+      <a class="tool-card presence-tool" href="status.html?as=him">
+        <span class="tool-icon">●</span><span class="tool-kicker">right now</span><strong>Our status</strong>
+        <p>music, food, mood, whatever.</p><span class="tool-go">update →</span>
+      </a>
+      <a class="tool-card date-tool" href="dates.html?as=him">
+        <span class="tool-icon">✦</span><span class="tool-kicker">for later</span><strong>Date ideas</strong>
+        <p>save somewhere we wanna go.</p><span class="tool-go">add one →</span>
       </a>
       <a class="tool-card status-tool" href="phone-check.html?as=him">
         <span class="tool-icon">📡</span><span class="tool-kicker">phone check</span><strong>Everything on?</strong>
         <p>check the basics on both phones.</p><span class="tool-go">check →</span>
       </a>
     </section>
-    <p class="dashboard-foot">all here when you need it ♡</p>
+    <p class="dashboard-foot">all here when you need it ♡ · <a href="profiles.html">our names</a></p>
   </main>
-  <div id="auth-root"></div><script src="shared.js"></script><script src="profile-lock.js"></script><script type="module" src="dashboard.js"></script><script type="module" src="live-notes.js"></script>
+  <div id="auth-root"></div><script src="shared.js"></script><script src="profile-lock.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="dashboard.js"></script><script type="module" src="live-notes.js"></script>
 </body>
 </html>

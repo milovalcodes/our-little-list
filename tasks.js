@@ -1,5 +1,6 @@
 import { createDataLayer } from './firebase-data.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
+import { personName } from './profile-store.js';
 
 const params = new URLSearchParams(window.location.search);
 const viewer = params.get('as') === 'him' ? 'him' : 'her';
@@ -120,14 +121,16 @@ function taskMarkup(item) {
   const doneClass = item.done ? ' done' : '';
   const check = item.done ? '✓' : '';
   const due = item.due ? prettyDue(item.due) : 'whenever';
-  const addedBy = item.addedBy === 'her' ? 'her' : 'him';
-  const finished = item.doneBy ? `<span>done by ${escapeHtml(item.doneBy)}</span>` : '';
+  const addedBy = personName(item.addedBy === 'her' ? 'her' : 'him');
+  const finished = item.doneBy ? `<span>done by ${escapeHtml(personName(item.doneBy))}</span>` : '';
   return `<li class="task-row${doneClass}" data-id="${escapeHtml(item.id)}">
     <button class="task-check" data-action="toggle" aria-label="Mark ${escapeHtml(item.title)} ${item.done ? 'not done' : 'done'}">${check}</button>
     <div><span class="task-title">${escapeHtml(item.title)}</span><div class="task-meta"><span>${due}</span><span>added by ${addedBy}</span>${finished}</div></div>
     <button class="delete-task" data-action="delete" aria-label="Delete ${escapeHtml(item.title)}">×</button>
   </li>`;
 }
+
+window.addEventListener('littlelist:profile',render);
 
 function prettyDue(value) {
   const today = dateKey(new Date());

@@ -29,7 +29,7 @@
       <a class="person-door her-door" href="her.html">
         <span class="door-sparkle profile-mini"><img src="sun-profile.png" alt=""></span>
         <span class="door-small">her side</span>
-        <strong>For Her</strong>
+        <strong data-person-name="sun" data-person-fallback="Her" data-person-format="For {name}">For Her</strong>
         <span class="door-note">the sunny side</span>
         <span class="door-arrow">come in&nbsp; →</span>
       </a>
@@ -37,7 +37,7 @@
       <a class="person-door him-door" href="him.html">
         <span class="door-sparkle profile-mini"><img src="moon-profile.png" alt=""></span>
         <span class="door-small">his side</span>
-        <strong>For Him</strong>
+        <strong data-person-name="moon" data-person-fallback="Him" data-person-format="For {name}">For Him</strong>
         <span class="door-note">the moon side</span>
         <span class="door-arrow">come in&nbsp; →</span>
       </a>
@@ -49,8 +49,9 @@
       </div>
       <p id="install-hint">keep our little place close.</p>
     </div>
+    <p class="landing-profile-link"><a href="profiles.html">set up our names ✎</a></p>
     <p class="landing-foot">just ours ☀︎☾</p>
   </main>
-  <script src="shared.js"></script>
+  <script src="shared.js"></script><script type="module" src="profile-names.js"></script>
 </body>
 </html>

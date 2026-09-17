@@ -41,13 +41,13 @@
       <div class="map-heading"><div><p class="tiny-kicker">our spots</p><h2>Map</h2></div><div class="map-heading-actions"><span class="map-updated" id="map-updated">Nobody here yet</span><button class="recenter-map" id="recenter-map" type="button" hidden>back to us</button></div></div>
       <div id="couple-map" aria-label="Map showing both shared locations"></div>
       <div class="last-known-row" id="last-known-row" aria-live="polite"></div>
-      <div class="map-legend"><span><i class="her-dot"></i> her</span><span><i class="him-dot"></i> him</span></div>
+      <div class="map-legend"><span><i class="her-dot"></i> <b data-person-name="sun" data-person-fallback="her">her</b></span><span><i class="him-dot"></i> <b data-person-name="moon" data-person-fallback="him">him</b></span></div>
     </section>
 
     <p class="location-fine-print">keep this page open for live updates.</p>
   </main>
   <div id="auth-root"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
-  <script src="shared.js"></script><script src="profile-lock.js"></script><script type="module" src="location.js"></script><script type="module" src="live-notes.js"></script>
+  <script src="shared.js"></script><script src="profile-lock.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="location.js"></script><script type="module" src="live-notes.js"></script>
 </body>
 </html>
