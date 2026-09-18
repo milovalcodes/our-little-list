@@ -34,3 +34,20 @@ jobs:
             if (missing.length) { console.error("precached but missing:", missing); process.exit(1); }
             console.log(`all ${listed.length} precached files exist`);
           '
+
+      - name: household.js and firestore.rules agree
+        run: |
+          node -e '
+            const fs = require("fs");
+            const js = fs.readFileSync("household.js", "utf8");
+            const rules = fs.readFileSync("firestore.rules", "utf8");
+            const ids = [...js.matchAll(/([A-Za-z0-9_]{20,})/g)].map(m => m[1])
+              .filter(v => !v.startsWith("HOUSEHOLD") && !v.startsWith("MEMBERS"));
+            const missing = [...new Set(ids)].filter(id => !rules.includes(id));
+            if (missing.length) {
+              console.error("in household.js but not in firestore.rules:", missing);
+              console.error("the rules would lock that account out of the household.");
+              process.exit(1);
+            }
+            console.log("every id in household.js appears in firestore.rules");
+          '
