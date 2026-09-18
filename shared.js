@@ -52,23 +52,6 @@ document.addEventListener('littlelist:dataerror',event=>{
   const detail=event.detail||{};window.showLittleFailure(detail.message,detail.solution,{reload:true});
 });
 
-// On the front door, offer a one-tap way back to whichever side this phone used
-// last. The installed app always opens on the door picker, which got tedious.
-if (document.body.classList.contains('landing')) {
-  try {
-    const lastSide = localStorage.getItem('our-little-list-last-side');
-    if (lastSide === 'her' || lastSide === 'him') {
-      const resume = document.createElement('p');
-      resume.className = 'landing-resume';
-      const link = document.createElement('a');
-      link.href = `${lastSide}.html`;
-      link.textContent = lastSide === 'her' ? 'back to the sunny side ☀️' : 'back to the moon side 🌙';
-      resume.append(link);
-      document.querySelector('.door-grid')?.after(resume);
-    }
-  } catch (_) { /* storage blocked */ }
-}
-
 let pendingInstallPrompt = null;
 const installButton = document.getElementById('install-app');
 const installHint = document.getElementById('install-hint');

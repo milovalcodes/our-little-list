@@ -1,16 +1,13 @@
-import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
+import { sharedLayer, onAuthChange } from './data-hub.js';
+import { awaitViewer, showNotAMember } from './viewer.js';
 import { setupAuthUI,applyViewerTheme } from './ui-helpers.js';
 import { ensurePushSubscription, pushState } from './push-client.js';
 import { startPresence } from './presence.js';
 
-const params=new URLSearchParams(location.search);
-const viewer=params.get('as')==='him'?'him':'her';
 const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
 const $=id=>document.getElementById(id);
 let data;let wakeLock=null;
 
-applyViewerTheme(viewer);
-document.querySelector('.back-to-side').href=`${viewer}.html`;
 data=await sharedLayer();
 onAuthChange(user=>{
   setupAuthUI(data,user);
@@ -20,10 +17,17 @@ if(data.mode==='local'){
   setupAuthUI(data,{local:true});
   setStatus('sync',false,'only saved on this phone.');
 }
-whenReady(data,()=>{
-  startPresence(data,viewer,'phone-check');
-  void ensurePushSubscription(data,viewer).then(renderNotifications);
-});
+// Your side comes from the account you signed in with, not from a URL anyone
+// could retype. A signed-in account that is not one of the two members stops
+// here rather than guessing which side to show.
+const viewer=await awaitViewer();
+if(!viewer){showNotAMember();await new Promise(()=>{});}
+
+applyViewerTheme(viewer);
+document.querySelector('.back-to-side').href=`${viewer}.html`;
+
+startPresence(data,viewer,'phone-check');
+void ensurePushSubscription(data,viewer).then(renderNotifications);
 
 function setStatus(name,okay,text){
   $(`${name}-symbol`).textContent=okay?'✓':'!';
@@ -150,7 +154,7 @@ $('ask-notifications').addEventListener('click',async()=>{
   await renderNotifications();
   if(Notification.permission==='granted'){
     window.playLittleTwinkle?.();
-    try{const registration=await navigator.serviceWorker.ready;await registration.showNotification('notifications are ready ♡',{body:'this is the test popup.',icon:'./sun-moon-personalized.png',badge:'./sun-moon-personalized.png',data:{url:`./phone-check.html?as=${viewer}`}});help('notification','test sent. if nothing appeared, check Focus / Do Not Disturb too.');}
+    try{const registration=await navigator.serviceWorker.ready;await registration.showNotification('notifications are ready ♡',{body:'this is the test popup.',icon:'./sun-moon-personalized.png',badge:'./sun-moon-personalized.png',data:{url:`./phone-check.html`}});help('notification','test sent. if nothing appeared, check Focus / Do Not Disturb too.');}
     catch(_){help('notification','permission is allowed, but the test popup did not appear.');}
   }
 });

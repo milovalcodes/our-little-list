@@ -1,16 +1,25 @@
-import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
+import { sharedLayer, onAuthChange } from './data-hub.js';
+import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 
-const params=new URLSearchParams(location.search);const viewer=params.get('as')==='him'?'him':'her';const other=viewer==='her'?'him':'her';const $=id=>document.getElementById(id);
+const $=id=>document.getElementById(id);
 const stateLabels={online:'around',away:'afk-ish',dnd:'busy',invisible:'lurking'};
-let statuses=[];let state='online';let emoji='🎧';let data;
-applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
+let statuses=[];let state='online';let emoji='🎧';
 
-data=await sharedLayer();
+const data=await sharedLayer();
 onAuthChange(user=>setupAuthUI(data,user));
 if(data.mode==='local')setupAuthUI(data,{local:true});
-whenReady(data,()=>{data.listenTo('statuses',items=>{statuses=items;render();hydrateEditor();});});
+
+// Your side comes from the account you signed in with, not from a URL anyone
+// could retype. A signed-in account that is not one of the two members stops
+// here rather than guessing which side to show.
+const viewer=await awaitViewer();
+if(!viewer){showNotAMember();await new Promise(()=>{});}
+const other=partnerOf(viewer);
+applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
+
+data.listenTo('statuses',items=>{statuses=items;render();hydrateEditor();});
 
 document.querySelectorAll('.status-choice').forEach(button=>button.addEventListener('click',()=>{
   state=button.dataset.state;document.querySelectorAll('.status-choice').forEach(item=>item.classList.toggle('active',item===button));
@@ -27,7 +36,7 @@ $('status-form').addEventListener('submit',async event=>{
   try{
     await data.setTo('statuses',viewer,{person:viewer,state,text,category,emoji,expiresAt,updatedAt:Date.now()});
     const display=text?`${emoji} ${category} ${text}`:stateLabels[state];
-    void data.notify(other,{title:`${personName(viewer)} updated their status`,body:display,url:`status.html?as=${other}`,kind:'status'});
+    void data.notify(other,{title:`${personName(viewer)} updated their status`,body:display,url:`status.html`,kind:'status'});
     toast('status updated ●');
   }catch(_){showFailure('the status did not save.','check the internet, then try it once more.');}
   finally{setButtonBusy(button,false);}

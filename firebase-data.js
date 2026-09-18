@@ -1,5 +1,6 @@
 import { firebaseConfig } from './firebase-config.js';
 import { OUTBOX } from './push-config.js';
+import { HOUSEHOLD_ID, configured as householdConfigured } from './household.js';
 
 const configured = firebaseConfig?.apiKey && !firebaseConfig.apiKey.startsWith('REPLACE_');
 
@@ -28,12 +29,20 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
     { getFirestore, collection, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc }
   ] = modules;
 
+  // Better a plain sentence than a permission-denied nobody can read.
+  if (!householdConfigured()) {
+    document.dispatchEvent(new CustomEvent('littlelist:dataerror', { detail: {
+      message: 'this copy of the site is not finished being set up.',
+      solution: 'the household id in household.js is still a placeholder.'
+    } }));
+  }
+
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
   try { await setPersistence(auth, browserLocalPersistence); } catch (_) { /* private mode */ }
 
-  const named = name => collection(db, 'households', auth.currentUser.uid, name);
+  const named = name => collection(db, 'households', HOUSEHOLD_ID, name);
   const signedIn = () => Boolean(auth.currentUser);
 
   const layer = {

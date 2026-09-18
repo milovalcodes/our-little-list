@@ -1,11 +1,9 @@
-import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
+import { sharedLayer, onAuthChange } from './data-hub.js';
+import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { timeAgo } from './time-format.js';
 
-const params = new URLSearchParams(location.search);
-const viewer = params.get('as') === 'him' ? 'him' : 'her';
-const other = viewer === 'her' ? 'him' : 'her';
 const $ = id => document.getElementById(id);
 
 // state: open -> on-it | later | cant -> done
@@ -18,19 +16,24 @@ const ANSWERS = {
 let requests = [];
 let urgency = 'soon';
 
-applyViewerTheme(viewer);
-document.querySelector('.back-to-side').href = `${viewer}.html`;
-setNames();
-
 const data = await sharedLayer();
 onAuthChange(user => setupAuthUI(data, user));
 if (data.mode === 'local') setupAuthUI(data, { local: true });
 
-whenReady(data, () => {
-  data.listenTo('help', items => {
-    requests = items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    render();
-  });
+// Your side comes from the account you signed in with, not from a URL anyone
+// could retype. A signed-in account that is not one of the two members stops
+// here rather than guessing which side to show.
+const viewer = await awaitViewer();
+if (!viewer) { showNotAMember(); await new Promise(() => {}); }
+const other = partnerOf(viewer);
+
+applyViewerTheme(viewer);
+document.querySelector('.back-to-side').href = `${viewer}.html`;
+setNames();
+
+data.listenTo('help', items => {
+  requests = items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  render();
 });
 
 document.querySelectorAll('#help-presets button').forEach(button => {
@@ -69,7 +72,7 @@ $('help-form').addEventListener('submit', async event => {
     const delivery = await data.notify(other, {
       title: urgency === 'now' ? `${personName(viewer)} needs a hand, kind of now` : `${personName(viewer)} needs a hand`,
       body: title,
-      url: `help.html?as=${other}`,
+      url: `help.html`,
       kind: 'help'
     });
     event.target.hidden = true;
@@ -100,7 +103,7 @@ $('help-inbox-list').addEventListener('click', async event => {
     await data.notify(request.from, {
       title: `${personName(viewer)}: ${ANSWERS[answer].theirs}`,
       body: request.title,
-      url: `help.html?as=${request.from}`,
+      url: `help.html`,
       kind: 'help-answer'
     });
     toast(ANSWERS[answer].label);

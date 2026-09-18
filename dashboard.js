@@ -1,28 +1,37 @@
-import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
+import { sharedLayer, onAuthChange } from './data-hub.js';
+import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI } from './ui-helpers.js';
 import { startPresence } from './presence.js';
 import { ensurePushSubscription } from './push-client.js';
 
-const viewer = document.body.dataset.viewer;
-const other = viewer === 'her' ? 'him' : 'her';
 const badge = document.getElementById('activity-badge');
 const helpBadge = document.getElementById('help-badge');
-const seenKey = `our-little-list-seen-${viewer}`;
 const buckets = { items: [], notes: [], reminders: [], dates: [], statuses: [], help: [] };
 
 const data = await sharedLayer();
 onAuthChange(user => setupAuthUI(data, user));
 if (data.mode === 'local') setupAuthUI(data, { local: true });
 
-whenReady(data, () => {
-  Object.keys(buckets).forEach(name =>
-    data.listenTo(name, items => { buckets[name] = items; renderBadge(); })
-  );
-  startPresence(data, viewer, 'home');
-  // Keeps this phone's push subscription current. Does nothing until
-  // notifications have actually been allowed.
-  void ensurePushSubscription(data, viewer);
-});
+const viewer = await awaitViewer();
+if (!viewer) { showNotAMember(); await new Promise(() => {}); }
+
+// her.html and him.html are still separate pages, so send you to your own
+// rather than rendering someone else's dashboard around your data.
+if (document.body.dataset.viewer !== viewer) {
+  location.replace(`${viewer}.html`);
+  await new Promise(() => {});
+}
+
+const other = partnerOf(viewer);
+const seenKey = `our-little-list-seen-${viewer}`;
+
+Object.keys(buckets).forEach(name =>
+  data.listenTo(name, items => { buckets[name] = items; renderBadge(); })
+);
+startPresence(data, viewer, 'home');
+// Keeps this phone's push subscription current. Does nothing until
+// notifications have actually been allowed.
+void ensurePushSubscription(data, viewer);
 
 function renderBadge() {
   const since = Number(localStorage.getItem(seenKey) || 0);

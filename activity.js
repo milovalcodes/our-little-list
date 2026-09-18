@@ -1,19 +1,29 @@
-import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
+import { sharedLayer, onAuthChange } from './data-hub.js';
+import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI,applyViewerTheme,escapeHtml,showFailure,toast } from './ui-helpers.js';
 import { startPresence } from './presence.js';
 import { personName } from './profile-store.js';
 import { timeAgo, friendlyDate } from './time-format.js';
 
-const params=new URLSearchParams(location.search);const viewer=params.get('as')==='him'?'him':'her';const other=viewer==='her'?'him':'her';
 const $=id=>document.getElementById(id);const buckets={items:[],notes:[],reminders:[],presence:[],dates:[],statuses:[],help:[]};
-const seenKey=`our-little-list-seen-${viewer}`;const hiddenKey=`our-little-list-hidden-activity-${viewer}-v1`;const hidden=readHidden();let data;let started=false;
-applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
-$('other-face').src=other==='her'?'sun-profile.png':'moon-profile.png';
-
+let data;let started=false;
 data=await sharedLayer();
 onAuthChange(user=>setupAuthUI(data,user));
 if(data.mode==='local')setupAuthUI(data,{local:true});
-whenReady(data,start);
+
+// Your side comes from the account you signed in with, not from a URL anyone
+// could retype. A signed-in account that is not one of the two members stops
+// here rather than guessing which side to show.
+const viewer=await awaitViewer();
+if(!viewer){showNotAMember();await new Promise(()=>{});}
+const other=partnerOf(viewer);
+const seenKey=`our-little-list-seen-${viewer}`;
+const hiddenKey=`our-little-list-hidden-activity-${viewer}-v1`;
+const hidden=readHidden();
+
+applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
+$('other-face').src=other==='her'?'sun-profile.png':'moon-profile.png';
+start();
 $('mark-seen').addEventListener('click',markSeen);
 $('activity-list').addEventListener('click',handleActivityAction);
 

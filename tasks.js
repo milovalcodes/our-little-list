@@ -1,27 +1,30 @@
-import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
+import { sharedLayer, onAuthChange } from './data-hub.js';
+import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 
-const params = new URLSearchParams(window.location.search);
-const viewer = params.get('as') === 'him' ? 'him' : 'her';
 const byId = id => document.getElementById(id);
 let items = [];
 let tab = 'tasks';
 let when = 'whenever';
-let data;
+
+const data = await sharedLayer();
+onAuthChange(user => setupAuthUI(data, user));
+if (data.mode === 'local') setupAuthUI(data, { local: true });
+
+// Your side comes from the account you signed in with, not from a URL anyone
+// could retype. A signed-in account that is not one of the two members stops
+// here rather than guessing which side to show.
+const viewer = await awaitViewer();
+if (!viewer) { showNotAMember(); await new Promise(() => {}); }
+const other = partnerOf(viewer);
 
 applyViewerTheme(viewer);
 document.querySelector('.back-to-side').href = `${viewer}.html`;
 
-data = await sharedLayer();
-onAuthChange(user => setupAuthUI(data, user));
-if (data.mode === 'local') setupAuthUI(data, { local: true });
-
-whenReady(data, () => {
-  data.listenTo('items', nextItems => {
-    items = nextItems;
-    render();
-  });
+data.listenTo('items', nextItems => {
+  items = nextItems;
+  render();
 });
 
 document.querySelectorAll('.soft-chip').forEach(button => {
@@ -64,8 +67,8 @@ byId('shared-task-form').addEventListener('submit', async event => {
   setButtonBusy(submit,true,'…');
   try{
     await data.addTo('items',{title,type:tab==='grocery'?'grocery':'task',due,addedBy:viewer,done:false,createdAt:Date.now()});
-    const recipient=viewer==='her'?'him':'her';
-    void data.notify(recipient,{title:tab==='grocery'?'grocery list update 🛒':'new thing on the list ✓',body:title,url:`tasks.html?as=${recipient}`,kind:'item'});
+    const recipient=other;
+    void data.notify(recipient,{title:tab==='grocery'?'grocery list update 🛒':'new thing on the list ✓',body:title,url:`tasks.html`,kind:'item'});
     event.target.reset();toast(tab==='grocery'?'on the grocery list 🛒':'added 🫡');
   }catch(_){showFailure('that did not get added.','check the internet, then try again. Your text is still here.');}
   finally{setButtonBusy(submit,false);}

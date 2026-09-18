@@ -1,10 +1,9 @@
-import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
+import { sharedLayer, onAuthChange } from './data-hub.js';
+import { awaitViewer, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, toast, setButtonBusy, showFailure, escapeHtml } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { timeAgo, friendlyDuration } from './time-format.js';
 
-const params = new URLSearchParams(window.location.search);
-const viewer = params.get('as') === 'him' ? 'him' : 'her';
 const byId = id => document.getElementById(id);
 
 let minutes = 15;
@@ -21,19 +20,23 @@ let lastFrameSignature = '';
 let mapWasMoved = false;
 let framingMap = false;
 
-applyViewerTheme(viewer);
-document.querySelector('.back-to-side').href = `${viewer}.html`;
-initializeMap();
-
 const data = await sharedLayer();
 onAuthChange(user => setupAuthUI(data, user));
 if (data.mode === 'local') setupAuthUI(data, { local: true });
 
-whenReady(data, () => {
-  data.listenTo('locations', next => {
-    locations = next;
-    renderLocations();
-  });
+// Your side comes from the account you signed in with, not from a URL anyone
+// could retype. A signed-in account that is not one of the two members stops
+// here rather than guessing which side to show.
+const viewer = await awaitViewer();
+if (!viewer) { showNotAMember(); await new Promise(() => {}); }
+
+applyViewerTheme(viewer);
+document.querySelector('.back-to-side').href = `${viewer}.html`;
+initializeMap();
+
+data.listenTo('locations', next => {
+  locations = next;
+  renderLocations();
 });
 
 document.querySelectorAll('.duration-chip').forEach(button => {

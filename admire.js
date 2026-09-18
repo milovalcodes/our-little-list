@@ -1,17 +1,25 @@
-import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
+import { sharedLayer, onAuthChange } from './data-hub.js';
+import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml } from './ui-helpers.js';
 import { cachedProfile } from './profile-store.js';
 import { timeAgo } from './time-format.js';
 
-const params=new URLSearchParams(location.search);const viewer=params.get('as')==='him'?'him':'her';const other=viewer==='her'?'him':'her';const $=id=>document.getElementById(id);
+const $=id=>document.getElementById(id);
 const buckets={notes:[],statuses:[],locations:[],items:[],dates:[],presence:[]};let data;let started=false;let map;let marker;
-applyViewerTheme(viewer);document.body.classList.add(other==='her'?'admiring-sun':'admiring-moon');document.querySelector('.back-to-side').href=`${viewer}.html`;
-setIdentity();initializeMap();
-
 data=await sharedLayer();
 onAuthChange(user=>setupAuthUI(data,user));
 if(data.mode==='local')setupAuthUI(data,{local:true});
-whenReady(data,start);
+
+// Your side comes from the account you signed in with, not from a URL anyone
+// could retype. A signed-in account that is not one of the two members stops
+// here rather than guessing which side to show.
+const viewer=await awaitViewer();
+if(!viewer){showNotAMember();await new Promise(()=>{});}
+const other=partnerOf(viewer);
+
+applyViewerTheme(viewer);document.body.classList.add(other==='her'?'admiring-sun':'admiring-moon');document.querySelector('.back-to-side').href=`${viewer}.html`;
+setIdentity();initializeMap();
+start();
 
 function start(){if(started)return;started=true;['notes','statuses','locations','items','dates','presence'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));window.setInterval(render,30000);}
 

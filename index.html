@@ -21,26 +21,12 @@
     <header class="landing-copy">
       <img class="landing-pair" src="sun-moon-personalized.png" alt="Our sun and moon, wearing their glasses">
       <p class="tiny-kicker">our little corner ☀︎☾</p>
-      <h1>who’s here?</h1>
-      <p>pick your side ♡</p>
+      <h1>hi you</h1>
+      <p>just ours ♡</p>
     </header>
 
-    <section class="door-grid" aria-label="Choose a page">
-      <a class="person-door her-door" href="her.html">
-        <span class="door-sparkle profile-mini"><img src="sun-profile.png" alt=""></span>
-        <span class="door-small">her side</span>
-        <strong data-person-name="sun" data-person-fallback="Her" data-person-format="For {name}">For Her</strong>
-        <span class="door-note">the sunny side</span>
-        <span class="door-arrow">come in&nbsp; →</span>
-      </a>
-
-      <a class="person-door him-door" href="him.html">
-        <span class="door-sparkle profile-mini"><img src="moon-profile.png" alt=""></span>
-        <span class="door-small">his side</span>
-        <strong data-person-name="moon" data-person-fallback="Him" data-person-format="For {name}">For Him</strong>
-        <span class="door-note">the moon side</span>
-        <span class="door-arrow">come in&nbsp; →</span>
-      </a>
+    <section class="entry-state" aria-live="polite">
+      <p id="entry-note">getting you in…</p>
     </section>
 
     <div class="install-corner">
@@ -52,6 +38,7 @@
     <p class="landing-profile-link"><a href="profiles.html">set up our names ✎</a></p>
     <p class="landing-foot">just ours ☀︎☾</p>
   </main>
-  <script src="shared.js"></script><script type="module" src="profile-names.js"></script>
+  <div id="auth-root"></div>
+  <script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="entry.js"></script>
 </body>
 </html>

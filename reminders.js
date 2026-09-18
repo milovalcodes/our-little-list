@@ -1,23 +1,27 @@
 import { sharedLayer, onAuthChange } from './data-hub.js';
+import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, toast, setButtonBusy, showFailure } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { friendlyWhen } from './time-format.js';
 
-const params = new URLSearchParams(location.search);
-const sender = params.get('from') === 'him' ? 'him' : 'her';
-const recipient = sender === 'her' ? 'him' : 'her';
 const $ = id => document.getElementById(id);
 let day = 'today';
 let time = '09:00';
-let data;
+
+const data = await sharedLayer();
+onAuthChange(user => setupAuthUI(data, user));
+if (data.mode === 'local') setupAuthUI(data, { local: true });
+
+// Your side comes from the account you signed in with, not from a URL anyone
+// could retype. A signed-in account that is not one of the two members stops
+// here rather than guessing which side to show.
+const sender = await awaitViewer();
+if (!sender) { showNotAMember(); await new Promise(() => {}); }
+const recipient = partnerOf(sender);
 
 applyViewerTheme(sender);
 document.querySelector('.back-to-side').href = `${sender}.html`;
 setNames();
-
-data = await sharedLayer();
-onAuthChange(user => setupAuthUI(data, user));
-if (data.mode === 'local') setupAuthUI(data, { local: true });
 
 function select(group, button, key) {
   document.querySelectorAll(`#${group} .choice`).forEach(item => item.classList.remove('active'));
@@ -71,13 +75,13 @@ $('reminder-form').addEventListener('submit', async event => {
     await data.notify(recipient, {
       title: 'new reminder ⏰',
       body: `${title} · ${friendlyWhen(dueAt)}`,
-      url: `reminders.html?from=${recipient}`,
+      url: `reminders.html`,
       kind: 'reminder-created'
     });
     const scheduled = await data.notify(recipient, {
       title: `⏰ ${title}`,
       body: note || `from ${personName(sender)}`,
-      url: `reminders.html?from=${recipient}`,
+      url: `reminders.html`,
       kind: 'reminder',
       ref: reminderId,
       sendAt: dueAt

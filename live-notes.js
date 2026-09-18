@@ -1,23 +1,22 @@
 // The little popups that appear while a page is open, plus the twinkle.
 // Background delivery (phone closed) is handled by the push pipeline instead.
 
-import { sharedLayer, whenReady } from './data-hub.js';
+import { sharedLayer } from './data-hub.js';
+import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
 import { startPresence } from './presence.js';
 
-const params = new URLSearchParams(location.search);
-const viewer = document.body.dataset.viewer || params.get('as') || params.get('from');
-
-if (viewer === 'her' || viewer === 'him') boot(viewer);
+const signedInSide = await awaitViewer();
+if (signedInSide) boot(signedInSide);
 
 async function boot(viewer) {
-  const other = viewer === 'her' ? 'him' : 'her';
+  const other = partnerOf(viewer);
   const seen = { notes: null, items: null, reminders: null, dates: null, help: null };
   let knownStatusAt = null;
 
   const data = await sharedLayer();
 
-  whenReady(data, () => {
+  {
     data.listenTo('notes', notes => {
       const incoming = firstFresh('notes', notes, note => note.recipient === viewer && !note.read);
       if (!incoming) return;
@@ -25,36 +24,36 @@ async function boot(viewer) {
         icon: { heart: '💛', sun: '☀️', moon: '🌙', star: '✦' }[incoming.mood] || '💌',
         label: 'a note for you',
         body: incoming.body,
-        url: `notes.html?from=${viewer}`
+        url: `notes.html`
       });
       window.setTimeout(() => void data.updateIn('notes', incoming.id, { read: true, readAt: Date.now() }).catch(() => {}), 1200);
     });
 
     data.listenTo('items', items => {
       const fresh = firstFresh('items', items, item => item.addedBy === other);
-      if (fresh) announce({ icon: '✓', label: 'new on our list', body: fresh.title, url: `tasks.html?as=${viewer}` });
+      if (fresh) announce({ icon: '✓', label: 'new on our list', body: fresh.title, url: `tasks.html` });
     });
 
     data.listenTo('reminders', items => {
       const fresh = firstFresh('reminders', items, item => item.recipient === viewer);
-      if (fresh) announce({ icon: '⏰', label: 'a reminder for you', body: fresh.title, url: `reminders.html?from=${viewer}` });
+      if (fresh) announce({ icon: '⏰', label: 'a reminder for you', body: fresh.title, url: `reminders.html` });
     });
 
     data.listenTo('dates', items => {
       const fresh = firstFresh('dates', items, item => item.addedBy === other && !item.imported);
-      if (fresh) announce({ icon: '✦', label: 'new date idea', body: fresh.title, url: `dates.html?as=${viewer}` });
+      if (fresh) announce({ icon: '✦', label: 'new date idea', body: fresh.title, url: `dates.html` });
     });
 
     data.listenTo('help', items => {
       const fresh = firstFresh('help', items, item => item.to === viewer && item.state === 'open');
-      if (fresh) announce({ icon: fresh.emoji || '🙋', label: `${personName(other)} needs a hand`, body: fresh.title, url: `help.html?as=${viewer}` });
+      if (fresh) announce({ icon: fresh.emoji || '🙋', label: `${personName(other)} needs a hand`, body: fresh.title, url: `help.html` });
     });
 
     data.listenTo('statuses', items => watchStatus(items));
 
     // Pages other than the two dashboards still need to say they were here.
     if (!document.body.dataset.viewer) startPresence(data, viewer, document.body.dataset.app || 'somewhere');
-  });
+  }
 
   // Returns the newest matching record that appeared after the first snapshot.
   // The first snapshot only seeds the baseline, so opening a page never
@@ -84,7 +83,7 @@ async function boot(viewer) {
         icon: item.emoji || '●',
         label: `${personName(other)} updated their status`,
         body: item.text ? `${item.category || 'currently'} ${item.text}` : (item.state || 'updated'),
-        url: `status.html?as=${viewer}`
+        url: `status.html`
       });
     }
     knownStatusAt = Math.max(knownStatusAt, updatedAt);

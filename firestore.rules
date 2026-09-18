@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// One household, two members.
+//
+// The household id used to be whoever's uid was signed in, so the rule could
+// just compare the path to request.auth.uid. Now the path is fixed and each
+// person has their own account, so membership is an explicit list. These UIDs
+// must match the ones in household.js — the Checks workflow fails if they drift.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isMember() {
+      return request.auth != null && request.auth.uid in [
+        'REPLACE_WITH_SUN_UID',
+        'oLSxADOwjqS04hSS2aHGOcvozmz2'
+      ];
+    }
+
+    match /households/{householdId}/{document=**} {
+      allow read, write: if isMember() && householdId == 'oLSxADOwjqS04hSS2aHGOcvozmz2';
+    }
+  }
+}

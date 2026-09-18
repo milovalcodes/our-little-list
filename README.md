@@ -52,27 +52,32 @@ Two things to know:
 
 ### 1. Firebase
 
-Enable **Email/Password** in Firebase Authentication and create the one shared
-account both phones sign in with. Put the web app config in `firebase-config.js`
-(these values are public by design — the security rules are what protect the
-data).
+Enable **Email/Password** in Firebase Authentication and create **one account per
+person**. Each of you signs in with your own password, on any device, and Firebase
+remembers it — there are no PINs. Which side you see is decided by the account you
+signed in with, not by a URL you could retype.
 
-Firestore rules:
+Put the web app config in `firebase-config.js` (those values are public by design —
+the rules are what protect the data), then fill in `household.js`:
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /households/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
+```js
+export const HOUSEHOLD_ID = '<the uid the data already lives under>';
+export const MEMBERS = {
+  '<her uid>': 'her',
+  '<his uid>': 'him'
+};
 ```
 
-Everything lives under `households/{uid}` — lists, notes, reminders, statuses,
-dates, help requests, locations, push subscriptions and the outbox — so that one
-rule covers all of it.
+`HOUSEHOLD_ID` is a **fixed path**, not whoever is signed in. That is the whole
+trick: two accounts, one shared household, and no data migration — it stays
+exactly where it already was.
+
+Copy `firestore.rules` into the Firebase console with the same UIDs. The Checks
+workflow fails if `household.js` and `firestore.rules` ever disagree, because a
+mismatch would quietly lock somebody out.
+
+Everything lives under `households/{HOUSEHOLD_ID}` — lists, notes, reminders,
+statuses, dates, help requests, locations, push subscriptions and the outbox.
 
 ### 2. Notification keys
 
@@ -82,8 +87,8 @@ private half and the sign-in details as **repository secrets**
 
 | Secret | What it is |
 | --- | --- |
-| `LITTLE_EMAIL` | the shared account's email |
-| `LITTLE_PASSWORD` | the shared account's password |
+| `LITTLE_EMAIL` | either member's email — the workflow signs in as one of you |
+| `LITTLE_PASSWORD` | that account's password |
 | `VAPID_PUBLIC_KEY` | same value as in `push-config.js` |
 | `VAPID_PRIVATE_KEY` | the private half, kept only here |
 | `VAPID_SUBJECT` | `mailto:` plus any contact address |
@@ -94,8 +99,9 @@ their next visit.
 
 ### 3. Both phones
 
-Open the site, sign in with the shared account, add it to the Home Screen, then
-open **Everything on?** and allow notifications and location. That page reports
+Open the site, sign in with **your own** account, add it to the Home Screen, then
+open **Everything on?** and allow notifications and location. The front door sends
+you to your side automatically. That page reports
 whether the phone is actually registered for background nudges, rather than just
 whether permission was granted.
 
@@ -129,9 +135,9 @@ check that every file the service worker precaches actually exists.
 - Do not put private keys, service-account files or push secrets in the files
   served by Pages. The Firebase web config is the one exception — it is meant to
   be public.
-- The side codes on the front door keep the two sides from getting mixed up on a
-  shared phone. They are a speed bump, not a safe: anyone holding the phone can
-  reset one.
+- There are no side codes. They were per-device, could not sync, and with a
+  shared login they were never a real boundary — your account password is the
+  gate now.
 - Background location is not possible from a website on either platform. The map
   updates while the page is open; a native app would be needed for Life360-style
   tracking. The Android build is paused — the website is the shared source of

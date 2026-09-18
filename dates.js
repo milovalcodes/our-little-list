@@ -1,4 +1,5 @@
-import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
+import { sharedLayer, onAuthChange } from './data-hub.js';
+import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 
@@ -33,21 +34,28 @@ const LEGACY_DATE_IDEAS=[
   ['baking','Baking date','stay in',false]
 ];
 
-const params=new URLSearchParams(location.search);const viewer=params.get('as')==='him'?'him':'her';const other=viewer==='her'?'him':'her';const $=id=>document.getElementById(id);let ideas=[];let vibe='go out';let data;let migrationStarted=false;
-applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
-data=await sharedLayer();
+const $=id=>document.getElementById(id);let ideas=[];let vibe='go out';let migrationStarted=false;
+
+const data=await sharedLayer();
 onAuthChange(user=>setupAuthUI(data,user));
 if(data.mode==='local')setupAuthUI(data,{local:true});
-whenReady(data,()=>{
-  data.listenTo('dates',items=>{
-    ideas=items.sort((a,b)=>(Number(a.done)-Number(b.done))||(Number(b.favorite)-Number(a.favorite))||((b.createdAt||0)-(a.createdAt||0)));
-    render();
-  });
-  void importLegacyIdeas();
+
+// Your side comes from the account you signed in with, not from a URL anyone
+// could retype. A signed-in account that is not one of the two members stops
+// here rather than guessing which side to show.
+const viewer=await awaitViewer();
+if(!viewer){showNotAMember();await new Promise(()=>{});}
+const other=partnerOf(viewer);
+applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
+
+data.listenTo('dates',items=>{
+  ideas=items.sort((a,b)=>(Number(a.done)-Number(b.done))||(Number(b.favorite)-Number(a.favorite))||((b.createdAt||0)-(a.createdAt||0)));
+  render();
 });
+void importLegacyIdeas();
 
 document.querySelectorAll('.date-vibe').forEach(button=>button.addEventListener('click',()=>{vibe=button.dataset.vibe;document.querySelectorAll('.date-vibe').forEach(item=>item.classList.toggle('active',item===button));}));
-$('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');setButtonBusy(button,true,'saving…');try{await data.addTo('dates',{title,note,vibe,addedBy:viewer,favorite:false,done:false,createdAt:Date.now()});void data.notify(other,{title:'new date idea ✦',body:title,url:`dates.html?as=${other}`,kind:'date'});event.target.reset();toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
+$('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');setButtonBusy(button,true,'saving…');try{await data.addTo('dates',{title,note,vibe,addedBy:viewer,favorite:false,done:false,createdAt:Date.now()});void data.notify(other,{title:'new date idea ✦',body:title,url:`dates.html`,kind:'date'});event.target.reset();toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
 $('pick-random').addEventListener('click',event=>{const available=ideas.filter(idea=>!idea.done);if(!available.length){$('random-date').textContent=ideas.length?'we somehow did all of them. suspiciously productive.':'we need at least one idea first.';return;}event.currentTarget.classList.remove('is-picking');void event.currentTarget.offsetWidth;event.currentTarget.classList.add('is-picking');const idea=available[Math.floor(Math.random()*available.length)];$('random-date').innerHTML=`<strong>${escapeHtml(idea.title)}</strong>${idea.note?`<span>${escapeHtml(idea.note)}</span>`:''}`;});
 $('date-list').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const idea=ideas.find(item=>item.id===button.closest('[data-id]')?.dataset.id);if(!idea)return;button.disabled=true;try{if(button.dataset.action==='favorite')await data.updateIn('dates',idea.id,{favorite:!idea.favorite});else if(button.dataset.action==='complete'){await data.updateIn('dates',idea.id,{done:!idea.done,doneAt:idea.done?0:Date.now()});toast(idea.done?'back in the pile':'date completed. historic.');}else if(button.dataset.action==='delete')await data.removeFrom('dates',idea.id);}catch(_){showFailure('that edit did not stick.','check the internet and tap it again.');button.disabled=false;}});
 
