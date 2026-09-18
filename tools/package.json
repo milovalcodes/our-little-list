@@ -1,0 +1,9 @@
+{
+  "name": "our-little-list-delivery",
+  "private": true,
+  "type": "module",
+  "description": "Sends the reminders and notifications the website queues up.",
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}
