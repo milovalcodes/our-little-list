@@ -18,19 +18,25 @@ function requireEnv(name) {
   return value;
 }
 
-// Read apiKey and projectId straight out of the website's own config so the two
-// can never drift apart.
+// Read the config straight out of the website's own files so the two can never
+// drift apart — including the household id, which is now a fixed path rather
+// than whichever account happened to sign in.
 function websiteConfig() {
-  const source = readFileSync(new URL('../firebase-config.js', import.meta.url), 'utf8');
-  const pick = key => source.match(new RegExp(`${key}:\\s*'([^']+)'`))?.[1];
+  const config = readFileSync(new URL('../firebase-config.js', import.meta.url), 'utf8');
+  const pick = key => config.match(new RegExp(`${key}:\\s*'([^']+)'`))?.[1];
   const apiKey = pick('apiKey');
   const projectId = pick('projectId');
   if (!apiKey || !projectId) throw new Error('could not read apiKey/projectId from firebase-config.js');
-  return { apiKey, projectId };
+
+  const household = readFileSync(new URL('../household.js', import.meta.url), 'utf8');
+  const householdId = household.match(/HOUSEHOLD_ID\s*=\s*'([^']+)'/)?.[1];
+  if (!householdId) throw new Error('could not read HOUSEHOLD_ID from household.js');
+  if (householdId.startsWith('REPLACE_WITH')) throw new Error('HOUSEHOLD_ID in household.js is still a placeholder');
+  return { apiKey, projectId, householdId };
 }
 
 async function main() {
-  const { apiKey, projectId } = websiteConfig();
+  const { apiKey, projectId, householdId } = websiteConfig();
   const email = requireEnv('LITTLE_EMAIL');
   const password = requireEnv('LITTLE_PASSWORD');
   const vapidPublic = requireEnv('VAPID_PUBLIC_KEY');
@@ -39,9 +45,10 @@ async function main() {
 
   webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
 
-  const { idToken, uid } = await signIn({ apiKey, email, password });
+  const { idToken } = await signIn({ apiKey, email, password });
   const db = createClient({ projectId, idToken });
-  const household = `households/${uid}`;
+  // Either member's account can drive delivery; both read the same household.
+  const household = `households/${householdId}`;
 
   const subscriptions = {};
   for (const record of await db.list(`${household}/pushSubs`)) {
