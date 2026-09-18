@@ -12,25 +12,19 @@ const note = (ok, label, extra = '') => {
   console.log(`${ok ? ' ok ' : 'FAIL'} ${label}${extra ? ` — ${extra}` : ''}`);
 };
 
-async function open(path, { pin = true } = {}) {
+async function open(path) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
   page.on('console', m => { if (m.type() === 'error' && !NOISE.test(m.text())) errors.push(`console: ${m.text().slice(0, 200)}`); });
   await page.goto(`${BASE}/${path}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
-  if (pin && await page.$('.profile-lock-form')) {
-    await page.fill('#profile-pin', '1234');
-    if (await page.$('#profile-pin-again')) await page.fill('#profile-pin-again', '1234');
-    await page.click('.profile-lock-submit');
-    await page.waitForTimeout(500);
-  }
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(900);
   return { context, page, errors };
 }
 
 console.log('--- every page renders, no script errors, no sideways scroll ---');
-const PAGES = ['index.html','her.html','him.html','tasks.html?as=her','reminders.html?from=her','notes.html?from=her',
+const PAGES = ['her.html','him.html','tasks.html?as=her','reminders.html?from=her','notes.html?from=her',
   'location.html?as=her','activity.html?as=her','status.html?as=her','dates.html?as=her','help.html?as=her',
   'phone-check.html?as=her','profiles.html','admire.html?as=her','help.html?as=him'];
 
@@ -88,12 +82,7 @@ console.log('\n--- interactions ---');
 
   // Local mode keeps data per browser context, so answer it in the same one.
   await her.page.goto(`${BASE}/help.html?as=him`, { waitUntil: 'domcontentloaded' });
-  if (await her.page.$('.profile-lock-form')) {
-    await her.page.fill('#profile-pin', '4321');
-    if (await her.page.$('#profile-pin-again')) await her.page.fill('#profile-pin-again', '4321');
-    await her.page.click('.profile-lock-submit');
-  }
-  await her.page.waitForTimeout(900);
+  await her.page.waitForTimeout(1100);
   const inbox = await her.page.locator('#help-inbox-list .help-card').count();
   note(inbox >= 1, 'request arrives in the other inbox', inbox === 0 ? 'inbox empty' : '');
   if (inbox >= 1) {
@@ -113,12 +102,7 @@ console.log('\n--- interactions ---');
   await page.click('#profile-save');
   await page.waitForTimeout(400);
   await page.goto(`${BASE}/location.html?as=her`, { waitUntil: 'domcontentloaded' });
-  if (await page.$('.profile-lock-form')) {
-    await page.fill('#profile-pin', '1234');
-    if (await page.$('#profile-pin-again')) await page.fill('#profile-pin-again', '1234');
-    await page.click('.profile-lock-submit');
-  }
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1100);
   const injected = await page.evaluate(() => document.querySelectorAll('#last-known-row img').length);
   const pillText = await page.evaluate(() => document.getElementById('last-known-row')?.innerText || '');
   note(injected === 0 && errors.length === 0, 'a name with html is escaped, not rendered',
@@ -129,7 +113,7 @@ console.log('\n--- interactions ---');
 
 // timeAgo must speak in hours and days, not 1287 minutes.
 {
-  const { context, page } = await open('index.html', { pin: false });
+  const { context, page } = await open('her.html');
   const results = await page.evaluate(async () => {
     const { timeAgo } = await import('./time-format.js');
     const hour = 3600000;
@@ -143,6 +127,23 @@ console.log('\n--- interactions ---');
   });
   const good = results.hours === '5h ago' && results.days === '3d ago' && results.weeks === '2w ago' && results.junk === 'a while ago';
   note(good, 'timeAgo handles hours, days, weeks and junk', JSON.stringify(results));
+  await context.close();
+}
+
+// The front door is no longer a picker: it routes you to your own side.
+{
+  const { context, page, errors } = await open('index.html');
+  const landed = new URL(page.url()).pathname;
+  note(/her\.html|him\.html$/.test(landed) && errors.length === 0,
+       'the front door routes you to your side', errors[0] || `landed on ${landed}`);
+  await context.close();
+}
+
+// A dashboard must not render someone else's side around your data.
+{
+  const { context, page } = await open('him.html');
+  const landed = new URL(page.url()).pathname;
+  note(landed.endsWith('her.html'), 'the wrong dashboard redirects to yours', `landed on ${landed}`);
   await context.close();
 }
 
