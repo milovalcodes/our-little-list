@@ -1,0 +1,36 @@
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Every module parses
+        run: |
+          for file in *.js tools/*.mjs; do
+            node --check "$file"
+          done
+
+      - name: Delivery layer behaves
+        run: node test/delivery.test.mjs
+
+      - name: Every page the service worker precaches exists
+        run: |
+          node -e '
+            const fs = require("fs");
+            const sw = fs.readFileSync("service-worker.js", "utf8");
+            const listed = [...sw.matchAll(/'"'"'\.\/([^'"'"']+)'"'"'/g)].map(m => m[1]).filter(Boolean);
+            const missing = listed.filter(name => !fs.existsSync(name));
+            if (missing.length) { console.error("precached but missing:", missing); process.exit(1); }
+            console.log(`all ${listed.length} precached files exist`);
+          '

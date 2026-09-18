@@ -1,0 +1,35 @@
+name: Deliver reminders
+
+# Every five minutes, send whatever the website has queued and is now due.
+# GitHub's scheduler is best-effort, so a nudge can land a few minutes late
+# under load. Free on public repositories.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: deliver
+  cancel-in-progress: false
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install
+        working-directory: tools
+        run: npm install --omit=dev --no-audit --no-fund
+      - name: Send what is due
+        working-directory: tools
+        env:
+          LITTLE_EMAIL: ${{ secrets.LITTLE_EMAIL }}
+          LITTLE_PASSWORD: ${{ secrets.LITTLE_PASSWORD }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+        run: node deliver.mjs
