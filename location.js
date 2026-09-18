@@ -1,88 +1,127 @@
-import { createDataLayer } from './firebase-data.js';
-import { setupAuthUI, applyViewerTheme, toast, setButtonBusy, showFailure } from './ui-helpers.js';
+import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
+import { setupAuthUI, applyViewerTheme, toast, setButtonBusy, showFailure, escapeHtml } from './ui-helpers.js';
 import { personName } from './profile-store.js';
+import { timeAgo, friendlyDuration } from './time-format.js';
 
 const params = new URLSearchParams(window.location.search);
 const viewer = params.get('as') === 'him' ? 'him' : 'her';
 const byId = id => document.getElementById(id);
-const other = viewer === 'her' ? 'him' : 'her';
+
 let minutes = 15;
 let locations = [];
 let watchId = null;
 let shareUntil = 0;
 let lastSaved = null;
-let expiryTimer = null;
-let data;
+let consecutiveErrors = 0;
+let retryTimer = null;
 let map;
 const markers = {};
 let lastMapLocations = [];
 let lastFrameSignature = '';
 let mapWasMoved = false;
 let framingMap = false;
-let mapResizeObserver = null;
 
 applyViewerTheme(viewer);
 document.querySelector('.back-to-side').href = `${viewer}.html`;
 initializeMap();
 
-data = await createDataLayer({
-  collectionName: 'locations',
-  onItems(nextLocations) {
-    locations = nextLocations;
-    renderLocations();
-  },
-  onAuth(user) {
-    setupAuthUI(data, user);
-  }
-});
-
+const data = await sharedLayer();
+onAuthChange(user => setupAuthUI(data, user));
 if (data.mode === 'local') setupAuthUI(data, { local: true });
+
+whenReady(data, () => {
+  data.listenTo('locations', next => {
+    locations = next;
+    renderLocations();
+  });
+});
 
 document.querySelectorAll('.duration-chip').forEach(button => {
   button.addEventListener('click', () => {
     minutes = Number(button.dataset.minutes);
     document.querySelectorAll('.duration-chip').forEach(chip => chip.classList.toggle('active', chip === button));
+    if (isSharing()) {
+      // Changing the window mid-session should extend it, not be ignored.
+      shareUntil = Date.now() + minutes * 60 * 1000;
+      setSharingState(true);
+    }
   });
 });
 
-byId('share-location').addEventListener('click', startSharing);
-byId('stop-sharing').addEventListener('click', () => stopSharing(true));
-byId('hide-last-location').addEventListener('click', () => stopSharing(true));
+byId('share-location').addEventListener('click', () => startSharing());
+byId('stop-sharing').addEventListener('click', () => stopSharing({ removeSpot: false }));
+byId('hide-last-location').addEventListener('click', () => stopSharing({ removeSpot: true }));
 byId('recenter-map').addEventListener('click', () => {
   mapWasMoved = false;
   byId('recenter-map').hidden = true;
   frameLocations(lastMapLocations, true);
 });
-window.addEventListener('pagehide', () => {
-  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+
+window.addEventListener('pagehide', () => clearWatch());
+
+// Phones suspend watchPosition when the page goes to the background and often
+// never resume it. The old build kept insisting it was "Sharing for 1 hour"
+// while nothing was being sent. Re-arm whenever we come back.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !isSharing()) return;
+  armWatch();
+  renderLocations();
 });
+window.addEventListener('focus', () => { if (isSharing()) armWatch(); });
+
+function isSharing() {
+  return shareUntil > Date.now();
+}
+
+function clearWatch() {
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  watchId = null;
+  window.clearTimeout(retryTimer);
+  retryTimer = null;
+}
+
+function armWatch() {
+  clearWatch();
+  watchId = navigator.geolocation.watchPosition(savePosition, handleLocationError, {
+    enableHighAccuracy: true,
+    maximumAge: 5000,
+    timeout: 20000
+  });
+}
 
 function startSharing() {
   const error = byId('location-error');
   error.textContent = '';
+
   if (!navigator.geolocation) {
     error.textContent = 'location is not available on this phone.';
-    showFailure('location is not available on this phone.','try another browser or check that Location Services are on.');
+    showFailure('location is not available on this phone.', 'try another browser or check that Location Services are on.');
     return;
   }
-  if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+  if (!window.isSecureContext) {
     error.textContent = 'open the live website to share location.';
-    showFailure('location only works on the secure live website.','open the GitHub Pages link, then try again.');
+    showFailure('location only works on the secure live website.', 'open the GitHub Pages link, then try again.');
     return;
   }
 
-  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-  setButtonBusy(byId('share-location'),true,'finding you…');shareUntil = Date.now() + minutes * 60 * 1000;
+  consecutiveErrors = 0;
+  shareUntil = Date.now() + minutes * 60 * 1000;
+  setButtonBusy(byId('share-location'), true, 'finding you…');
   setSharingState(true);
-  expiryTimer = window.setTimeout(() => stopSharing(false, true), minutes * 60 * 1000);
-  watchId = navigator.geolocation.watchPosition(savePosition, handleLocationError, {
-    enableHighAccuracy: true,
-    maximumAge: 5000,
-    timeout: 15000
-  });
+  armWatch();
 }
 
 async function savePosition(position) {
+  consecutiveErrors = 0;
+  byId('location-error').textContent = '';
+
+  // The sharing window is checked against the clock rather than a setTimeout,
+  // which phones throttle or drop entirely while the page is backgrounded.
+  if (!isSharing()) {
+    stopSharing({ removeSpot: false, expired: true });
+    return;
+  }
+
   const point = {
     lat: position.coords.latitude,
     lng: position.coords.longitude,
@@ -93,47 +132,63 @@ async function savePosition(position) {
   };
   if (lastSaved && Date.now() - lastSaved.updatedAt < 8000 && distanceMeters(lastSaved, point) < 10) return;
   lastSaved = point;
+
   try {
-    await data.set(viewer, point);
-    byId('location-error').textContent = '';
-    setButtonBusy(byId('share-location'),false);
+    await data.setTo('locations', viewer, point);
+    setButtonBusy(byId('share-location'), false);
   } catch (_) {
     byId('location-error').textContent = 'location update failed. trying again.';
   }
 }
 
 function handleLocationError(problem) {
-  const messages = {
-    1: 'location is off. allow it in your phone settings.',
-    2: 'your phone cannot find you right now.',
-    3: 'that took too long. try again.'
-  };
-  byId('location-error').textContent = messages[problem.code] || 'location sharing failed.';
-  setButtonBusy(byId('share-location'),false);
-  const solution=problem.code===1?'open the phone checker and allow Location, then try again.':problem.code===3?'move near a window or outside, then try again.':'check Location Services and the internet, then try again.';
-  showFailure(messages[problem.code]||'location sharing failed.',solution);
-  stopSharing(false);
+  setButtonBusy(byId('share-location'), false);
+
+  // A permission refusal is final. A timeout or a temporary position failure is
+  // just a phone walking into a building — the old build ended the whole
+  // session on any error at all.
+  if (problem.code === 1) {
+    byId('location-error').textContent = 'location is off. allow it in your phone settings.';
+    showFailure('location is off.', 'open the phone checker and allow Location, then try again.');
+    stopSharing({ removeSpot: false });
+    return;
+  }
+
+  consecutiveErrors += 1;
+  if (consecutiveErrors >= 5 || !isSharing()) {
+    byId('location-error').textContent = 'your phone kept failing to find you. sharing stopped.';
+    showFailure('your phone could not find you.', 'move near a window or outside, then tap share again.');
+    stopSharing({ removeSpot: false });
+    return;
+  }
+
+  byId('location-error').textContent = problem.code === 3
+    ? `that took too long. trying again (${consecutiveErrors}/5).`
+    : `your phone cannot find you right now. trying again (${consecutiveErrors}/5).`;
+
+  window.clearTimeout(retryTimer);
+  retryTimer = window.setTimeout(() => { if (isSharing()) armWatch(); }, 5000 * consecutiveErrors);
 }
 
-async function stopSharing(removeSpot, expired = false) {
-  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-  watchId = null;
-  window.clearTimeout(expiryTimer);
-  expiryTimer = null;
+async function stopSharing({ removeSpot = false, expired = false } = {}) {
+  clearWatch();
   shareUntil = 0;
   lastSaved = null;
+  consecutiveErrors = 0;
   setSharingState(false);
+
   if (removeSpot) {
     try {
-      await data.remove(viewer);
+      await data.removeFrom('locations', viewer);
       toast('location off 👍');
     } catch (_) {
       byId('location-error').textContent = 'could not remove it. try again.';
-      showFailure('the last location did not clear.','check the internet and tap “hide my last spot” again.');
+      showFailure('the last location did not clear.', 'check the internet and tap "hide my last spot" again.');
     }
   } else if (expired) {
     toast('live sharing ended. last spot kept.');
   }
+  renderLocations();
 }
 
 function setSharingState(active) {
@@ -154,13 +209,15 @@ function renderLocations() {
   const knownHim = known.find(item => item.id === 'him');
   const mineKnown = known.find(item => item.id === viewer);
   const mineLive = active.find(item => item.id === viewer);
-  if (watchId === null) {
+
+  if (!isSharing()) {
     byId('share-location').hidden = false;
     byId('share-location').textContent = mineLive ? 'Resume live updates' : mineKnown ? 'Share again' : 'Share my spot';
-    byId('stop-sharing').hidden = !mineLive;
-    byId('hide-last-location').hidden = !mineKnown || Boolean(mineLive);
-    byId('share-title').textContent = mineLive ? 'Still sharing' : mineKnown ? 'Last location saved' : 'Not sharing';
+    byId('stop-sharing').hidden = true;
+    byId('hide-last-location').hidden = !mineKnown;
+    byId('share-title').textContent = mineLive ? 'Last shared' : mineKnown ? 'Last location saved' : 'Not sharing';
   }
+
   updateMap(known, now);
   renderLastKnown(known, active);
 
@@ -169,29 +226,31 @@ function renderLocations() {
     byId('map-updated').textContent = 'Nobody here yet';
     return;
   }
-  const newest = Math.max(...known.map(item => item.updatedAt || 0));
+
+  const newest = Math.max(...known.map(item => Number(item.updatedAt) || 0));
   byId('map-updated').textContent = newest ? `newest ${timeAgo(newest)}` : 'last known';
 
   if (her && him) {
     renderLiveDistance(her, him);
     return;
   }
-
   if (knownHer && knownHim) {
     const meters = distanceMeters(knownHer, knownHim);
-    const detail = `About ${friendlyDistance(meters)} apart then · ${lastSeenSummary(knownHer, now)} · ${lastSeenSummary(knownHim, now)}`;
-    setProximity('Last known locations', detail, 'old news');
+    setProximity('Last known locations', `About ${friendlyDistance(meters)} apart then · ${lastSeenSummary(knownHer, now)} · ${lastSeenSummary(knownHim, now)}`, 'old news');
     return;
   }
-
   if (her || him) {
     const present = her ? 'her' : 'him';
-    setProximity(`Waiting for ${personName(present === 'her' ? 'him' : 'her')}…`, `${present === viewer ? 'you are' : `${personName(present)} is`} on the map.`, 'one down, one to go');
+    setProximity(
+      `Waiting for ${personName(present === 'her' ? 'him' : 'her')}…`,
+      `${present === viewer ? 'you are' : `${personName(present)} is`} on the map.`,
+      'one down, one to go'
+    );
     return;
   }
 
-  const lastPerson = knownHer ? 'her' : 'him';
   const lastPoint = knownHer || knownHim;
+  const lastPerson = knownHer ? 'her' : 'him';
   setProximity('One last spot', `${lastPerson === viewer ? 'your' : 'their'} last spot was ${timeAgo(lastPoint.updatedAt)}.`, 'last known');
 }
 
@@ -206,11 +265,13 @@ function renderLiveDistance(her, him) {
 }
 
 function renderLastKnown(known, active) {
+  // Names come from a free-text field, so they get escaped like anything else.
   byId('last-known-row').innerHTML = ['her', 'him'].map(person => {
+    const name = escapeHtml(personName(person));
     const point = known.find(item => item.id === person);
-    if (!point) return `<span class="known-pill missing"><b>${personName(person)}</b> no spot yet</span>`;
+    if (!point) return `<span class="known-pill missing"><b>${name}</b> no spot yet</span>`;
     const live = active.some(item => item.id === person);
-    return `<span class="known-pill ${live ? 'live' : 'last'}"><b>${personName(person)}</b> ${live ? 'live now' : `last seen ${timeAgo(point.updatedAt)}`}</span>`;
+    return `<span class="known-pill ${live ? 'live' : 'last'}"><b>${name}</b> ${live ? 'live now' : `last seen ${escapeHtml(timeAgo(point.updatedAt))}`}</span>`;
   }).join('');
 }
 
@@ -227,7 +288,7 @@ function setProximity(message, detail, label) {
 
 function initializeMap() {
   if (!window.L) {
-    byId('couple-map').innerHTML = '<p class="map-fallback">the map did not load.</p>';
+    byId('couple-map').innerHTML = '<p class="map-fallback">the map did not load. check the internet and reload.</p>';
     return;
   }
   const mapNode = byId('couple-map');
@@ -263,38 +324,43 @@ function initializeMap() {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) window.setTimeout(refreshMapSize, 100);
   });
-  if ('ResizeObserver' in window) {
-    mapResizeObserver = new ResizeObserver(refreshMapSize);
-    mapResizeObserver.observe(mapNode);
-  }
+  if ('ResizeObserver' in window) new ResizeObserver(refreshMapSize).observe(mapNode);
 }
 
 function updateMap(known, now) {
   if (!map) return;
   lastMapLocations = known;
+
   ['her', 'him'].forEach(person => {
     const point = known.find(item => item.id === person);
-    if (!point && markers[person]) {
-      map.removeLayer(markers[person]);
-      delete markers[person];
+    if (!point) {
+      if (markers[person]) {
+        map.removeLayer(markers[person]);
+        delete markers[person];
+      }
+      return;
     }
-    if (!point) return;
     const isLive = Number(point.shareUntil) > now;
-    const icon = markerIcon(person, isLive);
+    const label = isLive ? personName(person) : `${personName(person)} · last known`;
     if (!markers[person]) {
-      markers[person] = window.L.marker([point.lat, point.lng], { icon }).addTo(map).bindTooltip(isLive ? personName(person) : `${personName(person)} · last known`, { direction: 'top', offset: [0, -42] });
+      markers[person] = window.L.marker([point.lat, point.lng], { icon: markerIcon(person, isLive) })
+        .addTo(map)
+        .bindTooltip(label, { direction: 'top', offset: [0, -42] });
       markers[person].isLive = isLive;
     } else {
       markers[person].setLatLng([point.lat, point.lng]);
       if (markers[person].isLive !== isLive) {
-        markers[person].setIcon(icon);
-        markers[person].setTooltipContent(isLive ? personName(person) : `${personName(person)} · last known`);
+        markers[person].setIcon(markerIcon(person, isLive));
         markers[person].isLive = isLive;
       }
+      markers[person].setTooltipContent(label);
     }
   });
 
-  const frameSignature = known.map(point => `${point.id}:${Number(point.lat).toFixed(5)}:${Number(point.lng).toFixed(5)}`).sort().join('|');
+  const frameSignature = known
+    .map(point => `${point.id}:${Number(point.lat).toFixed(5)}:${Number(point.lng).toFixed(5)}`)
+    .sort()
+    .join('|');
   if (!mapWasMoved && frameSignature !== lastFrameSignature) frameLocations(known, Boolean(lastFrameSignature));
   lastFrameSignature = frameSignature;
   if (known.length === 0) byId('recenter-map').hidden = true;
@@ -307,8 +373,7 @@ function frameLocations(known, animate = false) {
   if (known.length === 1) {
     map.setView([known[0].lat, known[0].lng], 15, { animate });
   } else {
-    const bounds = window.L.latLngBounds(known.map(point => [point.lat, point.lng]));
-    map.fitBounds(bounds.pad(0.35), { maxZoom: 17, animate });
+    map.fitBounds(window.L.latLngBounds(known.map(point => [point.lat, point.lng])).pad(0.35), { maxZoom: 17, animate });
   }
   window.setTimeout(() => { framingMap = false; }, animate ? 400 : 50);
 }
@@ -351,17 +416,5 @@ function friendlyDistance(meters) {
   return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
 }
 
-function friendlyDuration(value) {
-  if (value < 60) return `${value} minutes`;
-  return value === 60 ? '1 hour' : `${value / 60} hours`;
-}
-
-function timeAgo(timestamp) {
-  const seconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000));
-  if (seconds < 10) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  return `${Math.round(seconds / 60)}m ago`;
-}
-
 window.setInterval(renderLocations, 15000);
-window.addEventListener('littlelist:profile',renderLocations);
+window.addEventListener('littlelist:profile', renderLocations);

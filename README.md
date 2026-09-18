@@ -1,31 +1,63 @@
 # Our Little List
 
-A GitHub Pages-ready progressive web app with separate “For Her” and “For Him” spaces.
+A small shared website for two people. Lists, reminders, notes, statuses, date
+ideas, small favours, and an opt-in map — plain HTML, CSS and JavaScript on
+GitHub Pages, with Firebase for syncing between the two phones.
 
-## What works now
+Live: https://milovalcodes.github.io/our-little-list/
 
-- Two themed personal dashboards
-- A separate shared checklist that either person can add to or complete
-- A friendly, chip-based reminder/date maker
-- Tiny notes with realtime in-app popups
-- A shared activity feed with unread counts, read receipts, and last-online status
-- A phone checker for sync, internet, installation, notifications, and location permission
-- A small synthesized twinkle for live updates after the user has interacted with the page
-- A shared grocery view
-- An opt-in live map with 15-minute, 1-hour, and 3-hour sharing windows
-- Cute proximity messages, including “almost together” and “together at last :)”
-- Local device storage fallback
-- Firebase Authentication and Firestore sync across both phones
-- Installable PWA shell and offline cache
-- Web Push receiving handler (delivery service still required for background phone popups)
+## What it does
 
-## Cross-device setup
+- Two themed sides, sun and moon, with a shared middle
+- A shared list and grocery list either person can add to or tick off
+- Reminders that actually arrive — see **Reminders** below
+- Tiny notes with live popups and a twinkle
+- **Help me out** — quick asks like "bring water" or "call me when free", with
+  on it / in a bit / can't right now answers
+- Discord-style statuses with optional expiry
+- A shared date-idea pile with favourites, a random picker and a done pile
+- An activity feed with unread counts, read receipts and last-online presence
+- A read-only "admire the sun / admire the moon" view of the other side
+- An opt-in live map with 15-minute, 1-hour and 3-hour sharing windows, plus
+  last-known locations and proximity messages
+- A phone checker that tests sync, internet, installation, notifications and
+  location, and offers the exact fix when something is off
+- Installable on both iPhone and Android, works offline for reading
 
-The included Firebase adapter uses one shared email/password account for both phones. Firestore data is stored below `households/{uid}`, so security rules can restrict every list, note, reminder, and location to that authenticated account.
+## Reminders, and how they reach a closed phone
 
-The live map stores each person’s latest position in `households/{uid}/locations`. Positions have an expiry time and stop appearing when the chosen sharing window ends. Location is never requested automatically; each person must tap **Share my spot** on their own phone.
+GitHub Pages only serves files — it cannot run anything on a schedule. So
+delivery works like this:
 
-Use these Firestore rules:
+1. The website writes the notification into an `outbox` collection in Firestore,
+   with a `sendAt` timestamp. A reminder for Friday at 3pm sits there until then.
+2. A GitHub Actions workflow (`.github/workflows/deliver.yml`) runs every five
+   minutes, signs in as the same shared couple account the phones use, and sends
+   anything that is due as a real Web Push message.
+3. The service worker receives it and shows the notification, whether or not the
+   site is open.
+
+Free on a public repository, no credit card, no Firebase Blaze plan.
+
+Two things to know:
+
+- **GitHub's scheduler is best-effort.** A nudge can land a few minutes late when
+  GitHub is busy. If minute-exact timing matters more than the cost, swap the
+  workflow for a Firebase Cloud Function on the Blaze plan.
+- **On iPhone, notifications only work once the site is on the Home Screen.**
+  That is an Apple rule, not something the site can route around. The phone
+  checker says so and walks through it.
+
+## One-time setup
+
+### 1. Firebase
+
+Enable **Email/Password** in Firebase Authentication and create the one shared
+account both phones sign in with. Put the web app config in `firebase-config.js`
+(these values are public by design — the security rules are what protect the
+data).
+
+Firestore rules:
 
 ```
 rules_version = '2';
@@ -38,24 +70,69 @@ service cloud.firestore {
 }
 ```
 
-Enable Email/Password in Firebase Authentication and replace the placeholders in `firebase-config.js` with the web app configuration from Firebase.
+Everything lives under `households/{uid}` — lists, notes, reminders, statuses,
+dates, help requests, locations, push subscriptions and the outbox — so that one
+rule covers all of it.
 
-Location sharing requires the secure GitHub Pages address (HTTPS) and each phone’s location permission. Both iPhone and Android browsers may pause live website location updates in the background, so keep the map open while meeting up. A native iOS/Android companion app is required for Life360-style background tracking.
+### 2. Notification keys
 
-Do not put private API keys, service-account keys, or push-signing secrets in these frontend files.
+The public half of the VAPID key pair is already in `push-config.js`. Add the
+private half and the sign-in details as **repository secrets**
+(Settings → Secrets and variables → Actions):
 
-## Tiny-update workflow
+| Secret | What it is |
+| --- | --- |
+| `LITTLE_EMAIL` | the shared account's email |
+| `LITTLE_PASSWORD` | the shared account's password |
+| `VAPID_PUBLIC_KEY` | same value as in `push-config.js` |
+| `VAPID_PRIVATE_KEY` | the private half, kept only here |
+| `VAPID_SUBJECT` | `mailto:` plus any contact address |
 
-The website is deliberately plain HTML, CSS, and JavaScript. Small fixes do not need an app-store build:
+To roll the keys later: `npx web-push generate-vapid-keys`, put the public half
+in `push-config.js`, the private half in the secret. Both phones re-register on
+their next visit.
+
+### 3. Both phones
+
+Open the site, sign in with the shared account, add it to the Home Screen, then
+open **Everything on?** and allow notifications and location. That page reports
+whether the phone is actually registered for background nudges, rather than just
+whether permission was granted.
+
+## Making small changes
 
 1. Edit the files.
-2. Bump the cache name in `service-worker.js` when cached files change.
-3. Commit and push `main`.
-4. GitHub Pages publishes the update automatically; an open copy refreshes when the new service worker takes over.
+2. Bump `CACHE` in `service-worker.js` whenever a cached file changes.
+3. Commit and push `main`. GitHub Pages publishes it; open copies pick up the new
+   service worker and reload themselves.
 
-The Android app is paused. The current website is the shared source of truth on iPhone and Android.
+## Checking your work
 
-## Local preview
+```
+node test/delivery.test.mjs     # the delivery layer, against a mocked Firestore
+```
 
-Serve this folder over HTTP so the service worker can register. Opening the HTML files directly still supports the visual interface and local lists, but not installation or notifications.
+And the browser pass, which loads every page at phone size, clicks through the
+real flows and fails on any script error or sideways scroll:
 
+```
+npm install playwright
+python3 -m http.server 8777     # from a copy with apiKey set to REPLACE_ME
+node test/smoke.mjs
+```
+
+`.github/workflows/checks.yml` runs the parse check, the delivery test and a
+check that every file the service worker precaches actually exists.
+
+## Notes
+
+- Do not put private keys, service-account files or push secrets in the files
+  served by Pages. The Firebase web config is the one exception — it is meant to
+  be public.
+- The side codes on the front door keep the two sides from getting mixed up on a
+  shared phone. They are a speed bump, not a safe: anyone holding the phone can
+  reset one.
+- Background location is not possible from a website on either platform. The map
+  updates while the page is open; a native app would be needed for Life360-style
+  tracking. The Android build is paused — the website is the shared source of
+  truth on both phones.

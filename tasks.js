@@ -1,4 +1,4 @@
-import { createDataLayer } from './firebase-data.js';
+import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 
@@ -13,18 +13,16 @@ let data;
 applyViewerTheme(viewer);
 document.querySelector('.back-to-side').href = `${viewer}.html`;
 
-data = await createDataLayer({
-  collectionName: 'items',
-  onItems(nextItems) {
+data = await sharedLayer();
+onAuthChange(user => setupAuthUI(data, user));
+if (data.mode === 'local') setupAuthUI(data, { local: true });
+
+whenReady(data, () => {
+  data.listenTo('items', nextItems => {
     items = nextItems;
     render();
-  },
-  onAuth(user) {
-    setupAuthUI(data, user);
-  }
+  });
 });
-
-if (data.mode === 'local') setupAuthUI(data, { local: true });
 
 document.querySelectorAll('.soft-chip').forEach(button => {
   button.addEventListener('click', () => {
@@ -65,9 +63,9 @@ byId('shared-task-form').addEventListener('submit', async event => {
 
   setButtonBusy(submit,true,'…');
   try{
-    await data.add({title,type:tab==='grocery'?'grocery':'task',due,addedBy:viewer,done:false,createdAt:Date.now()});
+    await data.addTo('items',{title,type:tab==='grocery'?'grocery':'task',due,addedBy:viewer,done:false,createdAt:Date.now()});
     const recipient=viewer==='her'?'him':'her';
-    void data.push(recipient,{title:tab==='grocery'?'grocery list update 🛒':'new thing on the list ✓',body:title,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'item',title,from:viewer,url:'tasks'}}).catch(()=>{});
+    void data.notify(recipient,{title:tab==='grocery'?'grocery list update 🛒':'new thing on the list ✓',body:title,url:`tasks.html?as=${recipient}`,kind:'item'});
     event.target.reset();toast(tab==='grocery'?'on the grocery list 🛒':'added 🫡');
   }catch(_){showFailure('that did not get added.','check the internet, then try again. Your text is still here.');}
   finally{setButtonBusy(submit,false);}
@@ -82,8 +80,8 @@ byId('task-list').addEventListener('click', async event => {
 
   button.disabled=true;button.classList.add('is-busy');
   try{
-    if(button.dataset.action==='toggle')await data.update(item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
-    if(button.dataset.action==='delete')await data.remove(item.id);
+    if(button.dataset.action==='toggle')await data.updateIn('items',item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
+    if(button.dataset.action==='delete')await data.removeFrom('items',item.id);
   }catch(_){showFailure('the list edit did not stick.','check the internet and try the button again.');button.disabled=false;button.classList.remove('is-busy');}
 });
 
@@ -140,4 +138,3 @@ function prettyDue(value) {
   if (value === dateKey(tomorrow)) return 'tomorrow';
   return value;
 }
-

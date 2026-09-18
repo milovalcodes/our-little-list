@@ -1,22 +1,26 @@
-import { createDataLayer } from './firebase-data.js';
+import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
 import { setupAuthUI,applyViewerTheme,escapeHtml,showFailure,toast } from './ui-helpers.js';
+import { startPresence } from './presence.js';
 import { personName } from './profile-store.js';
+import { timeAgo, friendlyDate } from './time-format.js';
 
 const params=new URLSearchParams(location.search);const viewer=params.get('as')==='him'?'him':'her';const other=viewer==='her'?'him':'her';
-const $=id=>document.getElementById(id);const buckets={items:[],notes:[],reminders:[],presence:[],dates:[],statuses:[]};
+const $=id=>document.getElementById(id);const buckets={items:[],notes:[],reminders:[],presence:[],dates:[],statuses:[],help:[]};
 const seenKey=`our-little-list-seen-${viewer}`;const hiddenKey=`our-little-list-hidden-activity-${viewer}-v1`;const hidden=readHidden();let data;let started=false;
 applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
 $('other-face').src=other==='her'?'sun-profile.png':'moon-profile.png';
 
-data=await createDataLayer({collectionName:'items',onItems(items){buckets.items=items;render();},onAuth(user){setupAuthUI(data,user);if(user)start();}});
-if(data.mode==='local'){setupAuthUI(data,{local:true});start();}
+data=await sharedLayer();
+onAuthChange(user=>setupAuthUI(data,user));
+if(data.mode==='local')setupAuthUI(data,{local:true});
+whenReady(data,start);
 $('mark-seen').addEventListener('click',markSeen);
 $('activity-list').addEventListener('click',handleActivityAction);
 
 function start(){
   if(started)return;started=true;
-  ['notes','reminders','presence','dates','statuses'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));
-  void data.setTo('presence',viewer,{person:viewer,lastSeenAt:Date.now(),page:'activity'}).catch(()=>{});
+  ['items','notes','reminders','presence','dates','statuses','help'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));
+  startPresence(data,viewer,'activity');
   window.setTimeout(markIncomingRead,900);
   window.setInterval(renderPresence,30000);
 }
@@ -30,6 +34,10 @@ function events(){
   buckets.notes.forEach(note=>all.push({id:`note-${note.id}`,recordId:note.id,collection:'notes',at:Number(note.createdAt)||0,icon:{heart:'💛',sun:'☀️',moon:'🌙',star:'✦'}[note.mood]||'💌',who:note.sender,kind:'sent a note',text:note.body,status:note.recipient===viewer?(note.read?'seen by you':'new for you'):(note.read?'seen':'delivered')}));
   buckets.reminders.forEach(reminder=>all.push({id:`reminder-${reminder.id}`,recordId:reminder.id,collection:'reminders',at:Number(reminder.createdAt)||0,icon:'⏰',who:reminder.sender,kind:'set a reminder',text:reminder.title,status:reminder.dueAt?`for ${friendlyDate(reminder.dueAt)}`:''}));
   buckets.dates.filter(idea=>!idea.imported).forEach(idea=>all.push({id:`date-${idea.id}`,recordId:idea.id,collection:'dates',at:Number(idea.createdAt)||0,icon:'✦',who:idea.addedBy,kind:'saved a date idea',text:idea.title,status:idea.vibe||''}));
+  buckets.help.forEach(request=>{
+    all.push({id:`help-${request.id}`,recordId:request.id,collection:'help',at:Number(request.createdAt)||0,icon:request.emoji||'🙋',who:request.from,kind:'asked for a hand',selfKind:'asked for a hand',text:request.title,status:request.state&&request.state!=='open'?`answered: ${request.state==='on-it'?'on it':request.state==='later'?'in a bit':request.state==='cant'?"can't":'sorted'}`:'waiting'});
+    if(request.answeredAt)all.push({id:`help-answer-${request.id}-${request.answeredAt}`,recordId:request.id,collection:'help',at:Number(request.answeredAt),icon:request.state==='cant'?'✗':'✓',who:request.to,kind:'answered a request',selfKind:'answered a request',text:request.title});
+  });
   buckets.statuses.forEach(status=>all.push({id:`status-${status.id}-${status.updatedAt||0}`,recordId:status.id,collection:'statuses',at:Number(status.updatedAt)||0,icon:status.emoji||'●',who:status.person||status.id,kind:'updated their status',selfKind:'updated your status',text:status.text?`${status.category||'currently'} ${status.text}`:(status.state||'updated')}));
   return all.filter(item=>item.at&&!hidden.has(item.id)).sort((a,b)=>b.at-a.at).slice(0,80);
 }
@@ -49,7 +57,7 @@ async function handleActivityAction(event){
   }
   button.disabled=true;button.textContent='deleting…';
   try{
-    if(row.dataset.collection==='items')await data.remove(row.dataset.recordId);else await data.removeFrom(row.dataset.collection,row.dataset.recordId);
+    await data.removeFrom(row.dataset.collection,row.dataset.recordId);
     if(data.mode==='local'&&row.dataset.collection!=='items')buckets[row.dataset.collection]=buckets[row.dataset.collection].filter(item=>item.id!==row.dataset.recordId);
     toast('deleted for both of you');render();
   }catch(_){showFailure('that did not delete.','check the internet and try again.');button.disabled=false;button.textContent='delete for us';button.classList.remove('confirming');button.dataset.confirmed='';}
@@ -70,6 +78,4 @@ function markIncomingRead(){
   buckets.notes.filter(note=>note.recipient===viewer&&!note.read).forEach(note=>void data.updateIn('notes',note.id,{read:true,readAt:Date.now()}).catch(()=>{}));
   buckets.reminders.filter(reminder=>reminder.recipient===viewer&&!reminder.seenAt).forEach(reminder=>void data.updateIn('reminders',reminder.id,{seenAt:Date.now()}).catch(()=>{}));
 }
-function timeAgo(at){const seconds=Math.max(0,Math.floor((Date.now()-Number(at))/1000));if(seconds<15)return'just now';if(seconds<60)return`${seconds}s ago`;const minutes=Math.floor(seconds/60);if(minutes<60)return`${minutes}m ago`;const hours=Math.floor(minutes/60);if(hours<24)return`${hours}h ago`;return`${Math.floor(hours/24)}d ago`;}
-function friendlyDate(at){return new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(Number(at)));}
 window.addEventListener('littlelist:profile',render);

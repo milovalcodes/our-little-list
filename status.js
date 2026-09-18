@@ -1,14 +1,16 @@
-import { createDataLayer } from './firebase-data.js';
+import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
-import { cachedProfile, personName } from './profile-store.js';
+import { personName } from './profile-store.js';
 
 const params=new URLSearchParams(location.search);const viewer=params.get('as')==='him'?'him':'her';const other=viewer==='her'?'him':'her';const $=id=>document.getElementById(id);
 const stateLabels={online:'around',away:'afk-ish',dnd:'busy',invisible:'lurking'};
 let statuses=[];let state='online';let emoji='🎧';let data;
 applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
 
-data=await createDataLayer({collectionName:'statuses',onItems(items){statuses=items;render();hydrateEditor();},onAuth(user){setupAuthUI(data,user);}});
+data=await sharedLayer();
+onAuthChange(user=>setupAuthUI(data,user));
 if(data.mode==='local')setupAuthUI(data,{local:true});
+whenReady(data,()=>{data.listenTo('statuses',items=>{statuses=items;render();hydrateEditor();});});
 
 document.querySelectorAll('.status-choice').forEach(button=>button.addEventListener('click',()=>{
   state=button.dataset.state;document.querySelectorAll('.status-choice').forEach(item=>item.classList.toggle('active',item===button));
@@ -23,9 +25,9 @@ $('status-form').addEventListener('submit',async event=>{
   if(text&&!category){$('status-custom-category').focus();return;}
   const expiresAt=expiryTime($('status-expiry').value);const button=$('status-save');setButtonBusy(button,true,'saving…');
   try{
-    await data.set(viewer,{person:viewer,state,text,category,emoji,expiresAt,updatedAt:Date.now()});
+    await data.setTo('statuses',viewer,{person:viewer,state,text,category,emoji,expiresAt,updatedAt:Date.now()});
     const display=text?`${emoji} ${category} ${text}`:stateLabels[state];
-    void data.push(other,{title:`${personName(viewer)} updated their status`,body:display,sound:'twinkle.wav',channelId:'our-twinkles',priority:'high',data:{kind:'status',from:viewer,url:`status.html?as=${other}`}}).catch(()=>{});
+    void data.notify(other,{title:`${personName(viewer)} updated their status`,body:display,url:`status.html?as=${other}`,kind:'status'});
     toast('status updated ●');
   }catch(_){showFailure('the status did not save.','check the internet, then try it once more.');}
   finally{setButtonBusy(button,false);}
@@ -33,7 +35,7 @@ $('status-form').addEventListener('submit',async event=>{
 
 $('status-clear').addEventListener('click',async event=>{
   setButtonBusy(event.currentTarget,true,'clearing…');
-  try{await data.set(viewer,{person:viewer,state,text:'',category:'',emoji:'',expiresAt:0,updatedAt:Date.now()});$('status-text').value='';toast('custom bit cleared');}
+  try{await data.setTo('statuses',viewer,{person:viewer,state,text:'',category:'',emoji:'',expiresAt:0,updatedAt:Date.now()});$('status-text').value='';toast('custom bit cleared');}
   catch(_){showFailure('that did not clear.','check the internet and try again.');}
   finally{setButtonBusy(event.currentTarget,false);}
 });

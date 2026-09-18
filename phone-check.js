@@ -1,5 +1,7 @@
-import { createDataLayer } from './firebase-data.js';
+import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
 import { setupAuthUI,applyViewerTheme } from './ui-helpers.js';
+import { ensurePushSubscription, pushState } from './push-client.js';
+import { startPresence } from './presence.js';
 
 const params=new URLSearchParams(location.search);
 const viewer=params.get('as')==='him'?'him':'her';
@@ -9,15 +11,19 @@ let data;let wakeLock=null;
 
 applyViewerTheme(viewer);
 document.querySelector('.back-to-side').href=`${viewer}.html`;
-data=await createDataLayer({collectionName:'presence',onItems(){},onAuth(user){
+data=await sharedLayer();
+onAuthChange(user=>{
   setupAuthUI(data,user);
   setStatus('sync',Boolean(user),user?'connected to our shared space.':'sign in so both phones can see the same things.');
-  if(user)void data.set(viewer,{person:viewer,lastSeenAt:Date.now(),page:'phone-check'});
-}});
+});
 if(data.mode==='local'){
   setupAuthUI(data,{local:true});
   setStatus('sync',false,'only saved on this phone.');
 }
+whenReady(data,()=>{
+  startPresence(data,viewer,'phone-check');
+  void ensurePushSubscription(data,viewer).then(renderNotifications);
+});
 
 function setStatus(name,okay,text){
   $(`${name}-symbol`).textContent=okay?'✓':'!';
@@ -45,19 +51,44 @@ function renderInstall(){
   $('ask-install').textContent=installed?'already installed ✓':'install / show me';
   $('ask-install').disabled=installed;
 }
-function renderNotifications(){
+async function renderNotifications(){
   const button=$('ask-notifications');
-  if(!('Notification'in window)){
-    setStatus('notification',false,isApple?'install this site on the Home Screen first, then ask again.':'this browser said no. foreground popups still work while the page is open.');
-    help('notification',isApple?'add the site to your Home Screen, open that copy, then return here.':'try Chrome or Safari; this browser does not expose notification permission.','fail');
+  const state=await pushState();
+
+  if(state==='needs-install'){
+    setFailure('notification','iPhone needs this on the Home Screen first.');
+    help('notification','Safari Share → Add to Home Screen, open that copy, then come back here.','fail');
     button.textContent='show me how';return;
   }
-  const permission=Notification.permission;
-  if(permission==='denied'){
+  if(state==='unsupported'){
+    setStatus('notification',false,'this browser cannot do phone notifications. popups still work while the page is open.');
+    help('notification','try Safari on iPhone or Chrome on Android.','fail');
+    button.textContent='show me how';return;
+  }
+  if(state==='blocked'){
     setFailure('notification','blocked in phone settings.');
     help('notification',isApple?'iPhone Settings → Notifications → this web app → Allow Notifications.':'Chrome Settings → Site settings → Notifications → allow this site.','fail');
-  }else{setStatus('notification',permission==='granted',permission==='granted'?'allowed. popups are ready.':'ready to ask your phone.');if(permission==='granted')clearHelp('notification');}
-  button.textContent=permission==='granted'?'test popup':permission==='denied'?'how to unblock':'ask phone';
+    button.textContent='how to unblock';return;
+  }
+  if(state==='needs-permission'){
+    setStatus('notification',false,'ready to ask your phone.');
+    button.textContent='ask phone';return;
+  }
+  if(state==='not-configured'){
+    setStatus('notification',false,'popups work here, but background delivery is not set up yet.');
+    help('notification','the delivery key is missing from the website config.');
+    button.textContent='test popup';return;
+  }
+  if(state==='needs-subscribe'||state==='no-sync'){
+    setStatus('notification',false,'allowed, but this phone is not registered for background nudges yet.');
+    help('notification',state==='no-sync'?'sign in first so this phone can register.':'tap the button to finish registering.');
+    button.textContent='finish setup';return;
+  }
+
+  // state === 'ready'
+  setStatus('notification',true,'allowed and registered. reminders will arrive with the app closed.');
+  clearHelp('notification');
+  button.textContent='test popup';
 }
 async function renderLocation(){
   const button=$('ask-location');
@@ -84,7 +115,7 @@ function renderBackground(){
 
 $('check-sync').addEventListener('click',async()=>{
   clearHelp('sync');busy($('check-sync'),true,'testing…');
-  try{await data.set(viewer,{person:viewer,lastSeenAt:Date.now(),page:'phone-check'});setStatus('sync',data.mode!=='local',data.mode==='local'?'still only on this phone.':'sync works. both phones can share updates.');help('sync','test update saved.');}
+  try{await data.setTo('presence',viewer,{person:viewer,lastSeenAt:Date.now(),page:'phone-check'});setStatus('sync',data.mode!=='local',data.mode==='local'?'still only on this phone.':'sync works. both phones can share updates.');help('sync','test update saved.');}
   catch(_){setFailure('sync','sync test failed.');help('sync','check the internet, then try again.','fail');}
   busy($('check-sync'),false);
 });
@@ -105,10 +136,18 @@ $('ask-install').addEventListener('click',async()=>{
 });
 $('ask-notifications').addEventListener('click',async()=>{
   clearHelp('notification');
-  if(!('Notification'in window)){help('notification',isApple?'first add the site to your Home Screen, open that copy, then come back here and tap this button again.':'this browser cannot request system notifications. live in-page popups still work.');return;}
-  if(Notification.permission==='denied'){help('notification',isApple?'iPhone Settings → Notifications → find this web app → Allow Notifications.':'Chrome menu → Settings → Site settings → Notifications, then allow this site. If it is installed, phone Settings → Apps → this web app → Notifications.');return;}
+  const state=await pushState();
+  if(state==='needs-install'){help('notification','Safari Share → Add to Home Screen, open that copy, then come back here and tap this again.');return;}
+  if(state==='unsupported'){help('notification','this browser cannot request phone notifications. live in-page popups still work.');return;}
+  if(state==='blocked'){help('notification',isApple?'iPhone Settings → Notifications → find this web app → Allow Notifications.':'Chrome menu → Settings → Site settings → Notifications, then allow this site. If it is installed, phone Settings → Apps → this web app → Notifications.');return;}
   if(Notification.permission==='default'){busy($('ask-notifications'),true,'waiting for phone…');await Notification.requestPermission();busy($('ask-notifications'),false);}
-  renderNotifications();
+  if(Notification.permission==='granted'){
+    busy($('ask-notifications'),true,'registering…');
+    const result=await ensurePushSubscription(data,viewer);
+    busy($('ask-notifications'),false);
+    if(result.state==='failed')help('notification','this phone allowed notifications but could not register for background ones. try reloading the page.','fail');
+  }
+  await renderNotifications();
   if(Notification.permission==='granted'){
     window.playLittleTwinkle?.();
     try{const registration=await navigator.serviceWorker.ready;await registration.showNotification('notifications are ready ♡',{body:'this is the test popup.',icon:'./sun-moon-personalized.png',badge:'./sun-moon-personalized.png',data:{url:`./phone-check.html?as=${viewer}`}});help('notification','test sent. if nothing appeared, check Focus / Do Not Disturb too.');}
@@ -151,5 +190,5 @@ $('ask-background').addEventListener('click',async()=>{
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&wakeLock===null)renderBackground();});
 window.addEventListener('online',renderOnline);
 window.addEventListener('offline',renderOnline);
-window.addEventListener('appinstalled',renderInstall);
-renderOnline();renderInstall();renderNotifications();renderLocation();renderBackground();
+window.addEventListener('appinstalled',()=>{renderInstall();void renderNotifications();});
+renderOnline();renderInstall();void renderNotifications();renderLocation();renderBackground();

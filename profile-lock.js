@@ -26,14 +26,16 @@
       <img class="profile-lock-face" src="${portrait}" alt="">
       <p class="tiny-kicker">${sideName}</p>
       <h2 id="profile-lock-title">${isSetup ? 'make your code' : 'your code'}</h2>
-      <p class="profile-lock-copy">${isSetup ? 'choose 4–6 numbers for this side on this phone. the shared login stays the same.' : 'just keeping the two sides separate.'}</p>
+      <p class="profile-lock-copy">${isSetup ? 'choose 4–6 numbers so the two sides do not get mixed up on this phone. the shared login stays the same.' : 'just keeping the two sides separate.'}</p>
       <form class="profile-lock-form">
         <label><span>${isSetup ? 'New code' : 'Code'}</span><input id="profile-pin" type="password" inputmode="numeric" autocomplete="off" minlength="4" maxlength="6" pattern="[0-9]{4,6}" required aria-describedby="profile-lock-error"></label>
         ${isSetup ? '<label><span>Again</span><input id="profile-pin-again" type="password" inputmode="numeric" autocomplete="off" minlength="4" maxlength="6" pattern="[0-9]{4,6}" required></label>' : ''}
         <p class="profile-lock-error" id="profile-lock-error" role="alert"></p>
         <button class="primary-action profile-lock-submit" type="submit">${isSetup ? 'save my code' : 'open my side'}</button>
       </form>
+      ${isSetup ? '' : '<button class="profile-lock-reset" type="button">forgot it?</button>'}
       <a class="profile-lock-back" href="index.html">← pick the other side</a>
+      <p class="profile-lock-fine">this is a speed bump, not a safe — anyone holding the phone can reset it.</p>
     </div>`;
   document.body.append(gate);
   document.body.classList.add('profile-locked');
@@ -47,6 +49,26 @@
     input.value = input.value.replace(/\D/g, '').slice(0, 6);
     error.textContent = '';
   }));
+
+  // Resetting used to mean clearing the whole site's storage, which also wiped
+  // the couple profile, the hidden-activity list and every local fallback list.
+  // Now it forgets this one code and nothing else.
+  gate.querySelector('.profile-lock-reset')?.addEventListener('click', () => {
+    const reset = gate.querySelector('.profile-lock-reset');
+    if (reset.dataset.confirmed !== 'yes') {
+      reset.dataset.confirmed = 'yes';
+      reset.textContent = 'tap again to pick a new code';
+      window.setTimeout(() => {
+        if (!reset.isConnected) return;
+        reset.dataset.confirmed = '';
+        reset.textContent = 'forgot it?';
+      }, 4000);
+      return;
+    }
+    localStorage.removeItem(pinKey);
+    sessionStorage.removeItem(unlockKey);
+    window.location.reload();
+  });
 
   window.setTimeout(() => pin.focus(), 120);
   form.addEventListener('submit', async event => {
@@ -78,6 +100,8 @@
         }
       }
       sessionStorage.setItem(unlockKey, 'yes');
+      // Lets the front door offer a one-tap way back in on this phone.
+      try { localStorage.setItem('our-little-list-last-side', viewer); } catch (_) {}
       gate.classList.add('is-opening');
       document.body.classList.remove('profile-locked');
       window.setTimeout(() => gate.remove(), 280);

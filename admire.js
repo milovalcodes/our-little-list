@@ -1,16 +1,19 @@
-import { createDataLayer } from './firebase-data.js';
+import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml } from './ui-helpers.js';
 import { cachedProfile } from './profile-store.js';
+import { timeAgo } from './time-format.js';
 
 const params=new URLSearchParams(location.search);const viewer=params.get('as')==='him'?'him':'her';const other=viewer==='her'?'him':'her';const $=id=>document.getElementById(id);
 const buckets={notes:[],statuses:[],locations:[],items:[],dates:[],presence:[]};let data;let started=false;let map;let marker;
 applyViewerTheme(viewer);document.body.classList.add(other==='her'?'admiring-sun':'admiring-moon');document.querySelector('.back-to-side').href=`${viewer}.html`;
 setIdentity();initializeMap();
 
-data=await createDataLayer({collectionName:'notes',onItems(items){buckets.notes=items;render();},onAuth(user){setupAuthUI(data,user);if(user)start();}});
-if(data.mode==='local'){setupAuthUI(data,{local:true});start();}
+data=await sharedLayer();
+onAuthChange(user=>setupAuthUI(data,user));
+if(data.mode==='local')setupAuthUI(data,{local:true});
+whenReady(data,start);
 
-function start(){if(started)return;started=true;['statuses','locations','items','dates','presence'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));window.setInterval(render,30000);}
+function start(){if(started)return;started=true;['notes','statuses','locations','items','dates','presence'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));window.setInterval(render,30000);}
 
 function setIdentity(){const profile=cachedProfile();const customName=other==='her'?profile.sunName:profile.moonName;const celestial=other==='her'?'sun':'moon';const displayName=customName||`the ${celestial}`;const possessive=customName?`${customName}${customName.toLowerCase().endsWith('s')?'’':'’s'}`:`the ${celestial}'s`;$('admire-face').src=other==='her'?'sun-profile.png':'moon-profile.png';$('admire-kicker').textContent=`the ${celestial} report`;$('admire-title').textContent=`Admire ${displayName}`;$('admire-map-title').textContent=`${possessive} location`;document.title=`Admire ${displayName} · Our Little List`;}
 
@@ -29,5 +32,4 @@ function renderAdditions(){const additions=[...buckets.items.filter(item=>item.a
 function initializeMap(){if(!window.L)return;map=window.L.map('admire-map',{zoomControl:true,attributionControl:true,dragging:true,touchZoom:true,scrollWheelZoom:false}).setView([39.5,-98.35],3);window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,keepBuffer:3,updateWhenIdle:true,crossOrigin:true,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);}
 
 function partnerIcon(person,live){const art=person==='her'?'<span class="admire-map-symbol">☀</span>':'<span class="admire-map-symbol">☾</span>';return window.L.divIcon({className:'admire-marker-wrap',html:`<span class="admire-marker ${person} ${live?'live':'last'}">${art}</span>`,iconSize:[48,48],iconAnchor:[24,43]});}
-function timeAgo(at){const seconds=Math.max(0,Math.floor((Date.now()-Number(at||0))/1000));if(seconds<15)return'just now';if(seconds<60)return`${seconds}s ago`;const minutes=Math.floor(seconds/60);if(minutes<60)return`${minutes}m ago`;const hours=Math.floor(minutes/60);if(hours<24)return`${hours}h ago`;return`${Math.floor(hours/24)}d ago`;}
 window.addEventListener('littlelist:profile',render);

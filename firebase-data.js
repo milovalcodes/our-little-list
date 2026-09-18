@@ -1,115 +1,186 @@
 import { firebaseConfig } from './firebase-config.js';
+import { OUTBOX } from './push-config.js';
 
 const configured = firebaseConfig?.apiKey && !firebaseConfig.apiKey.startsWith('REPLACE_');
 
-export async function createDataLayer({ onItems, onAuth, collectionName = 'items' }) {
-  if (!configured) return createLocalLayer(onItems,onAuth,collectionName);
+// Every method takes the collection name explicitly. The layer used to carry an
+// implicit "primary" collection, which meant each page opened its own layer just
+// to bind a different default — her.html ended up with three live connections to
+// the same database.
+export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } = {}) {
+  if (!configured) return createLocalLayer(onAuth, onReady);
 
   let modules;
-  try{
-    modules=await Promise.all([
+  try {
+    modules = await Promise.all([
       import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js'),
       import('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js'),
       import('https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js')
     ]);
-  }catch(problem){announceError(problem,'start');throw problem;}
-  const [{initializeApp,getApps,getApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut},{getFirestore,collection,onSnapshot,addDoc,setDoc,updateDoc,deleteDoc,doc,getDoc}]=modules;
-  const app=getApps().length?getApp():initializeApp(firebaseConfig); const auth=getAuth(app); const db=getFirestore(app); let unsubscribe=null;
+  } catch (problem) {
+    announceError(problem, 'start');
+    throw problem;
+  }
 
-  const namedCollection=name=>collection(db,'households',auth.currentUser.uid,name);
-  const itemsCollection=()=>namedCollection(collectionName);
-  const layer={
-    mode:'firebase',
-    add:item=>addDoc(itemsCollection(),item),
-    set:(id,item)=>setDoc(doc(itemsCollection(),id),item,{merge:true}),
-    update:(id,changes)=>updateDoc(doc(itemsCollection(),id),changes),
-    remove:id=>deleteDoc(doc(itemsCollection(),id)),
-    listenTo:(name,callback)=>onSnapshot(namedCollection(name),snapshot=>callback(snapshot.docs.map(entry=>({id:entry.id,...entry.data()}))),problem=>announceError(problem,'listen')),
-    addTo:(name,item)=>addDoc(namedCollection(name),item),
-    setTo:(name,id,item)=>setDoc(doc(namedCollection(name),id),item,{merge:true}),
-    updateIn:(name,id,changes)=>updateDoc(doc(namedCollection(name),id),changes),
-    removeFrom:(name,id)=>deleteDoc(doc(namedCollection(name),id)),
-    async push(person,message){
-      const device=await getDoc(doc(db,'households',auth.currentUser.uid,'devices',person));
-      const token=device.data()?.expoPushToken;
-      if(typeof token!=='string'||!/^(ExponentPushToken|ExpoPushToken)\[/.test(token))return {sent:false,reason:'not-registered'};
-      await fetch('https://exp.host/--/api/v2/push/send',{
-        method:'POST',
-        mode:'no-cors',
-        headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({to:token,...message})
-      });
-      return {sent:true};
+  const [
+    { initializeApp, getApps, getApp },
+    { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
+    { getFirestore, collection, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc }
+  ] = modules;
+
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  try { await setPersistence(auth, browserLocalPersistence); } catch (_) { /* private mode */ }
+
+  const named = name => collection(db, 'households', auth.currentUser.uid, name);
+  const signedIn = () => Boolean(auth.currentUser);
+
+  const layer = {
+    mode: 'firebase',
+    signedIn,
+    listenTo(name, callback) {
+      if (!signedIn()) return () => {};
+      return onSnapshot(
+        named(name),
+        snapshot => callback(snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }))),
+        problem => announceError(problem, 'listen')
+      );
     },
-    signIn:(email,password)=>signInWithEmailAndPassword(auth,email,password),
-    createAccount:(email,password)=>createUserWithEmailAndPassword(auth,email,password),
-    signOut:()=>signOut(auth),
-    friendlyError(error){
-      const code=error?.code||'';
-      if(code.includes('invalid-credential'))return 'That email or password does not match.';
-      if(code.includes('email-already-in-use'))return 'Account already exists. Sign in instead.';
-      if(code.includes('weak-password'))return 'Password needs 6 characters.';
-      if(code.includes('network'))return 'This phone cannot connect right now.';
-      if(code.includes('too-many-requests'))return 'Too many tries. Wait a minute and try again.';
+    addTo: (name, item) => addDoc(named(name), item),
+    setTo: (name, id, item) => setDoc(doc(named(name), id), item, { merge: true }),
+    updateIn: (name, id, changes) => updateDoc(doc(named(name), id), changes),
+    removeFrom: (name, id) => deleteDoc(doc(named(name), id)),
+
+    // Files a notification in the outbox. The scheduled delivery workflow picks
+    // it up and sends the real web push. Nothing here claims to have delivered
+    // anything: the old version fired an opaque no-cors request at Expo and
+    // always reported success, which is why the site kept saying "sent" when
+    // nothing had been.
+    async notify(person, message) {
+      if (!signedIn()) return { queued: false, reason: 'signed-out' };
+      const sendAt = Number(message?.sendAt) || Date.now();
+      try {
+        await addDoc(named(OUTBOX), {
+          to: person === 'him' ? 'him' : 'her',
+          title: String(message?.title || 'Our Little List').slice(0, 120),
+          body: String(message?.body || '').slice(0, 400),
+          url: String(message?.url || 'index.html').slice(0, 200),
+          kind: String(message?.kind || 'note'),
+          ref: message?.ref ? String(message.ref) : '',
+          sendAt,
+          createdAt: Date.now()
+        });
+        return { queued: true, scheduled: sendAt > Date.now() + 30000 };
+      } catch (_) {
+        return { queued: false };
+      }
+    },
+
+    signIn: (email, password) => signInWithEmailAndPassword(auth, email, password),
+    createAccount: (email, password) => createUserWithEmailAndPassword(auth, email, password),
+    signOut: () => signOut(auth),
+    friendlyError(error) {
+      const code = error?.code || '';
+      if (code.includes('invalid-credential')) return 'That email or password does not match.';
+      if (code.includes('email-already-in-use')) return 'Account already exists. Sign in instead.';
+      if (code.includes('weak-password')) return 'Password needs 6 characters.';
+      if (code.includes('network')) return 'This phone cannot connect right now.';
+      if (code.includes('too-many-requests')) return 'Too many tries. Wait a minute and try again.';
       return 'That did not work. Try again.';
     }
   };
 
-  onAuthStateChanged(auth,user=>{
-    unsubscribe?.(); unsubscribe=null; announceReady();onAuth(user);
-    if(!user){onItems([]);return;}
-    unsubscribe=onSnapshot(itemsCollection(),snapshot=>onItems(snapshot.docs.map(entry=>({id:entry.id,...entry.data()}))),problem=>announceError(problem,'listen'));
-  },problem=>{announceError(problem,'auth');onAuth(null);onItems([]);});
+  onAuthStateChanged(auth, user => {
+    announceReady();
+    onReady(user);
+    onAuth(user);
+  }, problem => {
+    announceError(problem, 'auth');
+    onAuth(null);
+  });
+
   return layer;
 }
 
-function createLocalLayer(onItems,onAuth,collectionName){
-  const key=`our-little-list-${collectionName}-v1`; let items=[];
-  try{items=JSON.parse(localStorage.getItem(key))?.items||[];}catch(_){items=[];}
-  const publish=()=>{localStorage.setItem(key,JSON.stringify({items}));onItems([...items]);};
-  queueMicrotask(()=>{announceReady();onAuth(null);onItems([...items]);});
+// Used when Firebase is not configured, and as the offline/dev path. Unlike the
+// old version this one actually notifies its own listeners, so the site behaves
+// the same way with or without sync.
+function createLocalLayer(onAuth, onReady) {
+  const key = name => `our-little-list-${name}-v1`;
+  const listeners = new Map();
+
+  const read = name => {
+    try { return JSON.parse(localStorage.getItem(key(name)))?.items || []; } catch (_) { return []; }
+  };
+  const write = (name, items) => {
+    try { localStorage.setItem(key(name), JSON.stringify({ items })); } catch (_) { /* full or blocked */ }
+    (listeners.get(name) || new Set()).forEach(callback => callback([...items]));
+  };
+  const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+
+  queueMicrotask(() => { announceReady(); onReady(null); onAuth(null); });
+
+  window.addEventListener('storage', event => {
+    for (const name of listeners.keys()) {
+      if (event.key === key(name)) (listeners.get(name) || new Set()).forEach(callback => callback(read(name)));
+    }
+  });
+
   return {
-    mode:'local',
-    async add(item){const id=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random()}`;items.push({id,...item});publish();return{id};},
-    async set(id,item){const current=items.find(entry=>entry.id===id);if(current)Object.assign(current,item);else items.push({id,...item});publish();},
-    async update(id,changes){const item=items.find(entry=>entry.id===id);if(item)Object.assign(item,changes);publish();},
-    async remove(id){items=items.filter(entry=>entry.id!==id);publish();},
-    listenTo(name,callback){
-      const storageKey=`our-little-list-${name}-v1`;
-      const read=()=>{try{return JSON.parse(localStorage.getItem(storageKey))?.items||[];}catch(_){return[];}};
-      queueMicrotask(()=>callback(read()));
-      const handler=event=>{if(event.key===storageKey)callback(read());};
-      window.addEventListener('storage',handler);
-      return()=>window.removeEventListener('storage',handler);
+    mode: 'local',
+    signedIn: () => false,
+    listenTo(name, callback) {
+      if (!listeners.has(name)) listeners.set(name, new Set());
+      listeners.get(name).add(callback);
+      queueMicrotask(() => callback(read(name)));
+      return () => listeners.get(name)?.delete(callback);
     },
-    async addTo(name,item){
-      const storageKey=`our-little-list-${name}-v1`;let named=[];
-      try{named=JSON.parse(localStorage.getItem(storageKey))?.items||[];}catch(_){named=[];}
-      const id=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random()}`;
-      named.push({id,...item});localStorage.setItem(storageKey,JSON.stringify({items:named}));return{id};
+    async addTo(name, item) {
+      const items = read(name);
+      const id = newId();
+      items.push({ id, ...item });
+      write(name, items);
+      return { id };
     },
-    async setTo(name,id,item){
-      const storageKey=`our-little-list-${name}-v1`;let named=[];
-      try{named=JSON.parse(localStorage.getItem(storageKey))?.items||[];}catch(_){named=[];}
-      const current=named.find(entry=>entry.id===id);if(current)Object.assign(current,item);else named.push({id,...item});
-      localStorage.setItem(storageKey,JSON.stringify({items:named}));
+    async setTo(name, id, item) {
+      const items = read(name);
+      const current = items.find(entry => entry.id === id);
+      if (current) Object.assign(current, item); else items.push({ id, ...item });
+      write(name, items);
     },
-    async updateIn(name,id,changes){return this.setTo(name,id,changes);},
-    async removeFrom(name,id){
-      const storageKey=`our-little-list-${name}-v1`;let named=[];
-      try{named=JSON.parse(localStorage.getItem(storageKey))?.items||[];}catch(_){named=[];}
-      named=named.filter(item=>item.id!==id);localStorage.setItem(storageKey,JSON.stringify({items:named}));
+    async updateIn(name, id, changes) {
+      const items = read(name);
+      const current = items.find(entry => entry.id === id);
+      if (current) Object.assign(current, changes);
+      write(name, items);
     },
-    async push(){return{sent:false,reason:'not-registered'};},
-    async signIn(){},async createAccount(){},async signOut(){},friendlyError(){return 'sync is offline.';}
+    async removeFrom(name, id) {
+      write(name, read(name).filter(item => item.id !== id));
+    },
+    async notify() { return { queued: false, reason: 'local' }; },
+    async signIn() {}, async createAccount() {}, async signOut() {},
+    friendlyError() { return 'sync is offline.'; }
   };
 }
 
-function announceReady(){document.dispatchEvent(new CustomEvent('littlelist:dataready'));}
-function announceError(problem,stage){
-  const code=String(problem?.code||'');let message='we could not load the shared stuff.';let solution='check the internet, then try again.';
-  if(code.includes('permission-denied')){message='the shared stuff is locked right now.';solution='sign out and back in. If it keeps happening, the database rules need attention.';}
-  else if(code.includes('unauthenticated')){message='the login expired.';solution='reload and sign in again.';}
-  else if(code.includes('unavailable')||code.includes('network')||stage==='start'){message='we cannot reach the shared space.';solution='turn on Wi-Fi or mobile data, then try again.';}
-  document.dispatchEvent(new CustomEvent('littlelist:dataerror',{detail:{message,solution,code}}));
+function announceReady() {
+  document.dispatchEvent(new CustomEvent('littlelist:dataready'));
+}
+
+function announceError(problem, stage) {
+  const code = String(problem?.code || '');
+  let message = 'we could not load the shared stuff.';
+  let solution = 'check the internet, then try again.';
+  if (code.includes('permission-denied')) {
+    message = 'the shared stuff is locked right now.';
+    solution = 'sign out and back in. If it keeps happening, the database rules need attention.';
+  } else if (code.includes('unauthenticated')) {
+    message = 'the login expired.';
+    solution = 'reload and sign in again.';
+  } else if (code.includes('unavailable') || code.includes('network') || stage === 'start') {
+    message = 'we cannot reach the shared space.';
+    solution = 'turn on Wi-Fi or mobile data, then try again.';
+  }
+  document.dispatchEvent(new CustomEvent('littlelist:dataerror', { detail: { message, solution, code } }));
 }
