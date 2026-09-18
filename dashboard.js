@@ -33,6 +33,20 @@ startPresence(data, viewer, 'home');
 // notifications have actually been allowed.
 void ensurePushSubscription(data, viewer);
 
+// Without this there is no way off an account. Her phone was still signed in
+// as his from the shared-login days, so the site sent her to his dashboard and
+// left her there with nothing to tap.
+document.getElementById('sign-out')?.addEventListener('click', async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  button.textContent = 'signing out…';
+  try {
+    await data.signOut();
+  } catch (_) { /* already gone */ }
+  try { localStorage.removeItem(`our-little-list-seen-${viewer}`); } catch (_) {}
+  location.replace('index.html');
+});
+
 function renderBadge() {
   const since = Number(localStorage.getItem(seenKey) || 0);
   const fresh = value => Number(value) > since;

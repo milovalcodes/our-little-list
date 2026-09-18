@@ -703,3 +703,6 @@ body.him-theme .help-reply.tone-no{color:#f0998c}
   .help-presets button,.help-card,.help-answer{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
 }
 
+
+/* ---- sign out ---- */
+button.home-link { border:none; background:none; font:inherit; cursor:pointer; color:inherit; }
