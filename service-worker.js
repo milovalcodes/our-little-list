@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v26';
+const CACHE = 'our-little-list-v27';
 
 const PAGES = [
   './', './index.html', './her.html', './him.html', './admire.html', './profiles.html',
@@ -14,7 +14,7 @@ const ASSETS = [
   './ui-helpers.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
   './push-config.js', './push-client.js', './presence.js', './help.js',
   './household.js', './viewer.js', './entry.js',
-  './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './manifest.webmanifest'
+  './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './icon-192.png', './manifest.webmanifest'
 ];
 
 self.addEventListener('install', event => {

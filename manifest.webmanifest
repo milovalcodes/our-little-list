@@ -8,6 +8,8 @@
   "background_color": "#fff7df",
   "theme_color": "#18264c",
   "icons": [
-    { "src": "sun-moon-personalized.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "sun-moon-personalized.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "sun-moon-personalized.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
