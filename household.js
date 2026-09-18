@@ -10,7 +10,7 @@ export const HOUSEHOLD_ID = 'oLSxADOwjqS04hSS2aHGOcvozmz2';
 // Which account is which side. Firebase UIDs are not secrets and are safe to
 // ship; they are identifiers, not credentials.
 export const MEMBERS = {
-  REPLACE_WITH_SUN_UID: 'her',
+  'cwQndCjlRlcaHasR1xzp9EYICFz2': 'her',
   'oLSxADOwjqS04hSS2aHGOcvozmz2': 'him'
 };
 
