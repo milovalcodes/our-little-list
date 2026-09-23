@@ -17,12 +17,18 @@ jobs:
 
       - name: Every module parses
         run: |
-          for file in *.js tools/*.mjs; do
+          for file in *.js tools/*.mjs worker/src/*.js; do
             node --check "$file"
           done
 
       - name: Delivery layer behaves
         run: node test/delivery.test.mjs
+
+      - name: Push encryption and the delivery worker behave
+        run: |
+          npm install --no-save --no-audit --no-fund http_ece web-push
+          node test/webpush.test.mjs
+          node test/delivery-worker.test.mjs
 
       - name: Every page the service worker precaches exists
         run: |

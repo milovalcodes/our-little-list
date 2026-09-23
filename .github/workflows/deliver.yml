@@ -1,11 +1,12 @@
 name: Deliver reminders
 
-# Every five minutes, send whatever the website has queued and is now due.
-# GitHub's scheduler is best-effort, so a nudge can land a few minutes late
-# under load. Free on public repositories.
+# Manual backstop only. Delivery is scheduled by the Cloudflare Worker in
+# worker/ — GitHub treats scheduled workflows as its lowest-priority queue and
+# was firing this */5 cron roughly every four hours, which is not a reminder.
+#
+# The schedule is deliberately gone: two schedulers sending the same outbox
+# means every notification arrives twice.
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 concurrency:
