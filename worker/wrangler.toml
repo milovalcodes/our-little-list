@@ -21,3 +21,12 @@ VAPID_PUBLIC_KEY = "BJeV-0cnT_CgN9jL29iIZqS8Q3EVaBB7qY4F9e3gsbtHIY5KWJKbNIY9rC-W
 #   LITTLE_PASSWORD     that account's password
 #   VAPID_PRIVATE_KEY   the private half of the push key pair
 #   RUN_SECRET          optional; lets you trigger a pass by hand over HTTP
+
+# Keeps the dashboard's logging switch from being flipped back off on every
+# deploy. Without this, `wrangler deploy` resets observability and you lose the
+# per-minute record of what was sent.
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
