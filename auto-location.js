@@ -19,12 +19,22 @@ let heartbeat = null;
 let retryTimer = null;
 let errors = 0;
 let lastPoint = null;
+// The throttle has to outlive the page. Every tap through the app loads this
+// module again, and a per-page counter started at zero each time — so simply
+// walking around the site wrote a location per page, on top of the heartbeat.
+const THROTTLE_KEY = 'our-little-list-location-throttle';
 let lastSavedAt = 0;
 let lastSavedPoint = null;
 let lastAttemptAt = 0;
 let writeInFlight = false;
 let phase = 'loading';
 let detail = '';
+
+// Phases you do not come back from by yourself. Re-arming a denied watcher on
+// every app switch just asked the phone the same question and got the same no.
+const DEAD_PHASES = ['blocked', 'unavailable', 'paused', 'preview'];
+
+restoreThrottle();
 
 const ready = boot();
 
@@ -143,13 +153,17 @@ async function persistPoint(next, renewLease = false) {
   const sinceSave = now - lastSavedAt;
   const sinceAttempt = now - lastAttemptAt;
   if (writeInFlight || sinceAttempt < 15000) return;
+  // A lease renewal is only worth a write once the old one is halfway gone.
+  if (renewLease && lastSavedAt && sinceSave < LEASE_MS / 2) return;
   if (!renewLease && lastSavedAt && (sinceSave < 15000 || (sinceSave < 60000 && previous && metersBetween(previous, next) < 25))) return;
   writeInFlight = true;
   lastAttemptAt = now;
+  rememberThrottle();
   try {
     await data.setTo('locations', viewer, next);
     lastSavedAt = now;
     lastSavedPoint = next;
+    rememberThrottle();
   } catch (_) {
     phase = 'offline';
     detail = 'could not sync yet; trying again';
@@ -160,9 +174,11 @@ async function persistPoint(next, renewLease = false) {
 }
 
 function refreshLease() {
-  if (document.hidden || phase === 'paused' || phase === 'blocked') return;
+  if (document.hidden || DEAD_PHASES.includes(phase) || phase === 'error') return;
   if (!lastPoint) {
-    armWatch();
+    // Nothing to renew, and no watcher to renew it from. Asking the platform to
+    // watch again here used to throw outright on a browser with no geolocation.
+    if (watchId !== null) armWatch();
     return;
   }
   const now = Date.now();
@@ -206,13 +222,43 @@ function emit() {
   window.dispatchEvent(new CustomEvent('littlelist:location-state', { detail: locationSnapshot() }));
 }
 
+function resumeIfSensible() {
+  if (!viewer || data?.mode === 'local') return;
+  if (isPaused()) {
+    // Another page in the app paused this. Honour it rather than quietly
+    // resuming and republishing a live badge the user thought they turned off.
+    if (phase !== 'paused') { stopWatcher(); phase = 'paused'; detail = 'paused on this phone'; emit(); }
+    return;
+  }
+  if (DEAD_PHASES.includes(phase)) return;
+  restoreThrottle();
+  startWatcher();
+}
+
 window.addEventListener('pagehide', stopWatcher);
-window.addEventListener('pageshow', () => { if (viewer && !isPaused() && data?.mode !== 'local') startWatcher(); });
+window.addEventListener('pageshow', resumeIfSensible);
 window.addEventListener('online', refreshLease);
+window.addEventListener('storage', event => { if (event.key === pauseKey()) resumeIfSensible(); });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopWatcher();
-  else if (viewer && !isPaused() && data?.mode !== 'local') startWatcher();
+  else resumeIfSensible();
 });
+
+function rememberThrottle() {
+  try {
+    sessionStorage.setItem(THROTTLE_KEY, JSON.stringify({ lastSavedAt, lastAttemptAt, lastSavedPoint }));
+  } catch (_) { /* private mode; the in-page throttle still applies */ }
+}
+
+function restoreThrottle() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(THROTTLE_KEY) || 'null');
+    if (!saved) return;
+    lastSavedAt = Number(saved.lastSavedAt) || 0;
+    lastAttemptAt = Number(saved.lastAttemptAt) || 0;
+    lastSavedPoint = saved.lastSavedPoint || null;
+  } catch (_) { /* nothing worth recovering */ }
+}
 
 function metersBetween(a, b) {
   const radius = 6371000;

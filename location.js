@@ -25,10 +25,14 @@ if(!viewer)await new Promise(()=>{});
 
 initializeMap();
 data.listenTo('locations',items=>{locations=items;render();});
-window.addEventListener('littlelist:location-state',event=>{state=event.detail||locationSnapshot();renderControl();});
+// auto-location.js boots while this module is still evaluating, so its first
+// emit can land before the listener exists. renderControl reads the live
+// snapshot instead of trusting that we heard about it.
+window.addEventListener('littlelist:location-state',()=>renderControl());
 
 byId('location-action')?.addEventListener('click',async event=>{
   const button=event.currentTarget;
+  state=locationSnapshot();
   if(['live','starting','retrying','offline'].includes(state.phase)){
     setButtonBusy(button,true,'pausing…');
     await pauseAutoLocation();
@@ -38,14 +42,16 @@ byId('location-action')?.addEventListener('click',async event=>{
     await resumeAutoLocation();
   }
   setButtonBusy(button,false);
-  state=locationSnapshot();renderControl();
+  renderControl();
 });
 
 byId('hide-last-location')?.addEventListener('click',async event=>{
   setButtonBusy(event.currentTarget,true,'hiding…');
   await pauseAutoLocation({removeSpot:true});
   setButtonBusy(event.currentTarget,false);
-  toast('last spot deleted');
+  // Deleting the spot has to stop the sharing too, or the next fix puts it
+  // straight back. Say so, rather than leaving sharing quietly off.
+  toast('last spot deleted · sharing paused');
 });
 
 byId('recenter-map')?.addEventListener('click',()=>{
@@ -61,7 +67,8 @@ function render(){
   const knownHer=known.find(item=>item.id==='her');const knownHim=known.find(item=>item.id==='him');
 
   updateMap(known,now);renderLastKnown(known,active);
-  byId('hide-last-location').hidden=!known.some(item=>item.id===viewer);
+  const hideButton=byId('hide-last-location');
+  if(hideButton)hideButton.hidden=!known.some(item=>item.id===viewer);
 
   if(!known.length){setProximity('waiting for a first spot','the map is currently just vibes.','orbit pending');byId('map-updated').textContent='no spots yet';return;}
   const newest=Math.max(...known.map(item=>Number(item.updatedAt)||0));
@@ -74,6 +81,7 @@ function render(){
 }
 
 function renderControl(){
+  state=locationSnapshot();
   const labels={live:'location on',starting:'finding you',retrying:'trying again',offline:'waiting for internet',paused:'location paused',blocked:'location blocked',unavailable:'not available',error:'could not locate',preview:'preview mode',loading:'starting'};
   const active=['live','starting','retrying','offline'].includes(state.phase);
   byId('location-state').textContent=labels[state.phase]||'location';

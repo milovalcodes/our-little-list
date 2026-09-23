@@ -7,7 +7,13 @@ export function startPresence(data, viewer, page = 'somewhere') {
   if (started || !data || (viewer !== 'her' && viewer !== 'him')) return;
   started = true;
 
+  // visibilitychange, focus and pageshow all fire when a PWA returns, and each
+  // one used to cost a write. One beat per ten seconds is plenty for a dot that
+  // means "here in the last two minutes".
+  let lastBeatAt = 0;
   const beat = () => {
+    if (Date.now() - lastBeatAt < 10000) return;
+    lastBeatAt = Date.now();
     void data.setTo('presence', viewer, {
       person: viewer,
       lastSeenAt: Date.now(),

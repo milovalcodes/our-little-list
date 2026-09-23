@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v39';
+const CACHE = 'our-little-list-v40';
 
 const PAGES = [
   './', './index.html', './her.html', './him.html', './admire.html', './profiles.html',
@@ -54,8 +54,13 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(request)
         .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put(pageKey, copy));
+          // Only a good page is worth keeping. Catching a 404 mid-deploy used to
+          // overwrite the precached page, and that error page then became the
+          // offline copy until the next successful load.
+          if (response && response.ok && response.type === 'basic') {
+            const copy = response.clone();
+            caches.open(CACHE).then(cache => cache.put(pageKey, copy));
+          }
           return response;
         })
         .catch(async () => {
@@ -97,18 +102,19 @@ self.addEventListener('push', event => {
   const body = payload.late ? `${payload.body} (a little late, sorry)` : payload.body;
   const tag = payload.tag || 'our-little-list';
   const target = safeAppUrl(payload.url);
+  // A push that resolves without showing anything breaks the userVisibleOnly
+  // promise, and the browser posts its own "site updated in the background"
+  // notice instead. The tag already replaces a duplicate in place, which is the
+  // de-duplication this was reaching for.
   event.waitUntil(
-    self.registration.getNotifications({ tag }).then(existing => {
-      if (existing.length) return;
-      return self.registration.showNotification(payload.title, {
-        body,
-        icon: './sun-moon-personalized.png',
-        badge: './sun-moon-personalized.png',
-        tag,
-        renotify: false,
-        requireInteraction: payload.kind === 'reminder',
-        data: { url: target }
-      });
+    self.registration.showNotification(payload.title, {
+      body,
+      icon: './sun-moon-personalized.png',
+      badge: './sun-moon-personalized.png',
+      tag,
+      renotify: false,
+      requireInteraction: payload.kind === 'reminder',
+      data: { url: target }
     })
   );
 });
