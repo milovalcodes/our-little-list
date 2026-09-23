@@ -49,12 +49,17 @@ byId('shared-task-form').addEventListener('submit', async event => {
   const title = byId('shared-task-title').value.trim();
   if (!title) return;
 
+  // The when-chips are hidden on the grocery tab, so whatever was last picked on
+  // the to-do tab must not follow the groceries over and set a due date nobody
+  // can see or change.
   let due = '';
   const chosenDate = new Date();
-  if (when === 'today') due = dateKey(chosenDate);
-  if (when === 'tomorrow') {
-    chosenDate.setDate(chosenDate.getDate() + 1);
-    due = dateKey(chosenDate);
+  if (tab !== 'grocery') {
+    if (when === 'today') due = dateKey(chosenDate);
+    if (when === 'tomorrow') {
+      chosenDate.setDate(chosenDate.getDate() + 1);
+      due = dateKey(chosenDate);
+    }
   }
 
   setButtonBusy(submit,true,'…');
@@ -78,9 +83,15 @@ byId('task-list').addEventListener('click', async event => {
   button.disabled=true;button.classList.add('is-busy');
   try{
     if(button.dataset.action==='toggle'){
-      if(!item.done&&item.recurrence&&item.recurrence!=='once')await data.updateIn('items',item.id,{done:false,due:nextDue(item.due,item.recurrence),lastDoneBy:viewer,lastDoneAt:Date.now()});
+      if(!item.done&&item.recurrence&&item.recurrence!=='once'){
+        const rolled=nextDue(item.due,item.recurrence);
+        await data.updateIn('items',item.id,{done:false,due:rolled,previousDue:item.due||'',lastDoneBy:viewer,lastDoneAt:Date.now()});
+        toast(`done · back on ${prettyDue(rolled)}`);
+      }
       else await data.updateIn('items',item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
     }
+    // A repeat has no Done tab to undo from, so "undo" puts the old date back.
+    if(button.dataset.action==='undo-roll')await data.updateIn('items',item.id,{due:item.previousDue||'',previousDue:'',lastDoneBy:'',lastDoneAt:0});
     if(button.dataset.action==='readd')await data.updateIn('items',item.id,{done:false,doneBy:'',doneAt:0});
     if(button.dataset.action==='delete')await data.removeFrom('items',item.id);
   }catch(_){showFailure('the list edit did not stick.','check the internet and try the button again.');button.disabled=false;button.classList.remove('is-busy');}
@@ -141,10 +152,12 @@ function taskMarkup(item) {
   const addedBy = escapeHtml(personName(item.addedBy === 'her' ? 'her' : 'him'));
   const finished = item.doneBy ? `<span>done by ${escapeHtml(personName(item.doneBy))}</span>` : '';
   const repeat=item.recurrence&&item.recurrence!=='once'?`<span>↻ ${escapeHtml(item.recurrence)}</span>`:'';
+  const rolledBack=item.recurrence&&item.recurrence!=='once'&&item.lastDoneAt&&Date.now()-Number(item.lastDoneAt)<10*60000
+    ?'<button class="readd-task" data-action="undo-roll" type="button">undo</button>':'';
   const aisle=item.type==='grocery'&&item.aisle?`<span>${escapeHtml(item.aisle)}</span>`:'';
   return `<li class="task-row${doneClass}" data-id="${escapeHtml(item.id)}">
     <button class="task-check" data-action="toggle" aria-label="Mark ${escapeHtml(item.title)} ${item.done ? 'not done' : 'done'}">${check}</button>
-    <div><span class="task-title">${escapeHtml(item.title)}</span><div class="task-meta"><span>${due}</span>${aisle}${repeat}<span>added by ${addedBy}</span>${finished}</div>${item.done&&item.type==='grocery'?'<button class="readd-task" data-action="readd" type="button">put back</button>':''}</div>
+    <div><span class="task-title">${escapeHtml(item.title)}</span><div class="task-meta"><span>${escapeHtml(due)}</span>${aisle}${repeat}<span>added by ${addedBy}</span>${finished}</div>${item.done&&item.type==='grocery'?'<button class="readd-task" data-action="readd" type="button">put back</button>':''}${rolledBack}</div>
     <button class="delete-task" data-action="delete" aria-label="Delete ${escapeHtml(item.title)}">×</button>
   </li>`;
 }
@@ -163,4 +176,32 @@ function prettyDue(value) {
   if (value === dateKey(tomorrow)) return 'tomorrow';
   return value;
 }
-function nextDue(value,repeat){const next=value?new Date(`${value}T12:00:00`):new Date();if(Number.isNaN(next.getTime()))next.setTime(Date.now());if(repeat==='daily')next.setDate(next.getDate()+1);if(repeat==='weekly')next.setDate(next.getDate()+7);if(repeat==='monthly')next.setMonth(next.getMonth()+1);return dateKey(next);}
+function nextDue(value,repeat){
+  const today=new Date();today.setHours(12,0,0,0);
+  let next=value?new Date(`${value}T12:00:00`):new Date(today);
+  if(Number.isNaN(next.getTime()))next=new Date(today);
+  // A daily chore last ticked three days ago should come back tomorrow, not
+  // three days ago plus one. Step until it is genuinely in the future.
+  // Monthly keeps the day the user originally picked. Without an anchor, one
+  // pass through February would permanently drag a "31st" chore to the 28th.
+  const anchorDay=next.getDate();
+  const step=()=>{
+    if(repeat==='daily')next.setDate(next.getDate()+1);
+    else if(repeat==='weekly')next.setDate(next.getDate()+7);
+    else if(repeat==='monthly')addMonth(next,anchorDay);
+  };
+  if(repeat!=='daily'&&repeat!=='weekly'&&repeat!=='monthly')return dateKey(next);
+  let guard=0;
+  do{ step(); guard+=1; }while(next<=today&&guard<4000);
+  // Years of neglect should still produce a usable date rather than today's.
+  if(next<=today){ next=new Date(today); step(); }
+  return dateKey(next);
+}
+// setMonth overflows: the 31st of January becomes the 3rd of March. Clamp to the
+// last day of the month the user actually meant.
+function addMonth(date,anchorDay){
+  date.setDate(1);
+  date.setMonth(date.getMonth()+1);
+  const lastDay=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();
+  date.setDate(Math.min(anchorDay,lastDay));
+}

@@ -58,6 +58,7 @@ export function initHelpPanel({ data, viewer, other }) {
       document.querySelectorAll('#help-urgency .choice').forEach(item => item.classList.toggle('active', item.dataset.urgency === urgency));
       $('help-sent').hidden = false;
       $('help-sent').textContent = `asked ${personName(other)}.`;
+      window.setTimeout(() => { $('help-sent').hidden = true; }, 6000);
       toast('asked 🫡');
     } catch (_) {
       showFailure('that ask did not go through.', 'check the internet and try again. Your words are still here.');
@@ -73,6 +74,10 @@ export function initHelpPanel({ data, viewer, other }) {
     const request = requests.find(item => item.id === id);
     if (!request) return;
     const answer = button.dataset.answer;
+    // render() redraws this list from the optimistic local snapshot before the
+    // write resolves, which threw away the disabled button. Without this, a
+    // double tap sent the same answer twice and rang their phone twice.
+    if (request.state === answer) return;
     button.disabled = true;
     try {
       await data.updateIn('help', id, { state: answer, answeredAt: Date.now() });

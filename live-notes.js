@@ -20,13 +20,16 @@ async function boot(viewer) {
     data.listenTo('notes', notes => {
       const incoming = firstFresh('notes', notes, note => note.recipient === viewer && !note.read);
       if (!incoming) return;
-      announce({
+      const shown = announce({
         icon: { heart: '💛', sun: '☀️', moon: '🌙', star: '✦' }[incoming.mood] || '💌',
         label: 'a note for you',
         body: incoming.body,
         url: `notes.html`
       });
-      window.setTimeout(() => void data.updateIn('notes', incoming.id, { read: true, readAt: Date.now() }).catch(() => {}), 1200);
+      // Only a note you were actually shown counts as read. A backgrounded page
+      // still receives snapshots, and marking those read burned the note: no
+      // popup now, and nothing unread waiting when the page came back.
+      if (shown) window.setTimeout(() => void data.updateIn('notes', incoming.id, { read: true, readAt: Date.now() }).catch(() => {}), 1200);
     });
 
     data.listenTo('items', items => {
@@ -94,7 +97,7 @@ function announce(message) {
   // A hidden page may still receive Firestore snapshots for a few moments.
   // The push worker owns every operating-system notification; raising another
   // one here made the same event arrive twice on backgrounded phones.
-  if (document.hidden) return;
+  if (document.hidden) return false;
 
   window.playLittleTwinkle?.();
 
@@ -112,4 +115,5 @@ function announce(message) {
   });
   document.body.append(popup);
   window.setTimeout(() => popup.remove(), 10000);
+  return true;
 }
