@@ -52,8 +52,11 @@ export function createClient({ projectId, idToken }) {
         headers,
         body: JSON.stringify({ fields: writeMap(fields) })
       });
-      if (response.status === 409) return false;
       const text = await response.text();
+      // Firestore answers 409 for an existing document id, but a 400 carrying
+      // ALREADY_EXISTS means the same thing. Treating that as a hard failure
+      // would throw out of the whole delivery pass and send nothing at all.
+      if (response.status === 409 || (!response.ok && text.includes('ALREADY_EXISTS'))) return false;
       if (!response.ok) throw new Error(`firestore ${response.status}: ${text.slice(0, 300)}`);
       return true;
     },
