@@ -40,7 +40,6 @@ service cloud.firestore {
       allow read: if inHousehold(householdId);
       allow create, update: if inHousehold(householdId)
         && profileId == 'couple'
-        && request.resource.data.keys().hasOnly(['sunName', 'moonName', 'updatedAt'])
         && shortText(request.resource.data.sunName, 24)
         && shortText(request.resource.data.moonName, 24)
         && request.resource.data.updatedAt is int;
@@ -124,19 +123,23 @@ service cloud.firestore {
         && request.resource.data.to == otherSide()
         && shortText(request.resource.data.title, 180)
         && shortText(request.resource.data.note, 500);
+      // Reminders created before dueAt existed have no such field, and comparing
+      // against a missing key is an error, which denies the write. That made
+      // "mark all seen" silently fail forever on the oldest reminders.
       allow update: if inHousehold(householdId)
         && request.resource.data.sender == resource.data.sender
         && request.resource.data.recipient == resource.data.recipient
         && request.resource.data.title == resource.data.title
-        && request.resource.data.dueAt == resource.data.dueAt
-        && request.resource.data.createdAt == resource.data.createdAt;
+        && (!('dueAt' in resource.data) || request.resource.data.dueAt == resource.data.dueAt)
+        && (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt);
       allow delete: if inHousehold(householdId);
     }
 
     match /households/{householdId}/dates/{dateId} {
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId)
-        && (request.resource.data.addedBy == mySide() || request.resource.data.imported == true)
+        && (request.resource.data.addedBy == mySide()
+            || (request.resource.data.imported == true && dateId.matches('old-list-.*')))
         && shortText(request.resource.data.title, 180)
         && shortText(request.resource.data.note, 500);
       allow update: if inHousehold(householdId)
@@ -162,21 +165,15 @@ service cloud.firestore {
       allow delete: if inHousehold(householdId);
     }
 
-    match /households/{householdId}/brainDump/{thoughtId} {
-      allow read: if inHousehold(householdId);
-      allow create: if inHousehold(householdId)
-        && request.resource.data.addedBy == mySide()
-        && shortText(request.resource.data.text, 180)
-        && request.resource.data.createdAt is int;
-      allow update: if false;
-      allow delete: if inHousehold(householdId);
-    }
-
     match /households/{householdId}/focus/{person} {
       allow read: if inHousehold(householdId);
-      allow create, update: if inHousehold(householdId) && ownsSide(person)
+      allow create: if inHousehold(householdId) && ownsSide(person)
         && request.resource.data.person == person
         && shortText(request.resource.data.label, 100)
+        && request.resource.data.updatedAt is int;
+      allow update: if inHousehold(householdId) && ownsSide(person)
+        && request.resource.data.person == person
+        && (!request.resource.data.keys().hasAny(['label']) || shortText(request.resource.data.label, 100))
         && request.resource.data.updatedAt is int;
       allow delete: if inHousehold(householdId) && ownsSide(person);
     }
@@ -212,6 +209,7 @@ service cloud.firestore {
         && shortText(request.resource.data.body, 400)
         && shortText(request.resource.data.url, 200)
         && shortText(request.resource.data.kind, 60)
+        && (!request.resource.data.keys().hasAny(['ref']) || shortText(request.resource.data.ref, 200))
         && request.resource.data.sendAt is int
         && request.resource.data.createdAt is int;
       allow update: if false;

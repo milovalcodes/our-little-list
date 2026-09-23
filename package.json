@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "check:syntax": "node test/check-syntax.mjs",
-    "test:unit": "node test/delivery.test.mjs && node test/push-client.test.mjs && node test/notification-paths.test.mjs && node test/webpush.test.mjs && node test/delivery-worker.test.mjs",
+    "test:unit": "node test/delivery.test.mjs && node test/push-client.test.mjs && node test/notification-paths.test.mjs && node test/recurrence.test.mjs && node test/webpush.test.mjs && node test/delivery-worker.test.mjs",
     "test:browser": "node test/smoke.mjs",
     "test": "pnpm run check:syntax && pnpm run test:unit"
   },
