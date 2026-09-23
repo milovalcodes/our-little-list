@@ -194,6 +194,34 @@ console.log('\n--- interactions ---');
   await context.close();
 }
 
+// An arrival tap is a one-field update. It used to rebuild the whole document
+// from whatever was in memory. The window that made that destructive — the gap
+// before the first snapshot lands — is not reproducible here, so this guards the
+// shape of the write rather than the race: whatever else an arrival does, the
+// status and the availability have to survive it.
+{
+  const { context, page, errors } = await open('status.html?as=her');
+  await page.evaluate(() => document.querySelector('.status-editor-disclosure')?.setAttribute('open', ''));
+  await page.fill('#status-text', 'the tiny mug album');
+  await page.selectOption('#status-category', 'listening to');
+  await page.click('#status-save');
+  await page.waitForTimeout(400);
+  await page.click('#arrival-presets [data-arrival="home safe"]');
+  await page.waitForTimeout(500);
+  const stillThere = await page.locator('.person-status-card.is-me .status-custom', { hasText: 'the tiny mug album' }).count();
+  const arrived = await page.locator('.person-status-card.is-me .status-arrival', { hasText: 'home safe' }).count();
+  note(stillThere === 1 && arrived === 1 && errors.length === 0, 'an arrival tap keeps the status you set',
+       errors[0] || `status ${stillThere}, arrival ${arrived}`);
+
+  // Clearing the custom bit must not also commit an availability you only hovered over.
+  await page.click('.status-choice[data-state="dnd"]');
+  await page.click('#status-clear');
+  await page.waitForTimeout(400);
+  const presence = await page.locator('.person-status-card.is-me .status-presence').innerText();
+  note(!presence.includes('busy') && errors.length === 0, 'clearing the custom bit leaves availability alone', presence);
+  await context.close();
+}
+
 // Date roulette honors its filters instead of quietly pulling an untagged old idea.
 {
   const { context, page, errors } = await open('dates.html?as=her');
