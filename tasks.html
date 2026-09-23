@@ -12,10 +12,10 @@
     </section>
 
     <nav class="tabs" aria-label="List sections">
-      <button class="tab active" data-tab="tasks">To do</button><button class="tab" data-tab="grocery">Groceries</button><button class="tab" data-tab="done">Done</button>
+      <button class="tab active" data-tab="tasks">To do</button><button class="tab" data-tab="grocery">Groceries</button><button class="tab" data-tab="asks">Asks</button><button class="tab" data-tab="done">Done</button>
     </nav>
 
-    <section class="composer-card compact-composer">
+    <section class="composer-card compact-composer" id="task-composer">
       <form id="shared-task-form">
         <label><span id="task-prompt">What needs doing?</span><div class="inline-add"><input id="shared-task-title" required maxlength="100" placeholder="type it before it leaves your brain"><button type="submit" aria-label="Add">+</button></div></label>
         <div class="soft-options" id="task-options">
@@ -25,10 +25,46 @@
       </form>
     </section>
 
-    <section class="list-card">
+    <section class="list-card" id="task-list-card">
       <div class="list-heading"><div><p class="tiny-kicker" id="list-kicker">our things</p><h2 id="list-title">To do</h2></div><span class="count-bubble" id="item-count">0 left</span></div>
       <div class="empty-state" id="empty-state"><span>✦</span><strong>Nothing here</strong></div>
       <ul class="task-list" id="task-list"></ul>
+    </section>
+
+    <section class="asks-workspace" id="asks-workspace" hidden>
+      <section class="help-inbox" id="help-inbox" hidden>
+        <div class="help-section-head"><p class="tiny-kicker">waiting on you</p><h2 id="inbox-title">They need something</h2></div>
+        <div id="help-inbox-list"></div>
+      </section>
+
+      <section class="note-maker help-maker">
+        <div class="help-section-head"><p class="tiny-kicker">small ask</p><h2 id="help-heading">Ask for a hand</h2></div>
+        <div class="help-presets" id="help-presets">
+          <button type="button" data-emoji="💧" data-title="bring me water">💧 water</button>
+          <button type="button" data-emoji="📞" data-title="call me when you're free">📞 call me</button>
+          <button type="button" data-emoji="🚗" data-title="come pick me up">🚗 pick me up</button>
+          <button type="button" data-emoji="🫂" data-title="i need a hug">🫂 a hug</button>
+          <button type="button" data-emoji="🛒" data-title="grab something on the way">🛒 grab something</button>
+          <button type="button" data-emoji="😵" data-title="rescue me from this">😵 rescue me</button>
+        </div>
+        <form id="help-form">
+          <label class="little-note-field"><span>what do you need?</span><input id="help-title" required maxlength="90" placeholder="ask a thing"></label>
+          <label class="little-note-field"><span>extra detail, maybe</span><input id="help-note" maxlength="140" placeholder="optional"></label>
+          <div class="choice-cloud" id="help-urgency">
+            <button type="button" class="choice" data-urgency="whenever">whenever</button>
+            <button type="button" class="choice active" data-urgency="soon">soon-ish</button>
+            <button type="button" class="choice" data-urgency="now">kind of now</button>
+          </div>
+          <button class="primary-action roomy-action" id="help-submit" type="submit">ask</button>
+        </form>
+        <p class="inline-success" id="help-sent" hidden></p>
+      </section>
+
+      <section class="help-mine">
+        <div class="help-section-head"><p class="tiny-kicker">yours</p><h2>What you asked for</h2></div>
+        <p class="empty-note" id="help-mine-empty">nothing pending.</p>
+        <div id="help-mine-list"></div>
+      </section>
     </section>
   </main>
 

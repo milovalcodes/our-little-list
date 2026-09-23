@@ -2,6 +2,7 @@ import { sharedLayer, onAuthChange } from './data-hub.js';
 import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
 import { personName } from './profile-store.js';
+import { initHelpPanel } from './help-panel.js';
 
 const byId = id => document.getElementById(id);
 let items = [];
@@ -22,6 +23,7 @@ const other = partnerOf(viewer);
 
 applyViewerTheme(viewer);
 document.querySelector('.back-to-side').href = `${viewer}.html`;
+initHelpPanel({ data, viewer, other });
 
 data.listenTo('items', nextItems => {
   items = nextItems;
@@ -38,20 +40,7 @@ document.querySelectorAll('.soft-chip').forEach(button => {
 document.querySelectorAll('.repeat-chip').forEach(button=>button.addEventListener('click',()=>{recurrence=button.dataset.repeat;document.querySelectorAll('.repeat-chip').forEach(item=>item.classList.toggle('active',item===button));}));
 
 document.querySelectorAll('.tab').forEach(button => {
-  button.addEventListener('click', () => {
-    tab = button.dataset.tab;
-    document.querySelectorAll('.tab').forEach(item => item.classList.toggle('active', item === button));
-    const grocery = tab === 'grocery';
-    byId('task-prompt').textContent = grocery ? 'What should we grab?' : 'What needs doing?';
-    byId('shared-task-title').placeholder = grocery
-      ? 'oat milk, batteries, tiny treats…'
-      : 'type it before it leaves your brain';
-    byId('task-options').hidden = grocery || tab === 'done';
-    byId('grocery-aisle-wrap').hidden = !grocery;
-    byId('repeat-options').hidden = tab === 'done';
-    document.querySelector('.compact-composer').hidden = tab === 'done';
-    render();
-  });
+  button.addEventListener('click', () => selectTab(button.dataset.tab, true));
 });
 
 byId('shared-task-form').addEventListener('submit', async event => {
@@ -98,6 +87,7 @@ byId('task-list').addEventListener('click', async event => {
 });
 
 function visibleItems() {
+  if (tab === 'asks') return [];
   const wantedType = tab === 'tasks' ? 'task' : tab;
   return items
     .filter(item => tab === 'done' ? item.done : item.type === wantedType && !item.done)
@@ -108,6 +98,7 @@ function visibleItems() {
 }
 
 function render() {
+  if (tab === 'asks') return;
   const list = visibleItems();
   byId('item-count').textContent = tab === 'done' ? `${list.length} done` : `${list.length} left`;
   byId('empty-state').hidden = list.length > 0;
@@ -124,6 +115,23 @@ function render() {
   empty.querySelector('span').textContent = labels[2];
   empty.querySelector('strong').textContent = labels[3];
   byId('task-list').innerHTML = tab==='grocery'?groceryMarkup(list):list.map(taskMarkup).join('');
+}
+
+function selectTab(next, updateHash = false) {
+  tab = ['tasks', 'grocery', 'asks', 'done'].includes(next) ? next : 'tasks';
+  document.querySelectorAll('.tab').forEach(item => item.classList.toggle('active', item.dataset.tab === tab));
+  const asks = tab === 'asks';
+  const grocery = tab === 'grocery';
+  byId('task-list-card').hidden = asks;
+  byId('asks-workspace').hidden = !asks;
+  byId('task-prompt').textContent = grocery ? 'What should we grab?' : 'What needs doing?';
+  byId('shared-task-title').placeholder = grocery ? 'oat milk, batteries, tiny treats…' : 'type it before it leaves your brain';
+  byId('task-options').hidden = grocery || tab === 'done';
+  byId('grocery-aisle-wrap').hidden = !grocery;
+  byId('repeat-options').hidden = tab === 'done';
+  byId('task-composer').hidden = asks || tab === 'done';
+  if (updateHash) history.replaceState(null, '', asks ? '#asks' : location.pathname + location.search);
+  if (!asks) render();
 }
 
 function taskMarkup(item) {
@@ -144,6 +152,8 @@ function taskMarkup(item) {
 function groceryMarkup(list){const groups=new Map();list.forEach(item=>{const aisle=item.aisle||'other';if(!groups.has(aisle))groups.set(aisle,[]);groups.get(aisle).push(item);});return [...groups].map(([aisle,entries])=>`<li class="aisle-label">${escapeHtml(aisle)}</li>${entries.map(taskMarkup).join('')}`).join('');}
 
 window.addEventListener('littlelist:profile',render);
+window.addEventListener('hashchange', () => selectTab(location.hash === '#asks' ? 'asks' : 'tasks'));
+selectTab(location.hash === '#asks' ? 'asks' : 'tasks');
 
 function prettyDue(value) {
   const today = dateKey(new Date());

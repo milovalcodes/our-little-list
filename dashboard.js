@@ -9,7 +9,7 @@ import { timeAgo } from './time-format.js';
 
 const badge = document.getElementById('activity-badge');
 const helpBadge = document.getElementById('help-badge');
-const buckets = { items: [], notes: [], reminders: [], dates: [], statuses: [], help: [], brainDump: [], memories: [], reactions: [], focus: [], locations: [], presence: [] };
+const buckets = { items: [], notes: [], reminders: [], dates: [], statuses: [], help: [], memories: [], reactions: [], focus: [], locations: [], presence: [] };
 let dashboardFrame = 0;
 
 const data = await sharedLayer();
@@ -89,7 +89,6 @@ function renderBadge() {
       ...buckets.dates.filter(idea => idea.addedBy === other && !idea.imported && fresh(idea.createdAt)),
       ...buckets.statuses.filter(status => (status.person === other || status.id === other) && fresh(status.updatedAt)),
       ...buckets.help.filter(request => request.to === viewer && fresh(request.createdAt)),
-      ...buckets.brainDump.filter(item => item.addedBy === other && fresh(item.createdAt)),
       ...buckets.memories.filter(item => item.addedBy === other && fresh(item.createdAt)),
       ...buckets.reactions.filter(item => item.by === other && fresh(item.createdAt)),
       ...buckets.focus.filter(item => item.person === other && item.active && fresh(item.updatedAt))

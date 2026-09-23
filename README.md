@@ -19,7 +19,9 @@ Live: https://milovalcodes.github.io/our-little-list/
 - A shared date-idea pile with favourites, mood filters, a random picker and a done pile
 - A private memory jar for little photos and things worth keeping
 - An activity feed with unread counts, read receipts and last-online presence
-- A read-only "admire the sun / admire the moon" view of the other side
+- One shared “right now” view for both statuses, presence, and locations
+- Notes now keep sending, reading, and reactions together
+- Help requests live inside the shared list as the “Asks” tab
 - Foreground location that starts with the app, can be paused from the status
   page, and becomes an honest last-known spot when the phone suspends it
 - A phone checker that tests sync, internet, installation, notifications and

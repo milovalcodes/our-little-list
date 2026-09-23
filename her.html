@@ -7,7 +7,7 @@
   <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page her-theme compact-dashboard" data-viewer="her">
-  <header class="app-topbar"><button class="home-link" id="sign-out" type="button">sign out</button><span class="home-wordmark">our little sky ☀︎☾</span></header>
+  <header class="app-topbar"><button class="home-link" id="sign-out" type="button">sign out</button><span class="home-wordmark">our little sky ☀︎☾</span><a class="sky-inbox-link" href="activity.html" aria-label="Recent activity">↻<span class="activity-badge" id="activity-badge" hidden>0</span></a></header>
   <main class="app-shell dashboard-shell">
     <section class="our-sky" aria-labelledby="sky-greeting">
       <header class="sky-heading">
@@ -21,12 +21,12 @@
           <span class="sky-avatar"><img src="sun-profile.png" alt=""><i class="sky-presence" id="sky-presence-her"></i><em class="sky-reaction" id="sky-reaction-her" hidden></em></span>
           <span class="sky-person-label"><strong id="sky-name-her">her</strong><small id="sky-seen-her">somewhere</small></span>
         </a>
-        <a class="sky-person sky-moon" id="sky-person-him" href="admire.html" aria-label="Admire the moon">
+        <a class="sky-person sky-moon" id="sky-person-him" href="status.html#partner" aria-label="See the moon right now">
           <span class="sky-status-bubble" id="sky-status-him" hidden></span>
           <span class="sky-avatar"><img src="moon-profile.png" alt=""><i class="sky-presence" id="sky-presence-him"></i><em class="sky-reaction" id="sky-reaction-him" hidden></em></span>
           <span class="sky-person-label"><strong id="sky-name-him">him</strong><small id="sky-seen-him">somewhere</small></span>
         </a>
-        <a class="sky-note-star" id="sky-note-star" href="admire.html" hidden><span>💌</span><small id="sky-note-copy"></small></a>
+        <a class="sky-note-star" id="sky-note-star" href="notes.html" hidden><span>💌</span><small id="sky-note-copy"></small></a>
         <span class="sky-wins" id="sky-wins" hidden></span>
       </div>
       <footer class="sky-footer">
@@ -37,15 +37,13 @@
 
     <nav class="sky-launchpad" aria-label="Open a part of our app">
       <a class="sky-launch today-action" href="today.html"><span>◎</span><strong>today</strong></a>
-      <a class="sky-launch list-action" href="tasks.html"><span>✓</span><strong>the list</strong></a>
-      <a class="sky-launch note-action" href="notes.html"><span>💌</span><strong>note</strong></a>
+      <a class="sky-launch list-action" href="tasks.html"><span>✓</span><span class="activity-badge" id="help-badge" hidden>0</span><strong>the list</strong></a>
+      <a class="sky-launch note-action" href="notes.html"><span>💌</span><strong>notes</strong></a>
       <a class="sky-launch reminder-action" href="reminders.html"><span>⏰</span><strong>reminder</strong></a>
-      <a class="sky-launch help-action" href="help.html"><span>🙋</span><span class="activity-badge" id="help-badge" hidden>0</span><strong>help pls</strong></a>
       <a class="sky-launch date-action" href="dates.html"><span>✦</span><strong>date pile</strong></a>
       <a class="sky-launch memory-action" href="memories.html"><span>◒</span><strong>memories</strong></a>
-      <a class="sky-launch activity-action" href="activity.html"><span>↻</span><span class="activity-badge" id="activity-badge" hidden>0</span><strong>recent</strong></a>
-      <a class="sky-launch now-action" href="status.html"><span>☀︎☾</span><strong>right now</strong><small id="home-location-state">starting…</small></a>
     </nav>
+    <span id="home-location-state" hidden>starting…</span>
     <nav class="home-utility-row" aria-label="Settings"><a href="phone-check.html">phone check</a><span>·</span><a href="profiles.html">our names</a></nav>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="dashboard.js"></script><script type="module" src="live-notes.js"></script>

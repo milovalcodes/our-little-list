@@ -67,8 +67,8 @@ async function open(path) {
 
 console.log('--- every page renders, no script errors, no sideways scroll ---');
 const PAGES = ['her.html','him.html','tasks.html?as=her','reminders.html?from=her','notes.html?from=her',
-  'location.html?as=her','activity.html?as=her','status.html?as=her','dates.html?as=her','help.html?as=her',
-  'phone-check.html?as=her','profiles.html','admire.html?as=her','help.html?as=him'];
+  'location.html?as=her','activity.html?as=her','status.html?as=her','dates.html?as=her','tasks.html?as=her#asks',
+  'phone-check.html?as=her','profiles.html','status.html?as=him#partner','tasks.html?as=him#asks'];
 PAGES.push('today.html?as=her','memories.html?as=her');
 
 for (const path of PAGES) {
@@ -81,6 +81,16 @@ for (const path of PAGES) {
 }
 
 console.log('\n--- interactions ---');
+
+// Old bookmarks and queued notifications land in the consolidated homes.
+{
+  const help = await open('help.html?as=her');
+  note(help.page.url().endsWith('/tasks.html#asks'), 'old help links move into the list', help.page.url());
+  await help.context.close();
+  const admire = await open('admire.html?as=her');
+  note(admire.page.url().endsWith('/status.html#partner'), 'old admire links move into right now', admire.page.url());
+  await admire.context.close();
+}
 
 // The new home is one data-driven sky, not the old greeting plus four menu boxes.
 {
@@ -104,7 +114,7 @@ console.log('\n--- interactions ---');
   const reaction=await page.locator('#sky-reaction-her:not([hidden])').count();
   const oldDashboard=await page.locator('.compact-hello,.home-group').count();
   const routes=await page.evaluate(()=>({self:document.querySelector('#sky-person-her')?.getAttribute('href'),partner:document.querySelector('#sky-person-him')?.getAttribute('href')}));
-  note(orbit==='together'&&title?.includes('together')&&liveStatus===1&&noteStar===1&&wins===1&&reaction===1&&oldDashboard===0&&routes.self==='status.html'&&routes.partner==='admire.html'&&errors.length===0,
+  note(orbit==='together'&&title?.includes('together')&&liveStatus===1&&noteStar===1&&wins===1&&reaction===1&&oldDashboard===0&&routes.self==='status.html'&&routes.partner==='status.html#partner'&&errors.length===0,
        'our sky reflects live data without the old dashboard',errors[0]||JSON.stringify({orbit,title,liveStatus,noteStar,wins,reaction,oldDashboard,routes}));
   await context.close();
 }
@@ -161,17 +171,15 @@ console.log('\n--- interactions ---');
   await context.close();
 }
 
-// The Today hub can park a thought and start a shared focus session.
+// The Today hub stays focused on what is due and the shared focus session.
 {
   const { context, page, errors } = await open('today.html?as=her');
-  await page.fill('#dump-text', 'return the library book');
-  await page.click('#dump-form [type="submit"]');
   await page.fill('#focus-label', 'fold laundry');
   await page.click('#focus-start');
   await page.waitForTimeout(350);
-  const thought = await page.locator('.dump-row', { hasText: 'return the library book' }).count();
   const focus = await page.locator('.focus-person.active', { hasText: 'fold laundry' }).count();
-  note(thought === 1 && focus === 1 && errors.length === 0, 'today hub saves thoughts and focus', errors[0] || '');
+  const obsoleteDump = await page.locator('.dump-card,#dump-form').count();
+  note(focus === 1 && obsoleteDump === 0 && errors.length === 0, 'today keeps focus without the duplicate thought inbox', errors[0] || '');
   await context.close();
 }
 
@@ -231,33 +239,34 @@ console.log('\n--- interactions ---');
 
 // Note reactions save without a false error, stand out, and toggle back off.
 {
-  const { context, page, errors } = await open('admire.html?as=her');
+  const { context, page, errors } = await open('notes.html?as=her');
   await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();await data.addTo('notes',{sender:'him',from:'him',recipient:'her',to:'her',body:'reaction test note',mood:'moon',createdAt:Date.now()});});
   await page.waitForTimeout(200);
   await page.click('[data-note-picker]');
   await page.fill('#emoji-reaction-input','🦦');
   await page.click('[data-picker-use]');
   await page.waitForTimeout(250);
-  const active=await page.locator('[data-note-reaction][data-emoji="🦦"]').count();
+  const active=await page.locator('.reaction-display[data-note-picker]',{hasText:'🦦'}).count();
   const falseError=await page.locator('.global-failure').count();
-  await page.click('[data-note-reaction][data-emoji="🦦"]');
+  await page.click('.reaction-display[data-note-picker]');
+  await page.click('[data-picker-remove]');
   await page.waitForTimeout(200);
-  const undone=await page.locator('[data-note-reaction][data-emoji="🦦"]').count()===0;
+  const undone=await page.locator('.reaction-display[data-note-picker]',{hasText:'🦦'}).count()===0;
   note(active === 1 && falseError === 0 && undone && errors.length === 0, 'any keyboard emoji reacts cleanly and undoes', errors[0] || (falseError?'false failure shown':''));
   await context.close();
 }
 
 // Help request round trip: her asks, him answers.
 {
-  const her = await open('help.html?as=her');
+  const her = await open('tasks.html?as=her#asks');
   await her.page.click('#help-presets [data-title="bring me water"]');
   await her.page.click('#help-submit');
   await her.page.waitForTimeout(500);
-  const asked = await her.page.locator('#sent-state:visible').count();
+  const asked = await her.page.locator('#help-sent:visible').count();
   note(asked === 1 && her.errors.length === 0, 'send a help request', her.errors[0] || '');
 
   // Local mode keeps data per browser context, so answer it in the same one.
-  await her.page.goto(`${BASE}/help.html?as=him`, { waitUntil: 'domcontentloaded' });
+  await her.page.goto(`${BASE}/tasks.html?as=him#asks`, { waitUntil: 'domcontentloaded' });
   await her.page.waitForTimeout(1100);
   const inbox = await her.page.locator('#help-inbox-list .help-card').count();
   note(inbox >= 1, 'request arrives in the other inbox', inbox === 0 ? 'inbox empty' : '');

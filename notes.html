@@ -19,9 +19,13 @@
         <div class="note-mood-row"><span>add</span><label><input type="radio" name="mood" value="heart" checked> 💛</label><label><input type="radio" name="mood" value="sun"> ☀️</label><label><input type="radio" name="mood" value="moon"> 🌙</label><label><input type="radio" name="mood" value="star"> ✦</label></div>
         <button class="primary-action roomy-action" id="note-submit" type="submit">send it</button>
       </form>
-      <div class="sent-state" id="sent-state" hidden><span>💌</span><h2>sent ♡</h2><p id="sent-copy">it’s on the way.</p><button class="create-space" id="another-note" type="button">send another</button></div>
+      <p class="inline-success" id="note-send-state" hidden></p>
     </section>
-    <section class="note-preview"><p class="tiny-kicker">preview</p><div class="phone-popup"><span id="preview-mood">💛</span><div><strong>a little note</strong><p id="preview-body">thinking of u ♡</p></div></div></section>
+    <section class="list-card note-inbox-card">
+      <div class="list-heading"><div><p class="tiny-kicker">between us</p><h2>Our notes</h2></div><span>💌</span></div>
+      <div class="empty-state" id="note-inbox-empty"><span>◌</span><strong>No notes yet</strong></div>
+      <div class="note-inbox-list" id="note-inbox-list"></div>
+    </section>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="notes.js"></script><script type="module" src="live-notes.js"></script>
 </body>

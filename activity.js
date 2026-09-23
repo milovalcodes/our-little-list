@@ -5,7 +5,7 @@ import { startPresence } from './presence.js';
 import { personName } from './profile-store.js';
 import { timeAgo, friendlyDate } from './time-format.js';
 
-const $=id=>document.getElementById(id);const buckets={items:[],notes:[],reminders:[],presence:[],dates:[],statuses:[],help:[],brainDump:[],memories:[],reactions:[],focus:[]};
+const $=id=>document.getElementById(id);const buckets={items:[],notes:[],reminders:[],presence:[],dates:[],statuses:[],help:[],memories:[],reactions:[],focus:[]};
 let data;let started=false;
 data=await sharedLayer();
 onAuthChange(user=>setupAuthUI(data,user));
@@ -29,7 +29,7 @@ $('activity-list').addEventListener('click',handleActivityAction);
 
 function start(){
   if(started)return;started=true;
-  ['items','notes','reminders','presence','dates','statuses','help','brainDump','memories','reactions','focus'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));
+  ['items','notes','reminders','presence','dates','statuses','help','memories','reactions','focus'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));
   startPresence(data,viewer,'activity');
   window.setTimeout(markIncomingRead,900);
   window.setInterval(renderPresence,30000);
@@ -49,7 +49,6 @@ function events(){
     if(request.answeredAt)all.push({id:`help-answer-${request.id}-${request.answeredAt}`,recordId:request.id,collection:'help',at:Number(request.answeredAt),icon:request.state==='cant'?'✗':'✓',who:request.to,kind:'answered a request',selfKind:'answered a request',text:request.title});
   });
   buckets.statuses.forEach(status=>all.push({id:`status-${status.id}-${status.updatedAt||0}`,recordId:status.id,collection:'statuses',at:Number(status.updatedAt)||0,icon:status.emoji||'●',who:status.person||status.id,kind:'updated their status',selfKind:'updated your status',text:status.text?`${status.category||'currently'} ${status.text}`:(status.state||'updated')}));
-  buckets.brainDump.forEach(item=>all.push({id:`brain-${item.id}`,recordId:item.id,collection:'brainDump',at:Number(item.createdAt)||0,icon:'🧠',who:item.addedBy,kind:'parked a thought',text:item.text}));
   buckets.memories.forEach(item=>all.push({id:`memory-${item.id}`,recordId:item.id,collection:'memories',at:Number(item.createdAt)||0,icon:'◒',who:item.addedBy,kind:'added to the memory jar',text:item.text}));
   buckets.reactions.forEach(item=>all.push({id:`reaction-${item.id}`,recordId:item.id,collection:'reactions',at:Number(item.createdAt)||0,icon:item.emoji||'♡',who:item.by,kind:'reacted',text:item.targetType==='status'?'to a status':'to a note'}));
   buckets.focus.forEach(item=>{if(item.updatedAt)all.push({id:`focus-${item.id}-${item.updatedAt}`,recordId:item.id,collection:'focus',at:Number(item.updatedAt),icon:'⏱',who:item.person||item.id,kind:item.active?'started focusing':'finished focusing',text:item.label||'doing the thing',status:item.active?`${item.minutes||15} min`:''});});

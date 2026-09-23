@@ -1,53 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-  <title>Help Me Out</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=tasks.html#asks">
+  <title>Opening the list…</title><link rel="stylesheet" href="styles.css">
 </head>
-<body class="profile-page" data-app="help">
-  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">help me out 🙋</span></header>
-  <main class="app-shell feature-shell help-shell">
-    <section class="feature-hero help-hero"><span class="feature-icon">🙋</span><p class="tiny-kicker">small asks</p><h1 id="help-heading">Ask for a hand</h1></section>
-
-    <section class="help-inbox" id="help-inbox" hidden>
-      <div class="help-section-head"><p class="tiny-kicker">waiting on you</p><h2 id="inbox-title">They need something</h2></div>
-      <div id="help-inbox-list"></div>
-    </section>
-
-    <section class="note-maker help-maker">
-      <p class="maker-question">quick ones</p>
-      <div class="help-presets" id="help-presets">
-        <button type="button" data-emoji="💧" data-title="bring me water">💧 water</button>
-        <button type="button" data-emoji="📞" data-title="call me when you're free">📞 call me</button>
-        <button type="button" data-emoji="🚗" data-title="come pick me up">🚗 pick me up</button>
-        <button type="button" data-emoji="🫂" data-title="i need a hug">🫂 a hug</button>
-        <button type="button" data-emoji="🛒" data-title="grab something on the way">🛒 grab something</button>
-        <button type="button" data-emoji="😵" data-title="rescue me from this">😵 rescue me</button>
-        <button type="button" data-emoji="🍔" data-title="i am so hungry">🍔 feed me</button>
-        <button type="button" data-emoji="🧠" data-title="remind me what i was doing">🧠 remind me</button>
-      </div>
-
-      <form id="help-form">
-        <label class="little-note-field"><span>or say it yourself</span><input id="help-title" required maxlength="90" placeholder="what do you need?"></label>
-        <label class="little-note-field"><span>anything else?</span><input id="help-note" maxlength="140" placeholder="optional detail"></label>
-        <p class="maker-question">how soon?</p>
-        <div class="choice-cloud" id="help-urgency">
-          <button type="button" class="choice" data-urgency="whenever">whenever</button>
-          <button type="button" class="choice active" data-urgency="soon">soon-ish</button>
-          <button type="button" class="choice" data-urgency="now">kind of now</button>
-        </div>
-        <button class="primary-action roomy-action" id="help-submit" type="submit">ask <span id="help-target">them</span></button>
-      </form>
-
-      <div class="sent-state" id="sent-state" hidden><span>🙋</span><h2>asked</h2><p id="sent-copy"></p><button class="create-space" id="another-help" type="button">ask something else</button></div>
-    </section>
-
-    <section class="help-mine">
-      <div class="help-section-head"><p class="tiny-kicker">yours</p><h2>What you asked for</h2></div>
-      <p class="empty-note" id="help-mine-empty">nothing pending. self-sufficient today.</p>
-      <div id="help-mine-list"></div>
-    </section>
-  </main>
-  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="help.js"></script><script type="module" src="live-notes.js"></script>
-</body>
+<body class="profile-page redirect-page"><main><p>moving this into the list…</p><a href="tasks.html#asks">open asks</a></main><script>location.replace('tasks.html#asks');</script></body>
 </html>

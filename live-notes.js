@@ -46,7 +46,7 @@ async function boot(viewer) {
 
     data.listenTo('help', items => {
       const fresh = firstFresh('help', items, item => item.to === viewer && item.state === 'open');
-      if (fresh) announce({ icon: fresh.emoji || '🙋', label: `${personName(other)} needs a hand`, body: fresh.title, url: `help.html` });
+      if (fresh) announce({ icon: fresh.emoji || '🙋', label: `${personName(other)} needs a hand`, body: fresh.title, url: 'tasks.html#asks' });
     });
 
     data.listenTo('statuses', items => watchStatus(items));
