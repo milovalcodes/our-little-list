@@ -33,6 +33,9 @@ jobs:
       - name: Notifications have one delivery owner
         run: node test/notification-paths.test.mjs
 
+      - name: Repeating tasks roll to a date in the future
+        run: node test/recurrence.test.mjs
+
       - name: Push encryption and the delivery worker behave
         run: |
           node test/webpush.test.mjs
