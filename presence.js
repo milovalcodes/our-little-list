@@ -15,9 +15,20 @@ export function startPresence(data, viewer, page = 'somewhere') {
     }).catch(() => {});
   };
 
-  beat();
-  timer = window.setInterval(beat, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+  const arm = () => {
+    window.clearInterval(timer);
+    timer = window.setInterval(beat, 60000);
+  };
+
+  const wakeUp = () => { beat(); arm(); };
+
+  wakeUp();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) wakeUp(); });
   window.addEventListener('focus', beat);
+  // pagehide is usually a freeze, not a close — phones put the page in the back
+  // pocket and hand it back intact. Stopping the timer without restarting it on
+  // the way back left presence permanently stuck at "last seen" on a page that
+  // was in fact open.
   window.addEventListener('pagehide', () => window.clearInterval(timer));
+  window.addEventListener('pageshow', wakeUp);
 }

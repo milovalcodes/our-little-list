@@ -26,7 +26,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
   const [
     { initializeApp, getApps, getApp },
     { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
-    { getFirestore, collection, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc }
+    { getFirestore, collection, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc, getDocs }
   ] = modules;
 
   // Better a plain sentence than a permission-denied nobody can read.
@@ -55,6 +55,15 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         snapshot => callback(snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }))),
         problem => announceError(problem, 'listen')
       );
+    },
+    // A single read, for the places that need to look at a collection once and
+    // then act — push registration checking who else is filed against this
+    // phone, for instance. A live listener there would sit open for the life of
+    // the page to answer one question.
+    async readOnce(name) {
+      if (!signedIn()) return [];
+      const snapshot = await getDocs(named(name));
+      return snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
     },
     addTo: (name, item) => addDoc(named(name), item),
     setTo: (name, id, item) => setDoc(doc(named(name), id), item, { merge: true }),
@@ -144,6 +153,9 @@ function createLocalLayer(onAuth, onReady) {
       listeners.get(name).add(callback);
       queueMicrotask(() => callback(read(name)));
       return () => listeners.get(name)?.delete(callback);
+    },
+    async readOnce(name) {
+      return read(name);
     },
     async addTo(name, item) {
       const items = read(name);

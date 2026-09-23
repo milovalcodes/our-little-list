@@ -42,7 +42,9 @@ Free on Cloudflare's free plan, no credit card, no Firebase Blaze plan.
 scheduled workflows as its lowest-priority queue: a `*/5` schedule fired roughly
 every four hours, so reminders arrived the same afternoon rather than at the
 time you picked. `.github/workflows/deliver.yml` is kept as a manual backstop
-with its schedule removed — running both would deliver everything twice.
+with its schedule removed — running both would deliver everything twice. It has
+to stay behaviourally identical to `worker/src/index.js`; the comment at the top
+of `tools/deliver.mjs` says why.
 
 Things to know:
 - **On iPhone, notifications only work once the site is on the Home Screen.**
@@ -93,8 +95,12 @@ npx wrangler secret put VAPID_PRIVATE_KEY   # private half of the push key pair
 npx wrangler deploy
 ```
 
-Watch it with `npx wrangler tail`. A quiet minute logs
-`{"checked":true,"sent":0,"subscribed":2}`.
+Watch it with `npx wrangler tail`, or read **Observability → Logs** in the
+dashboard. A quiet minute logs `{"checked":true,"sent":0,"subscribed":2}`.
+
+Logging is declared in `wrangler.toml`, not just toggled in the dashboard —
+`wrangler deploy` overwrites anything the file does not mention, so a toggle set
+by hand only survives until the next push.
 
 Optionally `wrangler secret put RUN_SECRET`, which enables
 `POST /run?key=…` on the worker URL to force a pass while testing.
@@ -117,14 +123,19 @@ whether permission was granted.
 ## Making small changes
 
 1. Edit the files.
-2. Bump `CACHE` in `service-worker.js` whenever a cached file changes.
+2. Bump `CACHE` in `service-worker.js` whenever a cached file changes. Do not
+   cache-bust with `?v=2` instead: the worker precaches the bare path, so a
+   query string means that file is never served from the cache at all.
 3. Commit and push `main`. GitHub Pages publishes it; open copies pick up the new
    service worker and reload themselves.
 
 ## Checking your work
 
 ```
-node test/delivery.test.mjs     # the delivery layer, against a mocked Firestore
+node test/delivery.test.mjs           # the Firestore layer, against a mocked REST API
+npm install --no-save http_ece web-push
+node test/webpush.test.mjs            # the encryption, decoded by an independent library
+node test/delivery-worker.test.mjs    # a full delivery pass, seven scenarios
 ```
 
 And the browser pass, which loads every page at phone size, clicks through the
@@ -136,8 +147,11 @@ python3 -m http.server 8777     # from a copy with apiKey set to REPLACE_ME
 node test/smoke.mjs
 ```
 
-`.github/workflows/checks.yml` runs the parse check, the delivery test and a
-check that every file the service worker precaches actually exists.
+`.github/workflows/checks.yml` runs all four of the above except the browser
+pass, plus three static checks: every file the service worker precaches exists,
+no page asks for a local file with a `?query` (the cache stores the bare path,
+so those silently stop working offline), and `household.js` and
+`firestore.rules` list the same account ids.
 
 ## Notes
 

@@ -7,7 +7,7 @@ function keyBytes(base64) {
   return Uint8Array.from(raw, character => character.charCodeAt(0));
 }
 
-export function pushSupported() {
+function pushSupported() {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
 
@@ -48,18 +48,38 @@ export async function ensurePushSubscription(data, person) {
         applicationServerKey: keyBytes(VAPID_PUBLIC_KEY)
       });
     }
+    const record = JSON.parse(JSON.stringify(subscription.toJSON()));
     await data.setTo(PUSH_SUBS, person, {
       person,
-      subscription: JSON.parse(JSON.stringify(subscription.toJSON())),
+      subscription: record,
       updatedAt: Date.now(),
       device: navigator.userAgent.slice(0, 180)
     });
+    await releaseEndpointFromOtherSide(data, person, record.endpoint);
     return { state: 'ready' };
   } catch (problem) {
     return { state: 'failed', problem };
   }
 }
 
+// A browser has exactly one push subscription, so if two accounts are ever used
+// on the same phone — which is how this household started — the other side can
+// be left registered against this very endpoint, and their reminders arrive
+// here instead of on their phone. Registering claims the endpoint for one side
+// and releases it from the other.
+async function releaseEndpointFromOtherSide(data, person, endpoint) {
+  if (!endpoint || typeof data.readOnce !== 'function') return;
+  try {
+    const records = await data.readOnce(PUSH_SUBS);
+    await Promise.all(
+      records
+        .filter(record => record.id !== person && record.subscription?.endpoint === endpoint)
+        .map(record => data.removeFrom(PUSH_SUBS, record.id))
+    );
+  } catch (_) { /* best effort; the next registration tries again */ }
+}
+
+// Called when somebody signs out, so the phone stops answering for them.
 export async function forgetPushSubscription(data, person) {
   try {
     const registration = await navigator.serviceWorker.ready;

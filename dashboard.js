@@ -2,7 +2,7 @@ import { sharedLayer, onAuthChange } from './data-hub.js';
 import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI } from './ui-helpers.js';
 import { startPresence } from './presence.js';
-import { ensurePushSubscription } from './push-client.js';
+import { ensurePushSubscription, forgetPushSubscription } from './push-client.js';
 
 const badge = document.getElementById('activity-badge');
 const helpBadge = document.getElementById('help-badge');
@@ -40,10 +40,14 @@ document.getElementById('sign-out')?.addEventListener('click', async event => {
   const button = event.currentTarget;
   button.disabled = true;
   button.textContent = 'signing out…';
+  // Drop this phone's push registration first, while the rules still let us:
+  // otherwise it keeps answering for whoever just left, and the next person to
+  // sign in here inherits their reminders.
+  await forgetPushSubscription(data, viewer);
   try {
     await data.signOut();
   } catch (_) { /* already gone */ }
-  try { localStorage.removeItem(`our-little-list-seen-${viewer}`); } catch (_) {}
+  try { localStorage.removeItem(seenKey); } catch (_) {}
   location.replace('index.html');
 });
 
