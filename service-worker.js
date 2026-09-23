@@ -1,9 +1,9 @@
-const CACHE = 'our-little-list-v34';
+const CACHE = 'our-little-list-v35';
 
 const PAGES = [
   './', './index.html', './her.html', './him.html', './admire.html', './profiles.html',
   './status.html', './dates.html', './tasks.html', './reminders.html', './notes.html',
-  './location.html', './activity.html', './phone-check.html', './help.html'
+  './location.html', './activity.html', './phone-check.html', './help.html', './today.html', './memories.html'
 ];
 
 const ASSETS = [
@@ -12,7 +12,7 @@ const ASSETS = [
   './profiles.js', './status.js', './dates.js', './admire.js', './dashboard.js', './activity.js',
   './phone-check.js', './tasks.js', './reminders.js', './notes.js', './location.js', './live-notes.js',
   './ui-helpers.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
-  './push-config.js', './push-client.js', './presence.js', './help.js', './auto-location.js',
+  './push-config.js', './push-client.js', './presence.js', './help.js', './today.js', './memories.js', './auto-location.js',
   './household.js', './viewer.js', './entry.js',
   './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './icon-192.png', './manifest.webmanifest'
 ];

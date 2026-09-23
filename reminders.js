@@ -22,6 +22,8 @@ const recipient = partnerOf(sender);
 applyViewerTheme(sender);
 document.querySelector('.back-to-side').href = `${sender}.html`;
 setNames();
+const prefill=new URLSearchParams(location.search).get('prefill');
+if(prefill)$('reminder-title').value=prefill.slice(0,100);
 
 function select(group, button, key) {
   document.querySelectorAll(`#${group} .choice`).forEach(item => item.classList.remove('active'));

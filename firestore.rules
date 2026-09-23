@@ -64,7 +64,9 @@ service cloud.firestore {
         && request.resource.data.person == person
         && shortText(request.resource.data.text, 240)
         && shortText(request.resource.data.category, 40)
-        && shortText(request.resource.data.emoji, 16);
+        && shortText(request.resource.data.emoji, 16)
+        && (!request.resource.data.keys().hasAny(['energy']) || shortText(request.resource.data.energy, 40))
+        && (!request.resource.data.keys().hasAny(['arrival']) || shortText(request.resource.data.arrival, 40));
       allow delete: if inHousehold(householdId) && ownsSide(person);
     }
 
@@ -157,6 +159,48 @@ service cloud.firestore {
         && request.resource.data.to == resource.data.to
         && request.resource.data.title == resource.data.title
         && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/brainDump/{thoughtId} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && request.resource.data.addedBy == mySide()
+        && shortText(request.resource.data.text, 180)
+        && request.resource.data.createdAt is int;
+      allow update: if false;
+      allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/focus/{person} {
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId) && ownsSide(person)
+        && request.resource.data.person == person
+        && shortText(request.resource.data.label, 100)
+        && request.resource.data.updatedAt is int;
+      allow delete: if inHousehold(householdId) && ownsSide(person);
+    }
+
+    match /households/{householdId}/memories/{memoryId} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && request.resource.data.addedBy == mySide()
+        && shortText(request.resource.data.text, 500)
+        && shortText(request.resource.data.photo, 650000)
+        && request.resource.data.createdAt is int;
+      allow update: if false;
+      allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/reactions/{reactionId} {
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId)
+        && request.resource.data.by == mySide()
+        && request.resource.data.to == otherSide()
+        && request.resource.data.targetType in ['note', 'status']
+        && shortText(request.resource.data.targetId, 180)
+        && shortText(request.resource.data.emoji, 32)
+        && request.resource.data.createdAt is int;
       allow delete: if inHousehold(householdId);
     }
 

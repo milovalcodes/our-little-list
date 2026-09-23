@@ -99,7 +99,7 @@ export async function deliver(env) {
 
       const result = await sendNotification(target.subscription, payload, vapid, {
         ttl: 86400,
-        urgency: message.kind === 'reminder' || message.kind === 'help' ? 'high' : 'normal'
+        urgency: ['reminder', 'help', 'arrival'].includes(message.kind) ? 'high' : 'normal'
       });
 
       if (result.ok) {

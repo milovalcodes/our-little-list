@@ -7,6 +7,7 @@ const byId = id => document.getElementById(id);
 let items = [];
 let tab = 'tasks';
 let when = 'whenever';
+let recurrence = 'once';
 
 const data = await sharedLayer();
 onAuthChange(user => setupAuthUI(data, user));
@@ -34,6 +35,7 @@ document.querySelectorAll('.soft-chip').forEach(button => {
     when = button.dataset.when;
   });
 });
+document.querySelectorAll('.repeat-chip').forEach(button=>button.addEventListener('click',()=>{recurrence=button.dataset.repeat;document.querySelectorAll('.repeat-chip').forEach(item=>item.classList.toggle('active',item===button));}));
 
 document.querySelectorAll('.tab').forEach(button => {
   button.addEventListener('click', () => {
@@ -45,6 +47,8 @@ document.querySelectorAll('.tab').forEach(button => {
       ? 'oat milk, batteries, tiny treats…'
       : 'type it before it leaves your brain';
     byId('task-options').hidden = grocery || tab === 'done';
+    byId('grocery-aisle-wrap').hidden = !grocery;
+    byId('repeat-options').hidden = tab === 'done';
     document.querySelector('.compact-composer').hidden = tab === 'done';
     render();
   });
@@ -66,7 +70,8 @@ byId('shared-task-form').addEventListener('submit', async event => {
 
   setButtonBusy(submit,true,'…');
   try{
-    await data.addTo('items',{title,type:tab==='grocery'?'grocery':'task',due,addedBy:viewer,done:false,createdAt:Date.now()});
+    if(recurrence!=='once'&&!due)due=dateKey(new Date());
+    await data.addTo('items',{title,type:tab==='grocery'?'grocery':'task',due,recurrence,aisle:tab==='grocery'?byId('grocery-aisle').value:'',addedBy:viewer,done:false,createdAt:Date.now()});
     const recipient=other;
     void data.notify(recipient,{title:tab==='grocery'?'grocery list update 🛒':'new thing on the list ✓',body:title,url:`tasks.html`,kind:'item'});
     event.target.reset();toast(tab==='grocery'?'on the grocery list 🛒':'added 🫡');
@@ -83,7 +88,11 @@ byId('task-list').addEventListener('click', async event => {
 
   button.disabled=true;button.classList.add('is-busy');
   try{
-    if(button.dataset.action==='toggle')await data.updateIn('items',item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
+    if(button.dataset.action==='toggle'){
+      if(!item.done&&item.recurrence&&item.recurrence!=='once')await data.updateIn('items',item.id,{done:false,due:nextDue(item.due,item.recurrence),lastDoneBy:viewer,lastDoneAt:Date.now()});
+      else await data.updateIn('items',item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
+    }
+    if(button.dataset.action==='readd')await data.updateIn('items',item.id,{done:false,doneBy:'',doneAt:0});
     if(button.dataset.action==='delete')await data.removeFrom('items',item.id);
   }catch(_){showFailure('the list edit did not stick.','check the internet and try the button again.');button.disabled=false;button.classList.remove('is-busy');}
 });
@@ -114,7 +123,7 @@ function render() {
   const empty = byId('empty-state');
   empty.querySelector('span').textContent = labels[2];
   empty.querySelector('strong').textContent = labels[3];
-  byId('task-list').innerHTML = list.map(taskMarkup).join('');
+  byId('task-list').innerHTML = tab==='grocery'?groceryMarkup(list):list.map(taskMarkup).join('');
 }
 
 function taskMarkup(item) {
@@ -123,12 +132,16 @@ function taskMarkup(item) {
   const due = item.due ? prettyDue(item.due) : 'whenever';
   const addedBy = escapeHtml(personName(item.addedBy === 'her' ? 'her' : 'him'));
   const finished = item.doneBy ? `<span>done by ${escapeHtml(personName(item.doneBy))}</span>` : '';
+  const repeat=item.recurrence&&item.recurrence!=='once'?`<span>↻ ${escapeHtml(item.recurrence)}</span>`:'';
+  const aisle=item.type==='grocery'&&item.aisle?`<span>${escapeHtml(item.aisle)}</span>`:'';
   return `<li class="task-row${doneClass}" data-id="${escapeHtml(item.id)}">
     <button class="task-check" data-action="toggle" aria-label="Mark ${escapeHtml(item.title)} ${item.done ? 'not done' : 'done'}">${check}</button>
-    <div><span class="task-title">${escapeHtml(item.title)}</span><div class="task-meta"><span>${due}</span><span>added by ${addedBy}</span>${finished}</div></div>
+    <div><span class="task-title">${escapeHtml(item.title)}</span><div class="task-meta"><span>${due}</span>${aisle}${repeat}<span>added by ${addedBy}</span>${finished}</div>${item.done&&item.type==='grocery'?'<button class="readd-task" data-action="readd" type="button">put back</button>':''}</div>
     <button class="delete-task" data-action="delete" aria-label="Delete ${escapeHtml(item.title)}">×</button>
   </li>`;
 }
+
+function groceryMarkup(list){const groups=new Map();list.forEach(item=>{const aisle=item.aisle||'other';if(!groups.has(aisle))groups.set(aisle,[]);groups.get(aisle).push(item);});return [...groups].map(([aisle,entries])=>`<li class="aisle-label">${escapeHtml(aisle)}</li>${entries.map(taskMarkup).join('')}`).join('');}
 
 window.addEventListener('littlelist:profile',render);
 
@@ -140,3 +153,4 @@ function prettyDue(value) {
   if (value === dateKey(tomorrow)) return 'tomorrow';
   return value;
 }
+function nextDue(value,repeat){const next=value?new Date(`${value}T12:00:00`):new Date();if(Number.isNaN(next.getTime()))next.setTime(Date.now());if(repeat==='daily')next.setDate(next.getDate()+1);if(repeat==='weekly')next.setDate(next.getDate()+7);if(repeat==='monthly')next.setMonth(next.getMonth()+1);return dateKey(next);}

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <title>Memory Jar · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+</head>
+<body class="profile-page" data-app="memories">
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">the archives</span></header>
+  <main class="app-shell feature-shell memory-shell">
+    <section class="feature-hero memory-hero"><span class="feature-icon">◒</span><p class="tiny-kicker">evidence we had fun</p><h1>Memory jar</h1></section>
+    <section class="memory-random" id="memory-random" hidden></section>
+    <section class="composer-card memory-composer">
+      <form id="memory-form"><textarea id="memory-text" required maxlength="500" placeholder="something worth keeping"></textarea><label class="photo-picker"><input id="memory-photo" type="file" accept="image/*"><span>add a photo</span><small id="photo-name"></small></label><button class="primary-action" id="memory-save" type="submit">put it in the jar</button></form>
+    </section>
+    <section class="list-card memory-list-card"><div class="list-heading"><div><p class="tiny-kicker">the jar</p><h2>Our stuff</h2></div><button class="tiny-button" id="memory-pick" type="button">pull one out</button></div><div class="memory-grid" id="memory-list"></div><div class="empty-state" id="memory-empty"><span>◌</span><strong>Jar is empty</strong></div></section>
+  </main>
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="memories.js"></script><script type="module" src="live-notes.js"></script>
+</body>
+</html>

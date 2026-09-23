@@ -9,13 +9,15 @@ Live: https://milovalcodes.github.io/our-little-list/
 ## What it does
 
 - Two themed sides, sun and moon, with a shared middle
-- A shared list and grocery list either person can add to or tick off
+- A compact Today page for due stuff, quick focus sessions and dumping a thought
+- A shared list with recurring chores, plus a grocery list grouped by aisle
 - Reminders that actually arrive — see **Reminders** below
-- Tiny notes with live popups and a twinkle
+- Tiny notes with live popups, reactions and a twinkle
 - **Help me out** — quick asks like "bring water" or "call me when free", with
   on it / in a bit / can't right now answers
-- Discord-style statuses with optional expiry
-- A shared date-idea pile with favourites, a random picker and a done pile
+- Discord-style statuses, energy levels and arrival presets
+- A shared date-idea pile with favourites, mood filters, a random picker and a done pile
+- A private memory jar for little photos and things worth keeping
 - An activity feed with unread counts, read receipts and last-online presence
 - A read-only "admire the sun / admire the moon" view of the other side
 - Foreground location that starts with the app, can be paused from the status

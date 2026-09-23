@@ -1,7 +1,7 @@
 {
   "name": "Our Little List",
   "short_name": "Little List",
-  "description": "Our lists, reminders, notes, and map.",
+  "description": "Our lists, reminders, notes, status, and little archive.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

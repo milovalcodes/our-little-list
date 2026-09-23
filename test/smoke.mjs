@@ -69,6 +69,7 @@ console.log('--- every page renders, no script errors, no sideways scroll ---');
 const PAGES = ['her.html','him.html','tasks.html?as=her','reminders.html?from=her','notes.html?from=her',
   'location.html?as=her','activity.html?as=her','status.html?as=her','dates.html?as=her','help.html?as=her',
   'phone-check.html?as=her','profiles.html','admire.html?as=her','help.html?as=him'];
+PAGES.push('today.html?as=her','memories.html?as=her');
 
 for (const path of PAGES) {
   const { context, page, errors } = await open(path);
@@ -110,6 +111,89 @@ console.log('\n--- interactions ---');
   await page.waitForTimeout(500);
   const sent = await page.locator('#sent-state:visible').count();
   note(sent === 1 && errors.length === 0, 'future reminder is accepted', errors[0] || '');
+  await context.close();
+}
+
+// Recurring tasks roll forward instead of disappearing, and groceries keep an aisle.
+{
+  const { context, page, errors } = await open('tasks.html?as=her');
+  await page.fill('#shared-task-title', 'daily vitamin');
+  await page.click('[data-repeat="daily"]');
+  await page.click('#shared-task-form [type="submit"]');
+  await page.waitForTimeout(250);
+  await page.click('.task-row .task-check');
+  await page.waitForTimeout(250);
+  const recurring = await page.locator('.task-row', { hasText: 'daily vitamin' }).count();
+  note(recurring === 1 && errors.length === 0, 'recurring task rolls forward', errors[0] || '');
+  await page.click('[data-tab="grocery"]');
+  await page.fill('#shared-task-title', 'avocados');
+  await page.selectOption('#grocery-aisle', 'produce');
+  await page.click('#shared-task-form [type="submit"]');
+  await page.waitForTimeout(250);
+  note(await page.locator('.aisle-label', { hasText: 'produce' }).count() === 1, 'groceries group by aisle');
+  await context.close();
+}
+
+// The Today hub can park a thought and start a shared focus session.
+{
+  const { context, page, errors } = await open('today.html?as=her');
+  await page.fill('#dump-text', 'return the library book');
+  await page.click('#dump-form [type="submit"]');
+  await page.fill('#focus-label', 'fold laundry');
+  await page.click('#focus-start');
+  await page.waitForTimeout(350);
+  const thought = await page.locator('.dump-row', { hasText: 'return the library book' }).count();
+  const focus = await page.locator('.focus-person.active', { hasText: 'fold laundry' }).count();
+  note(thought === 1 && focus === 1 && errors.length === 0, 'today hub saves thoughts and focus', errors[0] || '');
+  await context.close();
+}
+
+// Text-only memories work everywhere; photos are optional.
+{
+  const { context, page, errors } = await open('memories.html?as=her');
+  await page.fill('#memory-text', 'the tiny mug incident');
+  await page.click('#memory-save');
+  await page.waitForTimeout(300);
+  note(await page.locator('.memory-card', { hasText: 'the tiny mug incident' }).count() === 1 && errors.length === 0,
+       'memory jar saves a moment', errors[0] || '');
+  await context.close();
+}
+
+// Date roulette honors its filters instead of quietly pulling an untagged old idea.
+{
+  const { context, page, errors } = await open('dates.html?as=her');
+  await page.fill('#date-title', 'meteor picnic');
+  await page.selectOption('#date-cost', 'treat');
+  await page.selectOption('#date-energy', 'high');
+  await page.selectOption('#date-weather', 'outdoor');
+  await page.selectOption('#date-distance', 'drive');
+  await page.selectOption('#date-duration', 'day');
+  await page.click('#date-submit');
+  await page.selectOption('#filter-cost', 'treat');
+  await page.selectOption('#filter-energy', 'high');
+  await page.selectOption('#filter-weather', 'outdoor');
+  await page.selectOption('#filter-distance', 'drive');
+  await page.selectOption('#filter-duration', 'day');
+  await page.click('#pick-random');
+  await page.waitForTimeout(250);
+  note(await page.locator('#random-date', { hasText: 'meteor picnic' }).count() === 1 && errors.length === 0,
+       'date roulette respects every filter', errors[0] || '');
+  await context.close();
+}
+
+// Energy, arrival presets and partner-status reactions share the same status screen.
+{
+  const { context, page, errors } = await open('status.html?as=her');
+  await page.click('details.status-editor summary');
+  await page.click('[data-energy="need company"]');
+  await page.fill('#status-text', 'soup would fix me');
+  await page.click('#status-save');
+  await page.click('[data-arrival="almost there"]');
+  await page.click('[data-react-status="him"][data-emoji="♡"]');
+  await page.waitForTimeout(300);
+  const card = page.locator('.person-status-card.is-me');
+  const ready = await card.filter({ hasText: 'need company' }).filter({ hasText: 'almost there' }).count();
+  note(ready === 1 && errors.length === 0, 'status keeps energy, arrival and reactions together', errors[0] || '');
   await context.close();
 }
 

@@ -5,7 +5,7 @@ import { startPresence } from './presence.js';
 import { personName } from './profile-store.js';
 import { timeAgo, friendlyDate } from './time-format.js';
 
-const $=id=>document.getElementById(id);const buckets={items:[],notes:[],reminders:[],presence:[],dates:[],statuses:[],help:[]};
+const $=id=>document.getElementById(id);const buckets={items:[],notes:[],reminders:[],presence:[],dates:[],statuses:[],help:[],brainDump:[],memories:[],reactions:[],focus:[]};
 let data;let started=false;
 data=await sharedLayer();
 onAuthChange(user=>setupAuthUI(data,user));
@@ -29,7 +29,7 @@ $('activity-list').addEventListener('click',handleActivityAction);
 
 function start(){
   if(started)return;started=true;
-  ['items','notes','reminders','presence','dates','statuses','help'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));
+  ['items','notes','reminders','presence','dates','statuses','help','brainDump','memories','reactions','focus'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));
   startPresence(data,viewer,'activity');
   window.setTimeout(markIncomingRead,900);
   window.setInterval(renderPresence,30000);
@@ -49,12 +49,16 @@ function events(){
     if(request.answeredAt)all.push({id:`help-answer-${request.id}-${request.answeredAt}`,recordId:request.id,collection:'help',at:Number(request.answeredAt),icon:request.state==='cant'?'✗':'✓',who:request.to,kind:'answered a request',selfKind:'answered a request',text:request.title});
   });
   buckets.statuses.forEach(status=>all.push({id:`status-${status.id}-${status.updatedAt||0}`,recordId:status.id,collection:'statuses',at:Number(status.updatedAt)||0,icon:status.emoji||'●',who:status.person||status.id,kind:'updated their status',selfKind:'updated your status',text:status.text?`${status.category||'currently'} ${status.text}`:(status.state||'updated')}));
+  buckets.brainDump.forEach(item=>all.push({id:`brain-${item.id}`,recordId:item.id,collection:'brainDump',at:Number(item.createdAt)||0,icon:'🧠',who:item.addedBy,kind:'parked a thought',text:item.text}));
+  buckets.memories.forEach(item=>all.push({id:`memory-${item.id}`,recordId:item.id,collection:'memories',at:Number(item.createdAt)||0,icon:'◒',who:item.addedBy,kind:'added to the memory jar',text:item.text}));
+  buckets.reactions.forEach(item=>all.push({id:`reaction-${item.id}`,recordId:item.id,collection:'reactions',at:Number(item.createdAt)||0,icon:item.emoji||'♡',who:item.by,kind:'reacted',text:item.targetType==='status'?'to a status':'to a note'}));
+  buckets.focus.forEach(item=>{if(item.updatedAt)all.push({id:`focus-${item.id}-${item.updatedAt}`,recordId:item.id,collection:'focus',at:Number(item.updatedAt),icon:'⏱',who:item.person||item.id,kind:item.active?'started focusing':'finished focusing',text:item.label||'doing the thing',status:item.active?`${item.minutes||15} min`:''});});
   return all.filter(item=>item.at&&!hidden.has(item.id)).sort((a,b)=>b.at-a.at).slice(0,80);
 }
 
 function render(){
   const list=events();$('activity-empty').hidden=list.length>0;
-  $('activity-list').innerHTML=list.map(event=>{const mine=event.who===viewer;return `<li class="activity-row" data-event-id="${escapeHtml(event.id)}" data-record-id="${escapeHtml(event.recordId)}" data-collection="${escapeHtml(event.collection)}"><span class="activity-icon">${escapeHtml(event.icon)}</span><div class="activity-row-copy"><p><b>${mine?'you':escapeHtml(event.who?personName(event.who):'someone')}</b> ${escapeHtml(mine&&event.selfKind?event.selfKind:event.kind)}</p><strong>${escapeHtml(event.text||'')}</strong><small>${timeAgo(event.at)}${event.status?` · ${escapeHtml(event.status)}`:''}</small><div class="activity-row-actions"><button type="button" data-action="hide">delete for me</button><button class="delete-for-us" type="button" data-action="delete">delete for us</button></div></div></li>`;}).join('');
+  $('activity-list').innerHTML=list.map(event=>{const mine=event.who===viewer;const canDelete=mine||!['statuses','focus'].includes(event.collection);return `<li class="activity-row" data-event-id="${escapeHtml(event.id)}" data-record-id="${escapeHtml(event.recordId)}" data-collection="${escapeHtml(event.collection)}"><span class="activity-icon">${escapeHtml(event.icon)}</span><div class="activity-row-copy"><p><b>${mine?'you':escapeHtml(event.who?personName(event.who):'someone')}</b> ${escapeHtml(mine&&event.selfKind?event.selfKind:event.kind)}</p><strong>${escapeHtml(event.text||'')}</strong><small>${timeAgo(event.at)}${event.status?` · ${escapeHtml(event.status)}`:''}</small><div class="activity-row-actions"><button type="button" data-action="hide">delete for me</button>${canDelete?'<button class="delete-for-us" type="button" data-action="delete">delete for us</button>':''}</div></div></li>`;}).join('');
   renderPresence();
 }
 
