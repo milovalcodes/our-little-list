@@ -13,6 +13,14 @@ let statuses=[];let reactions=[];let state='online';let emoji='🎧';let energy=
 // preset on a freshly opened page wiped the status you had set. Nothing writes
 // until we have actually seen the stored document.
 let loaded=false;let settleLoaded;const firstSnapshot=new Promise(resolve=>{settleLoaded=resolve;});
+// ...but a phone with no signal never gets that snapshot, and a button that
+// waits forever is worse than one that says it could not reach anything.
+async function ready(){
+  if(loaded)return true;
+  await Promise.race([firstSnapshot,new Promise(resolve=>window.setTimeout(resolve,6000))]);
+  if(!loaded)showFailure('we could not reach your status yet.','check the internet, then try again — nothing was changed.');
+  return loaded;
+}
 // The expiry select cannot be restored from a stored timestamp, so an untouched
 // one must not be written at all — otherwise saving a typo into your status
 // quietly removed the "in 4 hours" you set earlier.
@@ -43,7 +51,9 @@ document.querySelectorAll('.energy-choice').forEach(button=>button.addEventListe
 $('status-category').addEventListener('change',event=>{$('custom-category-wrap').hidden=event.target.value!=='custom';});
 $('status-expiry').addEventListener('change',()=>{expiryTouched=true;});
 
-$('arrival-presets').addEventListener('click',async event=>{const button=event.target.closest('[data-arrival]');if(!button)return;setButtonBusy(button,true,'…');await firstSnapshot;const current=mine();try{await data.setTo('statuses',viewer,{person:viewer,arrival:button.dataset.arrival,arrivalAt:Date.now(),updatedAt:Date.now(),...(current?{}:blankStatus())});void data.notify(other,{title:`${personName(viewer)}: ${button.dataset.arrival}`,body:'',url:'status.html',kind:'arrival'});toast(button.dataset.arrival);}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
+$('arrival-presets').addEventListener('click',async event=>{const button=event.target.closest('[data-arrival]');if(!button)return;setButtonBusy(button,true,'…');
+  if(!await ready()){setButtonBusy(button,false);return;}
+  const current=mine();try{await data.setTo('statuses',viewer,{person:viewer,arrival:button.dataset.arrival,arrivalAt:Date.now(),updatedAt:Date.now(),...(current?{}:blankStatus())});void data.notify(other,{title:`${personName(viewer)}: ${button.dataset.arrival}`,body:'',url:'status.html',kind:'arrival'});toast(button.dataset.arrival);}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
 $('status-pair').addEventListener('click',event=>{const picker=event.target.closest('[data-status-picker]');if(picker){const targetId=picker.dataset.statusPicker;const current=findStatusReaction(targetId);openEmojiPicker({current:current?.emoji,onSelect:value=>saveStatusReaction(targetId,value,picker),onRemove:()=>saveStatusReaction(targetId,'',picker)});return;}const button=event.target.closest('[data-react-status]');if(button)void saveStatusReaction(button.dataset.reactStatus,button.dataset.emoji,button);});
 
 function findStatusReaction(targetId){return reactions.find(item=>item.id===`status-${targetId}-${viewer}`||(item.targetType==='status'&&item.targetId===targetId&&item.by===viewer));}
@@ -53,7 +63,7 @@ $('status-form').addEventListener('submit',async event=>{
   event.preventDefault();const text=$('status-text').value.trim();const rawCategory=$('status-category').value;const category=rawCategory==='custom'?$('status-custom-category').value.trim():rawCategory;
   if(text&&!category){$('status-custom-category').focus();return;}
   const button=$('status-save');setButtonBusy(button,true,'saving…');
-  await firstSnapshot;
+  if(!await ready()){setButtonBusy(button,false);return;}
   const expiry=expiryTouched?{expiresAt:expiryTime($('status-expiry').value)}:(mine()?{}:{expiresAt:0});
   try{
     await data.setTo('statuses',viewer,{person:viewer,state,text,category,emoji,energy,...expiry,updatedAt:Date.now()});
@@ -66,7 +76,7 @@ $('status-form').addEventListener('submit',async event=>{
 
 $('status-clear').addEventListener('click',async event=>{
   setButtonBusy(event.currentTarget,true,'clearing…');
-  await firstSnapshot;
+  if(!await ready()){setButtonBusy(event.currentTarget,false);return;}
   try{await data.setTo('statuses',viewer,{person:viewer,text:'',category:'',emoji:'',expiresAt:0,updatedAt:Date.now(),...(mine()?{}:{state,energy})});$('status-text').value='';expiryTouched=false;$('status-expiry').value='0';toast('custom bit cleared');}
   catch(_){showFailure('that did not clear.','check the internet and try again.');}
   finally{setButtonBusy(event.currentTarget,false);}
