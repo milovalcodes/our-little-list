@@ -82,6 +82,33 @@ for (const path of PAGES) {
 
 console.log('\n--- interactions ---');
 
+// The new home is one data-driven sky, not the old greeting plus four menu boxes.
+{
+  const { context, page, errors } = await open('her.html?as=her');
+  await page.evaluate(async()=>{
+    const now=Date.now();const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();
+    await data.setTo('presence','her',{person:'her',lastSeenAt:now});await data.setTo('presence','him',{person:'him',lastSeenAt:now});
+    await data.setTo('statuses','him',{person:'him',emoji:'🎧',category:'listening to',text:'one song again',updatedAt:now});
+    await data.setTo('locations','her',{person:'her',lat:25.7617,lng:-80.1918,shareUntil:now+3600000,updatedAt:now});
+    await data.setTo('locations','him',{person:'him',lat:25.762,lng:-80.1918,shareUntil:now+3600000,updatedAt:now});
+    await data.setTo('notes','sky-note',{sender:'him',from:'him',recipient:'her',to:'her',body:'tiny spoon sighting',mood:'moon',createdAt:now});
+    await data.setTo('items','sky-win',{title:'tiny win',done:true,doneAt:now});
+    await data.setTo('reactions','sky-reaction',{by:'him',to:'her',emoji:'🫶',createdAt:now});
+  });
+  await page.waitForTimeout(350);
+  const orbit=await page.locator('#sky-stage').getAttribute('data-orbit');
+  const title=await page.locator('#sky-orbit-title').textContent();
+  const liveStatus=await page.locator('#sky-status-him:not([hidden])').count();
+  const noteStar=await page.locator('#sky-note-star:not([hidden])').count();
+  const wins=await page.locator('#sky-wins:not([hidden])').count();
+  const reaction=await page.locator('#sky-reaction-her:not([hidden])').count();
+  const oldDashboard=await page.locator('.compact-hello,.home-group').count();
+  const routes=await page.evaluate(()=>({self:document.querySelector('#sky-person-her')?.getAttribute('href'),partner:document.querySelector('#sky-person-him')?.getAttribute('href')}));
+  note(orbit==='together'&&title?.includes('together')&&liveStatus===1&&noteStar===1&&wins===1&&reaction===1&&oldDashboard===0&&routes.self==='status.html'&&routes.partner==='admire.html'&&errors.length===0,
+       'our sky reflects live data without the old dashboard',errors[0]||JSON.stringify({orbit,title,liveStatus,noteStar,wins,reaction,oldDashboard,routes}));
+  await context.close();
+}
+
 // Add a task, it should show up in the list.
 {
   const { context, page, errors } = await open('tasks.html?as=her');

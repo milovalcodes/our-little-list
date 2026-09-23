@@ -7,47 +7,45 @@
   <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page her-theme compact-dashboard" data-viewer="her">
-  <header class="app-topbar"><button class="home-link" id="sign-out" type="button">sign out</button><a class="switch-link" href="admire.html">admire the moon 🌙</a></header>
+  <header class="app-topbar"><button class="home-link" id="sign-out" type="button">sign out</button><span class="home-wordmark">our little sky ☀︎☾</span></header>
   <main class="app-shell dashboard-shell">
-    <section class="hello-card compact-hello">
-      <div><p class="tiny-kicker">sun side</p><h1 data-person-name="sun" data-person-fallback="pretty" data-person-format="hi {name} ☀️">hi pretty ☀️</h1><p class="hello-note">anything before the plot continues?</p></div>
-      <div class="mood-sticker profile-portrait"><img src="sun-profile.png" alt="The sunshine half of us"></div>
+    <section class="our-sky" aria-labelledby="sky-greeting">
+      <header class="sky-heading">
+        <div><p class="tiny-kicker">our sky</p><h1 id="sky-greeting" data-person-name="sun" data-person-fallback="pretty" data-person-format="hi {name}">hi pretty</h1></div>
+        <span class="sky-time" id="sky-time">some time today</span>
+      </header>
+      <div class="sky-stage" id="sky-stage" data-orbit="waiting">
+        <i class="sky-star s1">✦</i><i class="sky-star s2">·</i><i class="sky-star s3">✧</i><i class="sky-star s4">·</i><i class="sky-star s5">✦</i>
+        <a class="sky-person sky-sun is-self" id="sky-person-her" href="status.html" aria-label="Open your status">
+          <span class="sky-status-bubble" id="sky-status-her" hidden></span>
+          <span class="sky-avatar"><img src="sun-profile.png" alt=""><i class="sky-presence" id="sky-presence-her"></i><em class="sky-reaction" id="sky-reaction-her" hidden></em></span>
+          <span class="sky-person-label"><strong id="sky-name-her">her</strong><small id="sky-seen-her">somewhere</small></span>
+        </a>
+        <a class="sky-person sky-moon" id="sky-person-him" href="admire.html" aria-label="Admire the moon">
+          <span class="sky-status-bubble" id="sky-status-him" hidden></span>
+          <span class="sky-avatar"><img src="moon-profile.png" alt=""><i class="sky-presence" id="sky-presence-him"></i><em class="sky-reaction" id="sky-reaction-him" hidden></em></span>
+          <span class="sky-person-label"><strong id="sky-name-him">him</strong><small id="sky-seen-him">somewhere</small></span>
+        </a>
+        <a class="sky-note-star" id="sky-note-star" href="admire.html" hidden><span>💌</span><small id="sky-note-copy"></small></a>
+        <span class="sky-wins" id="sky-wins" hidden></span>
+      </div>
+      <footer class="sky-footer">
+        <span><strong id="sky-orbit-title">orbit loading…</strong><small id="sky-orbit-detail">finding both of you</small></span>
+        <a href="status.html">right now →</a>
+      </footer>
     </section>
 
-    <div class="home-stack">
-      <section class="home-group">
-        <div class="home-group-head"><span>on deck</span><small>the immediate lore</small></div>
-        <div class="home-action-grid">
-          <a class="home-action today-action" href="today.html"><span class="home-action-icon">◎</span><span class="home-action-copy"><strong>today</strong><small>the useful bit</small></span></a>
-          <a class="home-action list-action" href="tasks.html"><span class="home-action-icon">✓</span><span class="home-action-copy"><strong>the list</strong><small>to-do + groceries</small></span></a>
-        </div>
-      </section>
-
-      <section class="home-group">
-        <div class="home-group-head"><span>poke the moon</span><small>respectfully</small></div>
-        <div class="home-action-grid three">
-          <a class="home-action note-action" href="notes.html"><span class="home-action-icon">💌</span><span class="home-action-copy"><strong>tiny note</strong><small>say a thing</small></span></a>
-          <a class="home-action reminder-action" href="reminders.html"><span class="home-action-icon">⏰</span><span class="home-action-copy"><strong>reminder</strong><small data-person-name="moon" data-person-fallback="him" data-person-format="for {name}">for him</small></span></a>
-          <a class="home-action help-action" href="help.html"><span class="home-action-icon">🙋</span><span class="activity-badge" id="help-badge" hidden>0</span><span class="home-action-copy"><strong>help pls</strong><small>small ask</small></span></a>
-        </div>
-      </section>
-
-      <section class="home-group">
-        <div class="home-group-head"><span>our little archive</span><small>for science</small></div>
-        <div class="home-action-grid three">
-          <a class="home-action date-action" href="dates.html"><span class="home-action-icon">✦</span><span class="home-action-copy"><strong>date pile</strong><small>future schemes</small></span></a>
-          <a class="home-action memory-action" href="memories.html"><span class="home-action-icon">◒</span><span class="home-action-copy"><strong>memory jar</strong><small>keep this</small></span></a>
-          <a class="home-action activity-action" href="activity.html"><span class="home-action-icon">↻</span><span class="activity-badge" id="activity-badge" hidden>0</span><span class="home-action-copy"><strong>what happened</strong><small>the recent lore</small></span></a>
-        </div>
-      </section>
-
-      <section class="home-group">
-        <div class="home-group-head"><span>live-ish</span><small>no stalking allegations</small></div>
-        <div class="home-action-grid one">
-          <a class="home-action now-action" href="status.html"><span class="home-action-icon">☀︎☾</span><span class="home-action-copy"><strong>right now</strong><small id="home-location-state">location starting…</small></span></a>
-        </div>
-      </section>
-    </div>
+    <nav class="sky-launchpad" aria-label="Open a part of our app">
+      <a class="sky-launch today-action" href="today.html"><span>◎</span><strong>today</strong></a>
+      <a class="sky-launch list-action" href="tasks.html"><span>✓</span><strong>the list</strong></a>
+      <a class="sky-launch note-action" href="notes.html"><span>💌</span><strong>note</strong></a>
+      <a class="sky-launch reminder-action" href="reminders.html"><span>⏰</span><strong>reminder</strong></a>
+      <a class="sky-launch help-action" href="help.html"><span>🙋</span><span class="activity-badge" id="help-badge" hidden>0</span><strong>help pls</strong></a>
+      <a class="sky-launch date-action" href="dates.html"><span>✦</span><strong>date pile</strong></a>
+      <a class="sky-launch memory-action" href="memories.html"><span>◒</span><strong>memories</strong></a>
+      <a class="sky-launch activity-action" href="activity.html"><span>↻</span><span class="activity-badge" id="activity-badge" hidden>0</span><strong>recent</strong></a>
+      <a class="sky-launch now-action" href="status.html"><span>☀︎☾</span><strong>right now</strong><small id="home-location-state">starting…</small></a>
+    </nav>
     <nav class="home-utility-row" aria-label="Settings"><a href="phone-check.html">phone check</a><span>·</span><a href="profiles.html">our names</a></nav>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="dashboard.js"></script><script type="module" src="live-notes.js"></script>
