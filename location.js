@@ -122,7 +122,7 @@ function updateMap(known,now){
   ['her','him'].forEach(person=>{
     const point=known.find(item=>item.id===person);
     if(!point){if(markers[person]){map.removeLayer(markers[person]);delete markers[person];}return;}
-    const live=Number(point.shareUntil)>now;const label=live?personName(person):`${personName(person)} · last known`;
+    const live=Number(point.shareUntil)>now;const label=escapeHtml(live?personName(person):`${personName(person)} · last known`);
     if(!markers[person]){markers[person]=window.L.marker([point.lat,point.lng],{icon:markerIcon(person,live)}).addTo(map).bindTooltip(label,{direction:'top',offset:[0,-42]});markers[person].isLive=live;}
     else{markers[person].setLatLng([point.lat,point.lng]);if(markers[person].isLive!==live){markers[person].setIcon(markerIcon(person,live));markers[person].isLive=live;}markers[person].setTooltipContent(label);}
   });

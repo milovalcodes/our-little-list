@@ -14,12 +14,20 @@ const ENV = {
   VAPID_PUBLIC_KEY: vapidKeys.publicKey, VAPID_PRIVATE_KEY: vapidKeys.privateKey
 };
 
-function harness({ outbox = [], subs = { her: SUB }, reminders = {}, pushStatus = 201 }) {
+function harness({ outbox = [], subs = { her: SUB }, reminders = {}, pushStatus = 201, lockHeld = false }) {
   const deleted = [];
   const pushes = [];
   globalThis.fetch = async (url, options = {}) => {
     url = String(url);
     if (url.includes('signInWithPassword')) return Response.json({ idToken: 'tok', localId: 'HOUSE' });
+    if (url.includes('/deliveryLocks?documentId=active')) {
+      return lockHeld ? new Response('', { status: 409 }) : Response.json({});
+    }
+    if (url.endsWith('/deliveryLocks/active') && options.method !== 'DELETE') {
+      return Response.json({ name: 'p/documents/households/HOUSE/deliveryLocks/active', fields: {
+        acquiredAt: { integerValue: String(Date.now()) }
+      } });
+    }
     if (url.includes('/pushSubs?')) return Response.json({ documents: Object.entries(subs).map(([id, s]) => ({
       name: `p/documents/households/HOUSE/pushSubs/${id}`,
       fields: { subscription: { mapValue: { fields: {
@@ -94,7 +102,7 @@ const now = Date.now();
   const r = await deliver(ENV);
   assert.equal(r.sent, 0);
   assert.equal(r.left, 1);
-  assert.equal(h.deleted.length, 0, 'stays queued until that phone registers');
+  assert.ok(!h.deleted.some(path => path.endsWith('outbox/A3')), 'stays queued until that phone registers');
   console.log(' ok  a message for an unregistered phone waits rather than vanishing');
 }
 
@@ -108,7 +116,27 @@ const now = Date.now();
   console.log(' ok  a week-old message is dropped, not delivered out of nowhere');
 }
 
-// 7. quiet pass costs one query and sends nothing
+// 7. a reminder created weeks early is still fresh when its due time arrives
+{
+  const old = now - 20 * 24 * 60 * 60 * 1000;
+  const h = harness({ outbox: [{ id:'R3', to:'her', title:'future thing', body:'now', kind:'reminder', ref:'keep', sendAt:now-1000, createdAt:old }], reminders:{ keep:true } });
+  const r = await deliver(ENV);
+  assert.equal(r.sent, 1);
+  assert.equal(r.dropped, 0);
+  assert.equal(h.pushes.length, 1);
+  console.log(' ok  a long-range reminder survives until its actual due time');
+}
+
+// 8. an overlapping pass backs off instead of sending the same outbox twice
+{
+  const h = harness({ outbox: [{ id:'DUP', to:'her', title:'once', body:'only', kind:'note', sendAt:now-1000, createdAt:now-2000 }], lockHeld:true });
+  const r = await deliver(ENV);
+  assert.equal(r.skipped, 'already-running');
+  assert.equal(h.pushes.length, 0);
+  console.log(' ok  an overlapping delivery pass does not send');
+}
+
+// 9. quiet pass costs one query and sends nothing
 {
   const h = harness({ outbox: [] });
   const r = await deliver(ENV);

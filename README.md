@@ -18,8 +18,8 @@ Live: https://milovalcodes.github.io/our-little-list/
 - A shared date-idea pile with favourites, a random picker and a done pile
 - An activity feed with unread counts, read receipts and last-online presence
 - A read-only "admire the sun / admire the moon" view of the other side
-- An opt-in live map with 15-minute, 1-hour and 3-hour sharing windows, plus
-  last-known locations and proximity messages
+- Foreground location that starts with the app, can be paused from the status
+  page, and becomes an honest last-known spot when the phone suspends it
 - A phone checker that tests sync, internet, installation, notifications and
   location, and offers the exact fix when something is off
 - Installable on both iPhone and Android, works offline for reading
@@ -31,8 +31,8 @@ delivery works like this:
 
 1. The website writes the notification into an `outbox` collection in Firestore,
    with a `sendAt` timestamp. A reminder for Friday at 3pm sits there until then.
-2. A Cloudflare Worker (`worker/`) runs every minute, signs in as one member
-   account, and sends anything that is due as a real Web Push message.
+2. A Cloudflare Worker (`worker/`) runs every minute, signs in as one member,
+   claims a short delivery lock, and sends anything due as one Web Push message.
 3. The service worker receives it and shows the notification, whether or not the
    site is open.
 
@@ -75,35 +75,38 @@ export const MEMBERS = {
 trick: two accounts, one shared household, and no data migration — it stays
 exactly where it already was.
 
-Copy `firestore.rules` into the Firebase console with the same UIDs. The Checks
-workflow fails if `household.js` and `firestore.rules` ever disagree, because a
-mismatch would quietly lock somebody out.
+Deploy `firestore.rules` with `pnpm exec firebase deploy --only firestore:rules`,
+or paste it into the Firebase console. Both people can read the shared space,
+while only the matching account can write its own status, presence, location
+and notification subscription. The Checks workflow fails if `household.js` and
+`firestore.rules` ever disagree.
 
 Everything lives under `households/{HOUSEHOLD_ID}` — lists, notes, reminders,
 statuses, dates, help requests, locations, push subscriptions and the outbox.
 
 ### 2. The delivery worker
 
-The public values are already filled in in `worker/wrangler.toml`. From `worker/`:
+The public values are already filled in in `worker/wrangler.toml`. From the repo root:
 
 ```
-npm install
-npx wrangler login
-npx wrangler secret put LITTLE_EMAIL        # either member's email
-npx wrangler secret put LITTLE_PASSWORD     # that account's password
-npx wrangler secret put VAPID_PRIVATE_KEY   # private half of the push key pair
-npx wrangler deploy
+pnpm install
+pnpm --dir worker exec wrangler login
+pnpm --dir worker exec wrangler secret put LITTLE_EMAIL
+pnpm --dir worker exec wrangler secret put LITTLE_PASSWORD
+pnpm --dir worker exec wrangler secret put VAPID_PRIVATE_KEY
+pnpm --dir worker exec wrangler deploy
 ```
 
-Watch it with `npx wrangler tail`, or read **Observability → Logs** in the
+Watch it with `pnpm --dir worker exec wrangler tail`, or read **Observability → Logs** in the
 dashboard. A quiet minute logs `{"checked":true,"sent":0,"subscribed":2}`.
 
 Logging is declared in `wrangler.toml`, not just toggled in the dashboard —
 `wrangler deploy` overwrites anything the file does not mention, so a toggle set
 by hand only survives until the next push.
 
-Optionally `wrangler secret put RUN_SECRET`, which enables
-`POST /run?key=…` on the worker URL to force a pass while testing.
+Optionally set `RUN_SECRET`, which enables `POST /run` on the worker URL to
+force a pass while testing. Send it as `Authorization: Bearer …` so the secret
+does not end up in URLs or request logs.
 
 The same secrets still exist as **repository secrets** for the manual GitHub
 backstop; they are independent copies.
@@ -122,7 +125,7 @@ whether permission was granted.
 
 ## Making small changes
 
-1. Edit the files.
+1. Run `pnpm install` once, then edit the files.
 2. Bump `CACHE` in `service-worker.js` whenever a cached file changes. Do not
    cache-bust with `?v=2` instead: the worker precaches the bare path, so a
    query string means that file is never served from the cache at all.
@@ -132,26 +135,21 @@ whether permission was granted.
 ## Checking your work
 
 ```
-node test/delivery.test.mjs           # the Firestore layer, against a mocked REST API
-npm install --no-save http_ece web-push
-node test/webpush.test.mjs            # the encryption, decoded by an independent library
-node test/delivery-worker.test.mjs    # a full delivery pass, seven scenarios
+pnpm test                             # syntax, data, push, dedupe and delivery
 ```
 
 And the browser pass, which loads every page at phone size, clicks through the
 real flows and fails on any script error or sideways scroll:
 
 ```
-npm install playwright
+pnpm exec playwright install chromium
 python3 -m http.server 8777     # from a copy with apiKey set to REPLACE_ME
-node test/smoke.mjs
+pnpm run test:browser
 ```
 
-`.github/workflows/checks.yml` runs all four of the above except the browser
-pass, plus three static checks: every file the service worker precaches exists,
-no page asks for a local file with a `?query` (the cache stores the bare path,
-so those silently stop working offline), and `household.js` and
-`firestore.rules` list the same account ids.
+`.github/workflows/checks.yml` runs the unit and browser passes, plus static
+checks: every precached file exists, local assets do not use cache-breaking
+query strings, and `household.js` and `firestore.rules` list the same accounts.
 
 ## Notes
 

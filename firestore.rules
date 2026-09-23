@@ -1,24 +1,186 @@
 rules_version = '2';
 
-// One household, two members.
-//
-// The household id used to be whoever's uid was signed in, so the rule could
-// just compare the path to request.auth.uid. Now the path is fixed and each
-// person has their own account, so membership is an explicit list. These UIDs
-// must match the ones in household.js — the Checks workflow fails if they drift.
-
+// One household, two accounts. Reading is shared; writes that represent one
+// person are tied to that person's Firebase account.
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isMember() {
-      return request.auth != null && request.auth.uid in [
-        'cwQndCjlRlcaHasR1xzp9EYICFz2',
-        'oLSxADOwjqS04hSS2aHGOcvozmz2'
-      ];
+    function isHer() {
+      return request.auth != null && request.auth.uid == 'cwQndCjlRlcaHasR1xzp9EYICFz2';
     }
 
-    match /households/{householdId}/{document=**} {
-      allow read, write: if isMember() && householdId == 'oLSxADOwjqS04hSS2aHGOcvozmz2';
+    function isHim() {
+      return request.auth != null && request.auth.uid == 'oLSxADOwjqS04hSS2aHGOcvozmz2';
+    }
+
+    function isMember() {
+      return isHer() || isHim();
+    }
+
+    function inHousehold(householdId) {
+      return isMember() && householdId == 'oLSxADOwjqS04hSS2aHGOcvozmz2';
+    }
+
+    function mySide() {
+      return isHer() ? 'her' : 'him';
+    }
+
+    function otherSide() {
+      return isHer() ? 'him' : 'her';
+    }
+
+    function ownsSide(person) {
+      return person == mySide();
+    }
+
+    function shortText(value, maximum) {
+      return value is string && value.size() <= maximum;
+    }
+
+    match /households/{householdId}/profiles/{profileId} {
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId)
+        && profileId == 'couple'
+        && request.resource.data.keys().hasOnly(['sunName', 'moonName', 'updatedAt'])
+        && shortText(request.resource.data.sunName, 24)
+        && shortText(request.resource.data.moonName, 24)
+        && request.resource.data.updatedAt is int;
+      allow delete: if false;
+    }
+
+    match /households/{householdId}/locations/{person} {
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId) && ownsSide(person)
+        && request.resource.data.person == person
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.lat >= -90 && request.resource.data.lat <= 90
+        && request.resource.data.lng >= -180 && request.resource.data.lng <= 180;
+      allow delete: if inHousehold(householdId) && ownsSide(person);
+    }
+
+    match /households/{householdId}/statuses/{person} {
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId) && ownsSide(person)
+        && request.resource.data.person == person
+        && shortText(request.resource.data.text, 240)
+        && shortText(request.resource.data.category, 40)
+        && shortText(request.resource.data.emoji, 16);
+      allow delete: if inHousehold(householdId) && ownsSide(person);
+    }
+
+    match /households/{householdId}/presence/{person} {
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId) && ownsSide(person)
+        && request.resource.data.person == person;
+      allow delete: if inHousehold(householdId) && ownsSide(person);
+    }
+
+    match /households/{householdId}/pushSubs/{person} {
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId) && ownsSide(person)
+        && request.resource.data.person == person
+        && request.resource.data.subscription is map;
+      // The delivery worker may remove either side's expired browser endpoint.
+      allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/items/{itemId} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && request.resource.data.addedBy == mySide()
+        && shortText(request.resource.data.title, 180);
+      allow update: if inHousehold(householdId)
+        && request.resource.data.addedBy == resource.data.addedBy
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.title == resource.data.title
+        && request.resource.data.type == resource.data.type;
+      allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/notes/{noteId} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && request.resource.data.sender == mySide()
+        && request.resource.data.from == mySide()
+        && request.resource.data.recipient == otherSide()
+        && request.resource.data.to == otherSide()
+        && shortText(request.resource.data.body, 500);
+      allow update: if inHousehold(householdId)
+        && request.resource.data.sender == resource.data.sender
+        && request.resource.data.recipient == resource.data.recipient
+        && request.resource.data.body == resource.data.body
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/reminders/{reminderId} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && request.resource.data.sender == mySide()
+        && request.resource.data.from == mySide()
+        && request.resource.data.recipient == otherSide()
+        && request.resource.data.to == otherSide()
+        && shortText(request.resource.data.title, 180)
+        && shortText(request.resource.data.note, 500);
+      allow update: if inHousehold(householdId)
+        && request.resource.data.sender == resource.data.sender
+        && request.resource.data.recipient == resource.data.recipient
+        && request.resource.data.title == resource.data.title
+        && request.resource.data.dueAt == resource.data.dueAt
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/dates/{dateId} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && (request.resource.data.addedBy == mySide() || request.resource.data.imported == true)
+        && shortText(request.resource.data.title, 180)
+        && shortText(request.resource.data.note, 500);
+      allow update: if inHousehold(householdId)
+        && request.resource.data.addedBy == resource.data.addedBy
+        && request.resource.data.title == resource.data.title
+        && request.resource.data.note == resource.data.note
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/help/{requestId} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && request.resource.data.from == mySide()
+        && request.resource.data.to == otherSide()
+        && shortText(request.resource.data.title, 180)
+        && shortText(request.resource.data.note, 500);
+      allow update: if inHousehold(householdId)
+        && request.resource.data.from == resource.data.from
+        && request.resource.data.to == resource.data.to
+        && request.resource.data.title == resource.data.title
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/outbox/{messageId} {
+      allow read, delete: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && request.resource.data.to in ['her', 'him']
+        && shortText(request.resource.data.title, 120)
+        && shortText(request.resource.data.body, 400)
+        && shortText(request.resource.data.url, 200)
+        && shortText(request.resource.data.kind, 60)
+        && request.resource.data.sendAt is int
+        && request.resource.data.createdAt is int;
+      allow update: if false;
+    }
+
+    match /households/{householdId}/deliveryLocks/{lockId} {
+      allow read, create, delete: if inHousehold(householdId);
+      allow update: if false;
+    }
+
+    match /households/{householdId}/migrations/{migrationId} {
+      allow read, create: if inHousehold(householdId);
+      allow update, delete: if false;
     }
   }
 }

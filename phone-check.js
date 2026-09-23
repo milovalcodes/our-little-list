@@ -165,7 +165,7 @@ $('ask-location').addEventListener('click',()=>{
   navigator.geolocation.getCurrentPosition(
     ()=>{
       busy($('ask-location'),false);setStatus('location',true,'allowed and working.');$('ask-location').textContent='test again';
-      help('location','GPS answered. the test coordinates were discarded immediately.');
+      help('location','GPS answered. automatic sharing stays on while the app is open unless you pause it from the status page.');
     },
     async problem=>{
       busy($('ask-location'),false);
@@ -176,7 +176,7 @@ $('ask-location').addEventListener('click',()=>{
         return;
       }
       setStatus('location',true,'permission allowed. GPS needs another try.');$('ask-location').textContent='retry GPS';
-      help('location',problem.code===3?'permission is on. wait a moment or move near a window, then retry — nothing was saved.':'permission is on. make sure the phone’s main Location switch is enabled, then retry.');
+      help('location',problem.code===3?'permission is on. wait a moment or move near a window, then retry.':'permission is on. make sure the phone’s main Location switch is enabled, then retry.');
     },
     {timeout:8000,maximumAge:600000,enableHighAccuracy:false}
   );

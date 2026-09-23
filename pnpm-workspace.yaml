@@ -1,0 +1,10 @@
+packages:
+  - worker
+  - tools
+allowBuilds:
+  esbuild: true
+  protobufjs: true
+  re2: true
+  workerd: true
+minimumReleaseAgeExclude:
+  - wrangler@4.137.0

@@ -91,33 +91,25 @@ async function boot(viewer) {
 }
 
 function announce(message) {
-  window.playLittleTwinkle?.();
+  // A hidden page may still receive Firestore snapshots for a few moments.
+  // The push worker owns every operating-system notification; raising another
+  // one here made the same event arrive twice on backgrounded phones.
+  if (document.hidden) return;
 
-  if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-    navigator.serviceWorker?.ready
-      .then(registration => registration.showNotification(message.label, {
-        body: message.body,
-        icon: './sun-moon-personalized.png',
-        badge: './sun-moon-personalized.png',
-        tag: `live-${message.url}`,
-        data: { url: message.url }
-      }))
-      .catch(() => {});
-  }
+  window.playLittleTwinkle?.();
 
   document.querySelector('.incoming-note')?.remove();
   const popup = document.createElement('aside');
   popup.className = 'incoming-note';
-  popup.setAttribute('role', 'status');
-  popup.innerHTML = '<button aria-label="Close">×</button><span></span><div><small></small><p></p></div>';
-  popup.querySelector('span').textContent = message.icon;
-  popup.querySelector('small').textContent = message.label;
-  popup.querySelector('p').textContent = message.body || '';
-  popup.querySelector('button').addEventListener('click', event => {
-    event.stopPropagation();
+  popup.innerHTML = '<a class="incoming-note-link"><span></span><div><small></small><p></p></div></a><button class="incoming-note-close" type="button" aria-label="Close">×</button>';
+  const link = popup.querySelector('a');
+  link.href = message.url;
+  link.querySelector('span').textContent = message.icon;
+  link.querySelector('small').textContent = message.label;
+  link.querySelector('p').textContent = message.body || '';
+  popup.querySelector('.incoming-note-close').addEventListener('click', () => {
     popup.remove();
   });
-  popup.addEventListener('click', () => { location.href = message.url; });
   document.body.append(popup);
   window.setTimeout(() => popup.remove(), 10000);
 }

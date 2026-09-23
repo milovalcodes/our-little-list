@@ -1,6 +1,5 @@
-// The little bit of Firestore REST we need. We sign in as the same shared couple
-// account the phones use, so the existing security rules apply unchanged and no
-// service-account key has to exist anywhere.
+// The little bit of Firestore REST we need. We sign in as one member account,
+// so the existing security rules apply and no service-account key has to exist.
 
 const IDENTITY = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword';
 const FIRESTORE = 'https://firestore.googleapis.com/v1';
@@ -15,7 +14,7 @@ export async function signIn({ apiKey, email, password }) {
   if (!response.ok) {
     throw new Error(`sign-in failed: ${payload?.error?.message || response.status}`);
   }
-  return { idToken: payload.idToken, uid: payload.localId };
+  return { idToken: payload.idToken, uid: payload.localId, expiresIn: Number(payload.expiresIn) || 3600 };
 }
 
 export function createClient({ projectId, idToken }) {
@@ -40,6 +39,20 @@ export function createClient({ projectId, idToken }) {
     async get(documentPath) {
       const payload = await call(`/${documentPath}`);
       return payload.missing ? null : readDocument(payload);
+    },
+    async create(documentPath, fields) {
+      const parts = documentPath.split('/');
+      const documentId = parts.pop();
+      const collectionPath = parts.join('/');
+      const response = await fetch(`${root}/${collectionPath}?documentId=${encodeURIComponent(documentId)}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ fields: writeMap(fields) })
+      });
+      if (response.status === 409) return false;
+      const text = await response.text();
+      if (!response.ok) throw new Error(`firestore ${response.status}: ${text.slice(0, 300)}`);
+      return true;
     },
     // Equality/ordering on a single field only, so Firestore's automatic
     // single-field index covers it and nobody has to create a composite one.
@@ -72,6 +85,17 @@ export function createClient({ projectId, idToken }) {
       await call(`/${documentPath}`, { method: 'DELETE' });
     }
   };
+}
+
+function writeMap(fields) {
+  return Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, writeValue(value)]));
+}
+
+function writeValue(value) {
+  if (typeof value === 'boolean') return { booleanValue: value };
+  if (typeof value === 'number' && Number.isInteger(value)) return { integerValue: String(value) };
+  if (typeof value === 'number') return { doubleValue: value };
+  return { stringValue: String(value ?? '') };
 }
 
 function readDocument(document) {

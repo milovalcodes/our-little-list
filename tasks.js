@@ -122,7 +122,7 @@ function taskMarkup(item) {
   const doneClass = item.done ? ' done' : '';
   const check = item.done ? '✓' : '';
   const due = item.due ? prettyDue(item.due) : 'whenever';
-  const addedBy = personName(item.addedBy === 'her' ? 'her' : 'him');
+  const addedBy = escapeHtml(personName(item.addedBy === 'her' ? 'her' : 'him'));
   const finished = item.doneBy ? `<span>done by ${escapeHtml(personName(item.doneBy))}</span>` : '';
   return `<li class="task-row${doneClass}" data-id="${escapeHtml(item.id)}">
     <button class="task-check" data-action="toggle" aria-label="Mark ${escapeHtml(item.title)} ${item.done ? 'not done' : 'done'}">${check}</button>

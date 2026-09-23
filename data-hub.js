@@ -1,4 +1,6 @@
-// One data layer per page, shared by every module on it.
+// One data layer per page, shared by every module on it. The Firebase layer also
+// fans one collection snapshot out to every interested module, so a dashboard
+// and its live-popup helper never pay for the same listener twice.
 //
 // Before this, her.html opened three separate layers — profile-names.js,
 // dashboard.js and live-notes.js each called createDataLayer — which meant three

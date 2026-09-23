@@ -12,9 +12,10 @@ import webpush from 'web-push';
 import { signIn, createClient } from './firestore.mjs';
 import { readFileSync } from 'node:fs';
 
-const GRACE_MS = 45_000;          // matches worker/src/index.js
+const GRACE_MS = 0;               // never ring before the chosen time
 const STALE_MS = 3 * 60 * 60_000; // older than 3h: send it but do not shout about it
 const ABANDONED_MS = 7 * 24 * 60 * 60_000;
+const LOCK_STALE_MS = 2 * 60_000;
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -53,26 +54,34 @@ async function main() {
   const db = createClient({ projectId, idToken });
   // Either member's account can drive delivery; both read the same household.
   const household = `households/${householdId}`;
-
-  const subscriptions = {};
-  for (const record of await db.list(`${household}/pushSubs`)) {
-    if (record?.subscription?.endpoint) subscriptions[record.id] = record;
-  }
-
-  const now = Date.now();
-  const due = await db.dueFrom(`${household}/outbox`, 'sendAt', now + GRACE_MS, 50);
-  if (due.length === 0) {
-    console.log(`nothing due (${Object.keys(subscriptions).length} phone(s) subscribed)`);
+  const lockPath = `${household}/deliveryLocks/active`;
+  const lockAt = Date.now();
+  if (!await acquireDeliveryLock(db, lockPath, lockAt)) {
+    console.log('another delivery pass is already running');
     return;
   }
 
-  let sent = 0;
-  let skipped = 0;
-  let dropped = 0;
+  try {
 
-  for (const message of due) {
-    const age = now - Number(message.createdAt || message.sendAt || now);
-    if (age > ABANDONED_MS) {
+    const subscriptions = {};
+    for (const record of await db.list(`${household}/pushSubs`)) {
+      if (record?.subscription?.endpoint) subscriptions[record.id] = record;
+    }
+
+    const now = Date.now();
+    const due = await db.dueFrom(`${household}/outbox`, 'sendAt', now + GRACE_MS, 50);
+    if (due.length === 0) {
+      console.log(`nothing due (${Object.keys(subscriptions).length} phone(s) subscribed)`);
+      return;
+    }
+
+    let sent = 0;
+    let skipped = 0;
+    let dropped = 0;
+
+    for (const message of due) {
+      const dueAge = Math.max(0, now - Number(message.sendAt || message.createdAt || now));
+      if (dueAge > ABANDONED_MS) {
       await db.remove(message.path);
       dropped += 1;
       continue;
@@ -104,7 +113,7 @@ async function main() {
       // The service worker keys requireInteraction off this, so a reminder
       // stays on screen instead of sliding past while the phone is in a pocket.
       kind: message.kind || 'note',
-      late: age > STALE_MS
+      late: dueAge > STALE_MS
     });
 
     try {
@@ -129,9 +138,20 @@ async function main() {
         skipped += 1;
       }
     }
-  }
+    }
 
-  console.log(`sent ${sent}, left ${skipped}, dropped ${dropped}`);
+    console.log(`sent ${sent}, left ${skipped}, dropped ${dropped}`);
+  } finally {
+    await db.remove(lockPath).catch(problem => console.error(`could not release delivery lock: ${problem.message || problem}`));
+  }
+}
+
+async function acquireDeliveryLock(db, path, now) {
+  if (await db.create(path, { acquiredAt: now })) return true;
+  const existing = await db.get(path);
+  if (existing && now - Number(existing.acquiredAt || 0) < LOCK_STALE_MS) return false;
+  await db.remove(path);
+  return db.create(path, { acquiredAt: now });
 }
 
 main().catch(problem => {

@@ -31,7 +31,8 @@ export function friendlyWhen(value) {
   const date = new Date(at);
   const today = new Date();
   const sameDay = date.toDateString() === today.toDateString();
-  const tomorrow = new Date(today.getTime() + 86400000);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
   const isTomorrow = date.toDateString() === tomorrow.toDateString();
   const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date);
   if (sameDay) return `today at ${clock}`;

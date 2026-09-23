@@ -21,6 +21,8 @@ let errors = 0;
 let lastPoint = null;
 let lastSavedAt = 0;
 let lastSavedPoint = null;
+let lastAttemptAt = 0;
+let writeInFlight = false;
 let phase = 'loading';
 let detail = '';
 
@@ -44,12 +46,14 @@ export async function pauseAutoLocation({ removeSpot = false } = {}) {
   phase = 'paused';
   detail = removeSpot ? 'last spot hidden' : 'last spot kept';
   try { localStorage.setItem(pauseKey(), 'yes'); } catch (_) {}
+  let synced = true;
   if (viewer && data?.mode !== 'local') {
     try {
       if (removeSpot) await data.removeFrom('locations', viewer);
       else await data.updateIn('locations', viewer, { shareUntil: Date.now() - 1 });
-    } catch (_) { /* no saved spot yet, or temporarily offline */ }
+    } catch (_) { synced = false; }
   }
+  if (!synced) detail = 'paused here; the live badge may take a few minutes to expire';
   emit();
   return locationSnapshot();
 }
@@ -130,27 +134,41 @@ async function savePosition(position) {
   emit();
   // A GPS watcher can chatter several times a second. The map does not need
   // that many cloud writes: save meaningful movement, or refresh once a minute.
+  await persistPoint(next);
+}
+
+async function persistPoint(next, renewLease = false) {
+  const now = Date.now();
   const previous = lastSavedPoint;
   const sinceSave = now - lastSavedAt;
-  if (lastSavedAt && (sinceSave < 15000 || (sinceSave < 60000 && previous && metersBetween(previous, next) < 25))) return;
-  lastSavedAt = now;
-  lastSavedPoint = next;
+  const sinceAttempt = now - lastAttemptAt;
+  if (writeInFlight || sinceAttempt < 15000) return;
+  if (!renewLease && lastSavedAt && (sinceSave < 15000 || (sinceSave < 60000 && previous && metersBetween(previous, next) < 25))) return;
+  writeInFlight = true;
+  lastAttemptAt = now;
   try {
     await data.setTo('locations', viewer, next);
+    lastSavedAt = now;
+    lastSavedPoint = next;
   } catch (_) {
     phase = 'offline';
-    detail = 'saved on the phone; waiting for internet';
+    detail = 'could not sync yet; trying again';
     emit();
+  } finally {
+    writeInFlight = false;
   }
 }
 
 function refreshLease() {
   if (document.hidden || phase === 'paused' || phase === 'blocked') return;
-  navigator.geolocation.getCurrentPosition(savePosition, handleError, {
-    enableHighAccuracy: true,
-    maximumAge: HEARTBEAT_MS,
-    timeout: 15000
-  });
+  if (!lastPoint) {
+    armWatch();
+    return;
+  }
+  const now = Date.now();
+  const renewed = { ...lastPoint, updatedAt: now, shareUntil: now + LEASE_MS };
+  lastPoint = renewed;
+  void persistPoint(renewed, true);
 }
 
 function handleError(problem) {
@@ -190,6 +208,7 @@ function emit() {
 
 window.addEventListener('pagehide', stopWatcher);
 window.addEventListener('pageshow', () => { if (viewer && !isPaused() && data?.mode !== 'local') startWatcher(); });
+window.addEventListener('online', refreshLease);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopWatcher();
   else if (viewer && !isPaused() && data?.mode !== 'local') startWatcher();

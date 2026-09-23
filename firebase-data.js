@@ -25,7 +25,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
 
   const [
     { initializeApp, getApps, getApp },
-    { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
+    { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
     { getFirestore, collection, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc, getDocs }
   ] = modules;
 
@@ -44,17 +44,35 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
 
   const named = name => collection(db, 'households', HOUSEHOLD_ID, name);
   const signedIn = () => Boolean(auth.currentUser);
+  const liveCollections = new Map();
 
   const layer = {
     mode: 'firebase',
     signedIn,
     listenTo(name, callback) {
       if (!signedIn()) return () => {};
-      return onSnapshot(
-        named(name),
-        snapshot => callback(snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }))),
-        problem => announceError(problem, 'listen')
-      );
+      let live = liveCollections.get(name);
+      if (!live) {
+        live = { callbacks: new Set(), latest: null, unsubscribe: null };
+        live.unsubscribe = onSnapshot(
+          named(name),
+          snapshot => {
+            live.latest = snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
+            live.callbacks.forEach(handler => safelyCall(handler, [...live.latest]));
+          },
+          problem => announceError(problem, 'listen')
+        );
+        liveCollections.set(name, live);
+      }
+      live.callbacks.add(callback);
+      if (live.latest) queueMicrotask(() => safelyCall(callback, [...live.latest]));
+      return () => {
+        live.callbacks.delete(callback);
+        if (live.callbacks.size === 0) {
+          live.unsubscribe?.();
+          liveCollections.delete(name);
+        }
+      };
     },
     // A single read, for the places that need to look at a collection once and
     // then act — push registration checking who else is filed against this
@@ -83,7 +101,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
           to: person === 'him' ? 'him' : 'her',
           title: String(message?.title || 'Our Little List').slice(0, 120),
           body: String(message?.body || '').slice(0, 400),
-          url: String(message?.url || 'index.html').slice(0, 200),
+          url: notificationUrl(message?.url),
           kind: String(message?.kind || 'note'),
           ref: message?.ref ? String(message.ref) : '',
           sendAt,
@@ -96,7 +114,6 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
     },
 
     signIn: (email, password) => signInWithEmailAndPassword(auth, email, password),
-    createAccount: (email, password) => createUserWithEmailAndPassword(auth, email, password),
     signOut: () => signOut(auth),
     friendlyError(error) {
       const code = error?.code || '';
@@ -180,7 +197,7 @@ function createLocalLayer(onAuth, onReady) {
       write(name, read(name).filter(item => item.id !== id));
     },
     async notify() { return { queued: false, reason: 'local' }; },
-    async signIn() {}, async createAccount() {}, async signOut() {},
+    async signIn() {}, async signOut() {},
     friendlyError() { return 'sync is offline.'; }
   };
 }
@@ -204,4 +221,19 @@ function announceError(problem, stage) {
     solution = 'turn on Wi-Fi or mobile data, then try again.';
   }
   document.dispatchEvent(new CustomEvent('littlelist:dataerror', { detail: { message, solution, code } }));
+}
+
+function safelyCall(callback, value) {
+  try { callback(value); } catch (problem) { console.error('collection listener failed', problem); }
+}
+
+function notificationUrl(value) {
+  try {
+    const target = new URL(String(value || 'index.html'), location.href);
+    const appRoot = new URL('./', import.meta.url);
+    if (target.origin !== appRoot.origin || !target.href.startsWith(appRoot.href)) return './index.html';
+    return `${target.pathname}${target.search}${target.hash}`.slice(0, 200);
+  } catch (_) {
+    return './index.html';
+  }
 }

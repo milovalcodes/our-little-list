@@ -1,0 +1,17 @@
+{
+  "name": "our-little-list",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:syntax": "node test/check-syntax.mjs",
+    "test:unit": "node test/delivery.test.mjs && node test/push-client.test.mjs && node test/notification-paths.test.mjs && node test/webpush.test.mjs && node test/delivery-worker.test.mjs",
+    "test:browser": "node test/smoke.mjs",
+    "test": "pnpm run check:syntax && pnpm run test:unit"
+  },
+  "devDependencies": {
+    "http_ece": "1.2.1",
+    "firebase-tools": "15.30.2",
+    "playwright": "1.63.0",
+    "web-push": "3.6.7"
+  }
+}

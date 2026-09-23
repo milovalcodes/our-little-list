@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v32';
+const CACHE = 'our-little-list-v33';
 
 const PAGES = [
   './', './index.html', './her.html', './him.html', './admire.html', './profiles.html',
@@ -20,9 +20,9 @@ const ASSETS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE)
-      // One missing file used to fail the whole install and leave the site
-      // running on the previous worker forever. Cache what we can.
-      .then(cache => Promise.allSettled(ASSETS.map(asset => cache.add(asset))))
+      // Do not activate a half-cached shell. The repository check verifies each
+      // entry exists, and a transient network failure can safely retry later.
+      .then(cache => cache.addAll(ASSETS))
       .then(() => self.skipWaiting())
   );
 });
@@ -49,17 +49,19 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
+    // Store one copy per page, not one copy for every harmless ?as= parameter.
+    const pageKey = new Request(`${url.origin}${url.pathname}`);
     event.respondWith(
       fetch(request)
         .then(response => {
           const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put(request, copy));
+          caches.open(CACHE).then(cache => cache.put(pageKey, copy));
           return response;
         })
         .catch(async () => {
           // Fall back to this exact page before falling back to the front door,
           // so going offline on the list does not dump you at the door picker.
-          return (await caches.match(request, { ignoreSearch: true }))
+          return (await caches.match(pageKey))
             || (await caches.match('./index.html'))
             || Response.error();
         })
@@ -93,22 +95,27 @@ self.addEventListener('push', event => {
   }
 
   const body = payload.late ? `${payload.body} (a little late, sorry)` : payload.body;
+  const tag = payload.tag || 'our-little-list';
+  const target = safeAppUrl(payload.url);
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
-      body,
-      icon: './sun-moon-personalized.png',
-      badge: './sun-moon-personalized.png',
-      tag: payload.tag || 'our-little-list',
-      renotify: true,
-      requireInteraction: payload.kind === 'reminder',
-      data: { url: payload.url || './index.html' }
+    self.registration.getNotifications({ tag }).then(existing => {
+      if (existing.length) return;
+      return self.registration.showNotification(payload.title, {
+        body,
+        icon: './sun-moon-personalized.png',
+        badge: './sun-moon-personalized.png',
+        tag,
+        renotify: false,
+        requireInteraction: payload.kind === 'reminder',
+        data: { url: target }
+      });
     })
   );
 });
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url || './index.html', self.location.origin).href;
+  const target = safeAppUrl(event.notification.data?.url);
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windows => {
       // Reuse a window that is already open instead of piling up new ones.
@@ -122,3 +129,13 @@ self.addEventListener('notificationclick', event => {
     })
   );
 });
+
+function safeAppUrl(value) {
+  const fallback = new URL('./index.html', self.location.href).href;
+  try {
+    const target = new URL(value || fallback, self.location.href);
+    return target.origin === self.location.origin && target.href.startsWith(self.registration.scope) ? target.href : fallback;
+  } catch (_) {
+    return fallback;
+  }
+}

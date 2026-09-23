@@ -14,12 +14,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install pinned test tools
+        run: pnpm install --frozen-lockfile
 
       - name: Every module parses
-        run: |
-          for file in *.js tools/*.mjs worker/src/*.js; do
-            node --check "$file"
-          done
+        run: pnpm run check:syntax
 
       - name: Delivery layer behaves
         run: node test/delivery.test.mjs
@@ -27,9 +30,11 @@ jobs:
       - name: Push registration goes to the right phone
         run: node test/push-client.test.mjs
 
+      - name: Notifications have one delivery owner
+        run: node test/notification-paths.test.mjs
+
       - name: Push encryption and the delivery worker behave
         run: |
-          npm install --no-save --no-audit --no-fund http_ece web-push
           node test/webpush.test.mjs
           node test/delivery-worker.test.mjs
 
@@ -77,3 +82,10 @@ jobs:
             }
             console.log("every id in household.js appears in firestore.rules");
           '
+
+      - name: Browser flows fit a phone and stay script-error free
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
+          python3 -m http.server 8777 >/tmp/our-little-list-http.log 2>&1 &
+          pnpm run test:browser

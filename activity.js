@@ -54,7 +54,7 @@ function events(){
 
 function render(){
   const list=events();$('activity-empty').hidden=list.length>0;
-  $('activity-list').innerHTML=list.map(event=>{const mine=event.who===viewer;return `<li class="activity-row" data-event-id="${escapeHtml(event.id)}" data-record-id="${escapeHtml(event.recordId)}" data-collection="${escapeHtml(event.collection)}"><span class="activity-icon">${event.icon}</span><div class="activity-row-copy"><p><b>${mine?'you':escapeHtml(event.who?personName(event.who):'someone')}</b> ${escapeHtml(mine&&event.selfKind?event.selfKind:event.kind)}</p><strong>${escapeHtml(event.text||'')}</strong><small>${timeAgo(event.at)}${event.status?` · ${escapeHtml(event.status)}`:''}</small><div class="activity-row-actions"><button type="button" data-action="hide">delete for me</button><button class="delete-for-us" type="button" data-action="delete">delete for us</button></div></div></li>`;}).join('');
+  $('activity-list').innerHTML=list.map(event=>{const mine=event.who===viewer;return `<li class="activity-row" data-event-id="${escapeHtml(event.id)}" data-record-id="${escapeHtml(event.recordId)}" data-collection="${escapeHtml(event.collection)}"><span class="activity-icon">${escapeHtml(event.icon)}</span><div class="activity-row-copy"><p><b>${mine?'you':escapeHtml(event.who?personName(event.who):'someone')}</b> ${escapeHtml(mine&&event.selfKind?event.selfKind:event.kind)}</p><strong>${escapeHtml(event.text||'')}</strong><small>${timeAgo(event.at)}${event.status?` · ${escapeHtml(event.status)}`:''}</small><div class="activity-row-actions"><button type="button" data-action="hide">delete for me</button><button class="delete-for-us" type="button" data-action="delete">delete for us</button></div></div></li>`;}).join('');
   renderPresence();
 }
 
