@@ -1,11 +1,41 @@
 import { chromium } from 'playwright';
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 const BASE = 'http://127.0.0.1:8777';
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 // The sandbox blocks outbound hosts; those failures are the environment, not the app.
 const NOISE = /ERR_TUNNEL_CONNECTION_FAILED|ERR_NAME_NOT_RESOLVED|favicon|fonts\.googleapis|unpkg|openstreetmap|gstatic|Failed to load resource/i;
 
-const browser = await chromium.launch({ executablePath: CHROME });
+// This used to hardcode one machine's versioned browser path, which meant the
+// test only ran there. Try Playwright's own browser, then any chromium already
+// sitting in the browsers directory, then say so plainly.
+const browser = await launchChromium();
+
+async function launchChromium() {
+  const candidates = [process.env.CHROME_PATH, undefined, ...installedChromiums()];
+  let lastProblem;
+  for (const executablePath of candidates) {
+    if (executablePath === null) continue;
+    try {
+      return await chromium.launch(executablePath ? { executablePath } : {});
+    } catch (problem) { lastProblem = problem; }
+  }
+  console.error('no chromium to run the browser pass with. `npx playwright install chromium`, or set CHROME_PATH.');
+  throw lastProblem;
+}
+
+function installedChromiums() {
+  const root = process.env.PLAYWRIGHT_BROWSERS_PATH;
+  if (!root || !existsSync(root)) return [];
+  const found = [];
+  for (const entry of readdirSync(root)) {
+    for (const binary of ['chrome-linux/chrome', 'chrome-headless-shell-linux64/chrome-headless-shell', 'chrome-mac/Chromium.app/Contents/MacOS/Chromium']) {
+      const full = join(root, entry, binary);
+      if (existsSync(full)) found.push(full);
+    }
+  }
+  return found;
+}
 let failures = 0;
 const note = (ok, label, extra = '') => {
   if (!ok) failures++;
