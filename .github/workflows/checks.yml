@@ -24,6 +24,9 @@ jobs:
       - name: Delivery layer behaves
         run: node test/delivery.test.mjs
 
+      - name: Push registration goes to the right phone
+        run: node test/push-client.test.mjs
+
       - name: Push encryption and the delivery worker behave
         run: |
           npm install --no-save --no-audit --no-fund http_ece web-push
@@ -39,6 +42,23 @@ jobs:
             const missing = listed.filter(name => !fs.existsSync(name));
             if (missing.length) { console.error("precached but missing:", missing); process.exit(1); }
             console.log(`all ${listed.length} precached files exist`);
+          '
+
+      - name: No page asks for a file the cache cannot match
+        run: |
+          node -e '
+            const fs = require("fs");
+            const bad = [];
+            for (const page of fs.readdirSync(".").filter(f => f.endsWith(".html"))) {
+              const html = fs.readFileSync(page, "utf8");
+              for (const m of html.matchAll(/(?:src|href)="([^":]+\?[^"]*)"/g)) bad.push(`${page} -> ${m[1]}`);
+            }
+            if (bad.length) {
+              console.error("local asset requested with a query string:", bad);
+              console.error("the service worker precaches the bare path, so these are never served offline.");
+              process.exit(1);
+            }
+            console.log("no page asks for a local file with a query string");
           '
 
       - name: household.js and firestore.rules agree
