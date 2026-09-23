@@ -1,6 +1,10 @@
-// Runs on a schedule in GitHub Actions. Reads whatever the website has queued in
-// the outbox, and sends the ones that are due as real web pushes so they arrive
-// with both phones closed.
+// The manual backstop. Delivery is scheduled by the Cloudflare Worker in
+// worker/ — this is the same pass, written for Node, that you can fire by hand
+// from the Actions tab if the worker is ever down or misconfigured.
+//
+// It must stay behaviourally identical to worker/src/index.js: same grace
+// window, same payload, same urgency. Two implementations of one job drift
+// silently, and the symptom is a reminder that quietly stops arriving.
 //
 // Everything secret comes from the environment; nothing secret is in this repo.
 
@@ -8,7 +12,7 @@ import webpush from 'web-push';
 import { signIn, createClient } from './firestore.mjs';
 import { readFileSync } from 'node:fs';
 
-const GRACE_MS = 60_000;          // send anything due within the next minute too
+const GRACE_MS = 45_000;          // matches worker/src/index.js
 const STALE_MS = 3 * 60 * 60_000; // older than 3h: send it but do not shout about it
 const ABANDONED_MS = 7 * 24 * 60 * 60_000;
 
@@ -86,9 +90,8 @@ async function main() {
 
     const target = subscriptions[message.to];
     if (!target) {
-      // Nobody on that side has turned notifications on yet. Leave it queued
-      // for a while so it lands once they do, then give up quietly.
-      if (age > ABANDONED_MS) await db.remove(message.path);
+      // Nobody on that side has turned notifications on yet. Leave it queued so
+      // it lands once they do; the ABANDONED_MS check above eventually drops it.
       skipped += 1;
       continue;
     }
@@ -98,11 +101,18 @@ async function main() {
       body: message.body || '',
       url: message.url || 'index.html',
       tag: `${message.kind || 'note'}-${message.id}`,
+      // The service worker keys requireInteraction off this, so a reminder
+      // stays on screen instead of sliding past while the phone is in a pocket.
+      kind: message.kind || 'note',
       late: age > STALE_MS
     });
 
     try {
-      await webpush.sendNotification(target.subscription, payload, { TTL: 60 * 60 * 24 });
+      await webpush.sendNotification(target.subscription, payload, {
+        TTL: 60 * 60 * 24,
+        // Without this Android can hold the wake-up in doze for a long while.
+        urgency: message.kind === 'reminder' || message.kind === 'help' ? 'high' : 'normal'
+      });
       await db.remove(message.path);
       sent += 1;
     } catch (problem) {
