@@ -1,0 +1,14 @@
+{
+  "name": "our-little-list-delivery",
+  "private": true,
+  "type": "module",
+  "description": "Sends the reminders and notifications the website queues up.",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "test": "node --test ../test/"
+  },
+  "devDependencies": {
+    "wrangler": "^3"
+  }
+}

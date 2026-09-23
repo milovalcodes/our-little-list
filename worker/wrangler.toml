@@ -1,0 +1,23 @@
+name = "our-little-list-delivery"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# Every minute. Cloudflare actually honours this, which is the whole reason
+# this exists — GitHub Actions was firing a */5 schedule about every 4 hours.
+[triggers]
+crons = ["* * * * *"]
+
+# None of these are secrets. The Firebase web config is public by design and the
+# VAPID public key is meant to be handed out; the Firestore rules are what
+# protect the data.
+[vars]
+FIREBASE_API_KEY = "AIzaSyAFUncHYGmf5j2O7DGm9PL53qPNsM8HkgE"
+FIREBASE_PROJECT_ID = "our-little-list-5ea59"
+HOUSEHOLD_ID = "oLSxADOwjqS04hSS2aHGOcvozmz2"
+VAPID_PUBLIC_KEY = "BJeV-0cnT_CgN9jL29iIZqS8Q3EVaBB7qY4F9e3gsbtHIY5KWJKbNIY9rC-WtaNBu5Q9kjgcwDDmxcw3ZQszBkM"
+
+# The real secrets go in with `wrangler secret put`, never in this file:
+#   LITTLE_EMAIL        one member's email, used to sign in to Firebase
+#   LITTLE_PASSWORD     that account's password
+#   VAPID_PRIVATE_KEY   the private half of the push key pair
+#   RUN_SECRET          optional; lets you trigger a pass by hand over HTTP
