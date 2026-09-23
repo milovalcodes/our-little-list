@@ -7,6 +7,16 @@ import { openEmojiPicker } from './emoji-picker.js';
 const $=id=>document.getElementById(id);
 const stateLabels={online:'around',away:'afk-ish',dnd:'busy',invisible:'lurking'};
 let statuses=[];let reactions=[];let state='online';let emoji='🎧';let energy='functioning';
+// Every write here is a merge onto the existing status doc, and several of them
+// fill in "keep what is already there" values. Before the first snapshot lands
+// that list is empty, so "keep" silently meant "erase" — tapping an arrival
+// preset on a freshly opened page wiped the status you had set. Nothing writes
+// until we have actually seen the stored document.
+let loaded=false;let settleLoaded;const firstSnapshot=new Promise(resolve=>{settleLoaded=resolve;});
+// The expiry select cannot be restored from a stored timestamp, so an untouched
+// one must not be written at all — otherwise saving a typo into your status
+// quietly removed the "in 4 hours" you set earlier.
+let expiryTouched=false;
 
 const data=await sharedLayer();
 onAuthChange(user=>setupAuthUI(data,user));
@@ -20,7 +30,7 @@ if(!viewer){showNotAMember();await new Promise(()=>{});}
 const other=partnerOf(viewer);
 applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
 
-data.listenTo('statuses',items=>{statuses=items;render();hydrateEditor();});
+data.listenTo('statuses',items=>{statuses=items;loaded=true;settleLoaded();render();hydrateEditor();});
 data.listenTo('reactions',items=>{reactions=items;render();});
 
 document.querySelectorAll('.status-choice').forEach(button=>button.addEventListener('click',()=>{
@@ -31,8 +41,9 @@ document.querySelectorAll('.status-emoji').forEach(button=>button.addEventListen
 }));
 document.querySelectorAll('.energy-choice').forEach(button=>button.addEventListener('click',()=>{energy=button.dataset.energy;document.querySelectorAll('.energy-choice').forEach(item=>item.classList.toggle('active',item===button));}));
 $('status-category').addEventListener('change',event=>{$('custom-category-wrap').hidden=event.target.value!=='custom';});
+$('status-expiry').addEventListener('change',()=>{expiryTouched=true;});
 
-$('arrival-presets').addEventListener('click',async event=>{const button=event.target.closest('[data-arrival]');if(!button)return;setButtonBusy(button,true,'…');const current=statuses.find(item=>item.id===viewer||item.person===viewer)||{};try{await data.setTo('statuses',viewer,{person:viewer,state:current.state||state,text:current.text||'',category:current.category||'',emoji:current.emoji||'',energy:current.energy||energy,arrival:button.dataset.arrival,arrivalAt:Date.now(),expiresAt:current.expiresAt||0,updatedAt:Date.now()});void data.notify(other,{title:`${personName(viewer)}: ${button.dataset.arrival}`,body:'',url:'status.html',kind:'arrival'});toast(button.dataset.arrival);}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
+$('arrival-presets').addEventListener('click',async event=>{const button=event.target.closest('[data-arrival]');if(!button)return;setButtonBusy(button,true,'…');await firstSnapshot;const current=mine();try{await data.setTo('statuses',viewer,{person:viewer,arrival:button.dataset.arrival,arrivalAt:Date.now(),updatedAt:Date.now(),...(current?{}:blankStatus())});void data.notify(other,{title:`${personName(viewer)}: ${button.dataset.arrival}`,body:'',url:'status.html',kind:'arrival'});toast(button.dataset.arrival);}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
 $('status-pair').addEventListener('click',event=>{const picker=event.target.closest('[data-status-picker]');if(picker){const targetId=picker.dataset.statusPicker;const current=findStatusReaction(targetId);openEmojiPicker({current:current?.emoji,onSelect:value=>saveStatusReaction(targetId,value,picker),onRemove:()=>saveStatusReaction(targetId,'',picker)});return;}const button=event.target.closest('[data-react-status]');if(button)void saveStatusReaction(button.dataset.reactStatus,button.dataset.emoji,button);});
 
 function findStatusReaction(targetId){return reactions.find(item=>item.id===`status-${targetId}-${viewer}`||(item.targetType==='status'&&item.targetId===targetId&&item.by===viewer));}
@@ -41,9 +52,11 @@ async function saveStatusReaction(targetId,value,button){const id=`status-${targ
 $('status-form').addEventListener('submit',async event=>{
   event.preventDefault();const text=$('status-text').value.trim();const rawCategory=$('status-category').value;const category=rawCategory==='custom'?$('status-custom-category').value.trim():rawCategory;
   if(text&&!category){$('status-custom-category').focus();return;}
-  const expiresAt=expiryTime($('status-expiry').value);const button=$('status-save');setButtonBusy(button,true,'saving…');
+  const button=$('status-save');setButtonBusy(button,true,'saving…');
+  await firstSnapshot;
+  const expiry=expiryTouched?{expiresAt:expiryTime($('status-expiry').value)}:(mine()?{}:{expiresAt:0});
   try{
-    await data.setTo('statuses',viewer,{person:viewer,state,text,category,emoji,energy,expiresAt,updatedAt:Date.now()});
+    await data.setTo('statuses',viewer,{person:viewer,state,text,category,emoji,energy,...expiry,updatedAt:Date.now()});
     const display=text?`${emoji} ${category} ${text}`:stateLabels[state];
     void data.notify(other,{title:`${personName(viewer)} updated their status`,body:display,url:`status.html`,kind:'status'});
     toast('status saved. lore updated.');
@@ -53,7 +66,8 @@ $('status-form').addEventListener('submit',async event=>{
 
 $('status-clear').addEventListener('click',async event=>{
   setButtonBusy(event.currentTarget,true,'clearing…');
-  try{await data.setTo('statuses',viewer,{person:viewer,state,text:'',category:'',emoji:'',expiresAt:0,updatedAt:Date.now()});$('status-text').value='';toast('custom bit cleared');}
+  await firstSnapshot;
+  try{await data.setTo('statuses',viewer,{person:viewer,text:'',category:'',emoji:'',expiresAt:0,updatedAt:Date.now(),...(mine()?{}:{state,energy})});$('status-text').value='';expiryTouched=false;$('status-expiry').value='0';toast('custom bit cleared');}
   catch(_){showFailure('that did not clear.','check the internet and try again.');}
   finally{setButtonBusy(event.currentTarget,false);}
 });
@@ -61,12 +75,19 @@ $('status-clear').addEventListener('click',async event=>{
 function hydrateEditor(){
   if($('status-form').dataset.hydrated)return;const mine=statuses.find(item=>item.id===viewer||item.person===viewer);if(!mine)return;
   $('status-form').dataset.hydrated='true';state=mine.state||'online';emoji=mine.emoji||'🎧';energy=mine.energy||'functioning';
+  const typing=$('status-text').value.trim()!=='';
   document.querySelectorAll('.status-choice').forEach(item=>item.classList.toggle('active',item.dataset.state===state));
   document.querySelectorAll('.status-emoji').forEach(item=>item.classList.toggle('active',item.dataset.emoji===emoji));
   document.querySelectorAll('.energy-choice').forEach(item=>item.classList.toggle('active',item.dataset.energy===energy));
   const presets=[...$('status-category').options].map(option=>option.value);const category=mine.category||'listening to';
-  $('status-category').value=presets.includes(category)?category:'custom';$('custom-category-wrap').hidden=$('status-category').value!=='custom';$('status-custom-category').value=presets.includes(category)?'':category;$('status-text').value=isExpired(mine)?'':mine.text||'';
+  $('status-category').value=presets.includes(category)?category:'custom';$('custom-category-wrap').hidden=$('status-category').value!=='custom';$('status-custom-category').value=presets.includes(category)?'':category;
+  if(!typing)$('status-text').value=isExpired(mine)?'':mine.text||'';
 }
+
+function mine(){return statuses.find(item=>item.id===viewer||item.person===viewer)||null;}
+// The rules require text, category and emoji to be strings on every write, so a
+// first-ever status has to supply them even when it is only recording an arrival.
+function blankStatus(){return {state,text:'',category:'',emoji:'',energy,expiresAt:0};}
 
 function render(){
   $('status-pair').innerHTML=['her','him'].map(person=>statusCard(person,statuses.find(item=>item.id===person||item.person===person))).join('');

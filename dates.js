@@ -49,14 +49,24 @@ const other=partnerOf(viewer);
 applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
 
 data.listenTo('dates',items=>{
-  ideas=items.sort((a,b)=>(Number(a.done)-Number(b.done))||(Number(b.favorite)-Number(a.favorite))||((b.createdAt||0)-(a.createdAt||0)));
+  const flag=value=>value?1:0;
+  ideas=items.sort((a,b)=>(flag(a.done)-flag(b.done))||(flag(b.favorite)-flag(a.favorite))||((b.createdAt||0)-(a.createdAt||0)));
   render();
 });
 void importLegacyIdeas();
 
 document.querySelectorAll('.date-vibe').forEach(button=>button.addEventListener('click',()=>{vibe=button.dataset.vibe;document.querySelectorAll('.date-vibe').forEach(item=>item.classList.toggle('active',item===button));}));
 $('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');const details={cost:$('date-cost').value,energy:$('date-energy').value,weather:$('date-weather').value,distance:$('date-distance').value,duration:$('date-duration').value};setButtonBusy(button,true,'saving…');try{await data.addTo('dates',{title,note,vibe,...details,addedBy:viewer,favorite:false,done:false,createdAt:Date.now()});void data.notify(other,{title:'new date idea ✦',body:title,url:`dates.html`,kind:'date'});event.target.reset();toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
-$('pick-random').addEventListener('click',event=>{const filters={cost:$('filter-cost').value,energy:$('filter-energy').value,weather:$('filter-weather').value,distance:$('filter-distance').value,duration:$('filter-duration').value};const matches=idea=>Object.entries(filters).every(([key,value])=>value==='any'||idea[key]===value);const available=ideas.filter(idea=>!idea.done&&matches(idea));if(!available.length){$('random-date').textContent='nothing matches that exact mood.';return;}event.currentTarget.classList.remove('is-picking');void event.currentTarget.offsetWidth;event.currentTarget.classList.add('is-picking');const idea=available[Math.floor(Math.random()*available.length)];$('random-date').innerHTML=`<strong>${escapeHtml(idea.title)}</strong>${idea.note?`<span>${escapeHtml(idea.note)}</span>`:''}`;});
+$('pick-random').addEventListener('click',event=>{const filters={cost:$('filter-cost').value,energy:$('filter-energy').value,weather:$('filter-weather').value,distance:$('filter-distance').value,duration:$('filter-duration').value};// The 26 imported ideas predate these five fields, so an exact match excludes
+// every one of them the moment a filter leaves "any" — the roulette said
+// "nothing matches" with a full pile behind it. Tagged ideas still win; the
+// untagged ones are the fallback rather than the exclusion.
+const chosen=Object.entries(filters).filter(([,value])=>value!=='any');
+const tagged=idea=>chosen.every(([key,value])=>idea[key]===value);
+const untagged=idea=>chosen.every(([key])=>!idea[key]);
+const pool=ideas.filter(idea=>!idea.done);
+const available=pool.filter(tagged).length?pool.filter(tagged):pool.filter(untagged);
+if(!available.length){$('random-date').textContent='nothing matches that exact mood.';return;}event.currentTarget.classList.remove('is-picking');void event.currentTarget.offsetWidth;event.currentTarget.classList.add('is-picking');const idea=available[Math.floor(Math.random()*available.length)];$('random-date').innerHTML=`<strong>${escapeHtml(idea.title)}</strong>${idea.note?`<span>${escapeHtml(idea.note)}</span>`:''}`;});
 $('date-more').addEventListener('click',()=>{viewLimit+=8;render();});
 $('date-list').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const idea=ideas.find(item=>item.id===button.closest('[data-id]')?.dataset.id);if(!idea)return;button.disabled=true;try{if(button.dataset.action==='favorite')await data.updateIn('dates',idea.id,{favorite:!idea.favorite});else if(button.dataset.action==='complete'){await data.updateIn('dates',idea.id,{done:!idea.done,doneAt:idea.done?0:Date.now()});toast(idea.done?'back in the pile':'date completed. historic.');}else if(button.dataset.action==='delete')await data.removeFrom('dates',idea.id);}catch(_){showFailure('that edit did not stick.','check the internet and tap it again.');button.disabled=false;}});
 
@@ -74,9 +84,19 @@ function importLegacyIdeas(){
     queueMicrotask(()=>stop());
     if(records.some(record=>record.id===LEGACY_MIGRATION_ID))return;
     try{
-      await Promise.all(LEGACY_DATE_IDEAS.map(([slug,title,ideaVibe,done],index)=>data.setTo('dates',`old-list-${slug}`,{title,note:'',vibe:ideaVibe,addedBy:'him',favorite:false,done,doneAt:done?LEGACY_CREATED_AT-index*1000:0,imported:true,createdAt:LEGACY_CREATED_AT-index*1000})));
-      await data.setTo('migrations',LEGACY_MIGRATION_ID,{done:true,count:LEGACY_DATE_IDEAS.length,importedAt:Date.now()});
-      toast('the old date list moved in ✦');
+      // Only write the ideas that are genuinely absent. The marker write can
+      // fail (both phones opening this page at once race for it, and the rules
+      // allow create but not update), and a retry used to reset every star and
+      // every "we did this" back to the shipped defaults.
+      const existing=new Set((await data.readOnce('dates')).map(idea=>idea.id));
+      const missing=LEGACY_DATE_IDEAS.filter(([slug])=>!existing.has(`old-list-${slug}`));
+      await Promise.all(missing.map(([slug,title,ideaVibe,done])=>{
+        const index=LEGACY_DATE_IDEAS.findIndex(entry=>entry[0]===slug);
+        return data.setTo('dates',`old-list-${slug}`,{title,note:'',vibe:ideaVibe,addedBy:'him',favorite:false,done,doneAt:done?LEGACY_CREATED_AT-index*1000:0,imported:true,createdAt:LEGACY_CREATED_AT-index*1000});
+      }));
+      if(missing.length)toast('the old date list moved in ✦');
+      // The ideas are in. A failed marker only costs one wasted read next time.
+      await data.setTo('migrations',LEGACY_MIGRATION_ID,{done:true,count:LEGACY_DATE_IDEAS.length,importedAt:Date.now()}).catch(()=>{});
     }catch(_){migrationStarted=false;handled=false;showFailure('the old date list did not move in.','check the internet, then reopen this page.');}
   });
 }
