@@ -31,19 +31,20 @@ delivery works like this:
 
 1. The website writes the notification into an `outbox` collection in Firestore,
    with a `sendAt` timestamp. A reminder for Friday at 3pm sits there until then.
-2. A GitHub Actions workflow (`.github/workflows/deliver.yml`) runs every five
-   minutes, signs in as the same shared couple account the phones use, and sends
-   anything that is due as a real Web Push message.
+2. A Cloudflare Worker (`worker/`) runs every minute, signs in as one member
+   account, and sends anything that is due as a real Web Push message.
 3. The service worker receives it and shows the notification, whether or not the
    site is open.
 
-Free on a public repository, no credit card, no Firebase Blaze plan.
+Free on Cloudflare's free plan, no credit card, no Firebase Blaze plan.
 
-Two things to know:
+**This started as a GitHub Actions cron and that did not work.** GitHub treats
+scheduled workflows as its lowest-priority queue: a `*/5` schedule fired roughly
+every four hours, so reminders arrived the same afternoon rather than at the
+time you picked. `.github/workflows/deliver.yml` is kept as a manual backstop
+with its schedule removed — running both would deliver everything twice.
 
-- **GitHub's scheduler is best-effort.** A nudge can land a few minutes late when
-  GitHub is busy. If minute-exact timing matters more than the cost, swap the
-  workflow for a Firebase Cloud Function on the Blaze plan.
+Things to know:
 - **On iPhone, notifications only work once the site is on the Home Screen.**
   That is an Apple rule, not something the site can route around. The phone
   checker says so and walks through it.
@@ -79,19 +80,27 @@ mismatch would quietly lock somebody out.
 Everything lives under `households/{HOUSEHOLD_ID}` — lists, notes, reminders,
 statuses, dates, help requests, locations, push subscriptions and the outbox.
 
-### 2. Notification keys
+### 2. The delivery worker
 
-The public half of the VAPID key pair is already in `push-config.js`. Add the
-private half and the sign-in details as **repository secrets**
-(Settings → Secrets and variables → Actions):
+The public values are already filled in in `worker/wrangler.toml`. From `worker/`:
 
-| Secret | What it is |
-| --- | --- |
-| `LITTLE_EMAIL` | either member's email — the workflow signs in as one of you |
-| `LITTLE_PASSWORD` | that account's password |
-| `VAPID_PUBLIC_KEY` | same value as in `push-config.js` |
-| `VAPID_PRIVATE_KEY` | the private half, kept only here |
-| `VAPID_SUBJECT` | `mailto:` plus any contact address |
+```
+npm install
+npx wrangler login
+npx wrangler secret put LITTLE_EMAIL        # either member's email
+npx wrangler secret put LITTLE_PASSWORD     # that account's password
+npx wrangler secret put VAPID_PRIVATE_KEY   # private half of the push key pair
+npx wrangler deploy
+```
+
+Watch it with `npx wrangler tail`. A quiet minute logs
+`{"checked":true,"sent":0,"subscribed":2}`.
+
+Optionally `wrangler secret put RUN_SECRET`, which enables
+`POST /run?key=…` on the worker URL to force a pass while testing.
+
+The same secrets still exist as **repository secrets** for the manual GitHub
+backstop; they are independent copies.
 
 To roll the keys later: `npx web-push generate-vapid-keys`, put the public half
 in `push-config.js`, the private half in the secret. Both phones re-register on
