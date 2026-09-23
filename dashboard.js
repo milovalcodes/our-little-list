@@ -3,6 +3,7 @@ import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI } from './ui-helpers.js';
 import { startPresence } from './presence.js';
 import { ensurePushSubscription, forgetPushSubscription } from './push-client.js';
+import { locationSnapshot } from './auto-location.js';
 
 const badge = document.getElementById('activity-badge');
 const helpBadge = document.getElementById('help-badge');
@@ -32,6 +33,26 @@ startPresence(data, viewer, 'home');
 // Keeps this phone's push subscription current. Does nothing until
 // notifications have actually been allowed.
 void ensurePushSubscription(data, viewer);
+
+const homeLocationState = document.getElementById('home-location-state');
+function showHomeLocation(next = locationSnapshot()) {
+  if (!homeLocationState) return;
+  const labels = {
+    live: 'location live',
+    starting: 'finding this phone…',
+    retrying: 'location trying again',
+    offline: 'waiting for internet',
+    paused: 'location paused',
+    blocked: 'location needs permission',
+    unavailable: 'location unavailable',
+    error: 'location took the day off',
+    preview: 'location preview',
+    loading: 'location starting…'
+  };
+  homeLocationState.textContent = labels[next?.phase] || 'location starting…';
+}
+showHomeLocation();
+window.addEventListener('littlelist:location-state', event => showHomeLocation(event.detail));
 
 // Without this there is no way off an account. Her phone was still signed in
 // as his from the shared-login days, so the site sent her to his dashboard and

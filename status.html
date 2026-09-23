@@ -2,17 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-  <title>Our Status</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+  <meta name="theme-color" content="#192950"><title>Right Now · Our Little List</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3ynhHdq2x5pIuMZbZq3Y/Y0QvM7xQ=" crossorigin="anonymous">
+  <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page" data-app="status">
-  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">our status ●</span></header>
-  <main class="app-shell feature-shell status-shell">
-    <section class="feature-hero status-hero"><span class="feature-icon">●</span><p class="tiny-kicker">current nonsense</p><h1>Right now</h1><p>a tiny update. no whole conversation required.</p></section>
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">right now ☀︎☾</span></header>
+  <main class="app-shell feature-shell now-shell">
+    <section class="feature-hero now-hero">
+      <span class="feature-icon">☀︎☾</span>
+      <div><p class="tiny-kicker">live-ish</p><h1>Right now</h1><p>status and coordinates. very official.</p></div>
+    </section>
 
-    <section class="status-pair" id="status-pair" aria-live="polite"></section>
+    <section class="status-pair now-status-pair" id="status-pair" aria-live="polite"></section>
 
-    <section class="composer-card status-editor">
-      <div class="composer-heading"><div><p class="tiny-kicker">your turn</p><h2>Set your status</h2></div><span class="status-edit-spark">✦</span></div>
+    <section class="now-location-card" aria-labelledby="location-state">
+      <div class="now-location-head">
+        <span class="now-location-dot" id="location-state-dot" aria-hidden="true"></span>
+        <div class="now-location-copy"><p class="tiny-kicker">location</p><h2 id="location-state">starting</h2><p id="location-note">asking the satellites politely</p></div>
+        <button class="now-location-action" id="location-action" type="button">pause</button>
+      </div>
+
+      <div class="now-proximity" aria-live="polite">
+        <div class="proximity-orbit now-orbit" aria-hidden="true"><span class="profile-orbit"><img src="sun-profile.png" alt=""></span><i></i><span class="profile-orbit"><img src="moon-profile.png" alt=""></span></div>
+        <div><p class="tiny-kicker" id="distance-label">orbit pending</p><h2 id="proximity-message">finding both phones</h2><p id="proximity-detail">the map is thinking.</p></div>
+      </div>
+
+      <div class="now-map-head"><div><p class="tiny-kicker">the evidence</p><h2>Map</h2></div><div class="map-heading-actions"><span class="map-updated" id="map-updated">no spots yet</span><button class="recenter-map" id="recenter-map" type="button" hidden>find us</button></div></div>
+      <div id="couple-map" aria-label="Map showing our live or last known locations"></div>
+      <div class="last-known-row" id="last-known-row" aria-live="polite"></div>
+      <div class="now-location-foot"><span>updates while the app is open</span><button class="hide-last-location" id="hide-last-location" type="button" hidden>delete my last spot</button></div>
+    </section>
+
+    <details class="composer-card status-editor status-editor-disclosure">
+      <summary><span><small>your status</small><strong>change what it says</strong></span><i>＋</i></summary>
       <form id="status-form">
         <fieldset class="status-fieldset"><legend>availability</legend>
           <div class="status-choices">
@@ -22,22 +45,23 @@
             <button class="status-choice" data-state="invisible" type="button"><i></i> lurking</button>
           </div>
         </fieldset>
-
         <div class="status-custom-grid">
-          <label><span>what kind of update?</span><select id="status-category">
-            <option value="listening to">listening to</option><option value="watching">watching</option><option value="craving">craving</option><option value="thinking about">thinking about</option><option value="feeling">feeling</option><option value="custom">write my own label</option>
+          <label><span>the category</span><select id="status-category">
+            <option value="listening to">listening to</option><option value="watching">watching</option><option value="craving">craving</option><option value="thinking about">thinking about</option><option value="feeling">feeling</option><option value="custom">something else</option>
           </select></label>
           <label id="custom-category-wrap" hidden><span>your label</span><input id="status-custom-category" maxlength="28" placeholder="currently obsessed with"></label>
         </div>
-        <label><span>the actual status</span><input id="status-text" maxlength="90" placeholder="a song, movie, snack, thought…"></label>
+        <label><span>the thing</span><input id="status-text" maxlength="90" placeholder="song, snack, thought, minor crisis…"></label>
         <div class="status-emoji-row" aria-label="Pick an emoji">
           <button class="status-emoji active" data-emoji="🎧" type="button">🎧</button><button class="status-emoji" data-emoji="🍿" type="button">🍿</button><button class="status-emoji" data-emoji="🍜" type="button">🍜</button><button class="status-emoji" data-emoji="🫠" type="button">🫠</button><button class="status-emoji" data-emoji="💛" type="button">💛</button><button class="status-emoji" data-emoji="✦" type="button">✦</button>
         </div>
-        <label><span>clear the custom bit</span><select id="status-expiry"><option value="0">when I clear it</option><option value="1">in 1 hour</option><option value="4">in 4 hours</option><option value="today">tonight</option></select></label>
-        <div class="status-actions"><button class="primary-action" id="status-save" type="submit">save status</button><button class="create-space" id="status-clear" type="button">clear custom bit</button></div>
+        <label><span>make it disappear</span><select id="status-expiry"><option value="0">when I clear it</option><option value="1">in 1 hour</option><option value="4">in 4 hours</option><option value="today">tonight</option></select></label>
+        <div class="status-actions"><button class="primary-action" id="status-save" type="submit">save it</button><button class="create-space" id="status-clear" type="button">clear custom bit</button></div>
       </form>
-    </section>
+    </details>
   </main>
-  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="status.js"></script><script type="module" src="live-notes.js"></script>
+  <div id="auth-root"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="status.js"></script><script type="module" src="location.js"></script><script type="module" src="live-notes.js"></script>
 </body>
 </html>

@@ -1,53 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-  <title>Find Each Other · Our Little List</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3ynhHdq2x5pIuMZbZq3Y/Y0QvM7xQ=" crossorigin="anonymous">
-  <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Right Now · Our Little List</title><link rel="stylesheet" href="styles.css">
+  <script>location.replace(`status.html${location.search}${location.hash}`)</script>
 </head>
-<body class="profile-page" data-app="location">
-  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">our map ☀︎☾</span></header>
-  <main class="app-shell map-shell">
-    <section class="feature-hero map-hero">
-      <span class="feature-icon">📍</span><p class="tiny-kicker">only when we want</p><h1>Where are we?</h1>
-      <p>share for a bit, stop whenever.</p>
-    </section>
-
-    <section class="proximity-card" aria-live="polite">
-      <div class="proximity-orbit" aria-hidden="true"><span class="profile-orbit"><img src="sun-profile.png" alt=""></span><i></i><span class="profile-orbit"><img src="moon-profile.png" alt=""></span></div>
-      <p class="tiny-kicker" id="distance-label">distance</p>
-      <h2 id="proximity-message">Need both spots</h2>
-      <p id="proximity-detail">one of us has to share first.</p>
-    </section>
-
-    <section class="share-card">
-      <div class="share-heading"><div><p class="tiny-kicker">my location</p><h2 id="share-title">Not sharing</h2></div><span class="privacy-lock">🔒</span></div>
-      <p class="share-explainer">Last known location stays until you hide it.</p>
-      <div class="share-durations" role="group" aria-label="Choose sharing time">
-        <button type="button" class="duration-chip active" data-minutes="15">15 min</button>
-        <button type="button" class="duration-chip" data-minutes="60">1 hour</button>
-        <button type="button" class="duration-chip" data-minutes="180">3 hours</button>
-      </div>
-      <div class="share-actions">
-        <button class="primary-action share-location" id="share-location" type="button">Share my spot</button>
-        <button class="stop-sharing" id="stop-sharing" type="button" hidden>Stop sharing now</button>
-        <button class="hide-last-location" id="hide-last-location" type="button" hidden>Hide my last spot too</button>
-      </div>
-      <p class="location-error" id="location-error" role="alert"></p>
-    </section>
-
-    <section class="map-card">
-      <div class="map-heading"><div><p class="tiny-kicker">our spots</p><h2>Map</h2></div><div class="map-heading-actions"><span class="map-updated" id="map-updated">Nobody here yet</span><button class="recenter-map" id="recenter-map" type="button" hidden>back to us</button></div></div>
-      <div id="couple-map" aria-label="Map showing both shared locations"></div>
-      <div class="last-known-row" id="last-known-row" aria-live="polite"></div>
-      <div class="map-legend"><span><i class="her-dot"></i> <b data-person-name="sun" data-person-fallback="her">her</b></span><span><i class="him-dot"></i> <b data-person-name="moon" data-person-fallback="him">him</b></span></div>
-    </section>
-
-    <p class="location-fine-print">keep this page open for live updates.</p>
-  </main>
-  <div id="auth-root"></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
-  <script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="location.js"></script><script type="module" src="live-notes.js"></script>
-</body>
+<body class="profile-page"><main class="app-shell redirect-card"><p>the map moved in with status.</p><a href="status.html">go to right now →</a></main></body>
 </html>

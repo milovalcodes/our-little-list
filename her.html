@@ -2,58 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f4c95d"><meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <title>For Her · Our Little List</title>
+  <meta name="theme-color" content="#f4c95d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <title>Sun Side · Our Little List</title>
   <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
-<body class="profile-page her-theme" data-viewer="her">
-  <header class="app-topbar"><button class="home-link" id="sign-out" type="button">not you? sign out</button><a class="switch-link" href="admire.html">admire the moon 🌙</a></header>
+<body class="profile-page her-theme compact-dashboard" data-viewer="her">
+  <header class="app-topbar"><button class="home-link" id="sign-out" type="button">sign out</button><a class="switch-link" href="admire.html">admire the moon 🌙</a></header>
   <main class="app-shell dashboard-shell">
-    <section class="hello-card dashboard-hello">
-      <div><p class="tiny-kicker">sun side</p><h1 data-person-name="sun" data-person-fallback="pretty" data-person-format="hi {name} ☀️">hi pretty ☀️</h1><p class="hello-note">what do we need to remember today?</p></div>
+    <section class="hello-card compact-hello">
+      <div><p class="tiny-kicker">sun side</p><h1 data-person-name="sun" data-person-fallback="pretty" data-person-format="hi {name} ☀️">hi pretty ☀️</h1><p class="hello-note">anything before the plot continues?</p></div>
       <div class="mood-sticker profile-portrait"><img src="sun-profile.png" alt="The sunshine half of us"></div>
     </section>
 
-    <section class="tool-grid">
-      <a class="tool-card shared-tool" href="tasks.html">
-        <span class="tool-icon">✓</span><span class="tool-kicker">ours</span><strong>The list</strong>
-        <p>things to do and things to buy.</p><span class="tool-go">open →</span>
-      </a>
-      <a class="tool-card reminder-tool" href="reminders.html">
-        <span class="tool-icon">⏰</span><span class="tool-kicker">for later</span><strong data-person-name="moon" data-person-fallback="him" data-person-format="Remind {name}">Remind him</strong>
-        <p data-person-name="moon" data-person-fallback="him" data-person-format="send {name} a little nudge.">send him a little nudge.</p><span class="tool-go">set it →</span>
-      </a>
-      <a class="tool-card note-tool" href="notes.html">
-        <span class="tool-icon">💌</span><span class="tool-kicker">a little hi</span><strong data-person-name="moon" data-person-fallback="him" data-person-format="Send {name} a note">Send him a note</strong>
-        <p>put a tiny thing on his screen.</p><span class="tool-go">write one →</span>
-      </a>
-      <a class="tool-card location-tool" href="location.html">
-        <span class="tool-icon">📍</span><span class="tool-kicker">where’s the moon</span><strong data-person-name="moon" data-person-fallback="him" data-person-format="Find {name}">Find him</strong>
-        <p>share your spot and see how close he is.</p><span class="tool-go">map →</span>
-      </a>
-      <a class="tool-card activity-tool" href="activity.html">
-        <span class="tool-icon">✦</span><span class="activity-badge" id="activity-badge" hidden>0</span><span class="tool-kicker">lately</span><strong>What’s new</strong>
-        <p data-person-name="moon" data-person-fallback="he" data-person-format="see what {name} added.">see what he added.</p><span class="tool-go">look →</span>
-      </a>
-      <a class="tool-card presence-tool" href="status.html">
-        <span class="tool-icon">●</span><span class="tool-kicker">right now</span><strong>Our status</strong>
-        <p>music, food, mood, whatever.</p><span class="tool-go">update →</span>
-      </a>
-      <a class="tool-card date-tool" href="dates.html">
-        <span class="tool-icon">✦</span><span class="tool-kicker">for later</span><strong>Date ideas</strong>
-        <p>save somewhere we wanna go.</p><span class="tool-go">add one →</span>
-      </a>
-      <a class="tool-card help-tool" href="help.html">
-        <span class="tool-icon">🙋</span><span class="activity-badge" id="help-badge" hidden>0</span><span class="tool-kicker">small ask</span><strong>Help me out</strong>
-        <p data-person-name="moon" data-person-fallback="him" data-person-format="ask {name} for a hand.">ask him for a hand.</p><span class="tool-go">ask →</span>
-      </a>
-      <a class="tool-card status-tool" href="phone-check.html">
-        <span class="tool-icon">📡</span><span class="tool-kicker">phone check</span><strong>Everything on?</strong>
-        <p>check the basics on both phones.</p><span class="tool-go">check →</span>
-      </a>
-    </section>
-    <p class="dashboard-foot">all here when you need it ♡ · <a href="profiles.html">our names</a></p>
+    <div class="home-stack">
+      <section class="home-group">
+        <div class="home-group-head"><span>plot logistics</span><small>joint custody</small></div>
+        <div class="home-action-grid">
+          <a class="home-action list-action" href="tasks.html"><span class="home-action-icon">✓</span><span class="home-action-copy"><strong>the list</strong><small>to-do + groceries</small></span></a>
+          <a class="home-action date-action" href="dates.html"><span class="home-action-icon">✦</span><span class="home-action-copy"><strong>date pile</strong><small>future schemes</small></span></a>
+        </div>
+      </section>
+
+      <section class="home-group">
+        <div class="home-group-head"><span>poke the moon</span><small>respectfully</small></div>
+        <div class="home-action-grid three">
+          <a class="home-action note-action" href="notes.html"><span class="home-action-icon">💌</span><span class="home-action-copy"><strong>tiny note</strong><small>say a thing</small></span></a>
+          <a class="home-action reminder-action" href="reminders.html"><span class="home-action-icon">⏰</span><span class="home-action-copy"><strong>reminder</strong><small data-person-name="moon" data-person-fallback="him" data-person-format="for {name}">for him</small></span></a>
+          <a class="home-action help-action" href="help.html"><span class="home-action-icon">🙋</span><span class="activity-badge" id="help-badge" hidden>0</span><span class="home-action-copy"><strong>help pls</strong><small>small ask</small></span></a>
+        </div>
+      </section>
+
+      <section class="home-group">
+        <div class="home-group-head"><span>live-ish</span><small>no stalking allegations</small></div>
+        <div class="home-action-grid">
+          <a class="home-action now-action" href="status.html"><span class="home-action-icon">☀︎☾</span><span class="home-action-copy"><strong>right now</strong><small id="home-location-state">location starting…</small></span></a>
+          <a class="home-action activity-action" href="activity.html"><span class="home-action-icon">↻</span><span class="activity-badge" id="activity-badge" hidden>0</span><span class="home-action-copy"><strong>what happened</strong><small>the recent lore</small></span></a>
+        </div>
+      </section>
+    </div>
+    <nav class="home-utility-row" aria-label="Settings"><a href="phone-check.html">phone check</a><span>·</span><a href="profiles.html">our names</a></nav>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="dashboard.js"></script><script type="module" src="live-notes.js"></script>
 </body>

@@ -37,7 +37,7 @@ $('status-form').addEventListener('submit',async event=>{
     await data.setTo('statuses',viewer,{person:viewer,state,text,category,emoji,expiresAt,updatedAt:Date.now()});
     const display=text?`${emoji} ${category} ${text}`:stateLabels[state];
     void data.notify(other,{title:`${personName(viewer)} updated their status`,body:display,url:`status.html`,kind:'status'});
-    toast('status updated ●');
+    toast('status saved. lore updated.');
   }catch(_){showFailure('the status did not save.','check the internet, then try it once more.');}
   finally{setButtonBusy(button,false);}
 });

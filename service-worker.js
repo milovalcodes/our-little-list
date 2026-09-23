@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v31';
+const CACHE = 'our-little-list-v32';
 
 const PAGES = [
   './', './index.html', './her.html', './him.html', './admire.html', './profiles.html',
@@ -12,7 +12,7 @@ const ASSETS = [
   './profiles.js', './status.js', './dates.js', './admire.js', './dashboard.js', './activity.js',
   './phone-check.js', './tasks.js', './reminders.js', './notes.js', './location.js', './live-notes.js',
   './ui-helpers.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
-  './push-config.js', './push-client.js', './presence.js', './help.js',
+  './push-config.js', './push-client.js', './presence.js', './help.js', './auto-location.js',
   './household.js', './viewer.js', './entry.js',
   './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './icon-192.png', './manifest.webmanifest'
 ];

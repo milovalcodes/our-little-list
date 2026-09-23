@@ -44,6 +44,10 @@ window.showLittleFailure=(message='something did not work.',solution='check the 
 
 if(syncBackedPage){
   window.littleLoading.show();
+  // Location is a foreground app behavior now, not a separate destination.
+  // The module keeps a short renewable lease so a suspended page becomes
+  // "last known" instead of pretending it is still live.
+  void import('./auto-location.js').catch(()=>{});
   thinkingTimeout=window.setTimeout(()=>{window.littleLoading.hide();window.showLittleFailure('this is taking a while.','check the internet, then tap try again.',{reload:true});},10000);
 }
 document.addEventListener('littlelist:dataready',()=>window.littleLoading.hide());
