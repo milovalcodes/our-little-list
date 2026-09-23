@@ -6,7 +6,7 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "tail": "wrangler tail",
-    "test": "node --test ../test/"
+    "test": "cd .. && npm install --no-save --no-audit --no-fund http_ece web-push && node test/webpush.test.mjs && node test/delivery-worker.test.mjs"
   },
   "devDependencies": {
     "wrangler": "^3"
