@@ -193,7 +193,27 @@ console.log('\n--- interactions ---');
   await page.waitForTimeout(300);
   const card = page.locator('.person-status-card.is-me');
   const ready = await card.filter({ hasText: 'need company' }).filter({ hasText: 'almost there' }).count();
-  note(ready === 1 && errors.length === 0, 'status keeps energy, arrival and reactions together', errors[0] || '');
+  const visibleReaction=await page.locator('[data-react-status="him"][data-emoji="♡"].active').count();
+  await page.click('[data-react-status="him"][data-emoji="♡"]');
+  await page.waitForTimeout(200);
+  const undone=await page.locator('[data-react-status="him"][data-emoji="♡"].active').count()===0;
+  note(ready === 1 && visibleReaction === 1 && undone && errors.length === 0, 'status reactions are visible and undoable', errors[0] || '');
+  await context.close();
+}
+
+// Note reactions save without a false error, stand out, and toggle back off.
+{
+  const { context, page, errors } = await open('admire.html?as=her');
+  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();await data.addTo('notes',{sender:'him',from:'him',recipient:'her',to:'her',body:'reaction test note',mood:'moon',createdAt:Date.now()});});
+  await page.waitForTimeout(200);
+  await page.click('[data-note-reaction][data-emoji="♡"]');
+  await page.waitForTimeout(250);
+  const active=await page.locator('[data-note-reaction][data-emoji="♡"].active').count();
+  const falseError=await page.locator('.global-failure').count();
+  await page.click('[data-note-reaction][data-emoji="♡"]');
+  await page.waitForTimeout(200);
+  const undone=await page.locator('[data-note-reaction][data-emoji="♡"].active').count()===0;
+  note(active === 1 && falseError === 0 && undone && errors.length === 0, 'note reactions save cleanly and undo', errors[0] || (falseError?'false failure shown':''));
   await context.close();
 }
 
