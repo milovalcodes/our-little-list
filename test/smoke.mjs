@@ -43,9 +43,21 @@ const note = (ok, label, extra = '') => {
 };
 
 async function open(path) {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    // A service worker cached by an earlier page can bypass the route below and
+    // accidentally reconnect the smoke test to production Firebase.
+    serviceWorkers: 'block'
+  });
   const page = await context.newPage();
   const errors = [];
+  // The browser pass exercises the UI and local data behavior, not the real
+  // household account. Keep it deterministic instead of letting Firebase auth
+  // cover the controls with the production sign-in gate.
+  await page.route('**/firebase-config.js', route => route.fulfill({
+    contentType: 'text/javascript',
+    body: 'export const firebaseConfig = {};'
+  }));
   page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
   page.on('console', m => { if (m.type() === 'error' && !NOISE.test(m.text())) errors.push(`console: ${m.text().slice(0, 200)}`); });
   await page.goto(`${BASE}/${path}`, { waitUntil: 'domcontentloaded', timeout: 20000 });

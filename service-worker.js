@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v33';
+const CACHE = 'our-little-list-v34';
 
 const PAGES = [
   './', './index.html', './her.html', './him.html', './admire.html', './profiles.html',

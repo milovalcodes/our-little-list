@@ -104,9 +104,9 @@ function render() {
   byId('empty-state').hidden = list.length > 0;
 
   const labels = {
-    tasks: ['our things', 'To do', '✦', 'Nothing here', 'all clear for now.'],
-    grocery: ['to pick up', 'Groceries', '🛒', 'No groceries', 'nothing on the list yet.'],
-    done: ['finished', 'Done', '✨', 'Nothing done yet', 'we’ll get there.']
+    tasks: ['our things', 'To do', '✦', 'Nothing here'],
+    grocery: ['to pick up', 'Groceries', '🛒', 'No groceries'],
+    done: ['finished', 'Done', '✨', 'Nothing done yet']
   }[tab];
 
   byId('list-kicker').textContent = labels[0];
@@ -114,7 +114,6 @@ function render() {
   const empty = byId('empty-state');
   empty.querySelector('span').textContent = labels[2];
   empty.querySelector('strong').textContent = labels[3];
-  empty.querySelector('p').textContent = labels[4];
   byId('task-list').innerHTML = list.map(taskMarkup).join('');
 }
 

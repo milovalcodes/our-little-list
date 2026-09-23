@@ -6,6 +6,14 @@
   --muted: #8c7580;
   --paper: rgba(255,255,255,.86);
   --line: rgba(115,82,99,.13);
+  /* A neutral fallback keeps sign-in controls visible before we know whose
+     side this phone belongs to. The profile themes replace these immediately. */
+  --accent:#d99a2d;
+  --accent-deep:#a86620;
+  --accent-pale:#fff4c8;
+  --accent-soft:#f0cd7d;
+  --page-text:#5f4134;
+  --page-muted:#907064;
   --font-body: "Nunito", ui-rounded, "SF Pro Rounded", sans-serif;
   --font-display: "Fredoka", "Nunito", ui-rounded, sans-serif;
   font-family: var(--font-body);
@@ -139,9 +147,9 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 .auth-gate[hidden] { display:none; }
 .auth-card { width:min(430px,100%); background:white; border-radius:32px; padding:30px; text-align:center; box-shadow:0 28px 80px rgba(61,39,50,.2); }
 .auth-icon { width:70px; height:70px; margin:0 auto 14px; display:grid; place-items:center; border-radius:25px; background:var(--accent-pale); font-size:2rem; }
-.auth-card h2 { margin:0; color:var(--page-text); font-size:2rem; letter-spacing:-.045em; }
+.auth-card h2 { margin:0; color:var(--page-text); font-size:2.4rem; line-height:1; letter-spacing:-.045em; }
 .auth-card > p:not(.tiny-kicker):not(.auth-fine) { color:var(--page-muted); line-height:1.5; margin:10px auto 20px; max-width:340px; }
-.auth-card form { display:grid; gap:12px; text-align:left; }
+.auth-card form { display:grid; gap:12px; margin-top:23px; text-align:left; }
 .auth-card label span { display:block; margin:0 0 6px 3px; color:var(--page-muted); font-size:.8rem; font-weight:800; }
 .auth-card .primary-action { width:100%; }
 .create-space { width:100%; min-height:48px; border:0; border-radius:999px; background:var(--accent-pale); color:var(--accent-deep); font-weight:850; cursor:pointer; }
@@ -851,4 +859,182 @@ button.home-link { border:none; background:none; font:inherit; cursor:pointer; c
   .home-group-head small { display:none; }
   .now-proximity { grid-template-columns:1fr; }
   .now-orbit { max-width:150px; margin:auto; }
+}
+
+/* ---- one scale everywhere: the compact home sets the rhythm ---- */
+.profile-page:not(.compact-dashboard) .app-topbar {
+  max-width:760px;
+  margin-bottom:4px;
+  padding-bottom:9px;
+}
+
+.feature-shell {
+  width:min(740px,calc(100% - 20px));
+  padding-bottom:max(24px,env(safe-area-inset-bottom));
+}
+
+.feature-hero:not(.now-hero) {
+  min-height:104px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  grid-template-rows:auto auto auto;
+  column-gap:16px;
+  align-content:center;
+  padding:17px 19px;
+  border-radius:24px;
+  text-align:left;
+}
+.feature-hero:not(.now-hero) .feature-icon,
+.feature-hero:not(.now-hero) .admire-portrait {
+  grid-column:1;
+  grid-row:1 / 4;
+  align-self:center;
+  width:58px;
+  height:58px;
+  margin:0;
+  border-radius:19px;
+  font-size:1.45rem;
+  transform:rotate(-2deg);
+}
+.feature-hero:not(.now-hero) .tiny-kicker {
+  grid-column:2;
+  margin:0 0 1px;
+  font-size:.66rem;
+}
+.feature-hero:not(.now-hero) h1 {
+  grid-column:2;
+  margin:0;
+  font-size:clamp(2rem,6vw,2.9rem);
+  line-height:1;
+}
+.feature-hero:not(.now-hero)>p:last-child {
+  grid-column:2;
+  max-width:none;
+  margin:4px 0 0;
+  font-size:.79rem;
+  line-height:1.35;
+}
+
+.feature-shell > .tabs,
+.feature-shell > .composer-card,
+.feature-shell > .list-card,
+.feature-shell > .playful-maker,
+.feature-shell > .note-maker,
+.feature-shell > .note-preview,
+.feature-shell > .activity-card,
+.feature-shell > .status-card,
+.feature-shell > .presence-strip,
+.feature-shell > .random-date-card,
+.feature-shell > .admire-card,
+.feature-shell > .admire-glance-grid {
+  margin-top:10px;
+}
+.feature-shell > .tabs { padding:0; gap:6px; }
+.feature-shell > .tabs .tab { min-height:40px; padding:8px 14px; font-size:.76rem; }
+
+.feature-shell .composer-card,
+.feature-shell .list-card,
+.feature-shell .grocery-composer,
+.feature-shell .playful-maker,
+.feature-shell .note-maker,
+.feature-shell .note-preview,
+.feature-shell .activity-card,
+.feature-shell .status-card,
+.feature-shell .admire-card {
+  padding:18px;
+  border-radius:22px;
+}
+.feature-shell .composer-heading h2,
+.feature-shell .list-heading h2,
+.feature-shell .activity-heading h2,
+.feature-shell .admire-card-heading h2 { font-size:1.35rem; }
+.feature-shell .quick-form { margin-top:15px; gap:10px; }
+.feature-shell .compact-composer form,
+.feature-shell .date-composer form { gap:10px; }
+.feature-shell input,
+.feature-shell select { min-height:44px; padding:9px 12px; border-radius:13px; }
+.feature-shell .primary-action { min-height:46px; }
+.feature-shell .inline-add button { flex-basis:44px; border-radius:13px; }
+.feature-shell .soft-chip,
+.feature-shell .choice,
+.feature-shell .date-vibe,
+.feature-shell .note-starters button { min-height:38px; padding:8px 12px; font-size:.76rem; }
+.feature-shell .count-bubble { padding:6px 9px; font-size:.7rem; }
+.feature-shell .empty-state { padding:24px 12px 14px; }
+.feature-shell .empty-state>span { font-size:1.6rem; }
+.feature-shell .empty-state strong { font-family:var(--font-display); font-size:1.08rem; }
+.feature-shell .task-list,
+.feature-shell .activity-list,
+.feature-shell .date-list { margin-top:14px; gap:8px; }
+.feature-shell .task-row,
+.feature-shell .activity-row { padding:11px; border-radius:16px; }
+
+.feature-shell .maker-step {
+  grid-template-columns:34px minmax(0,1fr);
+  gap:10px;
+  padding:13px 0;
+}
+.feature-shell .step-number { width:31px; height:31px; font-size:.78rem; }
+.feature-shell .maker-question { margin:3px 0 9px; font-size:.96rem; }
+.feature-shell .exact-input { margin-top:8px; }
+.feature-shell .little-note-field { margin-top:13px; }
+.feature-shell .roomy-action { margin-top:14px; }
+.feature-shell .note-starters { gap:6px; margin-bottom:16px; }
+.feature-shell .note-maker textarea { min-height:112px; padding:13px; border-radius:16px; font-size:1rem; }
+.feature-shell .note-preview { padding:14px; }
+.feature-shell .phone-popup { padding:11px; border-radius:16px; }
+
+.feature-shell .presence-strip { padding:13px 15px; border-radius:21px; }
+.feature-shell .activity-heading { align-items:center; }
+.feature-shell .activity-icon { width:34px; height:34px; border-radius:11px; }
+.feature-shell .status-card { padding:5px 18px; }
+.feature-shell .status-row { gap:11px; padding:13px 0; }
+.feature-shell .status-symbol { width:31px; height:31px; }
+.feature-shell .status-row p { font-size:.8rem; line-height:1.35; }
+.feature-shell .status-row .small-action { min-height:38px; margin-top:7px; padding:7px 11px; }
+.feature-shell .status-foot { margin:12px 0 0; }
+
+.feature-shell .random-date-card { padding:17px 18px; border-radius:22px; }
+.feature-shell .date-list { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.feature-shell .date-idea-card { padding:14px; border-radius:17px; }
+.feature-shell .admire-glance-grid { gap:9px; }
+.feature-shell .admire-card { margin-top:10px; }
+.feature-shell .admire-map-card #admire-map { height:260px; margin-top:13px; }
+
+@media (max-width:520px) {
+  .profile-page:not(.compact-dashboard) .app-topbar {
+    padding-top:max(11px,env(safe-area-inset-top));
+    padding-left:12px;
+    padding-right:12px;
+  }
+  .feature-shell { width:min(100% - 14px,740px); }
+  .feature-hero:not(.now-hero) {
+    min-height:91px;
+    column-gap:12px;
+    padding:13px 15px;
+    border-radius:21px;
+  }
+  .feature-hero:not(.now-hero) .feature-icon,
+  .feature-hero:not(.now-hero) .admire-portrait {
+    width:50px;
+    height:50px;
+    border-radius:17px;
+    font-size:1.22rem;
+  }
+  .feature-hero:not(.now-hero) h1 { font-size:2rem; }
+  .feature-hero:not(.now-hero)>p:last-child { font-size:.71rem; }
+  .feature-shell .composer-card,
+  .feature-shell .list-card,
+  .feature-shell .grocery-composer,
+  .feature-shell .playful-maker,
+  .feature-shell .note-maker,
+  .feature-shell .note-preview,
+  .feature-shell .activity-card,
+  .feature-shell .admire-card { padding:14px; border-radius:20px; }
+  .feature-shell .quick-form { grid-template-columns:1fr; }
+  .feature-shell .quick-form .wide-field { grid-column:auto; }
+  .feature-shell .status-card { padding:4px 14px; border-radius:20px; }
+  .feature-shell .date-list { grid-template-columns:1fr; }
+  .feature-shell .random-date-card { gap:11px; padding:14px; border-radius:20px; }
+  .feature-shell .admire-map-card #admire-map { height:245px; }
 }
