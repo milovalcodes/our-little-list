@@ -28,6 +28,16 @@ assert.match(worker, /message\.sendAt \|\| message\.createdAt/, 'reminder age st
 assert.doesNotMatch(worker, /message\.createdAt \|\| message\.sendAt/, 'creation time cannot expire a future reminder');
 console.log(' ok  a reminder set far in advance is not treated as stale');
 
+// A notification about a reminder you have been sent has to open something that
+// shows that reminder. reminders.html is the form for sending one, so tapping
+// "⏰ bring the water bottle" landed on an empty box addressed back at the
+// sender, with the reminder's own words nowhere on the page.
+const reminders = readFileSync(new URL('../reminders.js', import.meta.url), 'utf8');
+assert.doesNotMatch(reminders, /url: `reminders\.html`/, 'a reminder notification must not open the compose form');
+assert.doesNotMatch(live, /a reminder for you[\s\S]{0,120}url: `reminders\.html`/, 'the in-page reminder popup must not open the compose form either');
+assert.match(reminders, /url: `activity\.html`/, 'it opens the feed, where the reminder is readable');
+console.log(' ok  a reminder notification opens the reminder, not the form that makes one');
+
 // A failed page response must never become the offline copy of that page.
 assert.match(serviceWorker, /response\.ok && response\.type === 'basic'[\s\S]{0,200}cache\.put\(pageKey/, 'only a good page is cached');
 console.log(' ok  a 404 caught mid-deploy does not become the offline page');

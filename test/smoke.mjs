@@ -343,6 +343,69 @@ console.log('\n--- interactions ---');
   await context.close();
 }
 
+// The activity feed redraws itself on every snapshot — a presence beat alone
+// does that about twice a minute. The "delete for us" confirm used to live on
+// the button element, so a redraw between the two taps silently threw it away
+// and the delete never happened.
+{
+  const { context, page, errors } = await open('activity.html?as=her');
+  await page.evaluate(() => localStorage.setItem('our-little-list-notes-v1', JSON.stringify({ items: [
+    { id: 'n1', sender: 'him', recipient: 'her', body: 'a note to delete', mood: 'heart', createdAt: Date.now() }
+  ] })));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
+  const rows = await page.locator('.activity-row').count();
+  // Opening the feed is what marks an incoming note read. That used to be one
+  // timer 900ms after startup, which on a slow first load fired before any of
+  // the data had arrived and then never fired again.
+  const markedRead = await page.evaluate(() => {
+    try { return !!JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items[0].read; } catch (_) { return false; }
+  });
+  note(markedRead, 'reading the feed marks the note read', markedRead ? '' : 'still unread');
+  await page.click('.activity-row .delete-for-us');
+  // Stand in for the snapshot that lands between the two taps.
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('littlelist:profile')));
+  await page.waitForTimeout(100);
+  const armed = await page.evaluate(() => document.querySelector('.delete-for-us')?.textContent || '');
+  await page.click('.activity-row .delete-for-us');
+  await page.waitForTimeout(500);
+  const left = await page.evaluate(() => {
+    try { return JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items.length; } catch (_) { return -1; }
+  });
+  note(rows === 1 && armed.includes('tap again') && left === 0,
+       'a redraw between the two taps does not eat the delete',
+       errors[0] || `rows ${rows}, confirm "${armed}", left ${left}`);
+  await context.close();
+}
+
+// Typing one name used to freeze the whole form: the other side's rename
+// stopped arriving, and saving then wrote a stale copy of it back over them.
+{
+  const { context, page, errors } = await open('profiles.html');
+  await page.evaluate(() => localStorage.setItem('our-little-list-profiles-v1', JSON.stringify({ items: [
+    { id: 'couple', sunName: 'Sun', moonName: 'Moon', updatedAt: Date.now() }
+  ] })));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
+  await page.fill('#moon-name', 'Moonbeam');
+  // The other phone renames the sun while this one is mid-edit.
+  await page.evaluate(() => {
+    const key = 'our-little-list-profiles-v1';
+    localStorage.setItem(key, JSON.stringify({ items: [{ id: 'couple', sunName: 'Sunshine', moonName: 'Moon', updatedAt: Date.now() }] }));
+    window.dispatchEvent(new StorageEvent('storage', { key }));
+  });
+  await page.waitForTimeout(200);
+  const mid = await page.evaluate(() => ({ sun: document.getElementById('sun-name').value, moon: document.getElementById('moon-name').value }));
+  await page.click('#profile-save');
+  await page.waitForTimeout(400);
+  const saved = await page.evaluate(() => {
+    try { return JSON.parse(localStorage.getItem('our-little-list-profiles-v1')).items[0]; } catch (_) { return {}; }
+  });
+  note(mid.sun === 'Sunshine' && mid.moon === 'Moonbeam' && saved.sunName === 'Sunshine' && saved.moonName === 'Moonbeam',
+       'renaming one of us does not revert the other', errors[0] || JSON.stringify({ mid, saved }));
+  await context.close();
+}
+
 // The front door is no longer a picker: it routes you to your own side.
 {
   const { context, page, errors } = await open('index.html');
