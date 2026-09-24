@@ -39,7 +39,9 @@ async function boot(viewer) {
 
     data.listenTo('reminders', items => {
       const fresh = firstFresh('reminders', items, item => item.recipient === viewer);
-      if (fresh) announce({ icon: '⏰', label: 'a reminder for you', body: fresh.title, url: `reminders.html` });
+      // activity.html, not reminders.html: this side is receiving a reminder,
+      // and reminders.html is the form for sending one.
+      if (fresh) announce({ icon: '⏰', label: 'a reminder for you', body: fresh.title, url: `activity.html` });
     });
 
     data.listenTo('dates', items => {

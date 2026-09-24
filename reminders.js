@@ -74,16 +74,20 @@ $('reminder-form').addEventListener('submit', async event => {
     // Two notifications: a heads-up now, and the actual nudge at the due time.
     // The due one carries the reminder id so the delivery workflow can skip it
     // if the reminder gets deleted in the meantime.
+    // Both open the activity feed, where the reminder itself is readable. They
+    // used to open this page, which is the "set a reminder" form — so tapping
+    // "⏰ bring the water bottle" landed on an empty box addressed back to the
+    // person who sent it, with the reminder's own words nowhere in sight.
     await data.notify(recipient, {
       title: 'new reminder ⏰',
       body: `${title} · ${friendlyWhen(dueAt)}`,
-      url: `reminders.html`,
+      url: `activity.html`,
       kind: 'reminder-created'
     });
     const scheduled = await data.notify(recipient, {
       title: `⏰ ${title}`,
       body: note || `from ${personName(sender)}`,
-      url: `reminders.html`,
+      url: `activity.html`,
       kind: 'reminder',
       ref: reminderId,
       sendAt: dueAt
