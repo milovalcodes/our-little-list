@@ -119,7 +119,12 @@ function renderBackground(){
 
 $('check-sync').addEventListener('click',async()=>{
   clearHelp('sync');busy($('check-sync'),true,'testing…');
-  try{await data.setTo('presence',viewer,{person:viewer,lastSeenAt:Date.now(),page:'phone-check'});setStatus('sync',data.mode!=='local',data.mode==='local'?'still only on this phone.':'sync works. both phones can share updates.');help('sync','test update saved.');}
+  try{
+    const result=await data.setTo('presence',viewer,{person:viewer,lastSeenAt:Date.now(),page:'phone-check'});
+    if(data.mode==='local'){setStatus('sync',false,'still only on this phone.');help('sync','test update saved.');}
+    else if(result?.syncing){setStatus('sync',false,'saved on this phone, not sent yet.');help('sync','no connection right now. it goes across as soon as there is one.');}
+    else {setStatus('sync',true,'sync works. both phones can share updates.');help('sync','test update saved.');}
+  }
   catch(_){setFailure('sync','sync test failed.');help('sync','check the internet, then try again.','fail');}
   busy($('check-sync'),false);
 });

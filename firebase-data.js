@@ -26,7 +26,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
   const [
     { initializeApp, getApps, getApp },
     { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
-    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDocs }
+    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDocs, getDocsFromServer }
   ] = modules;
 
   // Better a plain sentence than a permission-denied nobody can read.
@@ -50,8 +50,10 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
   } catch (_) {
-    // Private windows have no IndexedDB to keep it in. Memory-only still works;
-    // it just forgets between page loads, which is how this behaved before.
+    // This only fires if Firestore was already started on this app. An
+    // IndexedDB that is blocked or unavailable does NOT land here —
+    // initializeFirestore is synchronous and never opens it; the SDK notices
+    // later and carries on in memory, which is how this behaved before.
     db = getFirestore(app);
   }
   try { await setPersistence(auth, browserLocalPersistence); } catch (_) { /* private mode */ }
@@ -92,9 +94,13 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
     // then act — push registration checking who else is filed against this
     // phone, for instance. A live listener there would sit open for the life of
     // the page to answer one question.
-    async readOnce(name) {
+    // fromServer refuses to answer from the local cache. Push registration uses
+    // it: deciding which phone owns a browser endpoint from a stale snapshot
+    // can revoke the other person's notifications, so it is better to skip the
+    // check entirely than to make that call on old information.
+    async readOnce(name, { fromServer = false } = {}) {
       if (!signedIn()) return [];
-      const snapshot = await getDocs(named(name));
+      const snapshot = fromServer ? await getDocsFromServer(named(name)) : await getDocs(named(name));
       return snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
     },
     async addTo(name, item) {
@@ -245,14 +251,19 @@ function announceError(problem, stage) {
 }
 
 // Firestore resolves a write when the SERVER acknowledges it. With no signal
-// that promise simply never settles — which would leave every save button in
-// the app spinning forever. The local cache has already applied the write and
-// already repainted every listener well before then, so the button is released
-// as soon as that is true and the sync finishes in the background. A write that
-// fails outright still rejects, and still surfaces, as long as it fails quickly.
-const LOCAL_WRITE_MS = 1200;
+// that promise simply never settles, which would leave every save button in the
+// app spinning forever.
+//
+// Racing every write against a timer was the wrong answer: it made a genuine
+// failure look like a success whenever the failure took longer than the timer,
+// and it held every button for the full duration even on a perfectly good
+// connection. So the wait is only skipped when the browser says there is no
+// network to wait for. Online, a write is awaited exactly as before and a real
+// error still reaches the caller's catch.
+const LOCAL_WRITE_MS = 300;
 
 function applied(work) {
+  if (navigator.onLine !== false) return work;
   work.catch(() => {});
   return Promise.race([
     work,

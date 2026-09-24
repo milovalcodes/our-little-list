@@ -1,4 +1,10 @@
-const CACHE = 'our-little-list-v41';
+const CACHE = 'our-little-list-v42';
+
+// Deliberately NOT versioned with the shell. These entries are keyed by a
+// version-pinned URL, so they can never go stale — and putting them in CACHE
+// meant the activate step below threw them away on every single deploy, which
+// quietly undid the whole point of caching them.
+const LIBRARY_CACHE = 'our-little-list-libraries';
 
 const PAGES = [
   './', './index.html', './her.html', './him.html', './admire.html', './profiles.html',
@@ -30,7 +36,10 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys
+        .filter(key => key !== CACHE && key !== LIBRARY_CACHE)
+        .map(key => caches.delete(key))))
+      .then(() => pruneLibraries())
       .then(() => self.clients.claim())
   );
 });
@@ -56,12 +65,16 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) {
     if (PINNED_LIBRARIES.some(prefix => request.url.startsWith(prefix))) {
       event.respondWith(
-        caches.match(request).then(cached => cached || fetch(request).then(response => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE).then(cache => cache.put(request, copy)).catch(() => {});
-          }
-          return response;
+        caches.open(LIBRARY_CACHE).then(cache => cache.match(request).then(cached => {
+          if (cached) return cached;
+          return fetch(request).then(response => {
+            if (response && response.ok) {
+              // waitUntil, or the worker can be killed before this lands and the
+              // library is never actually kept.
+              event.waitUntil(cache.put(request, response.clone()).catch(() => {}));
+            }
+            return response;
+          });
         }))
       );
     }
@@ -82,6 +95,9 @@ self.addEventListener('fetch', event => {
       return response;
     });
     network.catch(() => {});
+    // Once the cached page has been served the worker is free to be shut down,
+    // which would abandon the refresh that is meant to keep it current.
+    event.waitUntil(network.catch(() => {}));
     event.respondWith(
       // Network first, but not network-until-the-bitter-end: a phone on one bar
       // used to stare at a blank screen for as long as the request took. After
@@ -164,6 +180,15 @@ self.addEventListener('notificationclick', event => {
     })
   );
 });
+
+// A bumped library version leaves its predecessor behind forever otherwise.
+async function pruneLibraries() {
+  try {
+    const cache = await caches.open(LIBRARY_CACHE);
+    const stale = (await cache.keys()).filter(entry => !PINNED_LIBRARIES.some(prefix => entry.url.startsWith(prefix)));
+    await Promise.all(stale.map(entry => cache.delete(entry)));
+  } catch (_) { /* tidying only */ }
+}
 
 function safeAppUrl(value) {
   const fallback = new URL('./index.html', self.location.href).href;

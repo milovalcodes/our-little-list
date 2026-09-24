@@ -70,7 +70,9 @@ export async function ensurePushSubscription(data, person) {
 async function releaseEndpointFromOtherSide(data, person, endpoint) {
   if (!endpoint || typeof data.readOnce !== 'function') return;
   try {
-    const records = await data.readOnce(PUSH_SUBS);
+    // Server-only: a cached view of pushSubs can be older than the other
+    // phone's re-registration, and acting on it would delete a live one.
+    const records = await data.readOnce(PUSH_SUBS, { fromServer: true });
     await Promise.all(
       records
         .filter(record => record.id !== person && record.subscription?.endpoint === endpoint)
