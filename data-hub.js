@@ -21,6 +21,12 @@ export function sharedLayer() {
         sawAuth = true;
         authHandlers.forEach(handler => safely(handler, user));
       }
+    }).catch(problem => {
+      // A failed start must not be remembered forever. This promise is handed
+      // to every module on the page, so caching the rejection meant one bad
+      // moment on the network left the page dead until it was reloaded.
+      layerPromise = null;
+      throw problem;
     });
   }
   return layerPromise;

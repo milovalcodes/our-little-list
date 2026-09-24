@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v40';
+const CACHE = 'our-little-list-v41';
 
 const PAGES = [
   './', './index.html', './her.html', './him.html', './admire.html', './profiles.html',
@@ -39,36 +39,65 @@ self.addEventListener('message', event => {
   if (event.data === 'skip-waiting') self.skipWaiting();
 });
 
+// The app cannot start without these: firebase-data.js imports the SDK at
+// runtime, and the map needs Leaflet. Every URL here is version-pinned, so the
+// bytes behind it never change and keeping them forever is safe. Map tiles are
+// deliberately absent — those are endless, and stale ones are worse than none.
+const PINNED_LIBRARIES = [
+  'https://www.gstatic.com/firebasejs/12.19.0/',
+  'https://unpkg.com/leaflet@1.9.4/'
+];
+
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  // Map tiles, Firebase and the Leaflet CDN are none of our business. Caching
-  // them here bloated storage with opaque responses and served stale data.
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) {
+    if (PINNED_LIBRARIES.some(prefix => request.url.startsWith(prefix))) {
+      event.respondWith(
+        caches.match(request).then(cached => cached || fetch(request).then(response => {
+          if (response && response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE).then(cache => cache.put(request, copy)).catch(() => {});
+          }
+          return response;
+        }))
+      );
+    }
+    return;
+  }
 
   if (request.mode === 'navigate') {
     // Store one copy per page, not one copy for every harmless ?as= parameter.
     const pageKey = new Request(`${url.origin}${url.pathname}`);
+    const network = fetch(request).then(response => {
+      // Only a good page is worth keeping. Catching a 404 mid-deploy used to
+      // overwrite the precached page, and that error page then became the
+      // offline copy until the next successful load.
+      if (response && response.ok && response.type === 'basic') {
+        const copy = response.clone();
+        caches.open(CACHE).then(cache => cache.put(pageKey, copy)).catch(() => {});
+      }
+      return response;
+    });
+    network.catch(() => {});
     event.respondWith(
-      fetch(request)
-        .then(response => {
-          // Only a good page is worth keeping. Catching a 404 mid-deploy used to
-          // overwrite the precached page, and that error page then became the
-          // offline copy until the next successful load.
-          if (response && response.ok && response.type === 'basic') {
-            const copy = response.clone();
-            caches.open(CACHE).then(cache => cache.put(pageKey, copy));
-          }
-          return response;
-        })
+      // Network first, but not network-until-the-bitter-end: a phone on one bar
+      // used to stare at a blank screen for as long as the request took. After
+      // three seconds the cached page is shown, while that same request carries
+      // on in the background and updates the cache for next time.
+      Promise.race([
+        network,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('slow network')), 3000))
+      ])
         .catch(async () => {
           // Fall back to this exact page before falling back to the front door,
           // so going offline on the list does not dump you at the door picker.
+          // With nothing cached at all there is nothing to do but keep waiting.
           return (await caches.match(pageKey))
             || (await caches.match('./index.html'))
-            || Response.error();
+            || network.catch(() => Response.error());
         })
     );
     return;

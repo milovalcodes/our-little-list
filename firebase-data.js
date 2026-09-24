@@ -26,7 +26,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
   const [
     { initializeApp, getApps, getApp },
     { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
-    { getFirestore, collection, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, doc, getDocs }
+    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDocs }
   ] = modules;
 
   // Better a plain sentence than a permission-denied nobody can read.
@@ -39,7 +39,21 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
 
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db = getFirestore(app);
+  // Keep the whole household on the phone. Without this the app needs a live
+  // connection to show you your own shopping list: every read went to the
+  // network, so a basement, a lift or a bad bar of signal meant an empty app.
+  // With it, everything you have already seen is served from the phone and new
+  // writes queue up until there is signal again.
+  let db;
+  try {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
+  } catch (_) {
+    // Private windows have no IndexedDB to keep it in. Memory-only still works;
+    // it just forgets between page loads, which is how this behaved before.
+    db = getFirestore(app);
+  }
   try { await setPersistence(auth, browserLocalPersistence); } catch (_) { /* private mode */ }
 
   const named = name => collection(db, 'households', HOUSEHOLD_ID, name);
@@ -83,10 +97,17 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       const snapshot = await getDocs(named(name));
       return snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
     },
-    addTo: (name, item) => addDoc(named(name), item),
-    setTo: (name, id, item) => setDoc(doc(named(name), id), item, { merge: true }),
-    updateIn: (name, id, changes) => updateDoc(doc(named(name), id), changes),
-    removeFrom: (name, id) => deleteDoc(doc(named(name), id)),
+    async addTo(name, item) {
+      // The id is minted locally rather than handed back by the server, so a
+      // reminder created with no signal still knows its own id — which is what
+      // its scheduled notification is filed against.
+      const entry = doc(named(name));
+      await applied(setDoc(entry, item));
+      return { id: entry.id };
+    },
+    setTo: (name, id, item) => applied(setDoc(doc(named(name), id), item, { merge: true })),
+    updateIn: (name, id, changes) => applied(updateDoc(doc(named(name), id), changes)),
+    removeFrom: (name, id) => applied(deleteDoc(doc(named(name), id))),
 
     // Files a notification in the outbox. The scheduled delivery workflow picks
     // it up and sends the real web push. Nothing here claims to have delivered
@@ -97,7 +118,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       if (!signedIn()) return { queued: false, reason: 'signed-out' };
       const sendAt = Number(message?.sendAt) || Date.now();
       try {
-        await addDoc(named(OUTBOX), {
+        await this.addTo(OUTBOX, {
           to: person === 'him' ? 'him' : 'her',
           title: String(message?.title || 'Our Little List').slice(0, 120),
           body: String(message?.body || '').slice(0, 400),
@@ -221,6 +242,22 @@ function announceError(problem, stage) {
     solution = 'turn on Wi-Fi or mobile data, then try again.';
   }
   document.dispatchEvent(new CustomEvent('littlelist:dataerror', { detail: { message, solution, code } }));
+}
+
+// Firestore resolves a write when the SERVER acknowledges it. With no signal
+// that promise simply never settles — which would leave every save button in
+// the app spinning forever. The local cache has already applied the write and
+// already repainted every listener well before then, so the button is released
+// as soon as that is true and the sync finishes in the background. A write that
+// fails outright still rejects, and still surfaces, as long as it fails quickly.
+const LOCAL_WRITE_MS = 1200;
+
+function applied(work) {
+  work.catch(() => {});
+  return Promise.race([
+    work,
+    new Promise(resolve => setTimeout(() => resolve({ syncing: true }), LOCAL_WRITE_MS))
+  ]);
 }
 
 function safelyCall(callback, value) {
