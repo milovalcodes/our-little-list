@@ -36,6 +36,9 @@ jobs:
       - name: Repeating tasks roll to a date in the future
         run: node test/recurrence.test.mjs
 
+      - name: The app can still start with no network
+        run: node test/offline.test.mjs
+
       - name: Push encryption and the delivery worker behave
         run: |
           node test/webpush.test.mjs
