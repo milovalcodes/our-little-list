@@ -406,6 +406,23 @@ console.log('\n--- interactions ---');
   await context.close();
 }
 
+// Signing out does local work (dropping the account) behind remote work (letting
+// go of this phone's push registration). A phone that believes it is online but
+// is not leaves that write pending forever, and the button used to sit at
+// "signing out…" with no way off the account. This context blocks service
+// workers, so the cleanup's first step never finishes either - which is exactly
+// the shape being guarded against.
+{
+  const { context, page } = await open('her.html');
+  let navigated = false;
+  page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigated = true; });
+  await page.click('#sign-out');
+  await page.waitForTimeout(7000);
+  note(navigated, 'signing out is not held hostage by a cleanup that never lands',
+       navigated ? '' : 'still on the dashboard');
+  await context.close();
+}
+
 // The front door is no longer a picker: it routes you to your own side.
 {
   const { context, page, errors } = await open('index.html');

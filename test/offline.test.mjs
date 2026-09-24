@@ -57,11 +57,20 @@ console.log(' ok  the household is kept on the phone, and a double start cannot 
 
 // 3. A write must not hold the UI hostage waiting for a server acknowledgement
 //    that will not come until there is signal again.
-assert.match(data, /Promise\.race\(\[\s*work,/, 'writes resolve once applied locally');
-// Racing every write against a timer made a slow genuine failure read as
-// success, and held every button for the full timer even on a good connection.
-assert.match(data, /if \(navigator\.onLine !== false\) return work;/,
-  'an online write is awaited properly so real errors still surface');
+assert.match(data, /Promise\.race\(\[work, stalled\]\)/, 'writes resolve once applied locally');
+// A write that is merely slow must not hold a button open forever: Firestore
+// never rejects one, it just waits, and navigator.onLine cannot tell a working
+// network from a dead one.
+assert.match(data, /STALLED_WRITE_MS = \d+/, 'a write that never lands still releases the button');
+assert.match(data, /navigator\.onLine === false \? LOCAL_WRITE_MS : STALLED_WRITE_MS/, 'a phone that knows it is offline still answers at once');
+// The cap online is deliberately long. A short one (the 1.2s this used to have)
+// held every button for its full length on a perfectly good connection and made
+// a slow genuine failure read as success. Anything that actually fails - a
+// rejected write, a permission error - comes back well inside this, so the
+// caller's catch still runs and the failure is still shown.
+const stalledMs = Number(/STALLED_WRITE_MS = (\d+)/.exec(data)?.[1]);
+assert.ok(stalledMs >= 5000, `the online cap must leave room for a real error to arrive (saw ${stalledMs}ms)`);
+assert.ok(stalledMs <= 15000, `nobody should watch a button for ${stalledMs}ms`);
 assert.match(read('phone-check.js'), /result\?\.syncing/,
   'the sync self-test must not call a queued local write "sync works"');
 assert.match(read('push-client.js'), /fromServer: true/,
