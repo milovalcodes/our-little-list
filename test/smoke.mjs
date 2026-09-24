@@ -360,6 +360,30 @@ console.log('\n--- interactions ---');
   await context.close();
 }
 
+// Pull the plug. An installed app that dies the moment the network does is not
+// really installed. (The Firebase path can't be exercised here — this copy runs
+// in local mode — so this guards the shell and the service worker.)
+{
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
+  await page.goto(`${BASE}/her.html`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(1200);
+
+  await context.setOffline(true);
+  await page.goto(`${BASE}/tasks.html?as=her`, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(1200);
+  const text = await page.evaluate(() => document.body.innerText.trim().length);
+  const composer = await page.locator('#shared-task-form').count();
+  note(text > 20 && composer === 1, 'a page still opens with the network unplugged',
+       errors[0] || `text ${text}, composer ${composer}`);
+
+  await context.setOffline(false);
+  await context.close();
+}
+
 await browser.close();
 console.log(failures === 0 ? '\nALL CLEAN' : `\n${failures} check(s) failed`);
 process.exit(failures ? 1 : 0);
