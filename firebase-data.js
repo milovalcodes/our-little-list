@@ -261,14 +261,22 @@ function announceError(problem, stage) {
 // network to wait for. Online, a write is awaited exactly as before and a real
 // error still reaches the caller's catch.
 const LOCAL_WRITE_MS = 300;
+// The browser only knows whether it has *a* network, not whether that network
+// goes anywhere. Hotel wifi that never forwards, a dead spot, a router that has
+// quietly stopped: navigator.onLine stays true, the write never lands and never
+// fails, and the button sat at "saving…" with no error and no way forward. This
+// is the far end of that wait - long enough that a slow but working connection
+// still reports honestly, short enough that nobody is left staring. What was
+// typed is already durable in the on-device cache by then and goes across by
+// itself, which is what "syncing" says.
+const STALLED_WRITE_MS = 7000;
 
 function applied(work) {
-  if (navigator.onLine !== false) return work;
   work.catch(() => {});
-  return Promise.race([
-    work,
-    new Promise(resolve => setTimeout(() => resolve({ syncing: true }), LOCAL_WRITE_MS))
-  ]);
+  const waitFor = navigator.onLine === false ? LOCAL_WRITE_MS : STALLED_WRITE_MS;
+  let timer;
+  const stalled = new Promise(resolve => { timer = setTimeout(() => resolve({ syncing: true }), waitFor); });
+  return Promise.race([work, stalled]).finally(() => clearTimeout(timer));
 }
 
 function safelyCall(callback, value) {

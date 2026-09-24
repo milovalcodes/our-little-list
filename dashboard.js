@@ -69,7 +69,17 @@ document.getElementById('sign-out')?.addEventListener('click', async event => {
   // Drop this phone's push registration first, while the rules still let us:
   // otherwise it keeps answering for whoever just left, and the next person to
   // sign in here inherits their reminders.
-  await forgetPushSubscription(data, viewer);
+  // Bounded, though. A phone that believes it is online but is not — hotel
+  // wifi, a dead spot, a sleeping router — leaves the write pending for as long
+  // as it likes and never rejects, and this was awaited before anything else
+  // happened: the button said "signing out…" and stayed there, with no way off
+  // the account. The cleanup still runs and still finishes if it can; it just
+  // no longer holds the door shut. A registration left behind is picked up by
+  // the next sign-in, which claims the endpoint from whoever held it.
+  await Promise.race([
+    forgetPushSubscription(data, viewer),
+    new Promise(resolve => window.setTimeout(resolve, 2500))
+  ]);
   try {
     await data.signOut();
   } catch (_) { /* already gone */ }
