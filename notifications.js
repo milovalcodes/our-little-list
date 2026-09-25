@@ -100,23 +100,28 @@ $('test-notification').addEventListener('click', async event => {
       const result = await ensurePushSubscription(data, viewer);
       if (result.state === 'failed') throw result.problem || new Error('registration failed');
     }
-    if (Notification.permission !== 'granted') {
+    // An iPhone that has not been added to the Home Screen has no Notification
+    // at all, and touching it threw instead of pointing the way.
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
       location.href = `phone-check.html`;
       return;
     }
     window.playLittleSound?.(preferences.inAppSound);
     const registration = await navigator.serviceWorker.ready;
     const silent = preferences.backgroundSound === 'silent';
-    await registration.showNotification('tiny ping check ✦', {
+    const options = {
       body: silent ? 'quiet mode. very sneaky.' : 'the sun and moon have entered the notification bar.',
       icon: './notification-icon.png',
       badge: './notification-badge.png',
       silent,
-      vibrate: silent ? [] : vibrationPattern(preferences.vibration),
       tag: 'our-little-list-settings-test',
       renotify: true,
       data: { url: new URL('./notifications.html', location.href).href }
-    });
+    };
+    // Chrome throws on a silent notification that names any vibration pattern,
+    // even an empty one — so testing quiet mode always "failed".
+    if (!silent) options.vibrate = vibrationPattern(preferences.vibration);
+    await registration.showNotification('tiny ping check ✦', options);
   } catch (_) {
     showFailure('the test ping did not happen.', 'check phone check, Focus mode, and this app’s notification settings.');
   } finally {

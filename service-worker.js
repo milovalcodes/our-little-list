@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v45';
+const CACHE = 'our-little-list-v46';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -157,18 +157,32 @@ self.addEventListener('push', event => {
   // promise, and the browser posts its own "site updated in the background"
   // notice instead. The tag already replaces a duplicate in place, which is the
   // de-duplication this was reaching for.
+  const options = {
+    body,
+    icon: './notification-icon.png',
+    badge: './notification-badge.png',
+    silent,
+    // Chrome refuses a silent notification that carries a vibration pattern
+    // at all — an empty one included: "Silent notifications must not specify
+    // vibration patterns." Passing `vibrate: []` in quiet mode made every push
+    // throw here, show nothing, and leave Chrome to post its own generic "this
+    // site has been updated in the background" line instead.
+    ...(silent ? {} : { vibrate: vibrate }),
+    tag,
+    renotify: false,
+    requireInteraction: payload.kind === 'reminder',
+    data: { url: target }
+  };
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
-      body,
-      icon: './notification-icon.png',
-      badge: './notification-badge.png',
-      silent,
-      vibrate: silent ? [] : vibrate,
-      tag,
-      renotify: false,
-      requireInteraction: payload.kind === 'reminder',
-      data: { url: target }
-    })
+    self.registration.showNotification(payload.title, options)
+      // Whatever else goes wrong with the options, a push has to show
+      // something. The plainest possible notification still carries the words
+      // and still opens the right page.
+      .catch(() => self.registration.showNotification(payload.title || 'Our Little List', {
+        body,
+        tag,
+        data: { url: target }
+      }))
   );
 });
 
