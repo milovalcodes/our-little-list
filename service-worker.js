@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v44';
+const CACHE = 'our-little-list-v45';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -9,7 +9,7 @@ const LIBRARY_CACHE = 'our-little-list-libraries';
 const PAGES = [
   './', './index.html', './her.html', './him.html', './admire.html', './profiles.html',
   './status.html', './dates.html', './tasks.html', './reminders.html', './notes.html',
-  './location.html', './activity.html', './phone-check.html', './help.html', './today.html', './memories.html'
+  './location.html', './activity.html', './phone-check.html', './notifications.html', './help.html', './today.html', './memories.html'
 ];
 
 const ASSETS = [
@@ -17,10 +17,12 @@ const ASSETS = [
   './styles.css', './shared.js', './profile-store.js', './profile-names.js',
   './profiles.js', './status.js', './dates.js', './dashboard.js', './activity.js',
   './phone-check.js', './tasks.js', './reminders.js', './notes.js', './location.js', './live-notes.js',
+  './notifications.js', './notification-policy.js', './notification-preferences.js',
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
   './push-config.js', './push-client.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',
   './household.js', './viewer.js', './entry.js',
-  './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './icon-192.png', './manifest.webmanifest'
+  './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './icon-192.png',
+  './notification-icon.png', './notification-badge.png', './notification-icon.svg', './notification-badge.svg', './manifest.webmanifest'
 ];
 
 self.addEventListener('install', event => {
@@ -147,6 +149,10 @@ self.addEventListener('push', event => {
   const body = payload.late ? `${payload.body} (a little late, sorry)` : payload.body;
   const tag = payload.tag || 'our-little-list';
   const target = safeAppUrl(payload.url);
+  const silent = payload.silent === true;
+  const vibrate = Array.isArray(payload.vibrate)
+    ? payload.vibrate.map(Number).filter(value => Number.isFinite(value) && value >= 0).slice(0, 7)
+    : [90, 70, 90];
   // A push that resolves without showing anything breaks the userVisibleOnly
   // promise, and the browser posts its own "site updated in the background"
   // notice instead. The tag already replaces a duplicate in place, which is the
@@ -154,8 +160,10 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body,
-      icon: './sun-moon-personalized.png',
-      badge: './sun-moon-personalized.png',
+      icon: './notification-icon.png',
+      badge: './notification-badge.png',
+      silent,
+      vibrate: silent ? [] : vibrate,
       tag,
       renotify: false,
       requireInteraction: payload.kind === 'reminder',

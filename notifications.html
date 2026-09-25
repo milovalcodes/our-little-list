@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <title>Little Pings · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+</head>
+<body class="profile-page" data-app="notifications">
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">little pings</span></header>
+  <main class="app-shell feature-shell notification-shell">
+    <section class="feature-hero notification-hero">
+      <img class="notification-hero-icon" src="notification-icon.png" alt="">
+      <p class="tiny-kicker">your phone, your rules</p><h1>Little pings</h1>
+      <div class="notification-ready-line"><i id="permission-dot"></i><span id="permission-copy">checking this phone…</span></div>
+    </section>
+
+    <form id="notification-settings-form">
+      <section class="notification-settings-card">
+        <div class="settings-heading"><div><p class="tiny-kicker">how it says hey</p><h2>Sound & vibration</h2></div><button class="small-action" id="test-notification" type="button">send a test</button></div>
+
+        <fieldset class="settings-fieldset">
+          <legend>when the app is closed</legend>
+          <div class="compact-choice-row" id="background-sound-choices">
+            <label><input type="radio" name="background-sound" value="default"><span>phone sound</span></label>
+            <label><input type="radio" name="background-sound" value="silent"><span>quiet</span></label>
+          </div>
+        </fieldset>
+
+        <label class="settings-select-row"><span><strong>while the app is open</strong><small>our own tiny noise</small></span><select id="in-app-sound"><option value="twinkle">twinkle</option><option value="pop">soft pop</option><option value="off">no sound</option></select></label>
+
+        <fieldset class="settings-fieldset" id="vibration-fieldset">
+          <legend>vibration</legend>
+          <div class="compact-choice-row" id="vibration-choices">
+            <label><input type="radio" name="vibration" value="gentle"><span>tiny buzz</span></label>
+            <label><input type="radio" name="vibration" value="pulse"><span>buzz buzz</span></label>
+            <label><input type="radio" name="vibration" value="off"><span>none</span></label>
+          </div>
+        </fieldset>
+        <p class="settings-device-note" id="device-note"></p>
+      </section>
+
+      <section class="notification-settings-card">
+        <div class="settings-heading"><div><p class="tiny-kicker">what gets through</p><h2>Pick the pings</h2></div></div>
+        <div class="notification-toggle-list" id="notification-categories"></div>
+      </section>
+
+      <div class="notification-save-row"><span id="save-state" aria-live="polite"></span><button class="primary-action compact-save" id="save-notifications" type="submit">save it</button></div>
+    </form>
+  </main>
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="notifications.js"></script>
+</body>
+</html>

@@ -159,7 +159,7 @@ $('ask-notifications').addEventListener('click',async()=>{
   await renderNotifications();
   if(Notification.permission==='granted'){
     window.playLittleTwinkle?.();
-    try{const registration=await navigator.serviceWorker.ready;await registration.showNotification('notifications are ready ♡',{body:'this is the test popup.',icon:'./sun-moon-personalized.png',badge:'./sun-moon-personalized.png',data:{url:`./phone-check.html`}});help('notification','test sent. if nothing appeared, check Focus / Do Not Disturb too.');}
+    try{const registration=await navigator.serviceWorker.ready;await registration.showNotification('notifications are ready ♡',{body:'this is the test popup.',icon:'./notification-icon.png',badge:'./notification-badge.png',vibrate:[90,70,90],data:{url:`./phone-check.html`}});help('notification','test sent. if nothing appeared, check Focus / Do Not Disturb too.');}
     catch(_){help('notification','permission is allowed, but the test popup did not appear.');}
   }
 });

@@ -68,7 +68,7 @@ async function open(path) {
 console.log('--- every page renders, no script errors, no sideways scroll ---');
 const PAGES = ['her.html','him.html','tasks.html?as=her','reminders.html?from=her','notes.html?from=her',
   'location.html?as=her','activity.html?as=her','status.html?as=her','dates.html?as=her','tasks.html?as=her#asks',
-  'phone-check.html?as=her','profiles.html','status.html?as=him#partner','tasks.html?as=him#asks'];
+  'phone-check.html?as=her','notifications.html?as=her','profiles.html','status.html?as=him#partner','tasks.html?as=him#asks'];
 PAGES.push('today.html?as=her','memories.html?as=her');
 
 for (const path of PAGES) {
@@ -81,6 +81,21 @@ for (const path of PAGES) {
 }
 
 console.log('\n--- interactions ---');
+
+// Notification choices are device settings: they have to survive a reload and
+// reach the registration later, even if permission has not been granted yet.
+{
+  const { context, page, errors } = await open('notifications.html?as=her');
+  await page.locator('[data-category="lists"]').uncheck({ force:true });
+  await page.selectOption('#in-app-sound', 'pop');
+  await page.locator('input[name="vibration"][value="pulse"]').check({ force:true });
+  await page.click('#save-notifications');
+  await page.waitForTimeout(250);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-notification-preferences-v1') || '{}'));
+  note(saved.categories?.lists === false && saved.inAppSound === 'pop' && saved.vibration === 'pulse' && errors.length === 0,
+       'notification choices save on this phone', errors[0] || JSON.stringify(saved));
+  await context.close();
+}
 
 // Old bookmarks and queued notifications land in the consolidated homes.
 {

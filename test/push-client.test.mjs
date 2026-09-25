@@ -62,6 +62,7 @@ const { ensurePushSubscription, forgetPushSubscription } = await import('../push
   const result = await ensurePushSubscription(data, 'her');
   assert.equal(result.state, 'ready');
   assert.ok(data.rows.her, 'her registration is written');
+  assert.equal(data.rows.her.preferences.vibration, 'gentle', 'the phone files its alert preferences too');
   assert.equal(data.rows.him, undefined, 'his registration on this same phone is released');
   console.log(' ok  registering claims this phone and releases the other side');
 }

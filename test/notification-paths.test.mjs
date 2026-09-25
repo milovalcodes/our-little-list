@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 const live = readFileSync(new URL('../live-notes.js', import.meta.url), 'utf8');
 const serviceWorker = readFileSync(new URL('../service-worker.js', import.meta.url), 'utf8');
 const worker = readFileSync(new URL('../worker/src/index.js', import.meta.url), 'utf8');
+const pushClient = readFileSync(new URL('../push-client.js', import.meta.url), 'utf8');
 
 assert.ok(!live.includes('showNotification('), 'live listeners must never raise a second system notification');
 assert.match(live, /if \(document\.hidden\) return false;/, 'a hidden page shows no in-page popup and says so to its caller');
@@ -22,7 +23,17 @@ assert.ok(push.includes('showNotification('), 'the push handler shows a notifica
 assert.ok(!/getNotifications\(/.test(push), 'no branch may resolve the push without showing anything');
 assert.match(push, /renotify: false/, 'a replaced tag does not make another sound');
 assert.match(push, /tag,/, 'the tag is what de-duplicates a re-sent message');
+assert.match(push, /notification-icon\.png/, 'expanded Android notification uses the small notification artwork');
+assert.match(push, /notification-badge\.png/, 'Android status bar uses a transparent monochrome badge');
+assert.match(push, /vibrate:/, 'the chosen vibration reaches showNotification');
+assert.match(push, /silent,/, 'quiet mode reaches showNotification');
 console.log(' ok  every push shows something, and a repeat replaces it quietly');
+
+assert.match(worker, /notificationKindEnabled\(message\.kind, preferences\)/,
+  'muted categories must be filtered before Web Push, not hidden after arrival');
+assert.match(pushClient, /preferences: readNotificationPreferences\(\)/,
+  'the phone files its notification preferences beside its subscription');
+console.log(' ok  notification choices travel with the phone and filter before delivery');
 
 assert.match(worker, /message\.sendAt \|\| message\.createdAt/, 'reminder age starts at its due time');
 assert.doesNotMatch(worker, /message\.createdAt \|\| message\.sendAt/, 'creation time cannot expire a future reminder');

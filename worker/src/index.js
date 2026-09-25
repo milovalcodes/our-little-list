@@ -7,6 +7,7 @@
 
 import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
+import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern } from '../../notification-policy.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
 const STALE_MS = 3 * 60 * 60_000;    // older than 3h: still send, but say it is late
@@ -59,6 +60,7 @@ export async function deliver(env) {
     let sent = 0;
     let left = 0;
     let dropped = 0;
+    let muted = 0;
 
     for (const message of due) {
       // Lateness starts when the message was due, not when it was created. A
@@ -88,13 +90,25 @@ export async function deliver(env) {
         continue;
       }
 
+      // Category choices live beside this side's push subscription. Filtering
+      // here — before Web Push — is important: a service worker is not allowed
+      // to receive a userVisibleOnly push and quietly show nothing.
+      const preferences = normalizeNotificationPreferences(target.preferences);
+      if (!notificationKindEnabled(message.kind, preferences)) {
+        await db.remove(message.path);
+        muted += 1;
+        continue;
+      }
+
       const payload = JSON.stringify({
         title: message.title || 'Our Little List',
         body: message.body || '',
         url: message.url || 'index.html',
         tag: `${message.kind || 'note'}-${message.id}`,
         kind: message.kind || 'note',
-        late: dueAge > STALE_MS
+        late: dueAge > STALE_MS,
+        silent: preferences.backgroundSound === 'silent',
+        vibrate: vibrationPattern(preferences.vibration)
       });
 
       const result = await sendNotification(target.subscription, payload, vapid, {
@@ -118,7 +132,7 @@ export async function deliver(env) {
       }
     }
 
-    return { checked: true, sent, left, dropped, subscribed: Object.keys(subscriptions).length };
+    return { checked: true, sent, left, dropped, muted, subscribed: Object.keys(subscriptions).length };
   } finally {
     await db.remove(lockPath).catch(problem => console.error(`could not release delivery lock: ${problem.message || problem}`));
   }

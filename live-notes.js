@@ -5,6 +5,7 @@ import { sharedLayer } from './data-hub.js';
 import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
 import { startPresence } from './presence.js';
+import { readNotificationPreferences, shouldShowNotification } from './notification-preferences.js';
 
 const signedInSide = await awaitViewer();
 if (signedInSide) boot(signedInSide);
@@ -24,7 +25,8 @@ async function boot(viewer) {
         icon: { heart: '💛', sun: '☀️', moon: '🌙', star: '✦' }[incoming.mood] || '💌',
         label: 'a note for you',
         body: incoming.body,
-        url: `notes.html`
+        url: `notes.html`,
+        kind: 'note'
       });
       // Only a note you were actually shown counts as read. A backgrounded page
       // still receives snapshots, and marking those read burned the note: no
@@ -34,24 +36,24 @@ async function boot(viewer) {
 
     data.listenTo('items', items => {
       const fresh = firstFresh('items', items, item => item.addedBy === other);
-      if (fresh) announce({ icon: '✓', label: 'new on our list', body: fresh.title, url: `tasks.html` });
+      if (fresh) announce({ icon: '✓', label: 'new on our list', body: fresh.title, url: `tasks.html`, kind: 'item' });
     });
 
     data.listenTo('reminders', items => {
       const fresh = firstFresh('reminders', items, item => item.recipient === viewer);
       // activity.html, not reminders.html: this side is receiving a reminder,
       // and reminders.html is the form for sending one.
-      if (fresh) announce({ icon: '⏰', label: 'a reminder for you', body: fresh.title, url: `activity.html` });
+      if (fresh) announce({ icon: '⏰', label: 'a reminder for you', body: fresh.title, url: `activity.html`, kind: 'reminder' });
     });
 
     data.listenTo('dates', items => {
       const fresh = firstFresh('dates', items, item => item.addedBy === other && !item.imported);
-      if (fresh) announce({ icon: '✦', label: 'new date idea', body: fresh.title, url: `dates.html` });
+      if (fresh) announce({ icon: '✦', label: 'new date idea', body: fresh.title, url: `dates.html`, kind: 'date' });
     });
 
     data.listenTo('help', items => {
       const fresh = firstFresh('help', items, item => item.to === viewer && item.state === 'open');
-      if (fresh) announce({ icon: fresh.emoji || '🙋', label: `${personName(other)} needs a hand`, body: fresh.title, url: 'tasks.html#asks' });
+      if (fresh) announce({ icon: fresh.emoji || '🙋', label: `${personName(other)} needs a hand`, body: fresh.title, url: 'tasks.html#asks', kind: 'help' });
     });
 
     data.listenTo('statuses', items => watchStatus(items));
@@ -88,7 +90,8 @@ async function boot(viewer) {
         icon: item.emoji || '●',
         label: `${personName(other)} updated their status`,
         body: item.text ? `${item.category || 'currently'} ${item.text}` : (item.state || 'updated'),
-        url: `status.html`
+        url: `status.html`,
+        kind: 'status'
       });
     }
     knownStatusAt = Math.max(knownStatusAt, updatedAt);
@@ -100,8 +103,9 @@ function announce(message) {
   // The push worker owns every operating-system notification; raising another
   // one here made the same event arrive twice on backgrounded phones.
   if (document.hidden) return false;
+  if (!shouldShowNotification(message.kind)) return false;
 
-  window.playLittleTwinkle?.();
+  window.playLittleSound?.(readNotificationPreferences().inAppSound);
 
   document.querySelector('.incoming-note')?.remove();
   const popup = document.createElement('aside');

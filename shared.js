@@ -105,13 +105,16 @@ window.addEventListener('pointerdown', () => {
   if (littleAudioContext.state === 'suspended') void littleAudioContext.resume();
 }, { passive: true });
 
-window.playLittleTwinkle = () => {
+window.playLittleSound = (choice = 'twinkle') => {
+  if (choice === 'off') return;
   if (!littleAudioContext || littleAudioContext.state !== 'running') return;
   const now = littleAudioContext.currentTime;
-  [[659.25,0],[880,.11],[1046.5,.22]].forEach(([frequency,delay]) => {
+  const notes = choice === 'pop' ? [[392,0,'triangle'],[523.25,.1,'sine']] : [[659.25,0,'sine'],[880,.11,'sine'],[1046.5,.22,'sine']];
+  notes.forEach(([frequency,delay,type]) => {
     const oscillator=littleAudioContext.createOscillator();const gain=littleAudioContext.createGain();
-    oscillator.type='sine';oscillator.frequency.value=frequency;
+    oscillator.type=type;oscillator.frequency.value=frequency;
     gain.gain.setValueAtTime(0.0001,now+delay);gain.gain.exponentialRampToValueAtTime(.1,now+delay+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+delay+.16);
     oscillator.connect(gain).connect(littleAudioContext.destination);oscillator.start(now+delay);oscillator.stop(now+delay+.18);
   });
 };
+window.playLittleTwinkle = () => window.playLittleSound('twinkle');

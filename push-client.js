@@ -1,4 +1,5 @@
 import { VAPID_PUBLIC_KEY, PUSH_SUBS } from './push-config.js';
+import { readNotificationPreferences } from './notification-preferences.js';
 
 // Turns the URL-safe base64 VAPID key into the Uint8Array pushManager wants.
 function keyBytes(base64) {
@@ -52,6 +53,7 @@ export async function ensurePushSubscription(data, person) {
     await data.setTo(PUSH_SUBS, person, {
       person,
       subscription: record,
+      preferences: readNotificationPreferences(),
       updatedAt: Date.now(),
       device: navigator.userAgent.slice(0, 180)
     });

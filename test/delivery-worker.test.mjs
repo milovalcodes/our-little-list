@@ -28,12 +28,21 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, pushStatus 
         acquiredAt: { integerValue: String(Date.now()) }
       } });
     }
-    if (url.includes('/pushSubs?')) return Response.json({ documents: Object.entries(subs).map(([id, s]) => ({
-      name: `p/documents/households/HOUSE/pushSubs/${id}`,
-      fields: { subscription: { mapValue: { fields: {
+    if (url.includes('/pushSubs?')) return Response.json({ documents: Object.entries(subs).map(([id, raw]) => {
+      const s = raw.subscription || raw;
+      const preferences = raw.preferences;
+      const fields = { subscription: { mapValue: { fields: {
         endpoint: { stringValue: s.endpoint },
         keys: { mapValue: { fields: { p256dh: { stringValue: s.keys.p256dh }, auth: { stringValue: s.keys.auth } } } }
-      } } } } })) });
+      } } } };
+      if (preferences) fields.preferences = { mapValue: { fields: {
+        backgroundSound: { stringValue: preferences.backgroundSound || 'default' },
+        vibration: { stringValue: preferences.vibration || 'gentle' },
+        inAppSound: { stringValue: preferences.inAppSound || 'twinkle' },
+        categories: { mapValue: { fields: Object.fromEntries(Object.entries(preferences.categories || {}).map(([key, value]) => [key, { booleanValue: value }])) } }
+      } } };
+      return { name: `p/documents/households/HOUSE/pushSubs/${id}`, fields };
+    }) });
     if (url.includes(':runQuery')) return Response.json(outbox.map(m => ({ document: {
       name: `p/documents/households/HOUSE/outbox/${m.id}`,
       fields: Object.fromEntries(Object.entries(m).filter(([k]) => k !== 'id').map(([k, v]) =>
@@ -144,6 +153,21 @@ const now = Date.now();
   assert.equal(h.pushes.length, 0);
   assert.equal(r.subscribed, 1);
   console.log(' ok  an idle minute sends nothing and reports who is subscribed');
+}
+
+// 10. A muted category is dropped before Web Push. Receiving a push and then
+// hiding it in the service worker violates userVisibleOnly and makes Chrome
+// invent its own generic notification, so this filtering belongs here.
+{
+  const h = harness({
+    outbox: [{ id:'MUTED', to:'her', title:'list thing', body:'x', kind:'item', sendAt:now-1000, createdAt:now-2000 }],
+    subs: { her: { subscription: SUB, preferences: { categories: { lists:false } } } }
+  });
+  const r = await deliver(ENV);
+  assert.equal(h.pushes.length, 0, 'muted category never becomes a push');
+  assert.equal(r.muted, 1);
+  assert.ok(h.deleted.some(path => path.endsWith('outbox/MUTED')), 'muted outbox row is cleared');
+  console.log(' ok  a muted category is filtered before Web Push');
 }
 
 console.log('\nDELIVERY WORKER CLEAN');
