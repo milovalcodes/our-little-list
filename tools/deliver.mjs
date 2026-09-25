@@ -11,6 +11,7 @@
 import webpush from 'web-push';
 import { signIn, createClient } from './firestore.mjs';
 import { readFileSync } from 'node:fs';
+import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern } from '../notification-policy.js';
 
 const GRACE_MS = 0;               // never ring before the chosen time
 const STALE_MS = 3 * 60 * 60_000; // older than 3h: send it but do not shout about it
@@ -78,6 +79,7 @@ async function main() {
     let sent = 0;
     let skipped = 0;
     let dropped = 0;
+    let muted = 0;
 
     for (const message of due) {
       const dueAge = Math.max(0, now - Number(message.sendAt || message.createdAt || now));
@@ -105,6 +107,16 @@ async function main() {
       continue;
     }
 
+    // Same rule as the worker: a category this side switched off is dropped
+    // here, before Web Push. A service worker may not receive a push and then
+    // show nothing, so it cannot be filtered on arrival.
+    const preferences = normalizeNotificationPreferences(target.preferences);
+    if (!notificationKindEnabled(message.kind, preferences)) {
+      await db.remove(message.path);
+      muted += 1;
+      continue;
+    }
+
     const payload = JSON.stringify({
       title: message.title || 'Our Little List',
       body: message.body || '',
@@ -113,7 +125,9 @@ async function main() {
       // The service worker keys requireInteraction off this, so a reminder
       // stays on screen instead of sliding past while the phone is in a pocket.
       kind: message.kind || 'note',
-      late: dueAge > STALE_MS
+      late: dueAge > STALE_MS,
+      silent: preferences.backgroundSound === 'silent',
+      vibrate: vibrationPattern(preferences.vibration)
     });
 
     try {
@@ -140,7 +154,7 @@ async function main() {
     }
     }
 
-    console.log(`sent ${sent}, left ${skipped}, dropped ${dropped}`);
+    console.log(`sent ${sent}, left ${skipped}, dropped ${dropped}, muted ${muted}`);
   } finally {
     await db.remove(lockPath).catch(problem => console.error(`could not release delivery lock: ${problem.message || problem}`));
   }
