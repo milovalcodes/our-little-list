@@ -13,9 +13,6 @@ export function readNotificationPreferences() {
 export function saveNotificationPreferences(value) {
   const preferences = normalizeNotificationPreferences(value);
   try { globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(preferences)); } catch (_) {}
-  if (globalThis.window?.dispatchEvent && globalThis.CustomEvent) {
-    window.dispatchEvent(new CustomEvent('littlelist:notification-preferences', { detail: preferences }));
-  }
   return preferences;
 }
 

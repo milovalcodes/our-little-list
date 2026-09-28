@@ -117,4 +117,3 @@ window.playLittleSound = (choice = 'twinkle') => {
     oscillator.connect(gain).connect(littleAudioContext.destination);oscillator.start(now+delay);oscillator.stop(now+delay+.18);
   });
 };
-window.playLittleTwinkle = () => window.playLittleSound('twinkle');

@@ -39,10 +39,3 @@ export function friendlyWhen(value) {
   if (isTomorrow) return `tomorrow at ${clock}`;
   return new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
 }
-
-export function friendlyDuration(minutes) {
-  const value = Number(minutes) || 0;
-  if (value < 60) return `${value} minutes`;
-  const hours = value / 60;
-  return hours === 1 ? '1 hour' : `${hours} hours`;
-}

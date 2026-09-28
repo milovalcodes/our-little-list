@@ -3,6 +3,7 @@ import { awaitViewer, showNotAMember } from './viewer.js';
 import { setupAuthUI,applyViewerTheme } from './ui-helpers.js';
 import { ensurePushSubscription, pushState } from './push-client.js';
 import { startPresence } from './presence.js';
+import { readNotificationPreferences } from './notification-preferences.js';
 
 const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
 const $=id=>document.getElementById(id);
@@ -158,7 +159,7 @@ $('ask-notifications').addEventListener('click',async()=>{
   }
   await renderNotifications();
   if(Notification.permission==='granted'){
-    window.playLittleTwinkle?.();
+    window.playLittleSound?.(readNotificationPreferences().inAppSound);
     try{const registration=await navigator.serviceWorker.ready;await registration.showNotification('notifications are ready ♡',{body:'this is the test popup.',icon:'./notification-icon.png',badge:'./notification-badge.png',vibrate:[90,70,90],data:{url:`./phone-check.html`}});help('notification','test sent. if nothing appeared, check Focus / Do Not Disturb too.');}
     catch(_){help('notification','permission is allowed, but the test popup did not appear.');}
   }

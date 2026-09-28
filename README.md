@@ -9,7 +9,7 @@ Live: https://milovalcodes.github.io/our-little-list/
 ## What it does
 
 - Two themed sides, sun and moon, with a shared middle
-- A compact Today page for due stuff, quick focus sessions and dumping a thought
+- A compact Today page for what is due and quick focus sessions
 - A shared list with recurring chores, plus a grocery list grouped by aisle
 - Reminders that actually arrive — see **Reminders** below
 - Tiny notes with live popups, reactions and a twinkle
@@ -20,12 +20,16 @@ Live: https://milovalcodes.github.io/our-little-list/
 - A private memory jar for little photos and things worth keeping
 - An activity feed with unread counts, read receipts and last-online presence
 - One shared “right now” view for both statuses, presence, and locations
-- Notes now keep sending, reading, and reactions together
+- Notes keep sending, reading and reactions on one page
 - Help requests live inside the shared list as the “Asks” tab
 - Foreground location that starts with the app, can be paused from the status
   page, and becomes an honest last-known spot when the phone suspends it
 - A phone checker that tests sync, internet, installation, notifications and
   location, and offers the exact fix when something is off
+- **Little pings** — per-phone notification settings: which kinds get through,
+  quiet mode, vibration and the in-app sound. A muted kind is dropped by the
+  delivery worker before it is sent, because a web push that arrives has to be
+  shown
 - Installable on both iPhone and Android, works offline for reading
 
 ## Reminders, and how they reach a closed phone
@@ -122,7 +126,7 @@ their next visit.
 ### 3. Both phones
 
 Open the site, sign in with **your own** account, add it to the Home Screen, then
-open **Everything on?** and allow notifications and location. The front door sends
+open **phone check** (“Everything on?”) and allow notifications and location. The front door sends
 you to your side automatically. That page reports
 whether the phone is actually registered for background nudges, rather than just
 whether permission was granted.

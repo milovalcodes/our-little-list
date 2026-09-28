@@ -22,8 +22,6 @@ const recipient = partnerOf(sender);
 applyViewerTheme(sender);
 document.querySelector('.back-to-side').href = `${sender}.html`;
 setNames();
-const prefill=new URLSearchParams(location.search).get('prefill');
-if(prefill)$('reminder-title').value=prefill.slice(0,100);
 
 function select(group, button, key) {
   document.querySelectorAll(`#${group} .choice`).forEach(item => item.classList.remove('active'));
@@ -111,10 +109,6 @@ function makeDate() {
   const value = new Date();
   value.setSeconds(0, 0);
   if (day === 'tomorrow') value.setDate(value.getDate() + 1);
-  if (day === 'weekend') {
-    const days = (6 - value.getDay() + 7) % 7 || 7;
-    value.setDate(value.getDate() + days);
-  }
   if (day === 'custom') {
     if (!$('custom-day').value) return null;
     const [y, m, d] = $('custom-day').value.split('-').map(Number);
@@ -125,6 +119,15 @@ function makeDate() {
   const [h, min] = chosenTime.split(':').map(Number);
   if (!Number.isFinite(h) || !Number.isFinite(min)) return null;
   value.setHours(h, min, 0, 0);
+  if (day === 'weekend') {
+    // On a weekday this is the coming Saturday. On a Saturday or Sunday it used
+    // to jump a whole week ahead, so "this weekend at 6pm" set on Saturday
+    // morning rang the Saturday after. Now it means today while the time is
+    // still ahead, and otherwise the next weekend day.
+    const weekday = value.getDay();
+    if (weekday !== 0 && weekday !== 6) value.setDate(value.getDate() + (6 - weekday));
+    else if (value.getTime() <= Date.now()) value.setDate(value.getDate() + (weekday === 6 ? 1 : 6));
+  }
   return value;
 }
 

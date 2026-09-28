@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v46';
+const CACHE = 'our-little-list-v47';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -22,7 +22,7 @@ const ASSETS = [
   './push-config.js', './push-client.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',
   './household.js', './viewer.js', './entry.js',
   './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './icon-192.png',
-  './notification-icon.png', './notification-badge.png', './notification-icon.svg', './notification-badge.svg', './manifest.webmanifest'
+  './notification-icon.png', './notification-badge.png', './manifest.webmanifest'
 ];
 
 self.addEventListener('install', event => {
