@@ -145,6 +145,28 @@ console.log('\n--- interactions ---');
   await context.close();
 }
 
+// "weekend" on a Saturday or Sunday used to jump a whole week. With the clock
+// pinned to a Saturday morning, "weekend, evening" is tonight; with it pinned to
+// a Saturday night, "weekend, morning-ish" is tomorrow, not the Saturday after.
+{
+  const weekendAt = async (when, time) => {
+    const { context, page } = await open('about:blank');
+    await page.clock.install({ time: when });
+    await page.goto(`${BASE}/reminders.html?from=her`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(900);
+    await page.click('#day-choices [data-day="weekend"]');
+    await page.click(`#time-choices [data-time="${time}"]`);
+    const preview = await page.evaluate(() => document.getElementById('reminder-when-preview')?.textContent || '');
+    await context.close();
+    return preview;
+  };
+  const saturdayMorning = await weekendAt(new Date(2026, 9, 3, 8, 0), '19:00');
+  const saturdayNight = await weekendAt(new Date(2026, 9, 3, 22, 0), '09:00');
+  const wednesday = await weekendAt(new Date(2026, 8, 30, 8, 0), '09:00');
+  note(saturdayMorning.startsWith('today') && saturdayNight.startsWith('tomorrow') && /Saturday/.test(wednesday),
+       '"weekend" on a weekend means this weekend', JSON.stringify({ saturdayMorning, saturdayNight, wednesday }));
+}
+
 // A reminder in the past must be refused, one in the future must be accepted.
 {
   const { context, page, errors } = await open('reminders.html?from=her');
