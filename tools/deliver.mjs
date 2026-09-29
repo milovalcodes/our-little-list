@@ -11,7 +11,7 @@
 import webpush from 'web-push';
 import { signIn, createClient } from './firestore.mjs';
 import { readFileSync } from 'node:fs';
-import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern } from '../notification-policy.js';
+import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted } from '../notification-policy.js';
 
 const GRACE_MS = 0;               // never ring before the chosen time
 const STALE_MS = 3 * 60 * 60_000; // older than 3h: send it but do not shout about it
@@ -89,10 +89,12 @@ async function main() {
       continue;
     }
 
-    // A reminder whose underlying record was deleted should not still go off.
+    // Same rule as the worker: a nudge whose ask (or old-style reminder) was
+    // deleted, sorted or turned down should not still go off.
     if (message.kind === 'reminder' && message.ref) {
-      const reminder = await db.get(`${household}/reminders/${message.ref}`);
-      if (!reminder) {
+      const source = reminderSourcePath(message.ref);
+      const reminder = source ? await db.get(`${household}/${source}`) : null;
+      if (!reminderStillWanted(reminder)) {
         await db.remove(message.path);
         skipped += 1;
         continue;
