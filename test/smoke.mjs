@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const BASE = 'http://127.0.0.1:8777';
@@ -75,12 +75,103 @@ for (const path of PAGES) {
   const { context, page, errors } = await open(path);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   const text = await page.evaluate(() => document.body.innerText.trim().length);
-  note(errors.length === 0 && overflow <= 2 && text > 20, path.padEnd(26),
-       [errors.slice(0,2).join(' | '), overflow > 2 ? `overflow ${overflow}px` : '', text <= 20 ? 'blank' : ''].filter(Boolean).join(' '));
+  // A `display` rule beats the hidden attribute. That is how the sync chip sat
+  // on every page saying "saved" forever: its JavaScript hid it, its CSS did not.
+  const leaks = await page.evaluate(() => [...document.querySelectorAll('[hidden]')]
+    .filter(element => getComputedStyle(element).display !== 'none')
+    .map(element => element.id || element.className || element.tagName));
+  note(errors.length === 0 && overflow <= 2 && text > 20 && leaks.length === 0, path.padEnd(26),
+       [errors.slice(0,2).join(' | '), overflow > 2 ? `overflow ${overflow}px` : '', text <= 20 ? 'blank' : '', leaks.length ? `shown while hidden: ${leaks.join(', ')}` : ''].filter(Boolean).join(' '));
   await context.close();
 }
 
 console.log('\n--- interactions ---');
+
+// A real write takes a network round trip. The local layer answers in the same
+// tick, which hid a whole class of bug: code that touched event.currentTarget
+// after awaiting a write worked here and threw on the phones, reporting a
+// failure after the thing had been added. This serves the data layer with a
+// round trip's worth of delay on every write.
+async function openSlow(path) {
+  const opened = await open('about:blank');
+  const source = readFileSync(new URL('../firebase-data.js', import.meta.url), 'utf8')
+    .replace(/async (addTo|setTo|updateIn|removeFrom)\(([^)]*)\) \{/g, 'async $1($2) { await new Promise(resolve => setTimeout(resolve, 120));');
+  await opened.page.route('**/firebase-data.js', route => route.fulfill({ contentType: 'text/javascript', body: source }));
+  await opened.page.goto(`${BASE}/${path}`, { waitUntil: 'domcontentloaded' });
+  await opened.page.waitForTimeout(900);
+  return opened;
+}
+
+{
+  const { context, page, errors } = await openSlow('tasks.html?as=him');
+  await page.click('[data-open-sheet="quick"]');
+  await page.fill('#quick-text', 'water the desk plant');
+  await page.click('#quick-submit');
+  await page.waitForTimeout(700);
+  const failed = await page.locator('.global-failure').count();
+  const sheetOpen = await page.locator('#sheet-quick').isVisible();
+  const leftover = await page.locator('#quick-text').inputValue();
+  const added = await page.locator('.task-row', { hasText: 'water the desk plant' }).count();
+  note(added === 1 && failed === 0 && !sheetOpen && leftover === '' && errors.length === 0,
+       'quick add on a slow connection closes cleanly instead of reporting a failure',
+       errors[0] || JSON.stringify({ added, failed, sheetOpen, leftover }));
+
+  // Something added a moment ago has to be findable.
+  await page.click('[data-open-sheet="search"]');
+  await page.fill('#global-search', 'plant');
+  await page.waitForTimeout(300);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(250);
+  await page.click('[data-open-sheet="quick"]');
+  await page.fill('#quick-text', 'repot the other plant');
+  await page.click('#quick-submit');
+  await page.waitForTimeout(700);
+  await page.click('[data-open-sheet="search"]');
+  await page.fill('#global-search', 'repot');
+  await page.waitForTimeout(400);
+  const found = await page.locator('.search-hit', { hasText: 'repot the other plant' }).count();
+  note(found === 1, 'search finds what was added after it was first opened', `found ${found}`);
+
+  // The chip settles once the writes land, and says nothing once they have.
+  await page.waitForTimeout(2200);
+  const chipAfter = await page.locator('#sync-chip').isVisible();
+  await context.setOffline(true); await page.waitForTimeout(200);
+  const chipOffline = await page.locator('#sync-chip').innerText().catch(() => '');
+  await context.setOffline(false); await page.waitForTimeout(2200);
+  const chipBack = await page.locator('#sync-chip').isVisible() ? await page.locator('#sync-chip').innerText() : 'hidden';
+  note(!chipAfter && chipOffline.includes('offline') && chipBack !== 'saving…',
+       'the sync chip reflects real writes, not the last event it heard',
+       JSON.stringify({ chipAfter, chipOffline, chipBack }));
+  await context.close();
+}
+
+{
+  const { context, page, errors } = await open('tasks.html?as=her');
+  await page.click('[data-open-sheet="more"]');
+  await page.click('#check-update');
+  await page.waitForTimeout(1200);
+  const stillSpinning = ((await page.locator('#check-update').getAttribute('class')) || '').includes('is-checking');
+  note(!stillSpinning && errors.length === 0, 'checking for an update finishes and throws nothing',
+       errors[0] || (stillSpinning ? 'still spinning' : ''));
+  await context.close();
+}
+
+{
+  const { context, page } = await open('memories.html?as=her');
+  await page.click('#memory-empty .empty-action');
+  await page.waitForTimeout(400);
+  const quickOpen = await page.locator('#sheet-quick').isVisible();
+  const focused = await page.evaluate(() => document.activeElement?.id || '');
+  // (The date pile always has the imported ideas in it, so notes stands in.)
+  const notes = await open('notes.html?from=her');
+  await notes.page.click('#note-inbox-empty .empty-action');
+  await notes.page.waitForTimeout(300);
+  const noteKind = await notes.page.locator('[data-quick-kind].active').getAttribute('data-quick-kind');
+  note(!quickOpen && focused === 'memory-text' && noteKind === 'note',
+       'an empty page offers to add the thing that page is for', JSON.stringify({ quickOpen, focused, noteKind }));
+  await notes.context.close();
+  await context.close();
+}
 
 // The dock is the same everywhere: quick-add writes through the normal data
 // layer, search can find the result, and the home button respects the account.
