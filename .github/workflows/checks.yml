@@ -39,6 +39,9 @@ jobs:
       - name: Saved spots match where you are, and let go when you leave
         run: node test/places.test.mjs
 
+      - name: Things that were merged behave as one
+        run: node test/merged.test.mjs
+
       - name: The app can still start with no network
         run: node test/offline.test.mjs
 
