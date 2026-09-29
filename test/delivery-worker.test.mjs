@@ -14,7 +14,7 @@ const ENV = {
   VAPID_PUBLIC_KEY: vapidKeys.publicKey, VAPID_PRIVATE_KEY: vapidKeys.privateKey
 };
 
-function harness({ outbox = [], subs = { her: SUB }, reminders = {}, pushStatus = 201, lockHeld = false }) {
+function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, pushStatus = 201, lockHeld = false }) {
   const deleted = [];
   const pushes = [];
   globalThis.fetch = async (url, options = {}) => {
@@ -47,6 +47,10 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, pushStatus 
       name: `p/documents/households/HOUSE/outbox/${m.id}`,
       fields: Object.fromEntries(Object.entries(m).filter(([k]) => k !== 'id').map(([k, v]) =>
         [k, typeof v === 'number' ? { integerValue: String(v) } : { stringValue: String(v) }])) } })));
+    if (url.includes('/help/') && options.method !== 'DELETE') {
+      const ask = asks[url.split('/help/')[1]];
+      return ask ? Response.json({ name: url, fields: { state: { stringValue: ask.state } } }) : new Response('', { status: 404 });
+    }
     if (url.includes('/reminders/')) {
       const id = url.split('/reminders/')[1];
       return reminders[id] ? Response.json({ name: url, fields: {} }) : new Response('', { status: 404 });
@@ -168,6 +172,23 @@ const now = Date.now();
   assert.equal(r.muted, 1);
   assert.ok(h.deleted.some(path => path.endsWith('outbox/MUTED')), 'muted outbox row is cleared');
   console.log(' ok  a muted category is filtered before Web Push');
+}
+
+// 11. Reminders are asks with a time now. The nudge at that time still goes
+// out while the ask is open, and is dropped once it has been sorted, turned
+// down or deleted — nobody needs "⏰ bring water" after saying they cannot.
+{
+  const due = { to:'her', title:'⏰ bring water', body:'from him', kind:'reminder', sendAt: now-1000, createdAt: now-60000 };
+  const h = harness({
+    outbox: [{ id:'OPEN', ...due, ref:'help/Q1' }, { id:'SORTED', ...due, ref:'help/Q2' }, { id:'CANT', ...due, ref:'help/Q3' }, { id:'GONE', ...due, ref:'help/Q4' }, { id:'ODD', ...due, ref:'../pushSubs/her' }],
+    asks: { Q1: { state:'on-it' }, Q2: { state:'done' }, Q3: { state:'cant' } }
+  });
+  const r = await deliver(ENV);
+  assert.equal(h.pushes.length, 1, 'only the open ask is nudged');
+  assert.equal(r.sent, 1);
+  for (const id of ['SORTED', 'CANT', 'GONE', 'ODD']) assert.ok(h.deleted.some(path => path.endsWith(`outbox/${id}`)), `${id} is dropped`);
+  assert.ok(!h.deleted.some(path => path.endsWith('pushSubs/her')), 'a malformed reference cannot reach anything else');
+  console.log(' ok  a timed ask nudges while open and not after it is sorted');
 }
 
 console.log('\nDELIVERY WORKER CLEAN');

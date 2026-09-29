@@ -93,15 +93,19 @@ assert.match(worker, /message\.sendAt \|\| message\.createdAt/, 'reminder age st
 assert.doesNotMatch(worker, /message\.createdAt \|\| message\.sendAt/, 'creation time cannot expire a future reminder');
 console.log(' ok  a reminder set far in advance is not treated as stale');
 
-// A notification about a reminder you have been sent has to open something that
-// shows that reminder. reminders.html is the form for sending one, so tapping
-// "⏰ bring the water bottle" landed on an empty box addressed back at the
-// sender, with the reminder's own words nowhere on the page.
-const reminders = readFileSync(new URL('../reminders.js', import.meta.url), 'utf8');
-assert.doesNotMatch(reminders, /url: `reminders\.html`/, 'a reminder notification must not open the compose form');
-assert.doesNotMatch(live, /a reminder for you[\s\S]{0,120}url: `reminders\.html`/, 'the in-page reminder popup must not open the compose form either');
-assert.match(reminders, /url: `activity\.html`/, 'it opens the feed, where the reminder is readable');
-console.log(' ok  a reminder notification opens the reminder, not the form that makes one');
+// A nudge has to open something that shows what it is about. Reminders are asks
+// with a time now: both the heads-up and the nudge at the time open the Asks
+// tab, where the ask can be read and answered — never a form for making one.
+const records = readFileSync(new URL('../records.js', import.meta.url), 'utf8');
+const sendAsk = records.slice(records.indexOf('export async function sendAsk'), records.indexOf('export async function addDateIdea'));
+assert.doesNotMatch(sendAsk, /reminders\.html/, 'a nudge must not open the old compose form');
+assert.equal((sendAsk.match(/url: 'tasks\.html#asks'/g) || []).length, 2, 'the heads-up and the nudge both open the asks');
+assert.match(sendAsk, /ref: `help\/\$\{record\?\.id/, 'the nudge names its ask so it can be dropped if the ask goes away');
+assert.doesNotMatch(live, /a reminder for you[\s\S]{0,160}url: `reminders\.html`/, 'the in-page reminder popup must not open the compose form either');
+assert.match(backstopSource(), /reminderStillWanted\(reminder\)/, 'the manual backstop drops nudges for sorted asks too');
+console.log(' ok  a reminder opens the ask it is about, and goes quiet once that is sorted');
+
+function backstopSource() { return readFileSync(new URL('../tools/deliver.mjs', import.meta.url), 'utf8'); }
 
 // A failed page response must never become the offline copy of that page.
 assert.match(serviceWorker, /response\.ok && response\.type === 'basic'[\s\S]{0,200}cache\.put\(pageKey/, 'only a good page is cached');

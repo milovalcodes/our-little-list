@@ -66,9 +66,9 @@ async function open(path) {
 }
 
 console.log('--- every page renders, no script errors, no sideways scroll ---');
-const PAGES = ['her.html','him.html','tasks.html?as=her','reminders.html?from=her','notes.html?from=her',
-  'location.html?as=her','activity.html?as=her','status.html?as=her','dates.html?as=her','tasks.html?as=her#asks',
-  'phone-check.html?as=her','notifications.html?as=her','profiles.html','status.html?as=him#partner','tasks.html?as=him#asks'];
+const PAGES = ['her.html','him.html','tasks.html?as=her','notes.html?from=her',
+  'location.html?as=her','status.html?as=her','dates.html?as=her','tasks.html?as=her#asks',
+  'phone-check.html?as=her','profiles.html','status.html?as=him#partner','tasks.html?as=him#asks'];
 PAGES.push('today.html?as=her','memories.html?as=her');
 
 for (const path of PAGES) {
@@ -204,6 +204,19 @@ async function openSlow(path) {
   const icon = await page.locator('#fridge-emoji').textContent();
   note(noteText === 'oat milk is critically low' && icon === '🥛' && errors.length === 0,
        'the shared fridge note pins and redraws', errors[0] || JSON.stringify({ noteText, icon }));
+  // The fridge is a pinned note: it is in the notes, and unpinning it there
+  // takes it off the fridge.
+  await page.goto(`${BASE}/notes.html?from=her`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
+  const row = page.locator('.note-thread-row', { hasText: 'oat milk is critically low' });
+  const pinnedThere = await row.locator('[data-pin-note]').innerText().catch(() => '');
+  await row.locator('[data-pin-note]').click();
+  await page.waitForTimeout(400);
+  await page.goto(`${BASE}/her.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
+  const after = await page.locator('#fridge-copy').textContent();
+  note(pinnedThere.includes('unpin') && after === 'tap to pin something', 'the fridge is a pinned note, and notes can take it down',
+       JSON.stringify({ pinnedThere, after }));
   await context.close();
 }
 
@@ -226,7 +239,7 @@ async function openSlow(path) {
 // Notification choices are device settings: they have to survive a reload and
 // reach the registration later, even if permission has not been granted yet.
 {
-  const { context, page, errors } = await open('notifications.html?as=her');
+  const { context, page, errors } = await open('phone-check.html?as=her#pings');
   await page.locator('[data-category="lists"]').uncheck({ force:true });
   await page.selectOption('#in-app-sound', 'pop');
   await page.locator('input[name="vibration"][value="pulse"]').check({ force:true });
@@ -246,6 +259,14 @@ async function openSlow(path) {
   const admire = await open('admire.html?as=her');
   note(admire.page.url().endsWith('/status.html#partner'), 'old admire links move into right now', admire.page.url());
   await admire.context.close();
+  // Merged pages: queued reminder nudges and old bookmarks still land somewhere real.
+  const moved = {};
+  for (const [from, to] of [['reminders.html?from=her', '/tasks.html#asks'], ['activity.html?as=her', '/today.html#new'], ['notifications.html?as=her', '/phone-check.html#pings']]) {
+    const opened = await open(from);
+    moved[from] = opened.page.url().endsWith(to) ? 'ok' : opened.page.url();
+    await opened.context.close();
+  }
+  note(Object.values(moved).every(value => value === 'ok'), 'reminders, what\'s new and little pings redirect to where they live now', JSON.stringify(moved));
 }
 
 // The new home is one data-driven sky, not the old greeting plus four menu boxes.
@@ -286,15 +307,16 @@ async function openSlow(path) {
   await context.close();
 }
 
-// "weekend" on a Saturday or Sunday used to jump a whole week. With the clock
-// pinned to a Saturday morning, "weekend, evening" is tonight; with it pinned to
-// a Saturday night, "weekend, morning-ish" is tomorrow, not the Saturday after.
+// Reminders are asks with a time. "weekend" on a Saturday or Sunday used to jump
+// a whole week: with the clock pinned to a Saturday morning, "weekend, evening"
+// is tonight; on a Saturday night, "weekend, morning-ish" is tomorrow.
 {
   const weekendAt = async (when, time) => {
     const { context, page } = await open('about:blank');
     await page.clock.install({ time: when });
-    await page.goto(`${BASE}/reminders.html?from=her`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${BASE}/tasks.html?as=her#asks`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(900);
+    await page.click('#help-urgency [data-urgency="timed"]');
     await page.click('#day-choices [data-day="weekend"]');
     await page.click(`#time-choices [data-time="${time}"]`);
     const preview = await page.evaluate(() => document.getElementById('reminder-when-preview')?.textContent || '');
@@ -308,24 +330,40 @@ async function openSlow(path) {
        '"weekend" on a weekend means this weekend', JSON.stringify({ saturdayMorning, saturdayNight, wednesday }));
 }
 
-// A reminder in the past must be refused, one in the future must be accepted.
+// An ask for a moment that has passed is refused; one in the future is saved,
+// shows its time on both sides, and appears on the other side's Today.
 {
-  const { context, page, errors } = await open('reminders.html?from=her');
-  await page.fill('#reminder-title', 'past thing');
+  const { context, page, errors } = await open('tasks.html?as=her#asks');
+  await page.fill('#help-title', 'past thing');
+  await page.click('#help-urgency [data-urgency="timed"]');
   await page.click('#day-choices [data-day="today"]');
   await page.click('#time-choices [data-time="custom"]');
   await page.fill('#custom-time', '00:01');
-  await page.click('#reminder-submit');
+  await page.click('#help-submit');
   await page.waitForTimeout(400);
   const refused = await page.locator('.global-failure').count();
-  note(refused === 1, 'past reminder is refused', refused !== 1 ? 'it was accepted' : '');
+  note(refused === 1, 'an ask for a time already gone is refused', refused !== 1 ? 'it was accepted' : '');
 
   await page.click('.global-failure .failure-close');
   await page.click('#day-choices [data-day="tomorrow"]');
-  await page.click('#reminder-submit');
+  await page.fill('#help-title', 'bring the water bottle');
+  await page.click('#help-submit');
   await page.waitForTimeout(500);
-  const sent = await page.locator('#sent-state:visible').count();
-  note(sent === 1 && errors.length === 0, 'future reminder is accepted', errors[0] || '');
+  const mine = await page.locator('#help-mine-list .help-card', { hasText: 'bring the water bottle' }).innerText().catch(() => '');
+  const whenHidden = await page.locator('#ask-when').isHidden();
+
+  // "grab something" is the grocery list, not a second list of things to pick up.
+  await page.click('#help-presets [data-groceries]');
+  await page.waitForTimeout(200);
+  const onGroceries = await page.locator('.tab.active[data-tab="grocery"]').count();
+  note(onGroceries === 1 && page.url().endsWith('tasks.html?as=her'), '"grab something" opens the grocery list', page.url());
+
+  // Local mode keeps data per browser context, so look from his side in this one.
+  await page.goto(`${BASE}/tasks.html?as=him#asks`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1000);
+  const theirs = await page.locator('#help-inbox-list .help-card', { hasText: 'bring the water bottle' }).innerText().catch(() => '');
+  note(mine.includes('⏰ tomorrow') && theirs.includes('⏰ tomorrow') && whenHidden && errors.length === 0,
+       'an ask with a time is what a reminder was', errors[0] || JSON.stringify({ mine, theirs, whenHidden }));
   await context.close();
 }
 
@@ -350,14 +388,80 @@ async function openSlow(path) {
 }
 
 // The Today hub stays focused on what is due and the shared focus session.
+// A focus session is part of your status while it runs — and when it ends, the
+// status you had set is still there, with its own expiry, not the timer's.
 {
-  const { context, page, errors } = await open('today.html?as=her');
+  const { context, page, errors } = await open('status.html?as=her');
+  await page.evaluate(() => document.querySelector('.status-editor-disclosure')?.setAttribute('open', ''));
+  await page.fill('#status-text', 'humming a song');
+  await page.click('#status-save');
+  await page.waitForTimeout(400);
+
+  await page.goto(`${BASE}/today.html?as=her`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
   await page.fill('#focus-label', 'fold laundry');
   await page.click('#focus-start');
   await page.waitForTimeout(350);
   const focus = await page.locator('.focus-person.active', { hasText: 'fold laundry' }).count();
   const obsoleteDump = await page.locator('.dump-card,#dump-form').count();
   note(focus === 1 && obsoleteDump === 0 && errors.length === 0, 'today keeps focus without the duplicate thought inbox', errors[0] || '');
+
+  await page.goto(`${BASE}/status.html?as=her`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
+  const during = await page.locator('.person-status-card.is-me').innerText();
+  await page.goto(`${BASE}/today.html?as=her`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
+  await page.click('.focus-person [data-stop="her"]');
+  await page.waitForTimeout(400);
+  const stopped = await page.locator('.focus-person.active').count();
+  await page.goto(`${BASE}/status.html?as=her`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
+  const after = await page.locator('.person-status-card.is-me').innerText();
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-statuses-v1')).items.find(item => item.id === 'her'));
+  note(during.includes('locking in') && during.includes('fold laundry') && during.includes('humming a song')
+       && stopped === 0 && after.includes('humming a song') && !after.includes('locking in') && !Number(stored.expiresAt),
+       'a focus session is part of the status, and does not wipe or time out the one you set',
+       JSON.stringify({ during, after, expiresAt: stored.expiresAt }));
+  await context.close();
+}
+
+// A date you did goes in the memory jar, and undoing it takes it back out.
+{
+  const { context, page, errors } = await open('dates.html?as=her');
+  await page.fill('#date-title', 'picnic at the lake');
+  await page.click('#date-submit');
+  await page.waitForTimeout(400);
+  const card = page.locator('.date-idea-card', { hasText: 'picnic at the lake' });
+  await card.locator('[data-action="complete"]').click();
+  await page.waitForTimeout(500);
+  const jar = () => page.evaluate(() => { try { return JSON.parse(localStorage.getItem('our-little-list-memories-v1')).items.map(item => item.text); } catch (_) { return []; } });
+  const afterDone = await jar();
+  // Finished ideas sort to the bottom of the pile, past "show more".
+  for (let tries = 0; tries < 10 && !(await page.locator('.date-idea-card', { hasText: 'picnic at the lake' }).count()); tries += 1) {
+    await page.click('#date-more').catch(() => {});
+    await page.waitForTimeout(150);
+  }
+  await page.locator('.date-idea-card', { hasText: 'picnic at the lake' }).locator('[data-action="complete"]').click();
+  await page.waitForTimeout(500);
+  const afterUndo = await jar();
+  note(afterDone.includes('✦ we did: picnic at the lake') && !afterUndo.includes('✦ we did: picnic at the lake') && errors.length === 0,
+       'a finished date lands in the memory jar, and undo takes it out', errors[0] || JSON.stringify({ afterDone, afterUndo }));
+  await context.close();
+}
+
+// Quick add makes the same asks the Asks tab does, time and all.
+{
+  const { context, page, errors } = await open('tasks.html?as=her');
+  await page.click('[data-open-sheet="quick"]');
+  await page.click('[data-quick-kind="ask"]');
+  await page.fill('#quick-text', 'call the vet');
+  const when = await page.evaluate(() => { const d = new Date(Date.now() + 26 * 3600000); d.setSeconds(0, 0); const pad = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; });
+  await page.fill('#quick-when', when);
+  await page.click('#quick-submit');
+  await page.waitForTimeout(500);
+  const saved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('our-little-list-help-v1')).items.find(item => item.title === 'call the vet'); } catch (_) { return null; } });
+  note(saved && saved.dueAt > Date.now() && saved.state === 'open' && saved.to === 'him' && errors.length === 0,
+       'quick add can set an ask with a time', errors[0] || JSON.stringify(saved));
   await context.close();
 }
 
@@ -384,10 +488,10 @@ async function openSlow(path) {
   await page.selectOption('#status-category', 'listening to');
   await page.click('#status-save');
   await page.waitForTimeout(400);
-  await page.click('#arrival-presets [data-arrival="home safe"]');
+  await page.click('#arrival-presets [data-arrival="leaving now"]');
   await page.waitForTimeout(500);
   const stillThere = await page.locator('.person-status-card.is-me .status-custom', { hasText: 'the tiny mug album' }).count();
-  const arrived = await page.locator('.person-status-card.is-me .status-arrival', { hasText: 'home safe' }).count();
+  const arrived = await page.locator('.person-status-card.is-me .status-arrival', { hasText: 'leaving now' }).count();
   note(stillThere === 1 && arrived === 1 && errors.length === 0, 'an arrival tap keeps the status you set',
        errors[0] || `status ${stillThere}, arrival ${arrived}`);
 
@@ -526,20 +630,25 @@ async function openSlow(path) {
 // the button element, so a redraw between the two taps silently threw it away
 // and the delete never happened.
 {
-  const { context, page, errors } = await open('activity.html?as=her');
+  // What's new lives at the bottom of Today now.
+  const { context, page, errors } = await open('today.html?as=her');
+  await page.setViewportSize({ width: 390, height: 500 });
   await page.evaluate(() => localStorage.setItem('our-little-list-notes-v1', JSON.stringify({ items: [
     { id: 'n1', sender: 'him', recipient: 'her', body: 'a note to delete', mood: 'heart', createdAt: Date.now() }
   ] })));
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1300);
   const rows = await page.locator('.activity-row').count();
-  // Opening the feed is what marks an incoming note read. That used to be one
-  // timer 900ms after startup, which on a slow first load fired before any of
-  // the data had arrived and then never fired again.
-  const markedRead = await page.evaluate(() => {
+  const readNow = () => page.evaluate(() => {
     try { return !!JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items[0].read; } catch (_) { return false; }
   });
-  note(markedRead, 'reading the feed marks the note read', markedRead ? '' : 'still unread');
+  // Opening Today is not reading the feed at its bottom; scrolling to it is.
+  const readBeforeScrolling = await readNow();
+  await page.locator('#new').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1300);
+  const markedRead = await readNow();
+  note(!readBeforeScrolling && markedRead, 'reading the feed marks the note read, and only then',
+       JSON.stringify({ readBeforeScrolling, markedRead }));
   await page.click('.activity-row .delete-for-us');
   // Stand in for the snapshot that lands between the two taps.
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('littlelist:profile')));

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { matchSavedPlace, placeDisplay, statusShowsPlace } from '../place-presets.js';
+import { matchSavedPlace, placeDisplay, statusShowsPlace, arrivalMessage, announcesArrival, togetherPlace } from '../place-presets.js';
 
 const home = { id:'home', preset:'home', label:'our place', lat:26.1, lng:-80.2, radius:150 };
 const near = { lat:26.1005, lng:-80.2, accuracy:10 };
@@ -30,5 +30,19 @@ assert.equal(statusShowsPlace(null, home), false, 'no status yet but at a spot: 
 assert.equal(statusShowsPlace({ locationText:'vibing at home', locationPreset:'home' }, home), true, 'a status written before place ids were stored still counts');
 assert.equal(statusShowsPlace(atHome, { ...home, id:'home2' }), false, 'a different spot with the same words is still a move');
 console.log(' ok  a status is only rewritten when the spot actually changes');
+
+// Arriving at a saved spot tells the other phone, in the spot's own words.
+assert.equal(arrivalMessage({ preset:'home' }, 'Sol').title, 'Sol just got home! 🏠');
+assert.equal(arrivalMessage({ preset:'work' }, 'Luna').title, 'Luna just got to work :c');
+assert.equal(arrivalMessage({ preset:'custom', label:'the gym', emoji:'🏋️' }, 'Luna').title, 'Luna just got to the gym 🏋️');
+assert.equal(arrivalMessage({ preset:'home' }, 'Sol').body, 'vibing at home');
+assert.equal(arrivalMessage({ preset:'home' }, 'Sol', { together:true }).body, "you're both here · home together");
+assert.equal(announcesArrival({}), true, 'on unless switched off');
+assert.equal(announcesArrival({ notifyOnArrival:false }), true, 'the old unticked-by-default box is not an off switch');
+assert.equal(announcesArrival({ announce:false }), false);
+assert.equal(togetherPlace({ placePreset:'school', placeLabel:'campus' }, { placePreset:'school', placeLabel:'library' }), 'study party');
+assert.equal(togetherPlace({ placePreset:'custom', placeLabel:'Gym' }, { placePreset:'custom', placeLabel:'gym' }), 'together at Gym');
+assert.equal(togetherPlace({ placeLabel:'home' }, { placeLabel:'work' }), '');
+console.log(' ok  arrivals say where, in the spot\'s own words');
 
 console.log('LOCATION TAGS CLEAN');
