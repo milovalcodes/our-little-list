@@ -2,7 +2,7 @@ import { sharedLayer } from './data-hub.js';
 import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
 import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
-import { APP_VERSION } from './app-meta.js';
+import { friendlyWhen } from './time-format.js';
 
 const SEARCH_COLLECTIONS = ['items', 'notes', 'reminders', 'dates', 'memories'];
 const page = document.body.dataset.app || (document.body.dataset.viewer ? 'home' : '');
@@ -19,7 +19,6 @@ async function boot() {
   addDock(viewer);
   addSheets();
   addSyncTray();
-  improveEmptyStates();
   if (page === 'home') setupFridgeNote(data, viewer);
 
   const dock = document.querySelector('.app-dock');
@@ -35,8 +34,9 @@ async function boot() {
   });
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeSheets(); });
 
-  setupQuickAdd(data, viewer, other);
-  setupSearch(data, viewer);
+  const openQuick = setupQuickAdd(data, viewer, other);
+  setupSearch(data, viewer, openQuick);
+  improveEmptyStates(openQuick);
   setupUpdateCheck();
 }
 
@@ -79,7 +79,7 @@ function addSheets() {
         <a href="notifications.html"><i>♪</i><span>little pings</span></a><a href="profiles.html"><i>☺</i><span>our names</span></a>
         <a href="phone-check.html"><i>✓</i><span>phone check</span></a>
       </nav>
-      <button class="update-row" id="check-update" type="button"><span><b>app version ${escapeHtml(APP_VERSION)}</b><small id="update-copy">tap to check for a fresh one</small></span><i>↻</i></button>
+      <button class="update-row" id="check-update" type="button"><span><b id="app-version">app version</b><small id="update-copy">tap to check for a fresh one</small></span><i>↻</i></button>
     </section>`);
 }
 
@@ -92,6 +92,7 @@ function openSheet(name) {
   document.body.classList.add('sheet-open');
   window.littleHaptic?.('tap');
   requestAnimationFrame(() => sheet.classList.add('is-open'));
+  document.dispatchEvent(new CustomEvent('littlelist:sheet-open', { detail: { name } }));
   if (name === 'search') window.setTimeout(() => document.getElementById('global-search')?.focus(), 220);
   if (name === 'quick') window.setTimeout(() => document.getElementById('quick-text')?.focus(), 220);
 }
@@ -132,6 +133,11 @@ function setupQuickAdd(data, viewer, other) {
   });
   document.getElementById('quick-add-form').addEventListener('submit', async event => {
     event.preventDefault();
+    // Held now: event.currentTarget is null by the time a real network write
+    // comes back, and calling reset() on it threw — after the thing had been
+    // added — so every quick add ended in "that did not get added", with the
+    // sheet still open and an easy second tap to add it twice.
+    const form = event.currentTarget;
     const text = document.getElementById('quick-text').value.trim();
     if (!text) return;
     const button = document.getElementById('quick-submit');
@@ -153,10 +159,10 @@ function setupQuickAdd(data, viewer, other) {
           throw Object.assign(new Error('pick a future time'), { friendly: true });
         }
         const record = await data.addTo('reminders', { sender: viewer, recipient: other, from: viewer, to: other, title: text, note: '', scheduledAt: new Date(dueAt).toISOString(), dueAt, delivered: false, createdAt: Date.now() });
-        void data.notify(other, { title: 'new reminder ⏰', body: text, url: 'activity.html', kind: 'reminder-created' });
+        void data.notify(other, { title: 'new reminder ⏰', body: `${text} · ${friendlyWhen(dueAt)}`, url: 'activity.html', kind: 'reminder-created' });
         void data.notify(other, { title: `⏰ ${text}`, body: `from ${personName(viewer)}`, url: 'activity.html', kind: 'reminder', ref: record?.id || '', sendAt: dueAt });
       }
-      event.currentTarget.reset();
+      form.reset();
       closeSheets();
       toast(kind === 'note' ? 'sent 💌' : kind === 'reminder' ? 'reminder secured' : 'added');
       window.littleHaptic?.('success');
@@ -165,9 +171,14 @@ function setupQuickAdd(data, viewer, other) {
       else showFailure('that did not get added.', 'check the internet and try again. Your text is still here.');
     } finally { setButtonBusy(button, false); }
   });
+  return (next = kind, text = '') => {
+    openSheet('quick');
+    pick(next);
+    if (text) document.getElementById('quick-text').value = text;
+  };
 }
 
-function setupSearch(data, viewer) {
+function setupSearch(data, viewer, openQuick) {
   const input = document.getElementById('global-search');
   const results = document.getElementById('search-results');
   let entries = null;
@@ -183,7 +194,13 @@ function setupSearch(data, viewer) {
       }).catch(() => { entries = []; return entries; });
     return loading;
   };
-  input.addEventListener('focus', load, { once: true });
+  // Fetched again each time the sheet opens. Loading once per page meant
+  // something added from quick add a moment earlier could not be found.
+  document.addEventListener('littlelist:sheet-open', event => {
+    if (event.detail?.name !== 'search') return;
+    entries = null; loading = null;
+    void load();
+  });
   input.addEventListener('input', async () => {
     const query = normalize(input.value);
     if (!query) { results.innerHTML = '<div class="search-start"><span>✦</span><p>type literally anything</p></div>'; return; }
@@ -193,7 +210,8 @@ function setupSearch(data, viewer) {
   });
   results.addEventListener('click', event => {
     if (!event.target.closest('[data-open-quick-from-search]')) return;
-    closeSheets(false); openSheet('quick');
+    const typed = input.value.trim();
+    closeSheets(false); openQuick(undefined, typed);
   });
 }
 
@@ -248,55 +266,122 @@ function addSyncTray() {
   document.body.insertAdjacentHTML('beforeend', `<button class="sync-chip" id="sync-chip" type="button" hidden><i></i><span>saved</span></button><aside class="sync-tray" id="sync-tray" hidden><div><strong id="sync-title">all caught up</strong><p id="sync-copy">nothing waiting</p></div><button id="sync-retry" type="button">try now</button></aside>`);
   const chip = document.getElementById('sync-chip');
   const tray = document.getElementById('sync-tray');
+  const retry = document.getElementById('sync-retry');
+  const SLOW_MS = 6000;
+  // Every write in flight, by id, with when it started. The chip is worked out
+  // from this rather than from whichever event came last: a reconnect used to
+  // paint "saving…" with nothing to save and leave it there for good, and the
+  // retry button announced "saved" after a fixed 1.2 seconds whether or not
+  // anything had actually gone across.
+  const pending = new Map();
+  let failed = 0;
   let hideTimer;
-  const paint = detail => {
+  let slowTimer;
+  const current = () => {
+    if (failed) return 'failed';
+    if (navigator.onLine === false) return 'offline';
+    if (!pending.size) return 'synced';
+    return [...pending.values()].some(at => Date.now() - at >= SLOW_MS) ? 'pending' : 'saving';
+  };
+  const words = {
+    saving: ['saving…', 'putting that in the shared cloud', ''],
+    pending: ['waiting to sync', 'saved on this phone; it will catch up', 'try now'],
+    offline: ['offline', 'saved stuff will go over when the internet returns', 'try now'],
+    failed: ['sync hiccup', 'something did not save. make that change again from where you made it.', 'got it'],
+    synced: ['saved', 'both phones can see the latest', '']
+  };
+  const paint = () => {
     window.clearTimeout(hideTimer);
-    const state = detail?.state || (navigator.onLine ? 'synced' : 'offline');
-    const words = {
-      saving: ['saving…', 'putting that in the shared cloud'],
-      pending: ['waiting to sync', 'saved on this phone; it will catch up'],
-      offline: ['offline', 'saved stuff will go over when the internet returns'],
-      failed: ['sync hiccup', 'one change may need another try'],
-      synced: ['saved', 'both phones can see the latest']
-    }[state];
-    chip.hidden = false; chip.dataset.state = state; chip.querySelector('span').textContent = words[0];
-    document.getElementById('sync-title').textContent = words[0]; document.getElementById('sync-copy').textContent = words[1];
+    const state = current();
+    // Nothing happened and nothing is wrong: stay out of the way.
+    if (state === 'synced' && chip.hidden) { tray.hidden = true; return; }
+    const [title, copy, action] = words[state];
+    chip.hidden = false; chip.dataset.state = state; chip.querySelector('span').textContent = title;
+    document.getElementById('sync-title').textContent = title; document.getElementById('sync-copy').textContent = copy;
+    retry.hidden = !action; retry.textContent = action || 'try now';
     if (state === 'synced') hideTimer = window.setTimeout(() => { chip.hidden = true; tray.hidden = true; }, 1600);
   };
   chip.addEventListener('click', () => { tray.hidden = !tray.hidden; });
-  document.getElementById('sync-retry').addEventListener('click', () => {
-    if (!navigator.onLine) { toast('still offline'); return; }
-    window.dispatchEvent(new Event('online')); paint({ state: 'saving' });
-    window.setTimeout(() => paint({ state: 'synced' }), 1200);
+  retry.addEventListener('click', () => {
+    if (failed) { failed = 0; tray.hidden = true; paint(); return; }
+    if (navigator.onLine === false) { toast('still offline'); return; }
+    // Firestore listens for this and retries its connection straight away
+    // instead of waiting out its backoff. Whether that worked is for the
+    // writes themselves to report.
+    window.dispatchEvent(new Event('online'));
   });
-  window.addEventListener('online', () => paint({ state: 'saving' }));
-  window.addEventListener('offline', () => paint({ state: 'offline' }));
-  document.addEventListener('littlelist:sync', event => paint(event.detail));
-  if (!navigator.onLine) paint({ state: 'offline' });
+  document.addEventListener('littlelist:sync', event => {
+    const { phase, id } = event.detail || {};
+    if (phase === 'start') {
+      pending.set(id, Date.now());
+      window.clearTimeout(slowTimer);
+      slowTimer = window.setTimeout(paint, SLOW_MS + 50);
+    } else if (phase === 'done') pending.delete(id);
+    else if (phase === 'failed') { pending.delete(id); failed += 1; }
+    paint();
+  });
+  window.addEventListener('online', paint);
+  window.addEventListener('offline', paint);
+  if (navigator.onLine === false) paint();
 }
 
 function setupUpdateCheck() {
-  document.getElementById('check-update')?.addEventListener('click', async event => {
+  const button = document.getElementById('check-update');
+  if (!button) return;
+  void showVersion();
+  button.addEventListener('click', async () => {
     const copy = document.getElementById('update-copy');
-    event.currentTarget.classList.add('is-checking'); copy.textContent = 'checking…';
+    button.classList.add('is-checking'); copy.textContent = 'checking…';
     try {
       const registration = await navigator.serviceWorker?.getRegistration();
-      await registration?.update();
-      if (registration?.waiting) {
-        copy.textContent = 'fresh version found · opening it…';
-        registration.waiting.postMessage('skip-waiting');
-      } else copy.textContent = 'already fresh';
+      if (!registration) copy.textContent = 'could not check right now';
+      else {
+        await registration.update();
+        // The worker skips waiting as soon as it installs, so a new version is
+        // usually still installing at this point, not waiting. Looking only at
+        // `waiting` reported "already fresh" in the middle of an update.
+        const fresh = registration.installing || registration.waiting;
+        if (fresh) {
+          copy.textContent = 'fresh version found · opening it…';
+          fresh.postMessage('skip-waiting');
+        } else copy.textContent = 'already fresh';
+      }
     } catch (_) { copy.textContent = 'could not check right now'; }
-    window.setTimeout(() => event.currentTarget.classList.remove('is-checking'), 500);
+    // `button`, not event.currentTarget: that is null by the time this runs,
+    // which threw here and left the row spinning.
+    window.setTimeout(() => button.classList.remove('is-checking'), 500);
   });
 }
 
-function improveEmptyStates() {
+// The shell's cache is named after the deployed version, so this is what the
+// phone is really running. A version constant in its own file had to be bumped
+// by hand on every deploy and would quietly start telling you the wrong thing.
+async function showVersion() {
+  try {
+    const shells = (await caches.keys())
+      .map(key => Number(/^our-little-list-v(\d+)$/.exec(key)?.[1]))
+      .filter(Number.isFinite);
+    if (shells.length) document.getElementById('app-version').textContent = `app version ${Math.max(...shells)}`;
+  } catch (_) { /* no cache access: leave the plain label */ }
+}
+
+// What an empty page's button should start. Memories are not in quick add, so
+// that one goes to the page's own form; the rest open quick add on the thing
+// the page is about instead of whatever kind was picked last.
+const EMPTY_ACTION = { tasks: 'task', today: 'task', activity: 'task', notes: 'note', reminders: 'reminder', dates: 'date' };
+
+function improveEmptyStates(openQuick) {
+  const composer = page === 'memories' ? document.getElementById('memory-text') : null;
+  const kind = EMPTY_ACTION[page];
+  if (!composer && !kind) return;
   document.querySelectorAll('.empty-state').forEach(empty => {
     if (empty.querySelector('button,a')) return;
     const button = document.createElement('button');
     button.type = 'button'; button.className = 'empty-action'; button.textContent = 'add one';
-    button.addEventListener('click', () => openSheet('quick'));
+    button.addEventListener('click', () => {
+      if (composer) { composer.scrollIntoView({ block: 'center', behavior: 'smooth' }); composer.focus({ preventScroll: true }); }
+      else openQuick(kind);
+    });
     empty.append(button);
   });
 }

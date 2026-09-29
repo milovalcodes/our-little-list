@@ -108,12 +108,12 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       // reminder created with no signal still knows its own id — which is what
       // its scheduled notification is filed against.
       const entry = doc(named(name));
-      await applied(setDoc(entry, item));
+      await applied(setDoc(entry, item), name);
       return { id: entry.id };
     },
-    setTo: (name, id, item) => applied(setDoc(doc(named(name), id), item, { merge: true })),
-    updateIn: (name, id, changes) => applied(updateDoc(doc(named(name), id), changes)),
-    removeFrom: (name, id) => applied(deleteDoc(doc(named(name), id))),
+    setTo: (name, id, item) => applied(setDoc(doc(named(name), id), item, { merge: true }), name),
+    updateIn: (name, id, changes) => applied(updateDoc(doc(named(name), id), changes), name),
+    removeFrom: (name, id) => applied(deleteDoc(doc(named(name), id)), name),
 
     // Files a notification in the outbox. The scheduled delivery workflow picks
     // it up and sends the real web push. Nothing here claims to have delivered
@@ -176,10 +176,10 @@ function createLocalLayer(onAuth, onReady) {
     try { return JSON.parse(localStorage.getItem(key(name)))?.items || []; } catch (_) { return []; }
   };
   const write = (name, items) => {
-    announceSync('saving');
+    const id = QUIET_COLLECTIONS.has(name) ? 0 : announceSync('start');
     try { localStorage.setItem(key(name), JSON.stringify({ items })); } catch (_) { /* full or blocked */ }
     (listeners.get(name) || new Set()).forEach(callback => callback([...items]));
-    queueMicrotask(() => announceSync('synced'));
+    if (id) queueMicrotask(() => announceSync('done', id));
   };
   const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 
@@ -273,17 +273,29 @@ const LOCAL_WRITE_MS = 300;
 // itself, which is what "syncing" says.
 const STALLED_WRITE_MS = 7000;
 
-function applied(work) {
-  announceSync('saving');
-  work.then(() => announceSync('synced')).catch(() => announceSync('failed'));
+// Writes the app makes on its own, every minute, whether or not anyone touched
+// anything: the presence heartbeat, the live location, this phone's push
+// registration. Announcing those made the sync chip flash "saving…" all day.
+const QUIET_COLLECTIONS = new Set(['presence', 'locations', 'pushSubs']);
+
+function applied(work, name = '') {
+  work.catch(() => {});
+  // Each write reports its own start and end, so the chip can tell "something
+  // is still on its way" apart from "the last thing to finish was fine". One
+  // shared saving/synced flag let a presence beat landing declare everything
+  // saved while a real change was still waiting.
+  const id = QUIET_COLLECTIONS.has(name) ? 0 : announceSync('start');
+  if (id) work.then(() => announceSync('done', id), () => announceSync('failed', id));
   const waitFor = navigator.onLine === false ? LOCAL_WRITE_MS : STALLED_WRITE_MS;
   let timer;
-  const stalled = new Promise(resolve => { timer = setTimeout(() => { announceSync(navigator.onLine === false ? 'offline' : 'pending'); resolve({ syncing: true }); }, waitFor); });
+  const stalled = new Promise(resolve => { timer = setTimeout(() => resolve({ syncing: true }), waitFor); });
   return Promise.race([work, stalled]).finally(() => clearTimeout(timer));
 }
 
-function announceSync(state) {
-  document.dispatchEvent(new CustomEvent('littlelist:sync', { detail: { state, at: Date.now() } }));
+let syncSerial = 0;
+function announceSync(phase, id = ++syncSerial) {
+  document.dispatchEvent(new CustomEvent('littlelist:sync', { detail: { phase, id, at: Date.now() } }));
+  return id;
 }
 
 function safelyCall(callback, value) {

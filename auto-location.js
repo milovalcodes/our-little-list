@@ -6,10 +6,9 @@
 // "last known" rather than pretending the position is still live.
 
 import { sharedLayer } from './data-hub.js';
-import { awaitViewer } from './viewer.js';
-import { partnerOf } from './viewer.js';
+import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
-import { placeDisplay, matchSavedPlace } from './place-presets.js';
+import { placeDisplay, matchSavedPlace, statusShowsPlace } from './place-presets.js';
 
 const LEASE_MS = 4 * 60 * 1000;
 const HEARTBEAT_MS = 60 * 1000;
@@ -88,7 +87,9 @@ async function boot() {
   try { activePlaceId = localStorage.getItem(placeKey()) || ''; } catch (_) { activePlaceId = ''; }
   data.listenTo('places', items => {
     places = items.filter(item => item.person === viewer && Number.isFinite(item.lat) && Number.isFinite(item.lng));
-    if (lastPoint) void applyPlaceMatch(lastPoint);
+    // A change to the list of spots is not movement: saving a spot while
+    // standing in it must not ring the other phone with "arrived".
+    if (lastPoint) void applyPlaceMatch(lastPoint, undefined, { moved: false });
   });
   if (isPaused()) {
     phase = 'paused';
@@ -177,26 +178,38 @@ function closestPlace(point) {
   return matchSavedPlace(places, point, activePlaceId);
 }
 
-async function applyPlaceMatch(point, knownMatch = undefined) {
+async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } = {}) {
   if (!viewer || !data || placeStatusInFlight) return;
   const place = knownMatch === undefined ? closestPlace(point) : knownMatch;
   const nextId = place?.id || '';
   if (placeMatchStarted && nextId === activePlaceId) return;
-  const shouldNotify = placeMatchStarted && Boolean(nextId) && nextId !== activePlaceId && place?.notifyOnArrival;
+  const firstCheck = !placeMatchStarted;
+  const previousId = activePlaceId;
+  // Only a real arrival pings: not the first fix after a page opens, and not a
+  // spot being saved (or edited) while you are already standing in it.
+  const shouldNotify = moved && !firstCheck && Boolean(nextId) && nextId !== previousId && place?.notifyOnArrival;
   placeMatchStarted = true;
-  activePlaceId = nextId;
-  try { localStorage.setItem(placeKey(), nextId); } catch (_) {}
+  rememberPlace(nextId);
   placeStatusInFlight = true;
   try {
     const statuses = await data.readOnce('statuses');
     const existing = statuses.find(item => item.id === viewer || item.person === viewer);
     const display = place ? placeDisplay(place) : null;
+    const locationText = display?.status || '';
+    const locationPreset = place?.preset || '';
+    // Every page used to rewrite this on its first GPS fix, changed or not —
+    // and with no saved spots at all. Each rewrite bumped updatedAt, so the
+    // other phone got an "updated their status" popup and a fresh "changed
+    // locations · left a saved spot" in its feed whenever this one opened a
+    // page. Now only a real change is written.
+    if (statusShowsPlace(existing, place)) return;
     const payload = {
       person:viewer,
-      locationText:display?.status || '',
+      locationText,
       locationEmoji:display?.emoji || '',
-      locationPreset:place?.preset || '',
+      locationPreset,
       locationLabel:display?.label || '',
+      locationPlaceId:nextId,
       locationAt:Date.now(),
       updateKind:'location',
       updatedAt:Date.now(),
@@ -212,8 +225,16 @@ async function applyPlaceMatch(point, knownMatch = undefined) {
     });
   } catch (_) {
     // The location itself can still be useful even when its cosmetic status
-    // update has to wait for the next fix.
+    // update has to wait. Forget that this one was applied, so the next fix
+    // tries again instead of believing it already happened.
+    rememberPlace(previousId);
+    if (firstCheck) placeMatchStarted = false;
   } finally { placeStatusInFlight = false; }
+}
+
+function rememberPlace(id) {
+  activePlaceId = id;
+  try { localStorage.setItem(placeKey(), id); } catch (_) {}
 }
 
 async function persistPoint(next, renewLease = false) {

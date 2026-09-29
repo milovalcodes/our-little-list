@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v48';
+const CACHE = 'our-little-list-v49';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -14,7 +14,7 @@ const PAGES = [
 
 const ASSETS = [
   ...PAGES,
-  './styles.css', './shared.js', './app-chrome.js', './app-meta.js', './profile-store.js', './profile-names.js',
+  './styles.css', './shared.js', './app-chrome.js', './profile-store.js', './profile-names.js',
   './profiles.js', './status.js', './dates.js', './dashboard.js', './activity.js',
   './phone-check.js', './tasks.js', './reminders.js', './notes.js', './location.js', './live-notes.js',
   './notifications.js', './notification-policy.js', './notification-preferences.js',

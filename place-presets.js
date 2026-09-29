@@ -13,6 +13,17 @@ export function placeDisplay(place = {}) {
   return { ...preset, label, status, emoji:String(place.emoji || preset.emoji).slice(0, 16) };
 }
 
+// Whether a status document already says what being at `place` (or at no saved
+// spot, when place is null) would make it say. Rewriting it anyway bumps
+// updatedAt, and the other phone treats that as news.
+export function statusShowsPlace(existing, place) {
+  if (!existing) return !place;
+  const display = place ? placeDisplay(place) : null;
+  return String(existing.locationText || '') === (display?.status || '')
+    && String(existing.locationPreset || '') === (place?.preset || '')
+    && (existing.locationPlaceId === undefined || existing.locationPlaceId === (place?.id || ''));
+}
+
 export function matchSavedPlace(places, point, activeId = '') {
   let winner = null;
   let shortest = Infinity;

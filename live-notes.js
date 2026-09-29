@@ -85,7 +85,18 @@ async function boot(viewer) {
       knownStatusAt = updatedAt;
       return;
     }
-    if (updatedAt > knownStatusAt) {
+    if (updatedAt > knownStatusAt && item.updateKind === 'location') {
+      // Saved spots move this on their own. Say where they are, the way the
+      // activity feed does, and stay quiet about someone merely leaving one —
+      // "updated their status · online" said nothing true about either.
+      if (item.locationText) announce({
+        icon: item.locationEmoji || '📍',
+        label: `${personName(other)} changed locations`,
+        body: item.locationText,
+        url: `status.html`,
+        kind: 'status'
+      });
+    } else if (updatedAt > knownStatusAt) {
       announce({
         icon: item.emoji || '●',
         label: `${personName(other)} updated their status`,

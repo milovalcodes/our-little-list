@@ -48,6 +48,10 @@ async function boot() {
 
   document.getElementById('saved-place-form').addEventListener('submit', async event => {
     event.preventDefault();
+    // Held before the await: event.currentTarget is null once the write comes
+    // back, and reset() on it threw after the spot had saved — so saving a
+    // spot always ended in "that spot did not save".
+    const form = event.currentTarget;
     const point = locationSnapshot();
     if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng) || !['live', 'starting'].includes(point.phase)) {
       showFailure('this phone does not have a fresh spot yet.', 'turn location on, wait for the green dot, then try again.');
@@ -67,7 +71,7 @@ async function boot() {
         createdAt:Date.now(), updatedAt:Date.now()
       });
       toast(`${display.label} saved`);
-      event.currentTarget.reset();
+      form.reset();
       customStatus.value = '';
       selectPreset('home');
     } catch (_) { showFailure('that spot did not save.', 'check the internet and try again while you are still there.'); }
