@@ -57,6 +57,47 @@ service cloud.firestore {
       allow delete: if inHousehold(householdId) && ownsSide(person);
     }
 
+    match /households/{householdId}/places/{placeId} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && request.resource.data.person == mySide()
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.radius is number
+        && request.resource.data.lat >= -90 && request.resource.data.lat <= 90
+        && request.resource.data.lng >= -180 && request.resource.data.lng <= 180
+        && request.resource.data.radius >= 50 && request.resource.data.radius <= 1000
+        && shortText(request.resource.data.label, 40)
+        && shortText(request.resource.data.statusText, 90)
+        && shortText(request.resource.data.emoji, 16)
+        && request.resource.data.preset in ['home', 'work', 'school', 'errands', 'custom'];
+      allow update: if inHousehold(householdId)
+        && resource.data.person == mySide()
+        && request.resource.data.person == resource.data.person
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.radius is number
+        && request.resource.data.lat >= -90 && request.resource.data.lat <= 90
+        && request.resource.data.lng >= -180 && request.resource.data.lng <= 180
+        && request.resource.data.radius >= 50 && request.resource.data.radius <= 1000
+        && shortText(request.resource.data.label, 40)
+        && shortText(request.resource.data.statusText, 90)
+        && shortText(request.resource.data.emoji, 16)
+        && request.resource.data.preset in ['home', 'work', 'school', 'errands', 'custom'];
+      allow delete: if inHousehold(householdId) && resource.data.person == mySide();
+    }
+
+    match /households/{householdId}/pins/{pinId} {
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId)
+        && pinId == 'fridge'
+        && shortText(request.resource.data.text, 240)
+        && shortText(request.resource.data.emoji, 16)
+        && request.resource.data.updatedBy == mySide()
+        && request.resource.data.updatedAt is int;
+      allow delete: if inHousehold(householdId) && pinId == 'fridge';
+    }
+
     match /households/{householdId}/statuses/{person} {
       allow read: if inHousehold(householdId);
       allow create, update: if inHousehold(householdId) && ownsSide(person)

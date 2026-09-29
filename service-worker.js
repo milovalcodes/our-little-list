@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v47';
+const CACHE = 'our-little-list-v48';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -14,13 +14,13 @@ const PAGES = [
 
 const ASSETS = [
   ...PAGES,
-  './styles.css', './shared.js', './profile-store.js', './profile-names.js',
+  './styles.css', './shared.js', './app-chrome.js', './app-meta.js', './profile-store.js', './profile-names.js',
   './profiles.js', './status.js', './dates.js', './dashboard.js', './activity.js',
   './phone-check.js', './tasks.js', './reminders.js', './notes.js', './location.js', './live-notes.js',
   './notifications.js', './notification-policy.js', './notification-preferences.js',
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
   './push-config.js', './push-client.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',
-  './household.js', './viewer.js', './entry.js',
+  './household.js', './viewer.js', './entry.js', './place-presets.js', './location-tags.js',
   './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './icon-192.png',
   './notification-icon.png', './notification-badge.png', './manifest.webmanifest'
 ];

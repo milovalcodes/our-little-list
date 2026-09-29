@@ -93,19 +93,24 @@ function renderControl(){
 
 function renderLiveDistance(her,him){
   const meters=distanceMeters(her,him);const friendly=friendlyDistance(meters);
-  if(meters<=75)setProximity('together at last :)',`${friendly} apart.`,'made it');
+  const place=meters<=500?togetherPlace(her,him):'';
+  if(place)setProximity(place,`${friendly} apart.`,'same saved spot');
+  else if(meters<=75)setProximity('together at last :)',`${friendly} apart.`,'made it');
   else if(meters<=500)setProximity('almost together',`${friendly} to go.`,'so close');
   else if(meters<=2000)setProximity('getting closer',`${friendly} between you.`,'on the way');
   else if(meters<=10000)setProximity('on the way',`${friendly} between you.`,'getting there');
   else setProximity('same planet, technically',`${friendly} between you.`,'for now');
 }
 
+function togetherPlace(her,him){const sameLabel=her.placeLabel&&him.placeLabel&&her.placeLabel.toLocaleLowerCase()===him.placeLabel.toLocaleLowerCase();const preset=her.placePreset&&her.placePreset===him.placePreset?her.placePreset:'';if(!sameLabel&&!preset)return'';if(preset==='home')return'home together';if(preset==='work')return'coworking arc';if(preset==='school')return'study party';if(preset==='errands')return'side quest duo';return`together at ${her.placeLabel||him.placeLabel}`;}
+
 function renderLastKnown(known,active){
   byId('last-known-row').innerHTML=['her','him'].map(person=>{
     const name=escapeHtml(personName(person));const point=known.find(item=>item.id===person);
     if(!point)return `<span class="known-pill missing"><b>${name}</b> no spot yet</span>`;
     const live=active.some(item=>item.id===person);
-    return `<span class="known-pill ${live?'live':'last'}"><b>${name}</b> ${live?'live now':`last seen ${escapeHtml(timeAgo(point.updatedAt))}`}</span>`;
+    const place=point.placeLabel?` · ${escapeHtml(point.placeEmoji||'📍')} ${escapeHtml(point.placeLabel)}`:'';
+    return `<span class="known-pill ${live?'live':'last'}"><b>${name}</b> ${live?'live now':`last seen ${escapeHtml(timeAgo(point.updatedAt))}`}${place}</span>`;
   }).join('');
 }
 

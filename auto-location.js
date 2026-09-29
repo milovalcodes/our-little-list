@@ -7,6 +7,9 @@
 
 import { sharedLayer } from './data-hub.js';
 import { awaitViewer } from './viewer.js';
+import { partnerOf } from './viewer.js';
+import { personName } from './profile-store.js';
+import { placeDisplay, matchSavedPlace } from './place-presets.js';
 
 const LEASE_MS = 4 * 60 * 1000;
 const HEARTBEAT_MS = 60 * 1000;
@@ -29,6 +32,10 @@ let lastAttemptAt = 0;
 let writeInFlight = false;
 let phase = 'loading';
 let detail = '';
+let places = [];
+let activePlaceId = null;
+let placeMatchStarted = false;
+let placeStatusInFlight = false;
 
 // Phases you do not come back from by yourself. Re-arming a denied watcher on
 // every app switch just asked the phone the same question and got the same no.
@@ -39,7 +46,7 @@ restoreThrottle();
 const ready = boot();
 
 export function locationSnapshot() {
-  return { phase, detail, viewer, updatedAt: lastPoint?.updatedAt || 0, accuracy: lastPoint?.accuracy || 0 };
+  return { phase, detail, viewer, updatedAt: lastPoint?.updatedAt || 0, accuracy: lastPoint?.accuracy || 0, lat:lastPoint?.lat, lng:lastPoint?.lng, placeId:lastPoint?.placeId || '', placeLabel:lastPoint?.placeLabel || '', placePreset:lastPoint?.placePreset || '' };
 }
 
 export async function resumeAutoLocation() {
@@ -78,6 +85,11 @@ async function boot() {
     emit();
     return;
   }
+  try { activePlaceId = localStorage.getItem(placeKey()) || ''; } catch (_) { activePlaceId = ''; }
+  data.listenTo('places', items => {
+    places = items.filter(item => item.person === viewer && Number.isFinite(item.lat) && Number.isFinite(item.lng));
+    if (lastPoint) void applyPlaceMatch(lastPoint);
+  });
   if (isPaused()) {
     phase = 'paused';
     detail = 'paused on this phone';
@@ -138,13 +150,70 @@ async function savePosition(position) {
     shareUntil: now + LEASE_MS,
     person: viewer
   };
+  const matched = closestPlace(next);
+  if (matched) {
+    const display = placeDisplay(matched);
+    next.placeId = matched.id;
+    next.placeLabel = display.label;
+    next.placePreset = matched.preset || 'custom';
+    next.placeEmoji = display.emoji;
+  } else {
+    next.placeId = '';
+    next.placeLabel = '';
+    next.placePreset = '';
+    next.placeEmoji = '';
+  }
   lastPoint = next;
   phase = 'live';
   detail = 'updating while the app is open';
   emit();
+  void applyPlaceMatch(next, matched);
   // A GPS watcher can chatter several times a second. The map does not need
   // that many cloud writes: save meaningful movement, or refresh once a minute.
   await persistPoint(next);
+}
+
+function closestPlace(point) {
+  return matchSavedPlace(places, point, activePlaceId);
+}
+
+async function applyPlaceMatch(point, knownMatch = undefined) {
+  if (!viewer || !data || placeStatusInFlight) return;
+  const place = knownMatch === undefined ? closestPlace(point) : knownMatch;
+  const nextId = place?.id || '';
+  if (placeMatchStarted && nextId === activePlaceId) return;
+  const shouldNotify = placeMatchStarted && Boolean(nextId) && nextId !== activePlaceId && place?.notifyOnArrival;
+  placeMatchStarted = true;
+  activePlaceId = nextId;
+  try { localStorage.setItem(placeKey(), nextId); } catch (_) {}
+  placeStatusInFlight = true;
+  try {
+    const statuses = await data.readOnce('statuses');
+    const existing = statuses.find(item => item.id === viewer || item.person === viewer);
+    const display = place ? placeDisplay(place) : null;
+    const payload = {
+      person:viewer,
+      locationText:display?.status || '',
+      locationEmoji:display?.emoji || '',
+      locationPreset:place?.preset || '',
+      locationLabel:display?.label || '',
+      locationAt:Date.now(),
+      updateKind:'location',
+      updatedAt:Date.now(),
+      ...(existing ? {} : { state:'online', text:'', category:'', emoji:'', energy:'functioning', expiresAt:0 })
+    };
+    await data.setTo('statuses', viewer, payload);
+    if (shouldNotify) void data.notify(partnerOf(viewer), {
+      title:`${personName(viewer)} arrived ${display.emoji}`,
+      body:display.status,
+      url:'status.html',
+      kind:'arrival',
+      ref:`place-${place.id}`
+    });
+  } catch (_) {
+    // The location itself can still be useful even when its cosmetic status
+    // update has to wait for the next fix.
+  } finally { placeStatusInFlight = false; }
 }
 
 async function persistPoint(next, renewLease = false) {
@@ -212,6 +281,10 @@ function handleError(problem) {
 
 function pauseKey() {
   return `our-little-list-location-paused-${viewer}`;
+}
+
+function placeKey() {
+  return `our-little-list-active-place-${viewer}`;
 }
 
 function isPaused() {

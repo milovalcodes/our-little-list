@@ -12,7 +12,7 @@ export function setupAuthUI(data,user){
 }
 
 export function escapeHtml(value){return String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-export function toast(message){document.querySelector('.toast')?.remove();const el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.setAttribute('aria-live','polite');el.textContent=message;document.body.append(el);setTimeout(()=>el.remove(),2400);}
+export function toast(message){document.querySelector('.toast')?.remove();const el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.setAttribute('aria-live','polite');el.textContent=message;document.body.append(el);window.littleHaptic?.('tap');setTimeout(()=>el.remove(),2400);}
 export function dateKey(value){return `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`;}
 export function setButtonBusy(button,busy,label='thinking…'){
   if(!button)return;

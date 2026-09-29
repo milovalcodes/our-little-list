@@ -162,10 +162,13 @@ function renderSkyStatus(person, now) {
   const status = buckets.statuses.find(item => item.id === person || item.person === person);
   const bubble = document.getElementById(`sky-status-${person}`);
   const expired = Number(status?.expiresAt) > 0 && Number(status.expiresAt) < now;
-  const text = !expired ? String(status?.text || '').trim() : '';
+  const text = !expired ? String(status?.text || status?.locationText || '').trim() : String(status?.locationText || '').trim();
   bubble.hidden = !text;
-  bubble.textContent = text ? `${status?.emoji || '✦'} ${text}` : '';
-  bubble.title = text ? `${status?.category || 'currently'} ${text}` : '';
+  const usingLocation = !status?.text || expired;
+  bubble.textContent = text ? `${usingLocation ? status?.locationEmoji || '📍' : status?.emoji || '✦'} ${text}` : '';
+  bubble.title = text ? `${usingLocation ? 'location' : status?.category || 'currently'} ${text}` : '';
+  const personNode = document.getElementById(`sky-person-${person}`);
+  personNode.dataset.place = status?.locationPreset || '';
 }
 
 function renderSkyReaction(person, now) {
@@ -193,10 +196,14 @@ function renderSkyOrbit(stage, now) {
   }
   const meters = distanceMeters(her, him);
   const bothLive = Number(her.shareUntil) > now && Number(him.shareUntil) > now;
+  const sharedPlace = bothLive && meters <= 500 ? togetherPlace(her, him) : null;
   stage.dataset.orbit = meters <= 75 ? 'together' : meters <= 500 ? 'close' : meters <= 2000 ? 'near' : 'far';
   if (!bothLive) {
     title.textContent = 'last known orbit';
     detail.textContent = `${friendlyDistance(meters)} apart at the last update`;
+  } else if (sharedPlace) {
+    title.textContent = sharedPlace;
+    detail.textContent = `${friendlyDistance(meters)} apart`;
   } else if (meters <= 75) {
     title.textContent = 'together at last :)';
     detail.textContent = `${friendlyDistance(meters)} apart`;
@@ -210,6 +217,18 @@ function renderSkyOrbit(stage, now) {
     title.textContent = 'same sky';
     detail.textContent = `${friendlyDistance(meters)} apart for now`;
   }
+}
+
+function togetherPlace(her, him) {
+  if (!her.placeLabel && !him.placeLabel) return '';
+  const sameLabel = her.placeLabel && him.placeLabel && her.placeLabel.toLocaleLowerCase() === him.placeLabel.toLocaleLowerCase();
+  const preset = her.placePreset && her.placePreset === him.placePreset ? her.placePreset : '';
+  if (!sameLabel && !preset) return '';
+  if (preset === 'home') return 'home together';
+  if (preset === 'work') return 'coworking arc';
+  if (preset === 'school') return 'study party';
+  if (preset === 'errands') return 'side quest duo';
+  return `together at ${her.placeLabel || him.placeLabel}`;
 }
 
 function renderSkyNote(now) {

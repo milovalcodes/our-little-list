@@ -82,6 +82,56 @@ for (const path of PAGES) {
 
 console.log('\n--- interactions ---');
 
+// The dock is the same everywhere: quick-add writes through the normal data
+// layer, search can find the result, and the home button respects the account.
+{
+  const { context, page, errors } = await open('tasks.html?as=him');
+  const home = await page.locator('.app-dock a').first().getAttribute('href');
+  await page.click('[data-open-sheet="quick"]');
+  await page.fill('#quick-text', 'charge the tiny fan');
+  await page.click('#quick-submit');
+  await page.waitForTimeout(250);
+  const added = await page.locator('.task-row', { hasText:'charge the tiny fan' }).count();
+  await page.click('[data-open-sheet="search"]');
+  await page.fill('#global-search', 'tiny fan');
+  await page.waitForTimeout(150);
+  const found = await page.locator('.search-hit', { hasText:'charge the tiny fan' }).count();
+  note(home === 'him.html' && added === 1 && found === 1 && errors.length === 0,
+       'dock, quick-add and search stay on the right side', errors[0] || JSON.stringify({ home, added, found }));
+  await context.close();
+}
+
+// The fridge note is one shared document, editable without leaving home.
+{
+  const { context, page, errors } = await open('her.html?as=her');
+  await page.click('#fridge-open');
+  await page.fill('#fridge-text', 'oat milk is critically low');
+  await page.fill('#fridge-emoji-input', '🥛');
+  await page.click('#fridge-form [type="submit"]');
+  await page.waitForTimeout(200);
+  const noteText = await page.locator('#fridge-copy').textContent();
+  const icon = await page.locator('#fridge-emoji').textContent();
+  note(noteText === 'oat milk is critically low' && icon === '🥛' && errors.length === 0,
+       'the shared fridge note pins and redraws', errors[0] || JSON.stringify({ noteText, icon }));
+  await context.close();
+}
+
+// Saved-spot presets have distinct behavior and custom spots keep their own
+// words. Geofence math itself is covered in the pure unit pass.
+{
+  const { context, page, errors } = await open('status.html?as=her');
+  await page.click('#saved-places > summary');
+  await page.click('[data-place-preset="work"]');
+  const work = await page.locator('#place-preview').textContent();
+  await page.click('[data-place-preset="custom"]');
+  await page.fill('#place-label', 'the creature habitat');
+  await page.fill('#place-status', 'plotting at the creature habitat');
+  const custom = await page.locator('#place-preview').textContent();
+  note(work.includes('working hard') && custom.includes('plotting at the creature habitat') && errors.length === 0,
+       'saved spot presets and custom labels preview correctly', errors[0] || JSON.stringify({ work, custom }));
+  await context.close();
+}
+
 // Notification choices are device settings: they have to survive a reload and
 // reach the registration later, even if permission has not been granted yet.
 {

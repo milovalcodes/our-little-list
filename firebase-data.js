@@ -176,8 +176,10 @@ function createLocalLayer(onAuth, onReady) {
     try { return JSON.parse(localStorage.getItem(key(name)))?.items || []; } catch (_) { return []; }
   };
   const write = (name, items) => {
+    announceSync('saving');
     try { localStorage.setItem(key(name), JSON.stringify({ items })); } catch (_) { /* full or blocked */ }
     (listeners.get(name) || new Set()).forEach(callback => callback([...items]));
+    queueMicrotask(() => announceSync('synced'));
   };
   const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 
@@ -272,11 +274,16 @@ const LOCAL_WRITE_MS = 300;
 const STALLED_WRITE_MS = 7000;
 
 function applied(work) {
-  work.catch(() => {});
+  announceSync('saving');
+  work.then(() => announceSync('synced')).catch(() => announceSync('failed'));
   const waitFor = navigator.onLine === false ? LOCAL_WRITE_MS : STALLED_WRITE_MS;
   let timer;
-  const stalled = new Promise(resolve => { timer = setTimeout(() => resolve({ syncing: true }), waitFor); });
+  const stalled = new Promise(resolve => { timer = setTimeout(() => { announceSync(navigator.onLine === false ? 'offline' : 'pending'); resolve({ syncing: true }); }, waitFor); });
   return Promise.race([work, stalled]).finally(() => clearTimeout(timer));
+}
+
+function announceSync(state) {
+  document.dispatchEvent(new CustomEvent('littlelist:sync', { detail: { state, at: Date.now() } }));
 }
 
 function safelyCall(callback, value) {

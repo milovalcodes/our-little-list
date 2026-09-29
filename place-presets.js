@@ -1,0 +1,39 @@
+export const PLACE_PRESETS = {
+  home: { emoji:'🏠', label:'home', status:'vibing at home', together:'home together', animation:'cozy' },
+  work: { emoji:'💻', label:'work', status:'working hard', together:'coworking arc', animation:'working' },
+  school: { emoji:'📚', label:'school', status:'academic weapon mode', together:'study party', animation:'studying' },
+  errands: { emoji:'🛒', label:'errands', status:'doing side quests', together:'side quest duo', animation:'bouncing' },
+  custom: { emoji:'📍', label:'somewhere', status:'out and about', together:'together here', animation:'neutral' }
+};
+
+export function placeDisplay(place = {}) {
+  const preset = PLACE_PRESETS[place.preset] || PLACE_PRESETS.custom;
+  const label = String(place.label || preset.label).trim().slice(0, 40);
+  const status = String(place.statusText || (place.preset === 'custom' ? `at ${label}` : preset.status)).trim().slice(0, 90);
+  return { ...preset, label, status, emoji:String(place.emoji || preset.emoji).slice(0, 16) };
+}
+
+export function matchSavedPlace(places, point, activeId = '') {
+  let winner = null;
+  let shortest = Infinity;
+  for (const place of places || []) {
+    if (!Number.isFinite(place?.lat) || !Number.isFinite(place?.lng)) continue;
+    const distance = placeDistance(place, point);
+    const radius = Math.max(50, Math.min(1000, Number(place.radius) || 150));
+    const accuracyHelp = Math.min(60, Math.max(0, Number(point?.accuracy) || 0));
+    const allowed = (activeId === place.id ? radius * 1.25 : radius) + accuracyHelp;
+    if (distance <= allowed && distance < shortest) { winner = place; shortest = distance; }
+  }
+  return winner;
+}
+
+export function placeDistance(a, b) {
+  const radius = 6371000;
+  const radians = value => value * Math.PI / 180;
+  const dLat = radians(b.lat - a.lat);
+  const dLng = radians(b.lng - a.lng);
+  const lat1 = radians(a.lat);
+  const lat2 = radians(b.lat);
+  const half = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return radius * 2 * Math.atan2(Math.sqrt(half), Math.sqrt(1 - half));
+}
