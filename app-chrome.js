@@ -2,9 +2,10 @@ import { sharedLayer } from './data-hub.js';
 import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
 import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
-import { friendlyWhen } from './time-format.js';
+import { addTask, sendNote, sendAsk, addDateIdea } from './records.js';
+import { fridgeNote, clearFridge } from './fridge.js';
 
-const SEARCH_COLLECTIONS = ['items', 'notes', 'reminders', 'dates', 'memories'];
+const SEARCH_COLLECTIONS = ['items', 'notes', 'help', 'reminders', 'dates', 'memories'];
 const page = document.body.dataset.app || (document.body.dataset.viewer ? 'home' : '');
 
 if (page && !document.querySelector('.app-dock')) void boot();
@@ -19,7 +20,7 @@ async function boot() {
   addDock(viewer);
   addSheets();
   addSyncTray();
-  if (page === 'home') setupFridgeNote(data, viewer);
+  if (page === 'home') setupFridgeNote(data, viewer, other);
 
   const dock = document.querySelector('.app-dock');
   dock?.addEventListener('click', event => {
@@ -57,11 +58,11 @@ function addSheets() {
     <section class="app-sheet" id="sheet-quick" role="dialog" aria-modal="true" aria-labelledby="quick-title" hidden>
       <header class="sheet-head"><div><small>put it in the app</small><h2 id="quick-title">Quick add</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <div class="quick-kind" role="tablist">
-        <button class="active" type="button" data-quick-kind="task">to-do</button><button type="button" data-quick-kind="note">note</button><button type="button" data-quick-kind="reminder">reminder</button><button type="button" data-quick-kind="date">date idea</button>
+        <button class="active" type="button" data-quick-kind="task">to-do</button><button type="button" data-quick-kind="note">note</button><button type="button" data-quick-kind="ask">ask / remind</button><button type="button" data-quick-kind="date">date idea</button>
       </div>
       <form class="quick-add-form" id="quick-add-form">
         <label><span id="quick-label">what needs doing?</span><input id="quick-text" maxlength="180" required autocomplete="off" placeholder="the thing"></label>
-        <label class="quick-when" id="quick-when-wrap" hidden><span>when?</span><input id="quick-when" type="datetime-local"></label>
+        <label class="quick-when" id="quick-when-wrap" hidden><span>at a time? (leave empty for no time)</span><input id="quick-when" type="datetime-local"></label>
         <button class="primary-action" id="quick-submit" type="submit">add it</button>
       </form>
     </section>
@@ -73,11 +74,10 @@ function addSheets() {
     <section class="app-sheet more-sheet" id="sheet-more" role="dialog" aria-modal="true" aria-labelledby="more-title" hidden>
       <header class="sheet-head"><div><small>the rest of it</small><h2 id="more-title">More</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <nav class="more-grid">
-        <a href="notes.html"><i>💌</i><span>notes</span></a><a href="reminders.html"><i>⏰</i><span>reminders</span></a>
+        <a href="tasks.html"><i>✓</i><span>the list</span></a><a href="tasks.html#asks"><i>🙋</i><span>asks</span></a>
+        <a href="notes.html"><i>💌</i><span>notes</span></a><a href="status.html"><i>☀︎☾</i><span>right now</span></a>
         <a href="dates.html"><i>✦</i><span>date pile</span></a><a href="memories.html"><i>◒</i><span>memories</span></a>
-        <a href="activity.html"><i>↻</i><span>what's new</span></a><a href="status.html"><i>☀︎☾</i><span>right now</span></a>
-        <a href="notifications.html"><i>♪</i><span>little pings</span></a><a href="profiles.html"><i>☺</i><span>our names</span></a>
-        <a href="phone-check.html"><i>✓</i><span>phone check</span></a>
+        <a href="phone-check.html"><i>♪</i><span>phone & pings</span></a><a href="profiles.html"><i>☺</i><span>our names</span></a>
       </nav>
       <button class="update-row" id="check-update" type="button"><span><b id="app-version">app version</b><small id="update-copy">tap to check for a fresh one</small></span><i>↻</i></button>
     </section>`);
@@ -114,17 +114,17 @@ function setupQuickAdd(data, viewer, other) {
   const labels = {
     task: ['what needs doing?', 'the thing', 'add it'],
     note: [`note for ${personName(other)}`, 'say it here', 'send it'],
-    reminder: [`remind ${personName(other)} to…`, 'the thing', 'set it'],
+    ask: [`ask ${personName(other)} for…`, 'the thing', 'ask'],
     date: ['the date idea', 'what are we doing?', 'save it']
   };
   const pick = next => {
-    kind = next;
+    kind = labels[next] ? next : next === 'reminder' ? 'ask' : 'task';
     document.querySelectorAll('[data-quick-kind]').forEach(button => button.classList.toggle('active', button.dataset.quickKind === kind));
     const words = labels[kind];
     document.getElementById('quick-label').textContent = words[0];
     document.getElementById('quick-text').placeholder = words[1];
     document.getElementById('quick-submit').textContent = words[2];
-    document.getElementById('quick-when-wrap').hidden = kind !== 'reminder';
+    document.getElementById('quick-when-wrap').hidden = kind !== 'ask';
     document.getElementById('quick-text').focus();
   };
   document.querySelector('.quick-kind').addEventListener('click', event => {
@@ -140,35 +140,30 @@ function setupQuickAdd(data, viewer, other) {
     const form = event.currentTarget;
     const text = document.getElementById('quick-text').value.trim();
     if (!text) return;
+    // An ask can be for a moment, which is what a reminder is now. Empty means
+    // no particular time.
+    const whenValue = document.getElementById('quick-when').value;
+    const dueAt = kind === 'ask' && whenValue ? new Date(whenValue).getTime() : 0;
+    if (kind === 'ask' && whenValue && (!Number.isFinite(dueAt) || dueAt <= Date.now())) {
+      document.getElementById('quick-when').focus();
+      showFailure('that time does not work.', 'pick a time in the future, or leave it empty.');
+      return;
+    }
     const button = document.getElementById('quick-submit');
     setButtonBusy(button, true, '…');
     try {
-      if (kind === 'task') {
-        await data.addTo('items', { title: text, type: 'task', due: '', recurrence: 'once', aisle: '', addedBy: viewer, done: false, createdAt: Date.now() });
-        void data.notify(other, { title: 'new thing on the list ✓', body: text, url: 'tasks.html', kind: 'item' });
-      } else if (kind === 'note') {
-        await data.addTo('notes', { sender: viewer, recipient: other, from: viewer, to: other, body: text, message: text, mood: 'star', read: false, createdAt: Date.now() });
-        void data.notify(other, { title: viewer === 'her' ? 'the sun says ☀️' : 'the moon says 🌙', body: text, url: 'notes.html', kind: 'note' });
-      } else if (kind === 'date') {
-        await data.addTo('dates', { title: text, note: '', vibe: 'idea', addedBy: viewer, favorite: false, done: false, createdAt: Date.now() });
-        void data.notify(other, { title: 'new date idea ✦', body: text, url: 'dates.html', kind: 'date' });
-      } else {
-        const dueAt = new Date(document.getElementById('quick-when').value).getTime();
-        if (!Number.isFinite(dueAt) || dueAt <= Date.now()) {
-          document.getElementById('quick-when').focus();
-          throw Object.assign(new Error('pick a future time'), { friendly: true });
-        }
-        const record = await data.addTo('reminders', { sender: viewer, recipient: other, from: viewer, to: other, title: text, note: '', scheduledAt: new Date(dueAt).toISOString(), dueAt, delivered: false, createdAt: Date.now() });
-        void data.notify(other, { title: 'new reminder ⏰', body: `${text} · ${friendlyWhen(dueAt)}`, url: 'activity.html', kind: 'reminder-created' });
-        void data.notify(other, { title: `⏰ ${text}`, body: `from ${personName(viewer)}`, url: 'activity.html', kind: 'reminder', ref: record?.id || '', sendAt: dueAt });
-      }
+      // The same builders the pages use, so a quick add is the same record the
+      // full form would have made with its defaults.
+      if (kind === 'task') await addTask(data, { viewer, other, title: text });
+      else if (kind === 'note') await sendNote(data, { viewer, other, body: text });
+      else if (kind === 'date') await addDateIdea(data, { viewer, other, title: text });
+      else await sendAsk(data, { viewer, other, title: text, dueAt });
       form.reset();
       closeSheets();
-      toast(kind === 'note' ? 'sent 💌' : kind === 'reminder' ? 'reminder secured' : 'added');
+      toast(kind === 'note' ? 'sent 💌' : kind === 'ask' ? (dueAt ? 'reminder secured' : 'asked 🫡') : 'added');
       window.littleHaptic?.('success');
-    } catch (problem) {
-      if (problem?.friendly) showFailure('that time does not work.', 'pick a time in the future.');
-      else showFailure('that did not get added.', 'check the internet and try again. Your text is still here.');
+    } catch (_) {
+      showFailure('that did not get added.', 'check the internet and try again. Your text is still here.');
     } finally { setButtonBusy(button, false); }
   });
   return (next = kind, text = '') => {
@@ -219,7 +214,8 @@ function searchable(collection, item, viewer) {
   const map = {
     items: { icon: item.type === 'grocery' ? '🛒' : '✓', title: item.title, meta: item.done ? 'finished list thing' : 'on the list', url: 'tasks.html' },
     notes: { icon: '💌', title: item.body || item.message, meta: item.sender === viewer ? 'note you sent' : `note from ${personName(item.sender || item.from)}`, url: 'notes.html' },
-    reminders: { icon: '⏰', title: item.title, meta: 'reminder', url: 'activity.html' },
+    help: { icon: item.emoji || (item.dueAt ? '⏰' : '🙋'), title: item.title, meta: item.dueAt ? 'ask with a time' : item.from === viewer ? 'you asked' : `${personName(item.from)} asked`, url: 'tasks.html#asks' },
+    reminders: { icon: '⏰', title: item.title, meta: 'old reminder', url: 'today.html#new' },
     dates: { icon: '✦', title: item.title, meta: item.done ? 'date we did' : 'date pile', url: 'dates.html' },
     memories: { icon: '◒', title: item.text, meta: 'memory', url: 'memories.html' }
   };
@@ -227,38 +223,75 @@ function searchable(collection, item, viewer) {
   return { ...value, title: String(value.title || 'untitled'), haystack: normalize(`${value.title} ${value.meta} ${item.note || ''}`) };
 }
 
-function setupFridgeNote(data, viewer) {
+function setupFridgeNote(data, viewer, other) {
   const launchpad = document.querySelector('.sky-launchpad');
   if (!launchpad) return;
-  launchpad.insertAdjacentHTML('beforebegin', `<section class="fridge-note" id="fridge-note"><button class="fridge-paper" id="fridge-open" type="button"><span id="fridge-emoji">📌</span><div><small>on the fridge</small><strong id="fridge-copy">tap to pin something</strong></div><i>✎</i></button></section>`);
-  document.body.insertAdjacentHTML('beforeend', `<section class="app-sheet fridge-sheet" id="sheet-fridge" role="dialog" aria-modal="true" aria-labelledby="fridge-title" hidden><header class="sheet-head"><div><small>one shared sticky note</small><h2 id="fridge-title">On the fridge</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header><form id="fridge-form"><label><span>tiny icon</span><input id="fridge-emoji-input" maxlength="8" value="📌"></label><label><span>the note</span><textarea id="fridge-text" maxlength="240" placeholder="important-ish household lore"></textarea></label><div class="fridge-actions"><button class="primary-action" type="submit">pin it</button><button class="soft-delete" id="fridge-clear" type="button">clear</button></div></form></section>`);
-  let pin = null;
-  data.listenTo('pins', items => {
-    pin = items.find(item => item.id === 'fridge') || null;
-    document.getElementById('fridge-copy').textContent = pin?.text || 'tap to pin something';
-    document.getElementById('fridge-emoji').textContent = pin?.emoji || '📌';
-    document.getElementById('fridge-note').classList.toggle('is-empty', !pin?.text);
-  });
+  launchpad.insertAdjacentHTML('beforebegin', `<section class="fridge-note" id="fridge-note"><button class="fridge-paper" id="fridge-open" type="button"><span id="fridge-emoji">📌</span><div><small id="fridge-kicker">on the fridge</small><strong id="fridge-copy">tap to pin something</strong></div><i>✎</i></button></section>`);
+  document.body.insertAdjacentHTML('beforeend', `<section class="app-sheet fridge-sheet" id="sheet-fridge" role="dialog" aria-modal="true" aria-labelledby="fridge-title" hidden><header class="sheet-head"><div><small>a note that stays up</small><h2 id="fridge-title">On the fridge</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header><form id="fridge-form"><label><span>tiny icon</span><input id="fridge-emoji-input" maxlength="8" value="📌"></label><label><span>the note</span><textarea id="fridge-text" maxlength="240" placeholder="important-ish household lore"></textarea></label><div class="fridge-actions"><button class="primary-action" type="submit">pin it</button><button class="soft-delete" id="fridge-clear" type="button">take it down</button></div></form></section>`);
+  // The fridge is a pinned note now (see fridge.js). A sticky note saved the
+  // old way still shows until whoever wrote it next opens home, which turns it
+  // into a pinned note quietly.
+  let notes = [];
+  let legacy = null;
+  let migrating = false;
+  let notesSeen = false;
+  let pinsSeen = false;
+  const paint = () => {
+    const pinned = fridgeNote(notes);
+    const text = pinned ? (pinned.body || pinned.message || '') : legacy?.text || '';
+    const emoji = pinned ? (pinned.pinEmoji || '📌') : legacy?.emoji || '📌';
+    const author = pinned ? (pinned.sender || pinned.from) : legacy?.updatedBy;
+    document.getElementById('fridge-copy').textContent = text || 'tap to pin something';
+    document.getElementById('fridge-emoji').textContent = emoji;
+    document.getElementById('fridge-kicker').textContent = text && author ? `on the fridge · from ${author === viewer ? 'you' : personName(author)}` : 'on the fridge';
+    document.getElementById('fridge-note').classList.toggle('is-empty', !text);
+  };
+  const migrate = async () => {
+    // Both lists first: deciding "nothing is pinned" before the notes arrive
+    // would pin a second copy.
+    if (migrating || !notesSeen || !pinsSeen || !legacy) return;
+    migrating = true;
+    try {
+      // Already superseded by a pinned note: the old sticky is just clutter.
+      if (fridgeNote(notes) || !legacy.text) { await data.removeFrom('pins', 'fridge'); return; }
+      if (legacy.updatedBy !== viewer) { migrating = false; return; }
+      // A fixed id, so two of the author's open home screens write the same
+      // note instead of two.
+      const at = Number(legacy.updatedAt) || Date.now();
+      await data.setTo('notes', `fridge-${at}`, { sender: viewer, recipient: other, from: viewer, to: other, body: legacy.text, message: legacy.text, mood: 'heart', read: true, createdAt: at, pinned: true, pinnedAt: at, pinEmoji: legacy.emoji || '📌' });
+      await data.removeFrom('pins', 'fridge');
+    } catch (_) { migrating = false; }
+  };
+  data.listenTo('notes', items => { notes = items; notesSeen = true; paint(); void migrate(); });
+  data.listenTo('pins', items => { legacy = items.find(item => item.id === 'fridge') || null; pinsSeen = true; paint(); void migrate(); });
   document.getElementById('fridge-open').addEventListener('click', () => {
-    document.getElementById('fridge-text').value = pin?.text || '';
-    document.getElementById('fridge-emoji-input').value = pin?.emoji || '📌';
+    const pinned = fridgeNote(notes);
+    document.getElementById('fridge-text').value = '';
+    document.getElementById('fridge-text').placeholder = pinned ? 'replace it with…' : 'important-ish household lore';
+    document.getElementById('fridge-emoji-input').value = pinned?.pinEmoji || '📌';
     openSheet('fridge');
   });
   document.getElementById('fridge-form').addEventListener('submit', async event => {
     event.preventDefault();
     const text = document.getElementById('fridge-text').value.trim();
+    if (!text) { document.getElementById('fridge-text').focus(); return; }
     const emoji = document.getElementById('fridge-emoji-input').value.trim() || '📌';
     const button = event.currentTarget.querySelector('[type="submit"]');
     setButtonBusy(button, true, 'pinning…');
     try {
-      await data.setTo('pins', 'fridge', { text, emoji, updatedBy: viewer, updatedAt: Date.now() });
+      await clearFridge(data, notes);
+      if (legacy) await data.removeFrom('pins', 'fridge').catch(() => {});
+      await sendNote(data, { viewer, other, body: text, pinned: true, pinEmoji: emoji });
       closeSheets(); toast('pinned to the fridge');
     } catch (_) { showFailure('that note fell off the fridge.', 'check the internet and try again.'); }
     finally { setButtonBusy(button, false); }
   });
   document.getElementById('fridge-clear').addEventListener('click', async () => {
-    try { await data.removeFrom('pins', 'fridge'); closeSheets(); toast('fridge cleared'); }
-    catch (_) { showFailure('that note is stubborn.', 'check the internet and try again.'); }
+    try {
+      await clearFridge(data, notes);
+      if (legacy) await data.removeFrom('pins', 'fridge');
+      closeSheets(); toast('fridge cleared');
+    } catch (_) { showFailure('that note is stubborn.', 'check the internet and try again.'); }
   });
 }
 
@@ -368,7 +401,7 @@ async function showVersion() {
 // What an empty page's button should start. Memories are not in quick add, so
 // that one goes to the page's own form; the rest open quick add on the thing
 // the page is about instead of whatever kind was picked last.
-const EMPTY_ACTION = { tasks: 'task', today: 'task', activity: 'task', notes: 'note', reminders: 'reminder', dates: 'date' };
+const EMPTY_ACTION = { tasks: 'task', today: 'task', notes: 'note', dates: 'date' };
 
 function improveEmptyStates(openQuick) {
   const composer = page === 'memories' ? document.getElementById('memory-text') : null;

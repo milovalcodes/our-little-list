@@ -4,6 +4,7 @@
 import { sharedLayer } from './data-hub.js';
 import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
+import { friendlyWhen } from './time-format.js';
 import { startPresence } from './presence.js';
 import { readNotificationPreferences, shouldShowNotification } from './notification-preferences.js';
 
@@ -41,9 +42,8 @@ async function boot(viewer) {
 
     data.listenTo('reminders', items => {
       const fresh = firstFresh('reminders', items, item => item.recipient === viewer);
-      // activity.html, not reminders.html: this side is receiving a reminder,
-      // and reminders.html is the form for sending one.
-      if (fresh) announce({ icon: '⏰', label: 'a reminder for you', body: fresh.title, url: `activity.html`, kind: 'reminder' });
+      // Only reminders made before they became asks with a time land here.
+      if (fresh) announce({ icon: '⏰', label: 'a reminder for you', body: fresh.title, url: `today.html#new`, kind: 'reminder' });
     });
 
     data.listenTo('dates', items => {
@@ -53,7 +53,8 @@ async function boot(viewer) {
 
     data.listenTo('help', items => {
       const fresh = firstFresh('help', items, item => item.to === viewer && item.state === 'open');
-      if (fresh) announce({ icon: fresh.emoji || '🙋', label: `${personName(other)} needs a hand`, body: fresh.title, url: 'tasks.html#asks', kind: 'help' });
+      const timed = Number(fresh?.dueAt) > 0;
+      if (fresh) announce({ icon: fresh.emoji || (timed ? '⏰' : '🙋'), label: timed ? `${personName(other)} set you a reminder` : `${personName(other)} needs a hand`, body: timed ? `${fresh.title} · ${friendlyWhen(Number(fresh.dueAt))}` : fresh.title, url: 'tasks.html#asks', kind: 'help' });
     });
 
     data.listenTo('statuses', items => watchStatus(items));
@@ -85,7 +86,12 @@ async function boot(viewer) {
       knownStatusAt = updatedAt;
       return;
     }
-    if (updatedAt > knownStatusAt && item.updateKind === 'location') {
+    if (updatedAt > knownStatusAt && item.updateKind === 'focus') {
+      // Focus sessions are statuses with a timer now.
+      announce({ icon: '⏱', label: `${personName(other)} is locking in`, body: `${item.focusLabel || 'doing the thing'}${Number(item.focusMinutes) ? ` · ${item.focusMinutes} min` : ''}`, url: 'today.html', kind: 'focus' });
+    } else if (updatedAt > knownStatusAt && item.updateKind === 'focus-end') {
+      // Quiet: finishing is not news worth a popup.
+    } else if (updatedAt > knownStatusAt && item.updateKind === 'location') {
       // Saved spots move this on their own. Say where they are, the way the
       // activity feed does, and stay quiet about someone merely leaving one —
       // "updated their status · online" said nothing true about either.

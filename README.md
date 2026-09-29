@@ -8,29 +8,43 @@ Live: https://milovalcodes.github.io/our-little-list/
 
 ## What it does
 
-- Two themed sides, sun and moon, with a shared middle
-- A compact Today page for what is due and quick focus sessions
-- A shared list with recurring chores, plus a grocery list grouped by aisle
-- Reminders that actually arrive — see **Reminders** below
-- Tiny notes with live popups, reactions and a twinkle
-- **Help me out** — quick asks like "bring water" or "call me when free", with
-  on it / in a bit / can't right now answers
-- Discord-style statuses, energy levels and arrival presets
-- A shared date-idea pile with favourites, mood filters, a random picker and a done pile
-- A private memory jar for little photos and things worth keeping
-- An activity feed with unread counts, read receipts and last-online presence
-- One shared “right now” view for both statuses, presence, and locations
-- Notes keep sending, reading and reactions on one page
-- Help requests live inside the shared list as the “Asks” tab
-- Foreground location that starts with the app, can be paused from the status
-  page, and becomes an honest last-known spot when the phone suspends it
-- A phone checker that tests sync, internet, installation, notifications and
-  location, and offers the exact fix when something is off
-- **Little pings** — per-phone notification settings: which kinds get through,
-  quiet mode, vibration and the in-app sound. A muted kind is dropped by the
-  delivery worker before it is sent, because a web push that arrives has to be
-  shown
-- Installable on both iPhone and Android, works offline for reading
+Each thing lives in one place:
+
+- **Home** — the shared sky (where you both are, statuses, the latest note), the
+  fridge note, and big buttons to everything else. A bottom bar on every page
+  has home, today, quick add, search and the rest.
+- **Today** — what is due today, focus timers ("lock in together"), and what's
+  new since you last looked, with read receipts and whether they're around.
+- **The list** — shared to-dos with repeats, groceries by aisle, and **Asks**:
+  "bring water", "call me when free", answered on it / in a bit / can't. An ask
+  can have a time — that is what a reminder is — and then it nudges the other
+  phone at that time. See **Reminders** below.
+- **Notes** — little notes with popups and reactions. Pin one and it is the
+  fridge note on both home screens.
+- **Right now** — both statuses in one place. A status is your own words (with
+  an optional expiry), a running focus timer, and where you are if you are at a
+  saved spot; "here now · busy" is one line, and "lurking" hides the "here now".
+  Also the map, "leaving now / almost there", and **saved spots**.
+- **Saved spots** — home, work, school, errands or anything you name. Arriving
+  changes your status ("vibing at home", "working hard") and tells the other
+  phone ("sun just got home! 🏠", "moon just got to work :c", or that you are
+  both there). Each spot has a bell to turn its ping off. This only runs while
+  the app is open on the phone — phones do not let websites track location in
+  the background.
+- **Date pile** — ideas with vibes, filters and a random picker. Marking one done
+  puts it in the memory jar.
+- **Memory jar** — little photos and things worth keeping, including the dates
+  you did.
+- **Phone check** — sync, internet, install, notifications and location, with the
+  exact fix for anything off — and **little pings** below it: which kinds of
+  notification get through (asks & reminders, arrivals, notes…), quiet mode,
+  vibration and the in-app sound. A muted kind is dropped by the delivery worker
+  before it is sent, because a web push that arrives has to be shown.
+- Installable on iPhone and Android; works offline for reading.
+
+Old links still work: `reminders.html`, `activity.html`, `notifications.html`,
+`help.html`, `admire.html` and `location.html` redirect to where those things
+live now.
 
 ## Reminders, and how they reach a closed phone
 
@@ -38,7 +52,9 @@ GitHub Pages only serves files — it cannot run anything on a schedule. So
 delivery works like this:
 
 1. The website writes the notification into an `outbox` collection in Firestore,
-   with a `sendAt` timestamp. A reminder for Friday at 3pm sits there until then.
+   with a `sendAt` timestamp. An ask for Friday at 3pm sits there until then. It
+   carries a reference to its ask, and is dropped if that ask is deleted,
+   sorted or turned down first.
 2. A Cloudflare Worker (`worker/`) runs every minute, signs in as one member,
    claims a short delivery lock, and sends anything due as one Web Push message.
 3. The service worker receives it and shows the notification, whether or not the

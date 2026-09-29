@@ -16,7 +16,7 @@
 
     <section class="status-pair now-status-pair" id="status-pair" aria-live="polite"></section>
 
-    <section class="arrival-strip"><span>quick update</span><div id="arrival-presets"><button type="button" data-arrival="leaving now">leaving now</button><button type="button" data-arrival="almost there">almost there</button><button type="button" data-arrival="home safe">home safe</button></div></section>
+    <section class="arrival-strip"><span>quick update</span><div id="arrival-presets"><button type="button" data-arrival="leaving now">leaving now</button><button type="button" data-arrival="almost there">almost there</button></div></section>
 
     <section class="now-location-card" aria-labelledby="location-state">
       <div class="now-location-head">
@@ -46,7 +46,7 @@
           <label><span>call this place</span><input id="place-label" maxlength="40" value="home" required></label>
           <label id="place-status-wrap" hidden><span>what your status says here</span><input id="place-status" maxlength="90" placeholder="at the creature habitat"></label>
           <div class="place-preview place-cozy" id="place-preview"><span>🏠</span><div><small>automatic status</small><strong>vibing at home</strong></div></div>
-          <div class="place-options"><label><span>how close counts</span><select id="place-radius"><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option><option value="400">400 m</option></select></label><label class="place-notify"><input id="place-notify" type="checkbox"><span>ping them when I arrive</span></label></div>
+          <div class="place-options"><label><span>how close counts</span><select id="place-radius"><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option><option value="400">400 m</option></select></label><label class="place-notify"><input id="place-notify" type="checkbox" checked><span>ping them when I arrive</span></label></div>
           <button class="primary-action" id="place-save" type="submit">save where I am now</button>
         </form>
         <div class="saved-place-list" id="saved-place-list"></div>

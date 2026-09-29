@@ -2,6 +2,7 @@ import { sharedLayer, onAuthChange } from './data-hub.js';
 import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
 import { personName } from './profile-store.js';
+import { addDateIdea } from './records.js';
 
 const LEGACY_MIGRATION_ID='date-notes-v1';
 const LEGACY_CREATED_AT=1700000000000;
@@ -56,7 +57,7 @@ data.listenTo('dates',items=>{
 void importLegacyIdeas();
 
 document.querySelectorAll('.date-vibe').forEach(button=>button.addEventListener('click',()=>{vibe=button.dataset.vibe;document.querySelectorAll('.date-vibe').forEach(item=>item.classList.toggle('active',item===button));}));
-$('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');const details={cost:$('date-cost').value,energy:$('date-energy').value,weather:$('date-weather').value,distance:$('date-distance').value,duration:$('date-duration').value};setButtonBusy(button,true,'saving…');try{await data.addTo('dates',{title,note,vibe,...details,addedBy:viewer,favorite:false,done:false,createdAt:Date.now()});void data.notify(other,{title:'new date idea ✦',body:title,url:`dates.html`,kind:'date'});event.target.reset();toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
+$('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');const details={cost:$('date-cost').value,energy:$('date-energy').value,weather:$('date-weather').value,distance:$('date-distance').value,duration:$('date-duration').value};setButtonBusy(button,true,'saving…');try{await addDateIdea(data,{viewer,other,title,note,vibe,details});event.target.reset();toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
 $('pick-random').addEventListener('click',event=>{const filters={cost:$('filter-cost').value,energy:$('filter-energy').value,weather:$('filter-weather').value,distance:$('filter-distance').value,duration:$('filter-duration').value};// The 26 imported ideas predate these five fields, so an exact match excludes
 // every one of them the moment a filter leaves "any" — the roulette said
 // "nothing matches" with a full pile behind it. Tagged ideas still win; the
@@ -68,7 +69,20 @@ const pool=ideas.filter(idea=>!idea.done);
 const available=pool.filter(tagged).length?pool.filter(tagged):pool.filter(untagged);
 if(!available.length){$('random-date').textContent='nothing matches that exact mood.';return;}event.currentTarget.classList.remove('is-picking');void event.currentTarget.offsetWidth;event.currentTarget.classList.add('is-picking');const idea=available[Math.floor(Math.random()*available.length)];$('random-date').innerHTML=`<strong>${escapeHtml(idea.title)}</strong>${idea.note?`<span>${escapeHtml(idea.note)}</span>`:''}`;});
 $('date-more').addEventListener('click',()=>{viewLimit+=8;render();});
-$('date-list').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const idea=ideas.find(item=>item.id===button.closest('[data-id]')?.dataset.id);if(!idea)return;button.disabled=true;try{if(button.dataset.action==='favorite')await data.updateIn('dates',idea.id,{favorite:!idea.favorite});else if(button.dataset.action==='complete'){await data.updateIn('dates',idea.id,{done:!idea.done,doneAt:idea.done?0:Date.now()});toast(idea.done?'back in the pile':'date completed. historic.');}else if(button.dataset.action==='delete')await data.removeFrom('dates',idea.id);}catch(_){showFailure('that edit did not stick.','check the internet and tap it again.');button.disabled=false;}});
+// A date you did goes in the memory jar, so there is one place to look back on
+// things you did together instead of a done pile here and a jar over there.
+// Undoing it takes that memory back out.
+async function toggleDone(idea){
+  if(idea.done){
+    await data.updateIn('dates',idea.id,{done:false,doneAt:0,memoryId:''});
+    if(idea.memoryId)await data.removeFrom('memories',idea.memoryId).catch(()=>{});
+    toast('back in the pile');return;
+  }
+  const memory=await data.addTo('memories',{text:`✦ we did: ${idea.title}`,photo:'',addedBy:viewer,dateId:idea.id,createdAt:Date.now()});
+  await data.updateIn('dates',idea.id,{done:true,doneAt:Date.now(),memoryId:memory?.id||''});
+  toast('date completed. it is in the memory jar ◒');
+}
+$('date-list').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const idea=ideas.find(item=>item.id===button.closest('[data-id]')?.dataset.id);if(!idea)return;button.disabled=true;try{if(button.dataset.action==='favorite')await data.updateIn('dates',idea.id,{favorite:!idea.favorite});else if(button.dataset.action==='complete'){await toggleDone(idea);}else if(button.dataset.action==='delete')await data.removeFrom('dates',idea.id);}catch(_){showFailure('that edit did not stick.','check the internet and tap it again.');button.disabled=false;}});
 
 function importLegacyIdeas(){
   if(migrationStarted||!data)return;

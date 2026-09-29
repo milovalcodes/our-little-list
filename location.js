@@ -7,6 +7,7 @@ import { pauseAutoLocation, resumeAutoLocation, locationSnapshot } from './auto-
 import { escapeHtml, setButtonBusy, toast } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { timeAgo } from './time-format.js';
+import { togetherPlace, friendlyDistance, placeDistance as distanceMeters } from './place-presets.js';
 
 const byId=id=>document.getElementById(id);
 let locations=[];
@@ -102,7 +103,6 @@ function renderLiveDistance(her,him){
   else setProximity('same planet, technically',`${friendly} between you.`,'for now');
 }
 
-function togetherPlace(her,him){const sameLabel=her.placeLabel&&him.placeLabel&&her.placeLabel.toLocaleLowerCase()===him.placeLabel.toLocaleLowerCase();const preset=her.placePreset&&her.placePreset===him.placePreset?her.placePreset:'';if(!sameLabel&&!preset)return'';if(preset==='home')return'home together';if(preset==='work')return'coworking arc';if(preset==='school')return'study party';if(preset==='errands')return'side quest duo';return`together at ${her.placeLabel||him.placeLabel}`;}
 
 function renderLastKnown(known,active){
   byId('last-known-row').innerHTML=['her','him'].map(person=>{
@@ -158,8 +158,6 @@ function markerIcon(person,live){
   return window.L.divIcon({className:'couple-marker-wrap',html:`<span class="couple-marker ${person} ${live?'live':'last-known'}">${art}</span>`,iconSize:[52,52],iconAnchor:[26,48]});
 }
 
-function distanceMeters(a,b){const r=6371000;const lat1=a.lat*Math.PI/180;const lat2=b.lat*Math.PI/180;const dLat=(b.lat-a.lat)*Math.PI/180;const dLng=(b.lng-a.lng)*Math.PI/180;const h=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;return r*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));}
-function friendlyDistance(meters){if(meters<1000)return`${Math.max(1,Math.round(meters))} m`;const km=meters/1000;return`${km<10?km.toFixed(1):Math.round(km)} km`;}
 
 renderControl();
 window.setInterval(render,15000);

@@ -8,7 +8,7 @@
 import { sharedLayer } from './data-hub.js';
 import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
-import { placeDisplay, matchSavedPlace, statusShowsPlace } from './place-presets.js';
+import { placeDisplay, matchSavedPlace, statusShowsPlace, placeDistance as metersBetween, arrivalMessage, announcesArrival } from './place-presets.js';
 
 const LEASE_MS = 4 * 60 * 1000;
 const HEARTBEAT_MS = 60 * 1000;
@@ -35,6 +35,14 @@ let places = [];
 let activePlaceId = null;
 let placeMatchStarted = false;
 let placeStatusInFlight = false;
+// Until the saved spots have loaded once, "not at any saved spot" is not a
+// fact. A GPS fix that beat the spots used to settle on "nowhere", so the next
+// fix — same chair, same spot — looked like an arrival and pinged the other
+// phone.
+let placesLoaded = false;
+// A check that came in while another was still writing. It used to be dropped,
+// and the next GPS fix then carried the change as if you had moved.
+let placeRecheck = null;
 
 // Phases you do not come back from by yourself. Re-arming a denied watcher on
 // every app switch just asked the phone the same question and got the same no.
@@ -87,6 +95,7 @@ async function boot() {
   try { activePlaceId = localStorage.getItem(placeKey()) || ''; } catch (_) { activePlaceId = ''; }
   data.listenTo('places', items => {
     places = items.filter(item => item.person === viewer && Number.isFinite(item.lat) && Number.isFinite(item.lng));
+    placesLoaded = true;
     // A change to the list of spots is not movement: saving a spot while
     // standing in it must not ring the other phone with "arrived".
     if (lastPoint) void applyPlaceMatch(lastPoint, undefined, { moved: false });
@@ -179,7 +188,13 @@ function closestPlace(point) {
 }
 
 async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } = {}) {
-  if (!viewer || !data || placeStatusInFlight) return;
+  if (!viewer || !data || !placesLoaded) return;
+  if (placeStatusInFlight) {
+    // Anything that was not movement keeps the whole re-check from counting as
+    // an arrival.
+    placeRecheck = { moved: placeRecheck ? placeRecheck.moved && moved : moved };
+    return;
+  }
   const place = knownMatch === undefined ? closestPlace(point) : knownMatch;
   const nextId = place?.id || '';
   if (placeMatchStarted && nextId === activePlaceId) return;
@@ -187,7 +202,7 @@ async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } =
   const previousId = activePlaceId;
   // Only a real arrival pings: not the first fix after a page opens, and not a
   // spot being saved (or edited) while you are already standing in it.
-  const shouldNotify = moved && !firstCheck && Boolean(nextId) && nextId !== previousId && place?.notifyOnArrival;
+  const shouldNotify = moved && !firstCheck && Boolean(nextId) && nextId !== previousId && announcesArrival(place);
   placeMatchStarted = true;
   rememberPlace(nextId);
   placeStatusInFlight = true;
@@ -216,20 +231,41 @@ async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } =
       ...(existing ? {} : { state:'online', text:'', category:'', emoji:'', energy:'functioning', expiresAt:0 })
     };
     await data.setTo('statuses', viewer, payload);
-    if (shouldNotify) void data.notify(partnerOf(viewer), {
-      title:`${personName(viewer)} arrived ${display.emoji}`,
-      body:display.status,
-      url:'status.html',
-      kind:'arrival',
-      ref:`place-${place.id}`
-    });
+    if (shouldNotify) void announceArrival(place);
   } catch (_) {
     // The location itself can still be useful even when its cosmetic status
     // update has to wait. Forget that this one was applied, so the next fix
     // tries again instead of believing it already happened.
     rememberPlace(previousId);
     if (firstCheck) placeMatchStarted = false;
-  } finally { placeStatusInFlight = false; }
+  } finally {
+    placeStatusInFlight = false;
+    if (placeRecheck && lastPoint) {
+      const next = placeRecheck;
+      placeRecheck = null;
+      void applyPlaceMatch(lastPoint, undefined, next);
+    }
+  }
+}
+
+// "<name> just got home! 🏠" to the other phone. GPS near the edge of a spot
+// can step out and back in; one ping per spot per half hour is plenty.
+const ARRIVAL_QUIET_MS = 30 * 60 * 1000;
+async function announceArrival(place) {
+  const key = `our-little-list-arrived-${viewer}-${place.id}`;
+  try { if (Date.now() - Number(localStorage.getItem(key) || 0) < ARRIVAL_QUIET_MS) return; } catch (_) {}
+  try { localStorage.setItem(key, String(Date.now())); } catch (_) {}
+  const partner = partnerOf(viewer);
+  let together = false;
+  try {
+    // If they are already there (live, inside this spot), say so.
+    const points = await data.readOnce('locations');
+    const theirs = points.find(point => point.id === partner || point.person === partner);
+    const radius = Math.max(50, Math.min(1000, Number(place.radius) || 150)) + 60;
+    together = Boolean(theirs && Number(theirs.shareUntil) > Date.now() && Number.isFinite(theirs.lat) && metersBetween(place, theirs) <= radius);
+  } catch (_) { /* the plain message is fine */ }
+  const message = arrivalMessage(place, personName(viewer), { together });
+  void data.notify(partner, { ...message, url: 'status.html', kind: 'arrival', ref: `place-${place.id}` });
 }
 
 function rememberPlace(id) {
@@ -354,13 +390,3 @@ function restoreThrottle() {
   } catch (_) { /* nothing worth recovering */ }
 }
 
-function metersBetween(a, b) {
-  const radius = 6371000;
-  const radians = value => value * Math.PI / 180;
-  const dLat = radians(b.lat - a.lat);
-  const dLng = radians(b.lng - a.lng);
-  const lat1 = radians(a.lat);
-  const lat2 = radians(b.lat);
-  const half = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return radius * 2 * Math.atan2(Math.sqrt(half), Math.sqrt(1 - half));
-}

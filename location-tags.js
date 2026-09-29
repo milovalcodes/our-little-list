@@ -1,7 +1,8 @@
 import { sharedLayer } from './data-hub.js';
 import { awaitViewer } from './viewer.js';
 import { locationSnapshot } from './auto-location.js';
-import { PLACE_PRESETS, placeDisplay } from './place-presets.js';
+import { PLACE_PRESETS, placeDisplay, arrivalMessage, announcesArrival } from './place-presets.js';
+import { personName } from './profile-store.js';
 import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
 
 const root = document.getElementById('saved-places');
@@ -31,7 +32,9 @@ async function boot() {
   const paintPreview = () => {
     const info = placeDisplay({ preset, label:label.value, statusText:customStatus.value });
     preview.className = `place-preview place-${info.animation}`;
-    preview.innerHTML = `<span>${escapeHtml(info.emoji)}</span><div><small>automatic status</small><strong>${escapeHtml(info.status)}</strong></div>`;
+    const ping = arrivalMessage({ preset, label:label.value, statusText:customStatus.value }, personName(viewer)).title;
+    const pinging = document.getElementById('place-notify').checked;
+    preview.innerHTML = `<span>${escapeHtml(info.emoji)}</span><div><small>automatic status</small><strong>${escapeHtml(info.status)}</strong><small>${pinging ? `they get: “${escapeHtml(ping)}”` : 'no ping when you arrive'}</small></div>`;
   };
 
   document.getElementById('place-presets').addEventListener('click', event => {
@@ -39,6 +42,7 @@ async function boot() {
     if (button) selectPreset(button.dataset.placePreset);
   });
   label.addEventListener('input', paintPreview);
+  document.getElementById('place-notify').addEventListener('change', paintPreview);
   customStatus.addEventListener('input', paintPreview);
 
   data.listenTo('places', items => {
@@ -67,11 +71,12 @@ async function boot() {
         person:viewer, label:display.label, preset, statusText:display.status, emoji:display.emoji,
         animation:display.animation, lat:point.lat, lng:point.lng,
         radius:Number(document.getElementById('place-radius').value) || 150,
-        notifyOnArrival:document.getElementById('place-notify').checked,
+        announce:document.getElementById('place-notify').checked,
         createdAt:Date.now(), updatedAt:Date.now()
       });
       toast(`${display.label} saved`);
       form.reset();
+      document.getElementById('place-notify').checked = true;
       customStatus.value = '';
       selectPreset('home');
     } catch (_) { showFailure('that spot did not save.', 'check the internet and try again while you are still there.'); }
@@ -79,6 +84,15 @@ async function boot() {
   });
 
   document.getElementById('saved-place-list').addEventListener('click', async event => {
+    const bell = event.target.closest('[data-toggle-ping]');
+    if (bell) {
+      const place = places.find(item => item.id === bell.dataset.togglePing);
+      if (!place) return;
+      bell.disabled = true;
+      try { await data.updateIn('places', place.id, { announce: !announcesArrival(place), updatedAt: Date.now() }); toast(announcesArrival(place) ? 'no more arrival pings here' : 'they will get a ping when you arrive'); }
+      catch (_) { showFailure('that did not change.', 'check the internet and try again.'); bell.disabled = false; }
+      return;
+    }
     const button = event.target.closest('[data-delete-place]');
     if (!button) return;
     setButtonBusy(button, true, '…');
@@ -91,7 +105,7 @@ async function boot() {
     document.getElementById('saved-place-empty').hidden = places.length > 0;
     list.innerHTML = places.map(place => {
       const display = placeDisplay(place);
-      return `<article class="saved-place-row place-${escapeHtml(display.animation)}"><span>${escapeHtml(display.emoji)}</span><div><strong>${escapeHtml(display.label)}</strong><small>${escapeHtml(display.status)} · ${Number(place.radius) || 150} m</small></div><button type="button" data-delete-place="${escapeHtml(place.id)}" aria-label="Delete ${escapeHtml(display.label)}">×</button></article>`;
+      return `<article class="saved-place-row place-${escapeHtml(display.animation)}"><span>${escapeHtml(display.emoji)}</span><div><strong>${escapeHtml(display.label)}</strong><small>${escapeHtml(display.status)} · ${Number(place.radius) || 150} m</small></div><button type="button" data-toggle-ping="${escapeHtml(place.id)}" aria-label="${announcesArrival(place) ? 'Stop arrival pings for' : 'Send arrival pings for'} ${escapeHtml(display.label)}" aria-pressed="${announcesArrival(place)}">${announcesArrival(place) ? '🔔' : '🔕'}</button><button type="button" data-delete-place="${escapeHtml(place.id)}" aria-label="Delete ${escapeHtml(display.label)}">×</button></article>`;
     }).join('');
   }
 

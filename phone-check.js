@@ -3,7 +3,7 @@ import { awaitViewer, showNotAMember } from './viewer.js';
 import { setupAuthUI,applyViewerTheme } from './ui-helpers.js';
 import { ensurePushSubscription, pushState } from './push-client.js';
 import { startPresence } from './presence.js';
-import { readNotificationPreferences } from './notification-preferences.js';
+import { startPingSettings } from './pings-settings.js';
 
 const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
 const $=id=>document.getElementById(id);
@@ -28,6 +28,7 @@ applyViewerTheme(viewer);
 document.querySelector('.back-to-side').href=`${viewer}.html`;
 
 startPresence(data,viewer,'phone-check');
+startPingSettings({data,viewer,onChange:()=>void renderNotifications()});
 void ensurePushSubscription(data,viewer).then(renderNotifications);
 
 function setStatus(name,okay,text){
@@ -158,11 +159,9 @@ $('ask-notifications').addEventListener('click',async()=>{
     if(result.state==='failed')help('notification','this phone allowed notifications but could not register for background ones. try reloading the page.','fail');
   }
   await renderNotifications();
-  if(Notification.permission==='granted'){
-    window.playLittleSound?.(readNotificationPreferences().inAppSound);
-    try{const registration=await navigator.serviceWorker.ready;await registration.showNotification('notifications are ready ♡',{body:'this is the test popup.',icon:'./notification-icon.png',badge:'./notification-badge.png',vibrate:[90,70,90],data:{url:`./phone-check.html`}});help('notification','test sent. if nothing appeared, check Focus / Do Not Disturb too.');}
-    catch(_){help('notification','permission is allowed, but the test popup did not appear.');}
-  }
+  // One test button, in little pings below, so the test uses the sound and
+  // buzz you actually picked.
+  if(Notification.permission==='granted')help('notification','allowed. send a test from little pings below.');
 });
 $('ask-location').addEventListener('click',()=>{
   clearHelp('location');

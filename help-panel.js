@@ -1,6 +1,8 @@
 import { escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
 import { personName } from './profile-store.js';
-import { timeAgo } from './time-format.js';
+import { timeAgo, friendlyWhen } from './time-format.js';
+import { pickMoment } from './moment-picker.js';
+import { sendAsk } from './records.js';
 
 const ANSWERS = {
   'on-it': { label: 'on it ✓', theirs: 'on it', tone: 'yes' },
@@ -8,13 +10,20 @@ const ANSWERS = {
   cant: { label: "can't rn ✗", theirs: "can't right now", tone: 'no' }
 };
 
-export function initHelpPanel({ data, viewer, other }) {
+// Reminders are asks now: an ask can be for a particular moment, and then it
+// nudges the other phone at that time the way a reminder did.
+export function initHelpPanel({ data, viewer, other, openGroceries = () => {} }) {
   const $ = id => document.getElementById(id);
   let requests = [];
   let urgency = 'soon';
+  let day = 'today';
+  let time = '09:00';
 
   document.querySelectorAll('#help-presets button').forEach(button => {
     button.addEventListener('click', () => {
+      // "Grab something" is the grocery list. Asking for it here made a second,
+      // separate list of things to pick up.
+      if ('groceries' in button.dataset) { openGroceries(); return; }
       $('help-title').value = button.dataset.title;
       $('help-title').dataset.emoji = button.dataset.emoji;
       $('help-title').focus();
@@ -22,42 +31,78 @@ export function initHelpPanel({ data, viewer, other }) {
   });
   $('help-title').addEventListener('input', () => { delete $('help-title').dataset.emoji; });
 
+  const pickUrgency = next => {
+    urgency = next;
+    document.querySelectorAll('#help-urgency .choice').forEach(item => item.classList.toggle('active', item.dataset.urgency === urgency));
+    $('ask-when').hidden = urgency !== 'timed';
+    // Opening the time picker late in the day used to greet you with
+    // "already gone by": start on tomorrow when today's pick has passed.
+    if (urgency === 'timed' && day === 'today' && (chosenMoment()?.getTime() || 0) <= Date.now()) {
+      chooseMoment('day-choices', document.querySelector('#day-choices [data-day="tomorrow"]'));
+    }
+    previewWhen();
+  };
   document.querySelectorAll('#help-urgency .choice').forEach(button => {
-    button.addEventListener('click', () => {
-      urgency = button.dataset.urgency;
-      document.querySelectorAll('#help-urgency .choice').forEach(item => item.classList.toggle('active', item === button));
-    });
+    button.addEventListener('click', () => pickUrgency(button.dataset.urgency));
   });
+  const chooseMoment = (group, button) => {
+    document.querySelectorAll(`#${group} .choice`).forEach(item => item.classList.toggle('active', item === button));
+    if (group === 'day-choices') { day = button.dataset.day; $('custom-day').hidden = day !== 'custom'; }
+    else { time = button.dataset.time; $('custom-time').hidden = time !== 'custom'; }
+    previewWhen();
+  };
+  document.querySelectorAll('#day-choices .choice').forEach(button => button.addEventListener('click', () => chooseMoment('day-choices', button)));
+  document.querySelectorAll('#time-choices .choice').forEach(button => button.addEventListener('click', () => chooseMoment('time-choices', button)));
+  $('custom-day').addEventListener('change', previewWhen);
+  $('custom-time').addEventListener('change', previewWhen);
+
+  function chosenMoment() {
+    return pickMoment({ day, time, customDay: $('custom-day').value, customTime: $('custom-time').value });
+  }
+  function previewWhen() {
+    const preview = $('reminder-when-preview');
+    const chosen = urgency === 'timed' ? chosenMoment() : null;
+    if (!chosen) { preview.textContent = ''; preview.classList.remove('is-past'); return; }
+    const past = chosen.getTime() <= Date.now();
+    preview.textContent = past ? `${friendlyWhen(chosen.getTime())} — already gone by` : friendlyWhen(chosen.getTime());
+    preview.classList.toggle('is-past', past);
+  }
 
   $('help-form').addEventListener('submit', async event => {
     event.preventDefault();
+    const form = event.currentTarget;
     const title = $('help-title').value.trim();
     if (!title) return;
+    let dueAt = 0;
+    if (urgency === 'timed') {
+      const chosen = chosenMoment();
+      if (!chosen) { toast('pick a day and time first'); return; }
+      // Accepting "today" plus a time that has already gone by saved a nudge
+      // that could never go off.
+      if (chosen.getTime() <= Date.now()) {
+        showFailure('that moment already happened.', 'pick a later time, or switch the day to tomorrow.');
+        return;
+      }
+      dueAt = chosen.getTime();
+    }
     const submit = $('help-submit');
     setButtonBusy(submit, true, 'asking…');
     try {
-      await data.addTo('help', {
-        from: viewer,
-        to: other,
-        title,
+      const sent = await sendAsk(data, {
+        viewer, other, title,
         note: $('help-note').value.trim(),
-        emoji: $('help-title').dataset.emoji || '🙋',
-        urgency,
-        state: 'open',
-        createdAt: Date.now()
+        emoji: $('help-title').dataset.emoji || (dueAt ? '⏰' : '🙋'),
+        urgency, dueAt
       });
-      void data.notify(other, {
-        title: urgency === 'now' ? `${personName(viewer)} needs a hand, kind of now` : `${personName(viewer)} needs a hand`,
-        body: title,
-        url: 'tasks.html#asks',
-        kind: 'help'
-      });
-      event.target.reset();
+      form.reset();
       delete $('help-title').dataset.emoji;
-      urgency = 'soon';
-      document.querySelectorAll('#help-urgency .choice').forEach(item => item.classList.toggle('active', item.dataset.urgency === urgency));
+      pickUrgency('soon');
+      chooseMoment('day-choices', document.querySelector('#day-choices [data-day="today"]'));
+      chooseMoment('time-choices', document.querySelector('#time-choices [data-time="09:00"]'));
       $('help-sent').hidden = false;
-      $('help-sent').textContent = `asked ${personName(other)}.`;
+      $('help-sent').textContent = dueAt
+        ? (sent.scheduled?.queued ? `${personName(other)} gets a nudge ${friendlyWhen(dueAt)}.` : `saved for ${friendlyWhen(dueAt)} — but sync is off on this phone, so no nudge will be sent.`)
+        : `asked ${personName(other)}.`;
       window.setTimeout(() => { $('help-sent').hidden = true; }, 6000);
       toast('asked 🫡');
     } catch (_) {
@@ -124,7 +169,7 @@ export function initHelpPanel({ data, viewer, other }) {
     const answered = request.state !== 'open';
     const buttons = Object.entries(ANSWERS).map(([key, value]) => `<button type="button" class="help-answer tone-${value.tone}${request.state === key ? ' is-chosen' : ''}" data-answer="${key}">${value.label}</button>`).join('');
     return `<article class="help-card urgency-${escapeHtml(request.urgency || 'soon')}" data-id="${escapeHtml(request.id)}">
-      <div class="help-card-top"><span class="help-emoji">${escapeHtml(request.emoji || '🙋')}</span><div><strong>${escapeHtml(request.title || '')}</strong>${request.note ? `<p>${escapeHtml(request.note)}</p>` : ''}<small>${escapeHtml(timeAgo(request.createdAt))}</small></div></div>
+      <div class="help-card-top"><span class="help-emoji">${escapeHtml(request.emoji || '🙋')}</span><div><strong>${escapeHtml(request.title || '')}</strong>${request.note ? `<p>${escapeHtml(request.note)}</p>` : ''}<small>${escapeHtml(whenLine(request))}</small></div></div>
       <div class="help-answers">${buttons}</div>${answered ? `<p class="help-answered">you said ${escapeHtml(ANSWERS[request.state]?.theirs || '')}</p>` : ''}
     </article>`;
   }
@@ -132,9 +177,14 @@ export function initHelpPanel({ data, viewer, other }) {
   function mineCard(request) {
     const answer = ANSWERS[request.state];
     return `<article class="help-card mine urgency-${escapeHtml(request.urgency || 'soon')}" data-id="${escapeHtml(request.id)}">
-      <div class="help-card-top"><span class="help-emoji">${escapeHtml(request.emoji || '🙋')}</span><div><strong>${escapeHtml(request.title || '')}</strong><small>asked ${escapeHtml(timeAgo(request.createdAt))}</small><p class="help-reply ${answer ? `tone-${answer.tone}` : 'tone-waiting'}">${answer ? `${escapeHtml(personName(other))} said ${escapeHtml(answer.theirs)}` : `waiting on ${escapeHtml(personName(other))}`}</p></div></div>
+      <div class="help-card-top"><span class="help-emoji">${escapeHtml(request.emoji || '🙋')}</span><div><strong>${escapeHtml(request.title || '')}</strong><small>${escapeHtml(whenLine(request, 'asked '))}</small><p class="help-reply ${answer ? `tone-${answer.tone}` : 'tone-waiting'}">${answer ? `${escapeHtml(personName(other))} said ${escapeHtml(answer.theirs)}` : `waiting on ${escapeHtml(personName(other))}`}</p></div></div>
       <div class="help-answers"><button type="button" class="help-answer tone-yes" data-action="done">sorted ✓</button><button type="button" class="help-answer tone-no" data-action="cancel">never mind</button></div>
     </article>`;
+  }
+
+  // A timed ask says when it is for; the rest say when they were asked.
+  function whenLine(request, prefix = '') {
+    return Number(request.dueAt) > 0 ? `⏰ ${friendlyWhen(Number(request.dueAt))}` : `${prefix}${timeAgo(request.createdAt)}`;
   }
 
   data.listenTo('help', items => {

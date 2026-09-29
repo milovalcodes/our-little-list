@@ -3,10 +3,11 @@ import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { openEmojiPicker } from './emoji-picker.js';
+import { hereLine, STATE_LABELS, focusActive } from './availability.js';
 
 const $=id=>document.getElementById(id);
-const stateLabels={online:'around',away:'afk-ish',dnd:'busy',invisible:'lurking'};
-let statuses=[];let reactions=[];let state='online';let emoji='🎧';let energy='functioning';
+const stateLabels=STATE_LABELS;
+let statuses=[];let reactions=[];let presence=[];let state='online';let emoji='🎧';let energy='functioning';
 // Every write here is a merge onto the existing status doc, and several of them
 // fill in "keep what is already there" values. Before the first snapshot lands
 // that list is empty, so "keep" silently meant "erase" — tapping an arrival
@@ -40,6 +41,9 @@ applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}
 
 data.listenTo('statuses',items=>{statuses=items;loaded=true;settleLoaded();render();hydrateEditor();});
 data.listenTo('reactions',items=>{reactions=items;render();});
+// Being here and being around are one line now: "here now · busy".
+data.listenTo('presence',items=>{presence=items;render();});
+window.setInterval(render,30000);
 
 document.querySelectorAll('.status-choice').forEach(button=>button.addEventListener('click',()=>{
   state=button.dataset.state;document.querySelectorAll('.status-choice').forEach(item=>item.classList.toggle('active',item===button));
@@ -103,9 +107,9 @@ function render(){
   $('status-pair').innerHTML=['her','him'].map(person=>statusCard(person,statuses.find(item=>item.id===person||item.person===person))).join('');
 }
 function statusCard(person,item={}){
-  const custom=item.text&&!isExpired(item);const label=stateLabels[item.state]||'somewhere';const name=personName(person);const image=person==='her'?'sun-profile.png':'moon-profile.png';
+  const focus=focusActive(item);const custom=item.text&&!isExpired(item);const name=personName(person);const image=person==='her'?'sun-profile.png':'moon-profile.png';
   const arrival=item.arrival&&Date.now()-Number(item.arrivalAt||0)<4*3600000?`<p class="status-arrival">↗ ${escapeHtml(item.arrival)}</p>`:'';const location=item.locationText?`<p class="status-location place-${escapeHtml(item.locationPreset||'custom')}"><b>${escapeHtml(item.locationEmoji||'📍')}</b><span>${escapeHtml(item.locationText)}</span></p>`:'';const received=person===other?findStatusReaction(person):reactions.find(reaction=>reaction.targetType==='status'&&reaction.targetId===person&&reaction.by===other);const reactionDisplay=received?(person===other?`<button class="reaction-display" type="button" data-react-status="${escapeHtml(person)}" data-emoji="${escapeHtml(received.emoji)}" aria-label="Remove your ${escapeHtml(received.emoji)} reaction"><b>${escapeHtml(received.emoji)}</b><span>yours · tap to undo</span></button>`:`<div class="reaction-display is-readonly"><b>${escapeHtml(received.emoji)}</b><span>from ${escapeHtml(personName(other))}</span></div>`):'';const reactionButton=person===other?`<button class="reaction-trigger" type="button" data-status-picker="${escapeHtml(person)}">react</button>`:'';
-  return `<article class="person-status-card ${person===viewer?'is-me':''} ${item.locationPreset?`has-place place-${escapeHtml(item.locationPreset)}`:''}"><div class="status-avatar"><img src="${image}" alt=""><i class="status-dot state-${escapeHtml(item.state||'invisible')}"></i></div><div class="status-person-copy"><div class="status-person-top"><strong>${escapeHtml(name)}</strong>${person===viewer?'<span>you</span>':''}</div><p class="status-presence">${escapeHtml(label)} · ${escapeHtml(item.energy||'functioning')}</p>${location}${arrival}${custom?`<p class="status-custom"><b>${escapeHtml(item.emoji||'✦')}</b><span><small>${escapeHtml(item.category||'currently')}</small>${escapeHtml(item.text)}</span></p>`:location?'':'<p class="status-blank">no custom status rn</p>'}<div class="reaction-controls">${reactionDisplay}${reactionButton}</div></div></article>`;
+  return `<article class="person-status-card ${person===viewer?'is-me':''} ${item.locationPreset?`has-place place-${escapeHtml(item.locationPreset)}`:''}"><div class="status-avatar"><img src="${image}" alt=""><i class="status-dot state-${escapeHtml(item.state||'invisible')}"></i></div><div class="status-person-copy"><div class="status-person-top"><strong>${escapeHtml(name)}</strong>${person===viewer?'<span>you</span>':''}</div><p class="status-presence">${escapeHtml(hereLine({presence:presence.find(entry=>entry.id===person||entry.person===person),status:item}).text)} · ${escapeHtml(item.energy||'functioning')}</p>${location}${arrival}${focus?`<p class="status-custom"><b>⏱</b><span><small>locking in</small>${escapeHtml(item.focusLabel||'doing the thing')}</span></p>`:''}${custom?`<p class="status-custom"><b>${escapeHtml(item.emoji||'✦')}</b><span><small>${escapeHtml(item.category||'currently')}</small>${escapeHtml(item.text)}</span></p>`:location||focus?'':'<p class="status-blank">no custom status rn</p>'}<div class="reaction-controls">${reactionDisplay}${reactionButton}</div></div></article>`;
 }
 function expiryTime(value){if(value==='today'){const date=new Date();date.setHours(23,59,59,999);return date.getTime();}const hours=Number(value)||0;return hours?Date.now()+hours*3600000:0;}
 function isExpired(item){return Boolean(item.expiresAt&&item.expiresAt<Date.now());}

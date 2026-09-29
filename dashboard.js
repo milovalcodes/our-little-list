@@ -5,11 +5,12 @@ import { startPresence } from './presence.js';
 import { ensurePushSubscription, forgetPushSubscription } from './push-client.js';
 import { locationSnapshot } from './auto-location.js';
 import { personName } from './profile-store.js';
-import { timeAgo } from './time-format.js';
+import { togetherPlace, friendlyDistance, placeDistance as distanceMeters } from './place-presets.js';
+import { hereLine, statusShows } from './availability.js';
 
 const badge = document.getElementById('activity-badge');
 const helpBadge = document.getElementById('help-badge');
-const buckets = { items: [], notes: [], reminders: [], dates: [], statuses: [], help: [], memories: [], reactions: [], focus: [], locations: [], presence: [] };
+const buckets = { items: [], notes: [], reminders: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [] };
 let dashboardFrame = 0;
 
 const data = await sharedLayer();
@@ -100,8 +101,7 @@ function renderBadge() {
       ...buckets.statuses.filter(status => (status.person === other || status.id === other) && fresh(status.updatedAt)),
       ...buckets.help.filter(request => request.to === viewer && fresh(request.createdAt)),
       ...buckets.memories.filter(item => item.addedBy === other && fresh(item.createdAt)),
-      ...buckets.reactions.filter(item => item.by === other && fresh(item.createdAt)),
-      ...buckets.focus.filter(item => item.person === other && item.active && fresh(item.updatedAt))
+      ...buckets.reactions.filter(item => item.by === other && fresh(item.createdAt))
     ];
     badge.hidden = incoming.length === 0;
     badge.textContent = incoming.length > 9 ? '9+' : String(incoming.length);
@@ -150,23 +150,21 @@ function renderSky() {
 
 function renderSkyPresence(person, now) {
   const presence = buckets.presence.find(item => item.id === person || item.person === person);
-  const at = Number(presence?.lastSeenAt) || 0;
-  const online = at > 0 && now - at < 120000;
-  const dot = document.getElementById(`sky-presence-${person}`);
-  const seen = document.getElementById(`sky-seen-${person}`);
-  dot.classList.toggle('online', online);
-  seen.textContent = online ? 'here now' : at ? `here ${timeAgo(at)}` : 'not here rn';
+  const status = buckets.statuses.find(item => item.id === person || item.person === person);
+  const line = hereLine({ presence, status, now });
+  document.getElementById(`sky-presence-${person}`).classList.toggle('online', line.here);
+  document.getElementById(`sky-seen-${person}`).textContent = line.text;
 }
 
 function renderSkyStatus(person, now) {
   const status = buckets.statuses.find(item => item.id === person || item.person === person);
   const bubble = document.getElementById(`sky-status-${person}`);
-  const expired = Number(status?.expiresAt) > 0 && Number(status.expiresAt) < now;
-  const text = !expired ? String(status?.text || status?.locationText || '').trim() : String(status?.locationText || '').trim();
-  bubble.hidden = !text;
-  const usingLocation = !status?.text || expired;
-  bubble.textContent = text ? `${usingLocation ? status?.locationEmoji || '📍' : status?.emoji || '✦'} ${text}` : '';
-  bubble.title = text ? `${usingLocation ? 'location' : status?.category || 'currently'} ${text}` : '';
+  // Focus first, then their own words, then where they are — one rule, shared
+  // with the status page (availability.js).
+  const shows = statusShows(status, now);
+  bubble.hidden = !shows.text;
+  bubble.textContent = shows.text ? `${shows.emoji} ${shows.text}` : '';
+  bubble.title = shows.text ? `${shows.category} ${shows.text}` : '';
   const personNode = document.getElementById(`sky-person-${person}`);
   personNode.dataset.place = status?.locationPreset || '';
 }
@@ -219,18 +217,6 @@ function renderSkyOrbit(stage, now) {
   }
 }
 
-function togetherPlace(her, him) {
-  if (!her.placeLabel && !him.placeLabel) return '';
-  const sameLabel = her.placeLabel && him.placeLabel && her.placeLabel.toLocaleLowerCase() === him.placeLabel.toLocaleLowerCase();
-  const preset = her.placePreset && her.placePreset === him.placePreset ? her.placePreset : '';
-  if (!sameLabel && !preset) return '';
-  if (preset === 'home') return 'home together';
-  if (preset === 'work') return 'coworking arc';
-  if (preset === 'school') return 'study party';
-  if (preset === 'errands') return 'side quest duo';
-  return `together at ${her.placeLabel || him.placeLabel}`;
-}
-
 function renderSkyNote(now) {
   const latest = buckets.notes
     .filter(note => (note.recipient === viewer || note.to === viewer) && (note.sender === other || note.from === other) && now - Number(note.createdAt || 0) < 86400000)
@@ -256,18 +242,3 @@ function shortText(value) {
   return text.length > 42 ? `${text.slice(0, 39)}…` : text;
 }
 
-function distanceMeters(a, b) {
-  const radius = 6371000;
-  const lat1 = a.lat * Math.PI / 180;
-  const lat2 = b.lat * Math.PI / 180;
-  const dLat = (b.lat - a.lat) * Math.PI / 180;
-  const dLng = (b.lng - a.lng) * Math.PI / 180;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return radius * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-}
-
-function friendlyDistance(meters) {
-  if (meters < 1000) return `${Math.max(1, Math.round(meters))} m`;
-  const km = meters / 1000;
-  return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
-}

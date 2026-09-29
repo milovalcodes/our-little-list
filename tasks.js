@@ -3,6 +3,7 @@ import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { initHelpPanel } from './help-panel.js';
+import { addTask } from './records.js';
 
 const byId = id => document.getElementById(id);
 let items = [];
@@ -23,7 +24,7 @@ const other = partnerOf(viewer);
 
 applyViewerTheme(viewer);
 document.querySelector('.back-to-side').href = `${viewer}.html`;
-initHelpPanel({ data, viewer, other });
+initHelpPanel({ data, viewer, other, openGroceries: () => { selectTab('grocery', true); byId('shared-task-title').focus(); } });
 
 data.listenTo('items', nextItems => {
   items = nextItems;
@@ -65,9 +66,7 @@ byId('shared-task-form').addEventListener('submit', async event => {
   setButtonBusy(submit,true,'…');
   try{
     if(recurrence!=='once'&&!due)due=dateKey(new Date());
-    await data.addTo('items',{title,type:tab==='grocery'?'grocery':'task',due,recurrence,aisle:tab==='grocery'?byId('grocery-aisle').value:'',addedBy:viewer,done:false,createdAt:Date.now()});
-    const recipient=other;
-    void data.notify(recipient,{title:tab==='grocery'?'grocery list update 🛒':'new thing on the list ✓',body:title,url:`tasks.html`,kind:'item'});
+    await addTask(data,{viewer,other,title,type:tab==='grocery'?'grocery':'task',due,recurrence,aisle:tab==='grocery'?byId('grocery-aisle').value:''});
     event.target.reset();toast(tab==='grocery'?'on the grocery list 🛒':'added 🫡');
   }catch(_){showFailure('that did not get added.','check the internet, then try again. Your text is still here.');}
   finally{setButtonBusy(submit,false);}

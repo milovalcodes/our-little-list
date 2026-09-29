@@ -24,6 +24,20 @@
         <button class="primary-action" id="focus-start" type="submit">start focus</button>
       </form>
     </section>
+
+    <section class="today-new" id="new">
+      <section class="presence-strip" aria-live="polite">
+        <span class="presence-face"><img id="other-face" src="sun-profile.png" alt=""></span>
+        <div><p class="tiny-kicker" id="presence-kicker">checking in</p><strong id="presence-status">one sec…</strong></div>
+        <span class="presence-dot" id="presence-dot" aria-hidden="true"></span>
+      </section>
+
+      <section class="activity-card">
+        <div class="activity-heading"><div><p class="tiny-kicker">since you were here</p><h2>What’s new</h2></div><button id="mark-seen" type="button">mark all seen</button></div>
+        <div class="empty-state" id="activity-empty"><span>✦</span><strong>Nothing new</strong></div>
+        <ol class="activity-list" id="activity-list"></ol>
+      </section>
+    </section>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="today.js"></script><script type="module" src="live-notes.js"></script>
 </body>

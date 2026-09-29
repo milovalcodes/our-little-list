@@ -17,6 +17,41 @@
       <div class="status-row"><span class="status-symbol warning" id="background-symbol">◐</span><div><strong>Background mode</strong><p id="background-status">the website may pause when the screen locks.</p><button class="small-action" id="ask-background" type="button">keep page awake</button><p class="permission-help" id="background-help" hidden></p></div></div>
     </section>
     <p class="status-foot">green means ready. yellow needs a quick look.</p>
+    <section class="ping-settings" id="pings">
+      <div class="ping-settings-head"><img class="notification-hero-icon" src="notification-icon.png" alt=""><div><p class="tiny-kicker">your phone, your rules</p><h2>Little pings</h2></div></div>
+    <form id="notification-settings-form">
+      <section class="notification-settings-card">
+        <div class="settings-heading"><div><p class="tiny-kicker">how it says hey</p><h2>Sound & vibration</h2></div><button class="small-action" id="test-notification" type="button">send a test</button></div>
+
+        <fieldset class="settings-fieldset">
+          <legend>when the app is closed</legend>
+          <div class="compact-choice-row" id="background-sound-choices">
+            <label><input type="radio" name="background-sound" value="default"><span>phone sound</span></label>
+            <label><input type="radio" name="background-sound" value="silent"><span>quiet</span></label>
+          </div>
+        </fieldset>
+
+        <label class="settings-select-row"><span><strong>while the app is open</strong><small>our own tiny noise</small></span><select id="in-app-sound"><option value="twinkle">twinkle</option><option value="pop">soft pop</option><option value="off">no sound</option></select></label>
+
+        <fieldset class="settings-fieldset" id="vibration-fieldset">
+          <legend>vibration</legend>
+          <div class="compact-choice-row" id="vibration-choices">
+            <label><input type="radio" name="vibration" value="gentle"><span>tiny buzz</span></label>
+            <label><input type="radio" name="vibration" value="pulse"><span>buzz buzz</span></label>
+            <label><input type="radio" name="vibration" value="off"><span>none</span></label>
+          </div>
+        </fieldset>
+        <p class="settings-device-note" id="device-note"></p>
+      </section>
+
+      <section class="notification-settings-card">
+        <div class="settings-heading"><div><p class="tiny-kicker">what gets through</p><h2>Pick the pings</h2></div></div>
+        <div class="notification-toggle-list" id="notification-categories"></div>
+      </section>
+
+      <div class="notification-save-row"><span id="save-state" aria-live="polite"></span><button class="primary-action compact-save" id="save-notifications" type="submit">save it</button></div>
+    </form>
+    </section>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="phone-check.js"></script>
 </body>
