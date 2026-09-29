@@ -7,7 +7,7 @@
 
 import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
-import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern } from '../../notification-policy.js';
+import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted } from '../../notification-policy.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
 const STALE_MS = 3 * 60 * 60_000;    // older than 3h: still send, but say it is late
@@ -72,10 +72,12 @@ export async function deliver(env) {
         continue;
       }
 
-    // A reminder whose record was deleted should not still go off.
+    // A nudge whose ask (or old-style reminder) was deleted, sorted or turned
+    // down should not still go off.
       if (message.kind === 'reminder' && message.ref) {
-        const reminder = await db.get(`${household}/reminders/${message.ref}`);
-        if (!reminder) {
+        const source = reminderSourcePath(message.ref);
+        const reminder = source ? await db.get(`${household}/${source}`) : null;
+        if (!reminderStillWanted(reminder)) {
           await db.remove(message.path);
           dropped += 1;
           continue;
