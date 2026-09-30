@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const BASE = 'http://127.0.0.1:8777';
+const START = Date.now();
 // The sandbox blocks outbound hosts; those failures are the environment, not the app.
 const NOISE = /ERR_TUNNEL_CONNECTION_FAILED|ERR_NAME_NOT_RESOLVED|favicon|fonts\.googleapis|unpkg|openstreetmap|gstatic|Failed to load resource/i;
 
@@ -39,7 +40,7 @@ function installedChromiums() {
 let failures = 0;
 const note = (ok, label, extra = '') => {
   if (!ok) failures++;
-  console.log(`${ok ? ' ok ' : 'FAIL'} ${label}${extra ? ` — ${extra}` : ''}`);
+  console.log(`${String(Math.round((Date.now() - START) / 1000)).padStart(4)}s ${ok ? ' ok ' : 'FAIL'} ${label}${extra ? ` — ${extra}` : ''}`);
 };
 
 async function open(path) {
@@ -58,6 +59,15 @@ async function open(path) {
     contentType: 'text/javascript',
     body: 'export const firebaseConfig = {};'
   }));
+  // The smoke pass tests our own UI in local mode. Third-party fonts, map
+  // tiles and CDN scripts are not part of it, and a slow CDN used to make the
+  // same CI run take anywhere from two to ten minutes.
+  await page.route('**/*', route => {
+    const requestUrl = new URL(route.request().url());
+    return requestUrl.origin === BASE || requestUrl.protocol === 'about:'
+      ? route.fallback()
+      : route.abort();
+  });
   page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
   page.on('console', m => { if (m.type() === 'error' && !NOISE.test(m.text())) errors.push(`console: ${m.text().slice(0, 200)}`); });
   await page.goto(`${BASE}/${path}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
