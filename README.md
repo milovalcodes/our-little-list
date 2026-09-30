@@ -1,7 +1,7 @@
 # Our Little List
 
-A small shared website for two people. Lists, reminders, notes, statuses, date
-ideas, small favours, and an opt-in map — plain HTML, CSS and JavaScript on
+A small shared website for two people. Lists, timed asks, notes, statuses, date
+ideas, memories, and an opt-in map — plain HTML, CSS and JavaScript on
 GitHub Pages, with Firebase for syncing between the two phones.
 
 Live: https://milovalcodes.github.io/our-little-list/
@@ -10,42 +10,16 @@ Live: https://milovalcodes.github.io/our-little-list/
 
 Each thing lives in one place:
 
-- **Home** — the shared sky (where you both are, statuses, the latest note), the
-  fridge note, and big buttons to everything else. A bottom bar on every page
-  has home, today, quick add, search and the rest.
-- **Today** — what is due today, focus timers ("lock in together"), and what's
-  new since you last looked, with read receipts and whether they're around.
-- **The list** — shared to-dos with repeats, groceries by aisle, and **Asks**:
-  "bring water", "call me when free", answered on it / in a bit / can't. An ask
-  can have a time — that is what a reminder is — and then it nudges the other
-  phone at that time. See **Reminders** below.
-- **Notes** — little notes with popups and reactions. Pin one and it is the
-  fridge note on both home screens.
-- **Right now** — both statuses in one place. A status is your own words (with
-  an optional expiry), a running focus timer, and where you are if you are at a
-  saved spot; "here now · busy" is one line, and "lurking" hides the "here now".
-  Also the map, "leaving now / almost there", and **saved spots**. Location can
-  be paused for 1 hour, 3 hours or until turned back on; the other phone hears
-  when it comes back. The phone is only asked for location after a "turn on" tap.
-- **Saved spots** — home, work, school, errands or anything you name. Arriving
-  changes your status ("vibing at home", "working hard") and tells the other
-  phone ("sun just got home! 🏠", "moon just got to work :c", or that you are
-  both there). Each spot has a bell to turn its ping off. This only runs while
-  the app is open on the phone — phones do not let websites track location in
-  the background.
-- **Date ideas** — ideas with vibes, filters and a random picker. Marking one done
-  puts it in the memory jar.
-- **Memories** — little photos and things worth keeping, including the dates
-  you did.
-- **Settings** (`phone-check.html`) — sync, internet, install, notifications and
-  location, with the exact fix for anything off; **little pings** (which kinds of
-  notification get through, quiet mode, vibration, the in-app sound — switches
-  save on tap); **our names**; and sign out (two taps). A muted kind is dropped
-  by the delivery worker before it is sent, because a web push that arrives has
-  to be shown. Home shows a "finish setting up this phone" card until it's done.
-- **Deletes wait behind an undo bar** for five seconds; nothing is re-created.
-- **Quick add** (the ＋ in the dock) has a one-tap "thinking of you".
-- Installable on iPhone and Android; works offline for reading.
+- **Home** — both people at a glance, the pinned fridge note, quick add and search.
+- **Today** — due items, one daily question, a shared focus timer and the activity feed.
+- **The list** — repeatable tasks, groceries by aisle and requests; a timed request is also a reminder, for either person or yourself.
+- **Notes** — short notes, reactions and the option to pin one on both home screens.
+- **Right now** — statuses, availability, opt-in map and saved spots that can change a status when someone arrives.
+- **Date ideas** — ideas with optional details, filters and a random picker; completed dates can become memories.
+- **Memories** — photos and small things worth keeping.
+- **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
+
+Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 
 Old links still work: `reminders.html`, `activity.html`, `notifications.html`,
 `help.html`, `admire.html` and `location.html` redirect to where those things
@@ -67,13 +41,9 @@ delivery works like this:
 
 Free on Cloudflare's free plan, no credit card, no Firebase Blaze plan.
 
-**This started as a GitHub Actions cron and that did not work.** GitHub treats
-scheduled workflows as its lowest-priority queue: a `*/5` schedule fired roughly
-every four hours, so reminders arrived the same afternoon rather than at the
-time you picked. `.github/workflows/deliver.yml` is kept as a manual backstop
-with its schedule removed — running both would deliver everything twice. It has
-to stay behaviourally identical to `worker/src/index.js`; the comment at the top
-of `tools/deliver.mjs` says why.
+The old GitHub Actions cron delivered hours late, so `.github/workflows/deliver.yml`
+is manual-only. Its launcher calls the same delivery function as Cloudflare;
+there is no second notification implementation to drift or double-send.
 
 Things to know:
 - **On iPhone, notifications only work once the site is on the Home Screen.**
@@ -110,7 +80,7 @@ while only the matching account can write its own status, presence, location
 and notification subscription. The Checks workflow fails if `household.js` and
 `firestore.rules` ever disagree.
 
-Everything lives under `households/{HOUSEHOLD_ID}` — lists, notes, reminders,
+Everything lives under `households/{HOUSEHOLD_ID}` — lists, notes, requests,
 statuses, dates, help requests, locations, push subscriptions and the outbox.
 
 ### 2. The delivery worker

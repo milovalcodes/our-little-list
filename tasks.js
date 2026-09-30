@@ -1,10 +1,10 @@
-import { sharedLayer, onAuthChange } from './data-hub.js';
-import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
-import { setupAuthUI, applyViewerTheme, escapeHtml, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
+import { escapeHtml, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
+import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { initHelpPanel } from './help-panel.js';
 import { addTask } from './records.js';
 import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
+import { prettyDue } from './time-format.js';
 
 const byId = id => document.getElementById(id);
 let items = [];
@@ -14,19 +14,7 @@ let recurrence = 'once';
 let editingTaskId = '';
 let recentGroceryOptions = [];
 
-const data = await sharedLayer();
-onAuthChange(user => setupAuthUI(data, user));
-if (data.mode === 'local') setupAuthUI(data, { local: true });
-
-// Your side comes from the account you signed in with, not from a URL anyone
-// could retype. A signed-in account that is not one of the two members stops
-// here rather than guessing which side to show.
-const viewer = await awaitViewer();
-if (!viewer) { showNotAMember(); await new Promise(() => {}); }
-const other = partnerOf(viewer);
-
-applyViewerTheme(viewer);
-document.querySelector('.back-to-side').href = `${viewer}.html`;
+const { data, viewer, other } = await bootPage();
 initHelpPanel({ data, viewer, other, openGroceries: () => { selectTab('grocery', true); byId('shared-task-title').focus(); } });
 
 data.listenTo('items', nextItems => {
@@ -252,14 +240,6 @@ window.addEventListener('littlelist:profile',render);
 window.addEventListener('hashchange', () => selectTab(location.hash === '#asks' ? 'asks' : 'tasks'));
 selectTab(location.hash === '#asks' ? 'asks' : 'tasks');
 
-function prettyDue(value) {
-  const today = dateKey(new Date());
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  if (value === today) return 'today-ish';
-  if (value === dateKey(tomorrow)) return 'tomorrow';
-  return value;
-}
 function nextDue(value,repeat){
   const today=new Date();today.setHours(12,0,0,0);
   let next=value?new Date(`${value}T12:00:00`):new Date(today);

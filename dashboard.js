@@ -5,10 +5,11 @@ import { startPresence } from './presence.js';
 import { ensurePushSubscription } from './push-client.js';
 import { personName } from './profile-store.js';
 import { hereLine, statusShows, orbitLine } from './availability.js';
+import { newActivityCount } from './activity-summary.js';
 
 const badge = document.getElementById('activity-badge');
 const helpBadge = document.getElementById('help-badge');
-const buckets = { items: [], notes: [], reminders: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [] };
+const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [] };
 let dashboardFrame = 0;
 
 const data = await sharedLayer();
@@ -51,23 +52,11 @@ function renderBadge() {
   const since = Number(localStorage.getItem(seenKey) || 0);
   const fresh = value => Number(value) > since;
 
-  let newCount = 0;
+  const newCount = newActivityCount(buckets, viewer, other, since);
   if (badge) {
-    const incoming = [
-      ...buckets.items.filter(item => item.addedBy === other && fresh(item.createdAt)),
-      ...buckets.notes.filter(note => note.recipient === viewer && fresh(note.createdAt)),
-      ...buckets.reminders.filter(reminder => reminder.recipient === viewer && fresh(reminder.createdAt)),
-      ...buckets.dates.filter(idea => idea.addedBy === other && !idea.imported && fresh(idea.createdAt)),
-      // Automatic spot changes are not news; arrivals get their own ping.
-      ...buckets.statuses.filter(status => (status.person === other || status.id === other) && status.updateKind !== 'location' && fresh(status.updatedAt)),
-      ...buckets.help.filter(request => request.to === viewer && request.from !== viewer && fresh(request.createdAt)),
-      ...buckets.memories.filter(item => item.addedBy === other && fresh(item.createdAt)),
-      ...buckets.reactions.filter(item => item.by === other && fresh(item.createdAt))
-    ];
-    newCount = incoming.length;
-    badge.hidden = incoming.length === 0;
-    badge.textContent = incoming.length > 9 ? '9+' : String(incoming.length);
-    badge.setAttribute('aria-label', `${incoming.length} new`);
+    badge.hidden = newCount === 0;
+    badge.textContent = newCount > 9 ? '9+' : String(newCount);
+    badge.setAttribute('aria-label', `${newCount} new`);
   }
 
   if (helpBadge) {

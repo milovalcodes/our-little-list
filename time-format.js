@@ -39,3 +39,13 @@ export function friendlyWhen(value) {
   if (isTomorrow) return `tomorrow at ${clock}`;
   return new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
 }
+
+export function prettyDue(value) {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  now.setDate(now.getDate()+1);
+  const tomorrow = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  if (value === today) return 'today-ish';
+  if (value === tomorrow) return 'tomorrow';
+  return value;
+}

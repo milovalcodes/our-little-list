@@ -1,4 +1,4 @@
-import { createClient, signIn } from '../tools/firestore.mjs';
+import { createClient, signIn } from '../worker/src/firestore.js';
 import assert from 'node:assert/strict';
 
 const calls = [];

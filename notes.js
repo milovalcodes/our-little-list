@@ -1,27 +1,17 @@
-import { sharedLayer, onAuthChange } from './data-hub.js';
-import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
-import { setupAuthUI, applyViewerTheme, escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
+import { escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
+import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { timeAgo } from './time-format.js';
 import { openEmojiPicker } from './emoji-picker.js';
-import { sendNote } from './records.js';
+import { sendNote, NOTE_MOODS } from './records.js';
 import { pinNote, clearFridge } from './fridge.js';
 import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
 const $=id=>document.getElementById(id);
-const data=await sharedLayer();
-onAuthChange(user=>setupAuthUI(data,user));
-if(data.mode==='local')setupAuthUI(data,{local:true});
+const { data, viewer: sender, other: recipient } = await bootPage();
+setNames();
 
-// Your side comes from the account you signed in with, not from a URL anyone
-// could retype. A signed-in account that is not one of the two members stops
-// here rather than guessing which side to show.
-const sender=await awaitViewer();
-if(!sender){showNotAMember();await new Promise(()=>{});}
-const recipient=partnerOf(sender);
-applyViewerTheme(sender);document.querySelector('.back-to-side').href=`${sender}.html`;setNames();
-
-const moods={heart:'💛',sun:'☀️',moon:'🌙',star:'✦'};
+const moods=NOTE_MOODS;
 let notes=[];let reactions=[];let editingNoteId='';const markedRead=new Set();
 document.querySelectorAll('#note-starters button').forEach(button=>button.addEventListener('click',()=>{$('note-body').value=button.textContent;$('note-body').focus();}));
 

@@ -9,7 +9,7 @@ import { momentPickerHtml, setupMomentPicker } from './moment-picker.js';
 import { friendlyWhen } from './time-format.js';
 import { openEmojiPicker } from './emoji-picker.js';
 
-const SEARCH_COLLECTIONS = ['items', 'notes', 'help', 'reminders', 'dates', 'memories'];
+const SEARCH_COLLECTIONS = ['items', 'notes', 'help', 'dates', 'memories'];
 const page = document.body.dataset.app || (document.body.dataset.viewer ? 'home' : '');
 
 if (page && !document.querySelector('.app-dock')) void boot();
@@ -252,7 +252,6 @@ function searchable(collection, item, viewer) {
     items: { icon: item.type === 'grocery' ? '🛒' : '✓', title: item.title, meta: item.done ? 'finished list thing' : 'on the list', url: 'tasks.html' },
     notes: { icon: '💌', title: item.body || item.message, meta: item.sender === viewer ? 'note you sent' : `note from ${personName(item.sender || item.from)}`, url: 'notes.html' },
     help: { icon: item.emoji || (item.dueAt ? '⏰' : '🙋'), title: item.title, meta: item.dueAt ? 'ask with a time' : item.from === viewer ? 'you asked' : `${personName(item.from)} asked`, url: 'tasks.html#asks' },
-    reminders: { icon: '⏰', title: item.title, meta: 'old reminder', url: 'today.html#new' },
     dates: { icon: '✦', title: item.title, meta: item.done ? 'date we did' : 'date idea', url: 'dates.html' },
     memories: { icon: '◒', title: item.text, meta: 'memory', url: 'memories.html' }
   };
@@ -265,47 +264,23 @@ function setupFridgeNote(data, viewer, other) {
   if (!launchpad) return;
   launchpad.insertAdjacentHTML('beforebegin', `<section class="fridge-note" id="fridge-note"><button class="fridge-paper" id="fridge-open" type="button"><span id="fridge-emoji">📌</span><div><small id="fridge-kicker">on the fridge</small><strong id="fridge-copy">tap to pin something</strong></div><i>✎</i></button></section>`);
   document.body.insertAdjacentHTML('beforeend', `<section class="app-sheet fridge-sheet" id="sheet-fridge" role="dialog" aria-modal="true" aria-labelledby="fridge-title" hidden><header class="sheet-head"><div><small>a note that stays up</small><h2 id="fridge-title">On the fridge</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header><form id="fridge-form"><label><span>tiny icon</span><button class="emoji-select" id="fridge-emoji-pick" type="button">📌 pick an emoji</button></label><label><span>the note</span><textarea id="fridge-text" maxlength="240" placeholder="important-ish household lore"></textarea></label><div class="fridge-actions"><button class="primary-action" type="submit">pin it</button><button class="soft-delete" id="fridge-clear" type="button">take it down</button></div></form></section>`);
-  // The fridge is a pinned note now (see fridge.js). A sticky note saved the
-  // old way still shows until whoever wrote it next opens home, which turns it
-  // into a pinned note quietly.
   let notes = [];
-  let legacy = null;
   let fridgeEmoji = '📌';
-  let migrating = false;
-  let notesSeen = false;
-  let pinsSeen = false;
   const paint = () => {
     const pinned = fridgeNote(notes);
-    const text = pinned ? (pinned.body || pinned.message || '') : legacy?.text || '';
-    const emoji = pinned ? (pinned.pinEmoji || '📌') : legacy?.emoji || '📌';
-    const author = pinned ? (pinned.sender || pinned.from) : legacy?.updatedBy;
+    const text = pinned?.body || pinned?.message || '';
+    const emoji = pinned?.pinEmoji || '📌';
+    const author = pinned?.sender || pinned?.from;
     document.getElementById('fridge-copy').textContent = text || 'tap to pin something';
     document.getElementById('fridge-emoji').textContent = emoji;
     document.getElementById('fridge-kicker').textContent = text && author ? `on the fridge · from ${author === viewer ? 'you' : personName(author)}` : 'on the fridge';
     document.getElementById('fridge-note').classList.toggle('is-empty', !text);
   };
-  const migrate = async () => {
-    // Both lists first: deciding "nothing is pinned" before the notes arrive
-    // would pin a second copy.
-    if (migrating || !notesSeen || !pinsSeen || !legacy) return;
-    migrating = true;
-    try {
-      // Already superseded by a pinned note: the old sticky is just clutter.
-      if (fridgeNote(notes) || !legacy.text) { await data.removeFrom('pins', 'fridge'); return; }
-      if (legacy.updatedBy !== viewer) { migrating = false; return; }
-      // A fixed id, so two of the author's open home screens write the same
-      // note instead of two.
-      const at = Number(legacy.updatedAt) || Date.now();
-      await data.setTo('notes', `fridge-${at}`, { sender: viewer, recipient: other, from: viewer, to: other, body: legacy.text, message: legacy.text, mood: 'heart', read: true, createdAt: at, pinned: true, pinnedAt: at, pinEmoji: legacy.emoji || '📌' });
-      await data.removeFrom('pins', 'fridge');
-    } catch (_) { migrating = false; }
-  };
-  data.listenToQuery('notes', { where: { field: 'pinned', value: true } }, items => { notes = items; notesSeen = true; paint(); void migrate(); });
-  data.listenTo('pins', items => { legacy = items.find(item => item.id === 'fridge') || null; pinsSeen = true; paint(); void migrate(); });
+  data.listenToQuery('notes', { where: { field: 'pinned', value: true } }, items => { notes = items; paint(); });
   document.getElementById('fridge-open').addEventListener('click', () => {
     const pinned = fridgeNote(notes);
-    document.getElementById('fridge-text').value = pinned?.body || legacy?.text || '';
-    fridgeEmoji = pinned?.pinEmoji || legacy?.emoji || '📌';
+    document.getElementById('fridge-text').value = pinned?.body || '';
+    fridgeEmoji = pinned?.pinEmoji || '📌';
     document.getElementById('fridge-emoji-pick').textContent = `${fridgeEmoji} pick an emoji`;
     openSheet('fridge');
   });
@@ -327,7 +302,6 @@ function setupFridgeNote(data, viewer, other) {
       const oldPins = notes.filter(note => note.pinned).map(note => note.id);
       await sendNote(data, { viewer, other, body: text, pinned: true, pinEmoji: emoji });
       await Promise.all(oldPins.map(id => data.updateIn('notes', id, { pinned: false })));
-      if (legacy) await data.removeFrom('pins', 'fridge').catch(() => {});
       closeSheets(); toast('pinned to the fridge');
     } catch (_) { showFailure('that note fell off the fridge.', 'check the internet and try again.'); }
     finally { setButtonBusy(button, false); }
@@ -335,7 +309,6 @@ function setupFridgeNote(data, viewer, other) {
   document.getElementById('fridge-clear').addEventListener('click', async () => {
     try {
       await clearFridge(data, notes);
-      if (legacy) await data.removeFrom('pins', 'fridge');
       closeSheets(); toast('fridge cleared');
     } catch (_) { showFailure('that note is stubborn.', 'check the internet and try again.'); }
   });

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-  <title>Today · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+  <title>Today · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page" data-app="today">
   <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">today ◎</span></header>
@@ -33,14 +33,8 @@
     </section>
 
     <section class="today-new" id="new">
-      <section class="presence-strip" aria-live="polite">
-        <span class="presence-face"><img id="other-face" src="sun-profile.png" alt=""></span>
-        <div><p class="tiny-kicker" id="presence-kicker">checking in</p><strong id="presence-status">one sec…</strong></div>
-        <span class="presence-dot" id="presence-dot" aria-hidden="true"></span>
-      </section>
-
       <section class="activity-card">
-        <div class="activity-heading"><div><p class="tiny-kicker">since you were here</p><h2>What’s new</h2></div><button id="mark-seen" type="button">mark all seen</button></div>
+        <div class="activity-heading"><div><p class="tiny-kicker">since you were here</p><h2>What’s new <span class="count-bubble" id="new-count" hidden>0</span></h2></div><button id="mark-seen" type="button">mark all seen</button></div>
         <div class="empty-state" id="activity-empty"><span>✦</span><strong>Nothing new</strong></div>
         <ol class="activity-list" id="activity-list"></ol>
       </section>

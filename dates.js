@@ -1,61 +1,18 @@
-import { sharedLayer, onAuthChange } from './data-hub.js';
-import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
-import { setupAuthUI, applyViewerTheme, escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
+import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
+import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { addDateIdea } from './records.js';
 import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
-const LEGACY_MIGRATION_ID='date-notes-v1';
-const LEGACY_CREATED_AT=1700000000000;
-const LEGACY_DATE_IDEAS=[
-  ['lemongrass','Lemongrass date','food',true],
-  ['photoshoot','Photoshoot date','go out',false],
-  ['tea','Tea date','food',true],
-  ['enson-market','Enson Market date','food',true],
-  ['mama-yatai','Mama Yatai date','food',true],
-  ['froyo-karaoke-stargazing','Froyo + karaoke + making out + stargazing date','go out',true],
-  ['double-date-round-1','Double date to Round 1','go out',true],
-  ['pool','Pool date','go out',false],
-  ['water-taxi','Water taxi date','little trip',false],
-  ['kava','Kava date','food',true],
-  ['raccoon-island','Raccoon Island date','little trip',false],
-  ['museum','Museum date','go out',true],
-  ['trader-joes','Trader Joe’s date','food',false],
-  ['lingerie-shopping','Lingerie shopping date','go out',true],
-  ['perfume','Perfume date','go out',false],
-  ['decorate-room','Decorating my room date','stay in',false],
-  ['parallel-play','Parallel play date','stay in',true],
-  ['pedicure','Pedicure date','go out',false],
-  ['slime','Slime date','stay in',false],
-  ['nintendo','Nintendo date','stay in',false],
-  ['lemonica','Lemonica date','food',false],
-  ['fancy-dinner','Dinner date (fancy)','food',false],
-  ['clay-marcus','Clay Marcus date','go out',false],
-  ['cooking','Cooking date','stay in',true],
-  ['picnic','Picnic date','go out',false],
-  ['baking','Baking date','stay in',false]
-];
+const $=id=>document.getElementById(id);let ideas=[];let vibe='go out';let viewLimit=8;let editingDateId='';
 
-const $=id=>document.getElementById(id);let ideas=[];let vibe='go out';let migrationStarted=false;let viewLimit=8;let editingDateId='';
-
-const data=await sharedLayer();
-onAuthChange(user=>setupAuthUI(data,user));
-if(data.mode==='local')setupAuthUI(data,{local:true});
-
-// Your side comes from the account you signed in with, not from a URL anyone
-// could retype. A signed-in account that is not one of the two members stops
-// here rather than guessing which side to show.
-const viewer=await awaitViewer();
-if(!viewer){showNotAMember();await new Promise(()=>{});}
-const other=partnerOf(viewer);
-applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
+const { data, viewer, other } = await bootPage();
 
 data.listenTo('dates',items=>{
   const flag=value=>value?1:0;
   ideas=items.sort((a,b)=>(flag(a.done)-flag(b.done))||(flag(b.favorite)-flag(a.favorite))||((b.createdAt||0)-(a.createdAt||0)));
   render();
 });
-void importLegacyIdeas();
 
 document.querySelectorAll('.date-vibe').forEach(button=>button.addEventListener('click',()=>{vibe=button.dataset.vibe;document.querySelectorAll('.date-vibe').forEach(item=>item.classList.toggle('active',item===button));}));
 $('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');const details={cost:$('date-cost').value,energy:$('date-energy').value,weather:$('date-weather').value,distance:$('date-distance').value,duration:$('date-duration').value};setButtonBusy(button,true,'saving…');try{await addDateIdea(data,{viewer,other,title,note,vibe,details});event.target.reset();$('date-more-details').open=false;toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
@@ -97,37 +54,6 @@ $('date-list').addEventListener('submit',async event=>{
   finally{if(button.isConnected)setButtonBusy(button,false);}
 });
 $('date-list').addEventListener('keydown',event=>{if(event.key==='Escape'&&event.target.closest('[data-edit-date]')){editingDateId='';render();}});
-
-function importLegacyIdeas(){
-  if(migrationStarted||!data)return;
-  migrationStarted=true;
-  // The unsubscribe used to be called from inside the callback that assigned
-  // it, so a fast first snapshot left the listener attached and the import
-  // could run twice.
-  let handled=false;
-  let stop=()=>{};
-  stop=data.listenTo('migrations',async records=>{
-    if(handled)return;
-    handled=true;
-    queueMicrotask(()=>stop());
-    if(records.some(record=>record.id===LEGACY_MIGRATION_ID))return;
-    try{
-      // Only write the ideas that are genuinely absent. The marker write can
-      // fail (both phones opening this page at once race for it, and the rules
-      // allow create but not update), and a retry used to reset every star and
-      // every "we did this" back to the shipped defaults.
-      const existing=new Set((await data.readOnce('dates')).map(idea=>idea.id));
-      const missing=LEGACY_DATE_IDEAS.filter(([slug])=>!existing.has(`old-list-${slug}`));
-      await Promise.all(missing.map(([slug,title,ideaVibe,done])=>{
-        const index=LEGACY_DATE_IDEAS.findIndex(entry=>entry[0]===slug);
-        return data.setTo('dates',`old-list-${slug}`,{title,note:'',vibe:ideaVibe,addedBy:'him',favorite:false,done,doneAt:done?LEGACY_CREATED_AT-index*1000:0,imported:true,createdAt:LEGACY_CREATED_AT-index*1000});
-      }));
-      if(missing.length)toast('the old date list moved in ✦');
-      // The ideas are in. A failed marker only costs one wasted read next time.
-      await data.setTo('migrations',LEGACY_MIGRATION_ID,{done:true,count:LEGACY_DATE_IDEAS.length,importedAt:Date.now()}).catch(()=>{});
-    }catch(_){migrationStarted=false;handled=false;showFailure('the old date list did not move in.','check the internet, then reopen this page.');}
-  });
-}
 
 function allIdeas(){return ideas.filter(idea=>!isPendingDelete('dates',idea.id));}
 function render(){

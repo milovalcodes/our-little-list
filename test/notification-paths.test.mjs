@@ -97,12 +97,12 @@ assert.match(worker, /notificationKindEnabled\(message\.kind, preferences\)/,
   'muted categories must be filtered before Web Push, not hidden after arrival');
 assert.match(pushClient, /preferences: readNotificationPreferences\(\)/,
   'the phone files its notification preferences beside its subscription');
-// The hand-fired backstop is the same pass for when the worker is down. It had
-// been left behind: muted categories still rang, and quiet mode was ignored.
+// The hand-fired backstop imports the Worker pass instead of duplicating it.
 const backstop = readFileSync(new URL('../tools/deliver.mjs', import.meta.url), 'utf8');
-assert.match(backstop, /notificationKindEnabled\(message\.kind, preferences\)/, 'the backstop honours muted categories too');
-assert.match(backstop, /silent: preferences\.backgroundSound === 'silent'/, 'and quiet mode');
-assert.match(backstop, /vibrate: vibrationPattern\(preferences\.vibration\)/, 'and the chosen buzz');
+assert.match(backstop, /import\('\.\.\/worker\/src\/index\.js'\)/, 'the backstop imports the one delivery pass');
+assert.match(backstop, /await deliver\(/, 'the backstop calls it');
+assert.match(worker, /silent: preferences\.backgroundSound === 'silent'/, 'the shared pass honours quiet mode');
+assert.match(worker, /vibrate: vibrationPattern\(preferences\.vibration\)/, 'and the chosen buzz');
 console.log(' ok  notification choices travel with the phone and filter before delivery');
 
 assert.match(worker, /message\.sendAt \|\| message\.createdAt/, 'reminder age starts at its due time');
@@ -118,10 +118,8 @@ assert.doesNotMatch(sendAsk, /reminders\.html/, 'a nudge must not open the old c
 assert.equal((sendAsk.match(/url: 'tasks\.html#asks'/g) || []).length, 2, 'the heads-up and the nudge both open the asks');
 assert.match(sendAsk, /ref: `help\/\$\{record\?\.id/, 'the nudge names its ask so it can be dropped if the ask goes away');
 assert.doesNotMatch(live, /a reminder for you[\s\S]{0,160}url: `reminders\.html`/, 'the in-page reminder popup must not open the compose form either');
-assert.match(backstopSource(), /reminderStillWanted\(reminder\)/, 'the manual backstop drops nudges for sorted asks too');
+assert.match(worker, /reminderStillWanted\(reminder\)/, 'the shared sender drops nudges for sorted asks');
 console.log(' ok  a reminder opens the ask it is about, and goes quiet once that is sorted');
-
-function backstopSource() { return readFileSync(new URL('../tools/deliver.mjs', import.meta.url), 'utf8'); }
 
 // A failed page response must never become the offline copy of that page.
 assert.match(serviceWorker, /response\.ok && response\.type === 'basic'[\s\S]{0,200}cache\.put\(pageKey/, 'only a good page is cached');

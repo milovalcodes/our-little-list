@@ -5,6 +5,8 @@ import { fridgeNote } from '../fridge.js';
 import { hereLine, statusShows, focusActive } from '../availability.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../notification-policy.js';
 import { QUESTIONS, questionForDay } from '../question-prompts.js';
+import { newActivityCount } from '../activity-summary.js';
+import { readFileSync } from 'node:fs';
 
 assert.equal(QUESTIONS.length, 100);
 assert.equal(new Set(QUESTIONS).size, 100, 'no duplicate daily prompts');
@@ -89,5 +91,17 @@ const notes = [
 assert.equal(fridgeNote(notes).id, 'b');
 assert.equal(fridgeNote([{ id: 'c' }]), null);
 console.log(' ok  the fridge shows the pinned note');
+
+const recent=Date.now();
+assert.equal(newActivityCount({
+  items:[{addedBy:'her',createdAt:recent}],
+  help:[{from:'him',to:'him',createdAt:recent},{from:'her',to:'him',createdAt:recent}],
+  statuses:[{id:'her',updateKind:'location',updatedAt:recent},{id:'her',updateKind:'custom',updatedAt:recent}]
+},'him','her',recent-1),3,'home and Today count one list item, one partner ask, one status, not self or auto-location');
+for(const name of ['dashboard.js','today.js','live-notes.js','activity-feed.js','app-chrome.js']){
+  const source=readFileSync(new URL(`../${name}`,import.meta.url),'utf8');
+  assert.doesNotMatch(source,/listenTo\(['"]reminders['"]|buckets\.reminders|listenTo\(['"]pins['"]/,`${name} must not revive old listeners`);
+}
+console.log(' ok  Home and Today count the same things, with no old listeners');
 
 console.log('\nMERGED PIECES CLEAN');

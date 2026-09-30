@@ -8,6 +8,7 @@ import { friendlyWhen } from './time-format.js';
 import { startPresence } from './presence.js';
 import { readNotificationPreferences, shouldShowNotification } from './notification-preferences.js';
 import { focusDelivery } from './delivery-policy.js';
+import { NOTE_MOODS } from './records.js';
 
 let ownFocusUntil=0;
 
@@ -16,7 +17,7 @@ if (signedInSide) boot(signedInSide);
 
 async function boot(viewer) {
   const other = partnerOf(viewer);
-  const seen = { notes: null, items: null, reminders: null, dates: null, help: null };
+  const seen = { notes: null, items: null, dates: null, help: null };
   let knownStatusAt = null;
 
   const data = await sharedLayer();
@@ -27,7 +28,7 @@ async function boot(viewer) {
       const incoming = firstFresh('notes', notes, note => note.recipient === viewer && !note.read);
       if (!incoming) return;
       const shown = announce({
-        icon: { heart: '💛', sun: '☀️', moon: '🌙', star: '✦' }[incoming.mood] || '💌',
+        icon: NOTE_MOODS[incoming.mood] || '💌',
         label: 'a note for you',
         body: incoming.body,
         url: `notes.html`,
@@ -42,12 +43,6 @@ async function boot(viewer) {
     data.listenToQuery('items', recent, items => {
       const fresh = firstFresh('items', items, item => item.addedBy === other);
       if (fresh) announce({ icon: '✓', label: 'new on our list', body: fresh.title, url: `tasks.html`, kind: 'item' });
-    });
-
-    data.listenTo('reminders', items => {
-      const fresh = firstFresh('reminders', items, item => item.recipient === viewer);
-      // Only reminders made before they became asks with a time land here.
-      if (fresh) announce({ icon: '⏰', label: 'a reminder for you', body: fresh.title, url: `today.html#new`, kind: 'reminder' });
     });
 
     data.listenToQuery('dates', recent, items => {

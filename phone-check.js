@@ -1,31 +1,17 @@
-import { sharedLayer, onAuthChange } from './data-hub.js';
-import { awaitViewer, showNotAMember } from './viewer.js';
-import { setupAuthUI,applyViewerTheme } from './ui-helpers.js';
+import { setButtonBusy } from './ui-helpers.js';
+import { isStandalone } from './device-mode.js';
+import { bootPage } from './page-boot.js';
 import { ensurePushSubscription, pushState } from './push-client.js';
 import { startPresence } from './presence.js';
 import { startPingSettings } from './pings-settings.js';
 
 const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
 const $=id=>document.getElementById(id);
-let data;let wakeLock=null;
-
-data=await sharedLayer();
-onAuthChange(user=>{
-  setupAuthUI(data,user);
-  setStatus('sync',Boolean(user),user?'connected to our shared space.':'sign in so both phones can see the same things.');
-});
-if(data.mode==='local'){
-  setupAuthUI(data,{local:true});
-  setStatus('sync',false,'only saved on this phone.');
-}
-// Your side comes from the account you signed in with, not from a URL anyone
-// could retype. A signed-in account that is not one of the two members stops
-// here rather than guessing which side to show.
-const viewer=await awaitViewer();
-if(!viewer){showNotAMember();await new Promise(()=>{});}
-
-applyViewerTheme(viewer);
-document.querySelector('.back-to-side').href=`${viewer}.html`;
+let wakeLock=null;
+const { data, viewer } = await bootPage({onAuth:(user,layer)=>{
+  const local=layer.mode==='local';
+  setStatus('sync',Boolean(user)&&!local,local?'only saved on this phone.':user?'connected to our shared space.':'sign in so both phones can see the same things.');
+}});
 
 startPresence(data,viewer,'phone-check');
 startPingSettings({data,viewer,onChange:()=>void renderNotifications()});
@@ -41,7 +27,7 @@ function setStatus(name,okay,text){
 function setFailure(name,text){const symbol=$(`${name}-symbol`);symbol.textContent='×';symbol.classList.remove('okay','warning');symbol.classList.add('failed');$(`${name}-status`).textContent=text;}
 function help(name,text,tone=''){const el=$(`${name}-help`);el.textContent=tone==='fail'?`try this: ${text}`:text;el.hidden=false;el.classList.toggle('fail',tone==='fail');}
 function clearHelp(name){$(`${name}-help`).hidden=true;}
-function busy(button,on,label='thinking…'){if(on){button.dataset.normalText=button.textContent;button.textContent=label;button.disabled=true;button.classList.add('is-busy');}else{button.textContent=button.dataset.normalText||button.textContent;button.disabled=false;button.classList.remove('is-busy');delete button.dataset.normalText;}}
+const busy=setButtonBusy;
 async function locationPermission(){
   try{return (await navigator.permissions?.query({name:'geolocation'}))?.state||'unknown';}
   catch(_){return 'unknown';}
@@ -52,7 +38,7 @@ function renderOnline(){
   else{setFailure('online','offline right now.');help('online','turn on Wi-Fi or mobile data, then tap recheck.','fail');}
 }
 function renderInstall(){
-  const installed=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  const installed=isStandalone();
   setStatus('install',installed,installed?'on your home screen.':isApple?'not on your Home Screen yet.':'not on your home screen yet.');
   $('ask-install').textContent=installed?'already installed ✓':'install / show me';
   $('ask-install').disabled=installed;

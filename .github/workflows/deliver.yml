@@ -22,9 +22,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install
-        working-directory: tools
-        run: npm install --omit=dev --no-audit --no-fund
       - name: Send what is due
         working-directory: tools
         env:

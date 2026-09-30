@@ -1,6 +1,5 @@
-import { sharedLayer, onAuthChange } from './data-hub.js';
-import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
-import { setupAuthUI, applyViewerTheme, escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
+import { escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
+import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { timeAgo } from './time-format.js';
 import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
@@ -14,14 +13,7 @@ let migrating = false;
 const fullPhotos = new Map();
 const loadingPhotos = new Set();
 
-const data = await sharedLayer();
-onAuthChange(user => setupAuthUI(data, user));
-if (data.mode === 'local') setupAuthUI(data, { local: true });
-const viewer = await awaitViewer();
-if (!viewer) { showNotAMember(); await new Promise(() => {}); }
-const other = partnerOf(viewer);
-applyViewerTheme(viewer);
-document.querySelector('.back-to-side').href = `${viewer}.html`;
+const { data, viewer, other } = await bootPage();
 
 data.listenTo('memories', items => {
   memories = items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));

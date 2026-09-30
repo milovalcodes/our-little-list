@@ -1,6 +1,5 @@
-import { sharedLayer, onAuthChange } from './data-hub.js';
-import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
-import { setupAuthUI, applyViewerTheme, escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
+import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
+import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { openEmojiPicker } from './emoji-picker.js';
 import { hereLine, STATE_LABELS, focusActive, arrivalActive, statusShows } from './availability.js';
@@ -27,17 +26,7 @@ async function ready(){
 // quietly removed the "in 4 hours" you set earlier.
 let expiryTouched=false;
 
-const data=await sharedLayer();
-onAuthChange(user=>setupAuthUI(data,user));
-if(data.mode==='local')setupAuthUI(data,{local:true});
-
-// Your side comes from the account you signed in with, not from a URL anyone
-// could retype. A signed-in account that is not one of the two members stops
-// here rather than guessing which side to show.
-const viewer=await awaitViewer();
-if(!viewer){showNotAMember();await new Promise(()=>{});}
-const other=partnerOf(viewer);
-applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
+const { data, viewer, other } = await bootPage();
 
 data.listenTo('statuses',items=>{statuses=items;loaded=true;settleLoaded();render();hydrateEditor();});
 data.listenTo('reactions',items=>{reactions=items;render();});

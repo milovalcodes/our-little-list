@@ -1,19 +1,15 @@
-import { sharedLayer, onAuthChange } from './data-hub.js';
-import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
-import { setupAuthUI, applyViewerTheme, escapeHtml, toast, setButtonBusy, showFailure, dateKey } from './ui-helpers.js';
+import { escapeHtml, toast, setButtonBusy, showFailure, dateKey } from './ui-helpers.js';
+import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
-import { friendlyDate, friendlyWhen, timeAgo } from './time-format.js';
+import { friendlyWhen, timeAgo } from './time-format.js';
 import { startActivityFeed } from './activity-feed.js';
 import { focusActive } from './availability.js';
 import { startDailyQuestion } from './daily-question.js';
 
 const $=id=>document.getElementById(id);
-const buckets={items:[],reminders:[],help:[],statuses:[]};
+const buckets={items:[],help:[],statuses:[]};
 let focusMinutes=15;let tick;
-const data=await sharedLayer();
-onAuthChange(user=>setupAuthUI(data,user));if(data.mode==='local')setupAuthUI(data,{local:true});
-const viewer=await awaitViewer();if(!viewer){showNotAMember();await new Promise(()=>{});}const other=partnerOf(viewer);
-applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
+const { data, viewer, other } = await bootPage();
 $('today-date').textContent=new Intl.DateTimeFormat(undefined,{weekday:'long',month:'short',day:'numeric'}).format(new Date()).toLowerCase();
 
 Object.keys(buckets).forEach(name=>{
@@ -54,7 +50,6 @@ $('focus-pair').addEventListener('click',async event=>{const button=event.target
 function render(){renderToday();renderFocus();}
 function renderToday(){const today=dateKey(new Date());const end=new Date();end.setHours(23,59,59,999);const due=[
   ...buckets.items.filter(item=>!item.done&&item.due&&item.due<=today).map(item=>({id:`item-${item.id}`,icon:item.type==='grocery'?'🛒':'✓',title:item.title,meta:item.due<today?'overdue':'today',href:'tasks.html'})),
-  ...buckets.reminders.filter(item=>item.recipient===viewer&&Number(item.dueAt)<=end.getTime()&&Number(item.dueAt)>Date.now()-3*3600000).map(item=>({id:`reminder-${item.id}`,icon:'⏰',title:item.title,meta:friendlyDate(item.dueAt),href:'#new'})),
   // Asks waiting on you, and asks with a time (what reminders are now) that
   // come due today even once they have been answered.
   ...buckets.help.filter(item=>{if(item.to!==viewer)return false;const due=Number(item.dueAt);

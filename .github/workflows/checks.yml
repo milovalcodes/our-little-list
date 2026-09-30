@@ -24,6 +24,9 @@ jobs:
       - name: Every module parses
         run: pnpm run check:syntax
 
+      - name: Both home pages keep the same layout
+        run: node test/home-parity.test.mjs
+
       - name: Delivery layer behaves
         run: node test/delivery.test.mjs
 
