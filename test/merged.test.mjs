@@ -48,10 +48,13 @@ assert.deepEqual(hereLine({ presence: { lastSeenAt: now - 5000 }, status: { stat
 assert.equal(hereLine({ now }).text, 'not here rn');
 console.log(' ok  being here and being around read as one line');
 
-// What a status says: a running focus first, then your own words (until they
-// expire), then where you are. Focus never overwrites your own words.
+// What a status says: focus, a short trip update, your own words, then place.
+// None of the temporary bits overwrite the words underneath.
 const both = { text: 'humming', category: 'listening to', emoji: '🎧', expiresAt: 0, focusLabel: 'laundry', focusUntil: now + 60000, locationText: 'vibing at home' };
 assert.equal(statusShows(both, now).kind, 'focus');
+assert.equal(statusShows({ ...both, focusUntil: 0, arrival: 'almost there', arrivalAt: now - 44*60000 }, now).text, 'almost there');
+assert.equal(statusShows({ ...both, focusUntil: 0, arrival: 'almost there', arrivalAt: now - 46*60000 }, now).text, 'humming', 'the trip update expires after 45 minutes');
+assert.equal(statusShows({ energy: 'low battery' }, now).text, 'low battery', 'older energy-only statuses stay readable');
 assert.equal(statusShows({ ...both, focusUntil: now - 1 }, now).text, 'humming', 'when focus ends your status is back');
 assert.equal(statusShows({ ...both, focusUntil: 0, expiresAt: now - 1 }, now).kind, 'location', 'an expired status falls back to where you are');
 assert.equal(statusShows(null, now).kind, 'none');

@@ -103,6 +103,10 @@ async function boot(viewer) {
         url: `status.html`,
         kind: 'status'
       });
+    } else if (updatedAt > knownStatusAt && item.updateKind === 'arrival') {
+      // The arrival button already sends a ringing OS push, even while this
+      // page is open. Do not show a second in-page copy or fall through to the
+      // generic “updated status” popup.
     } else if (updatedAt > knownStatusAt) {
       announce({
         icon: item.emoji || '●',

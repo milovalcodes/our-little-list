@@ -65,6 +65,7 @@ function events(){
     // Focus sessions are statuses with a timer now, and saved spots move the
     // status on their own; each says what actually happened.
     if(kind==='location')all.push({...base,icon:status.locationEmoji||'📍',kind:'changed locations',selfKind:'changed locations',text:status.locationText||'left a saved spot'});
+    else if(kind==='arrival')all.push({...base,icon:'↗',kind:'is on the way',selfKind:'are on the way',text:status.arrival||'on the way'});
     else if(kind==='focus')all.push({...base,icon:'⏱',kind:'started focusing',selfKind:'started focusing',text:status.focusLabel||'doing the thing',status:Number(status.focusMinutes)?`${status.focusMinutes} min`:''});
     else if(kind==='focus-end')all.push({...base,icon:'⏱',kind:'finished focusing',selfKind:'finished focusing',text:status.focusLabel||'doing the thing'});
     else all.push({...base,icon:status.emoji||'●',kind:'updated their status',selfKind:'updated your status',text:status.text?`${status.category||'currently'} ${status.text}`:(status.state||'updated')});

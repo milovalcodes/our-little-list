@@ -672,6 +672,7 @@ async function openSlow(path) {
   const { context, page, errors } = await open('status.html?as=her');
   await page.click('details.status-editor summary');
   await page.click('[data-energy="need company"]');
+  const chipFilled=await page.locator('#status-text').inputValue()==='need company';
   await page.click('#status-emoji-pick');
   await page.fill('#emoji-reaction-input', '🪐');
   await page.click('[data-picker-use]');
@@ -683,12 +684,16 @@ async function openSlow(path) {
   await page.click('[data-picker-emoji="❤️"]');
   await page.waitForTimeout(300);
   const card = page.locator('.person-status-card.is-me');
-  const ready = await card.filter({ hasText: 'need company' }).filter({ hasText: 'almost there' }).count();
+  // The chip now fills the ordinary words field; typing over it intentionally
+  // replaces that draft instead of leaving a second energy label on the card.
+  const ready = await card.filter({ hasText: 'soup would fix me' }).filter({ hasText: 'almost there' }).count();
   const visibleReaction=await page.locator('[data-react-status="him"][data-emoji="❤️"]').count();
   await page.click('[data-react-status="him"][data-emoji="❤️"]');
   await page.waitForTimeout(200);
   const undone=await page.locator('[data-react-status="him"][data-emoji="❤️"]').count()===0;
-  note(ready === 1 && chosenEmoji === '🪐' && visibleReaction === 1 && undone && errors.length === 0, 'status emoji and reactions use one picker', errors[0] || '');
+  await page.goto(`${BASE}/today.html?as=her#new`);
+  const arrivalFeed=await page.locator('.activity-row', {hasText:'almost there'}).filter({hasText:'are on the way'}).count();
+  note(ready === 1 && chipFilled && chosenEmoji === '🪐' && visibleReaction === 1 && undone && arrivalFeed === 1 && errors.length === 0, 'status quick words, arrival feed, emoji and reactions work together', errors[0] || `arrival feed ${arrivalFeed}`);
   await context.close();
 }
 

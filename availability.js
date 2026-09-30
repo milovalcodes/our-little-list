@@ -18,16 +18,26 @@ export function focusActive(status, now = Date.now()) {
   return Boolean(status && Number(status.focusUntil) > now);
 }
 
+export function arrivalActive(status, now = Date.now()) {
+  const at = Number(status?.arrivalAt) || 0;
+  return Boolean(status?.arrival && at > 0 && now >= at && now - at < 45 * 60000);
+}
+
 // What someone's status is saying right now, in the order it wins: a running
 // focus session, then their own words (until they expire), then where they are.
 export function statusShows(status, now = Date.now()) {
   if (!status) return { kind: 'none', emoji: '', category: '', text: '' };
   if (focusActive(status, now)) return { kind: 'focus', emoji: '⏱', category: 'locking in', text: String(status.focusLabel || 'doing the thing') };
+  if (arrivalActive(status, now)) return { kind: 'arrival', emoji: '↗', category: 'on the way', text: String(status.arrival) };
   const expired = Number(status.expiresAt) > 0 && Number(status.expiresAt) < now;
   const own = !expired ? String(status.text || '').trim() : '';
   if (own) return { kind: 'custom', emoji: status.emoji || '✦', category: status.category || 'currently', text: own };
   const place = String(status.locationText || '').trim();
   if (place) return { kind: 'location', emoji: status.locationEmoji || '📍', category: 'location', text: place };
+  // Older status documents stored a separate energy field. Keep those readable
+  // even though new edits put the same words in the ordinary status field.
+  const legacyEnergy = String(status.energy || '').trim();
+  if (legacyEnergy && legacyEnergy !== 'functioning') return { kind: 'custom', emoji: '✦', category: 'feeling', text: legacyEnergy };
   return { kind: 'none', emoji: '', category: '', text: '' };
 }
 
