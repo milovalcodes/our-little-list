@@ -4,6 +4,9 @@ import { personName } from './profile-store.js';
 import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
 import { addTask, sendNote, sendAsk, addDateIdea } from './records.js';
 import { fridgeNote, clearFridge } from './fridge.js';
+import { momentPickerHtml, setupMomentPicker } from './moment-picker.js';
+import { friendlyWhen } from './time-format.js';
+import { openEmojiPicker } from './emoji-picker.js';
 
 const SEARCH_COLLECTIONS = ['items', 'notes', 'help', 'reminders', 'dates', 'memories'];
 const page = document.body.dataset.app || (document.body.dataset.viewer ? 'home' : '');
@@ -63,7 +66,11 @@ function addSheets() {
       </div>
       <form class="quick-add-form" id="quick-add-form">
         <label><span id="quick-label">what needs doing?</span><input id="quick-text" maxlength="180" required autocomplete="off" placeholder="the thing"></label>
-        <label class="quick-when" id="quick-when-wrap" hidden><span>at a time? (leave empty for no time)</span><input id="quick-when" type="datetime-local"></label>
+        <div class="quick-ask-options" id="quick-ask-options" hidden>
+          <div class="choice-cloud" id="quick-urgency"><button class="choice active" type="button" data-quick-urgency="soon">whenever</button><button class="choice" type="button" data-quick-urgency="now">kind of now</button><button class="choice" type="button" data-quick-urgency="timed">⏰ at a time</button></div>
+          <label><span>extra detail, if any</span><textarea id="quick-ask-note" maxlength="500" placeholder="only if it helps"></textarea></label>
+          <div class="ask-when" id="quick-when-wrap" hidden>${momentPickerHtml('quick')}</div>
+        </div>
         <button class="primary-action" id="quick-submit" type="submit">add it</button>
       </form>
     </section>
@@ -112,6 +119,8 @@ function closeSheets(animate = true) {
 
 function setupQuickAdd(data, viewer, other) {
   let kind = 'task';
+  let urgency = 'soon';
+  const moment = setupMomentPicker(document.getElementById('quick-when-wrap'), friendlyWhen);
   const labels = {
     task: ['what needs doing?', 'the thing', 'add it'],
     note: [`note for ${personName(other)}`, 'say it here', 'send it'],
@@ -125,7 +134,8 @@ function setupQuickAdd(data, viewer, other) {
     document.getElementById('quick-label').textContent = words[0];
     document.getElementById('quick-text').placeholder = words[1];
     document.getElementById('quick-submit').textContent = words[2];
-    document.getElementById('quick-when-wrap').hidden = kind !== 'ask';
+    document.getElementById('quick-ask-options').hidden = kind !== 'ask';
+    document.getElementById('quick-when-wrap').hidden = kind !== 'ask' || urgency !== 'timed';
     document.getElementById('quick-text').focus();
   };
   // One tap, no typing: the Locket-style "I thought of you" that a couple app
@@ -146,6 +156,14 @@ function setupQuickAdd(data, viewer, other) {
     const button = event.target.closest('[data-quick-kind]');
     if (button) pick(button.dataset.quickKind);
   });
+  document.getElementById('quick-urgency').addEventListener('click', event => {
+    const button = event.target.closest('[data-quick-urgency]');
+    if (!button) return;
+    urgency = button.dataset.quickUrgency;
+    document.querySelectorAll('[data-quick-urgency]').forEach(item => item.classList.toggle('active', item === button));
+    document.getElementById('quick-when-wrap').hidden = urgency !== 'timed';
+    moment.setActive(urgency === 'timed');
+  });
   document.getElementById('quick-add-form').addEventListener('submit', async event => {
     event.preventDefault();
     // Held now: event.currentTarget is null by the time a real network write
@@ -155,13 +173,9 @@ function setupQuickAdd(data, viewer, other) {
     const form = event.currentTarget;
     const text = document.getElementById('quick-text').value.trim();
     if (!text) return;
-    // An ask can be for a moment, which is what a reminder is now. Empty means
-    // no particular time.
-    const whenValue = document.getElementById('quick-when').value;
-    const dueAt = kind === 'ask' && whenValue ? new Date(whenValue).getTime() : 0;
-    if (kind === 'ask' && whenValue && (!Number.isFinite(dueAt) || dueAt <= Date.now())) {
-      document.getElementById('quick-when').focus();
-      showFailure('that time does not work.', 'pick a time in the future, or leave it empty.');
+    const dueAt = kind === 'ask' && urgency === 'timed' ? moment.chosen()?.getTime() || 0 : 0;
+    if (kind === 'ask' && urgency === 'timed' && (!dueAt || dueAt <= Date.now())) {
+      showFailure('that time does not work.', 'pick a future day and time.');
       return;
     }
     const button = document.getElementById('quick-submit');
@@ -172,8 +186,12 @@ function setupQuickAdd(data, viewer, other) {
       if (kind === 'task') await addTask(data, { viewer, other, title: text });
       else if (kind === 'note') await sendNote(data, { viewer, other, body: text });
       else if (kind === 'date') await addDateIdea(data, { viewer, other, title: text });
-      else await sendAsk(data, { viewer, other, title: text, dueAt });
+      else await sendAsk(data, { viewer, other, title: text, note: document.getElementById('quick-ask-note').value.trim(), urgency, dueAt });
       form.reset();
+      urgency = 'soon';
+      document.querySelectorAll('[data-quick-urgency]').forEach(item => item.classList.toggle('active', item.dataset.quickUrgency === 'soon'));
+      moment.setActive(false);
+      moment.reset();
       closeSheets();
       toast(kind === 'note' ? 'sent 💌' : kind === 'ask' ? (dueAt ? 'reminder secured' : 'asked 🫡') : 'added');
       window.littleHaptic?.('success');
@@ -241,12 +259,13 @@ function setupFridgeNote(data, viewer, other) {
   const launchpad = document.querySelector('.sky-launchpad');
   if (!launchpad) return;
   launchpad.insertAdjacentHTML('beforebegin', `<section class="fridge-note" id="fridge-note"><button class="fridge-paper" id="fridge-open" type="button"><span id="fridge-emoji">📌</span><div><small id="fridge-kicker">on the fridge</small><strong id="fridge-copy">tap to pin something</strong></div><i>✎</i></button></section>`);
-  document.body.insertAdjacentHTML('beforeend', `<section class="app-sheet fridge-sheet" id="sheet-fridge" role="dialog" aria-modal="true" aria-labelledby="fridge-title" hidden><header class="sheet-head"><div><small>a note that stays up</small><h2 id="fridge-title">On the fridge</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header><form id="fridge-form"><label><span>tiny icon</span><input id="fridge-emoji-input" maxlength="8" value="📌"></label><label><span>the note</span><textarea id="fridge-text" maxlength="240" placeholder="important-ish household lore"></textarea></label><div class="fridge-actions"><button class="primary-action" type="submit">pin it</button><button class="soft-delete" id="fridge-clear" type="button">take it down</button></div></form></section>`);
+  document.body.insertAdjacentHTML('beforeend', `<section class="app-sheet fridge-sheet" id="sheet-fridge" role="dialog" aria-modal="true" aria-labelledby="fridge-title" hidden><header class="sheet-head"><div><small>a note that stays up</small><h2 id="fridge-title">On the fridge</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header><form id="fridge-form"><label><span>tiny icon</span><button class="emoji-select" id="fridge-emoji-pick" type="button">📌 pick an emoji</button></label><label><span>the note</span><textarea id="fridge-text" maxlength="240" placeholder="important-ish household lore"></textarea></label><div class="fridge-actions"><button class="primary-action" type="submit">pin it</button><button class="soft-delete" id="fridge-clear" type="button">take it down</button></div></form></section>`);
   // The fridge is a pinned note now (see fridge.js). A sticky note saved the
   // old way still shows until whoever wrote it next opens home, which turns it
   // into a pinned note quietly.
   let notes = [];
   let legacy = null;
+  let fridgeEmoji = '📌';
   let migrating = false;
   let notesSeen = false;
   let pinsSeen = false;
@@ -280,22 +299,30 @@ function setupFridgeNote(data, viewer, other) {
   data.listenTo('pins', items => { legacy = items.find(item => item.id === 'fridge') || null; pinsSeen = true; paint(); void migrate(); });
   document.getElementById('fridge-open').addEventListener('click', () => {
     const pinned = fridgeNote(notes);
-    document.getElementById('fridge-text').value = '';
-    document.getElementById('fridge-text').placeholder = pinned ? 'replace it with…' : 'important-ish household lore';
-    document.getElementById('fridge-emoji-input').value = pinned?.pinEmoji || '📌';
+    document.getElementById('fridge-text').value = pinned?.body || legacy?.text || '';
+    fridgeEmoji = pinned?.pinEmoji || legacy?.emoji || '📌';
+    document.getElementById('fridge-emoji-pick').textContent = `${fridgeEmoji} pick an emoji`;
     openSheet('fridge');
   });
+  document.getElementById('fridge-emoji-pick').addEventListener('click', () => openEmojiPicker({
+    current: fridgeEmoji, label: 'icon',
+    onSelect: value => { fridgeEmoji = value; document.getElementById('fridge-emoji-pick').textContent = `${value} pick an emoji`; },
+    onRemove: () => { fridgeEmoji = '📌'; document.getElementById('fridge-emoji-pick').textContent = '📌 pick an emoji'; }
+  }));
   document.getElementById('fridge-form').addEventListener('submit', async event => {
     event.preventDefault();
     const text = document.getElementById('fridge-text').value.trim();
     if (!text) { document.getElementById('fridge-text').focus(); return; }
-    const emoji = document.getElementById('fridge-emoji-input').value.trim() || '📌';
+    const emoji = fridgeEmoji;
+    const current = fridgeNote(notes);
+    if (current && text === (current.body || current.message || '') && emoji === (current.pinEmoji || '📌')) { closeSheets(); return; }
     const button = event.currentTarget.querySelector('[type="submit"]');
     setButtonBusy(button, true, 'pinning…');
     try {
-      await clearFridge(data, notes);
-      if (legacy) await data.removeFrom('pins', 'fridge').catch(() => {});
+      const oldPins = notes.filter(note => note.pinned).map(note => note.id);
       await sendNote(data, { viewer, other, body: text, pinned: true, pinEmoji: emoji });
+      await Promise.all(oldPins.map(id => data.updateIn('notes', id, { pinned: false })));
+      if (legacy) await data.removeFrom('pins', 'fridge').catch(() => {});
       closeSheets(); toast('pinned to the fridge');
     } catch (_) { showFailure('that note fell off the fridge.', 'check the internet and try again.'); }
     finally { setButtonBusy(button, false); }

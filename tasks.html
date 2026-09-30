@@ -56,13 +56,7 @@
             <button type="button" class="choice" data-urgency="now">kind of now</button>
             <button type="button" class="choice" data-urgency="timed">⏰ at a time…</button>
           </div>
-          <div class="ask-when" id="ask-when" hidden>
-            <div class="choice-cloud" id="day-choices"><button type="button" class="choice active" data-day="today">today</button><button type="button" class="choice" data-day="tomorrow">tomorrow</button><button type="button" class="choice" data-day="weekend">weekend</button><button type="button" class="choice" data-day="custom">pick one…</button></div>
-            <input id="custom-day" class="exact-input" type="date" hidden>
-            <div class="choice-cloud" id="time-choices"><button type="button" class="choice active" data-time="09:00">morning-ish</button><button type="button" class="choice" data-time="13:00">after lunch</button><button type="button" class="choice" data-time="19:00">evening</button><button type="button" class="choice" data-time="custom">exact time…</button></div>
-            <input id="custom-time" class="exact-input" type="time" hidden>
-            <p class="reminder-when-preview" id="reminder-when-preview" aria-live="polite"></p>
-          </div>
+          <div class="ask-when" id="ask-when" hidden></div>
           <button class="primary-action roomy-action" id="help-submit" type="submit">ask</button>
         </form>
         <p class="inline-success" id="help-sent" hidden></p>

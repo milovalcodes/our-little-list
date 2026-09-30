@@ -74,9 +74,7 @@
           <label id="custom-category-wrap" hidden><span>your label</span><input id="status-custom-category" maxlength="28" placeholder="currently obsessed with"></label>
         </div>
         <label><span>the thing</span><input id="status-text" maxlength="90" placeholder="song, snack, thought, minor crisis…"></label>
-        <div class="status-emoji-row" aria-label="Pick an emoji">
-          <button class="status-emoji active" data-emoji="🎧" type="button">🎧</button><button class="status-emoji" data-emoji="🍿" type="button">🍿</button><button class="status-emoji" data-emoji="🍜" type="button">🍜</button><button class="status-emoji" data-emoji="🫠" type="button">🫠</button><button class="status-emoji" data-emoji="💛" type="button">💛</button><button class="status-emoji" data-emoji="✦" type="button">✦</button>
-        </div>
+        <button class="emoji-select" id="status-emoji-pick" type="button">🎧 pick an emoji</button>
         <label><span>make it disappear</span><select id="status-expiry"><option value="0">when I clear it</option><option value="1">in 1 hour</option><option value="4">in 4 hours</option><option value="today">tonight</option></select></label>
         <div class="status-actions"><button class="primary-action" id="status-save" type="submit">save it</button><button class="create-space" id="status-clear" type="button">clear custom bit</button></div>
       </form>

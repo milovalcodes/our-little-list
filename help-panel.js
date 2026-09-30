@@ -1,7 +1,7 @@
 import { escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { timeAgo, friendlyWhen } from './time-format.js';
-import { pickMoment } from './moment-picker.js';
+import { momentPickerHtml, setupMomentPicker } from './moment-picker.js';
 import { sendAsk } from './records.js';
 import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
@@ -17,8 +17,8 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
   const $ = id => document.getElementById(id);
   let requests = [];
   let urgency = 'soon';
-  let day = 'today';
-  let time = '09:00';
+  $('ask-when').innerHTML = momentPickerHtml();
+  const moment = setupMomentPicker($('ask-when'), friendlyWhen);
 
   document.querySelectorAll('#help-presets button').forEach(button => {
     button.addEventListener('click', () => {
@@ -36,38 +36,11 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
     urgency = next;
     document.querySelectorAll('#help-urgency .choice').forEach(item => item.classList.toggle('active', item.dataset.urgency === urgency));
     $('ask-when').hidden = urgency !== 'timed';
-    // Opening the time picker late in the day used to greet you with
-    // "already gone by": start on tomorrow when today's pick has passed.
-    if (urgency === 'timed' && day === 'today' && (chosenMoment()?.getTime() || 0) <= Date.now()) {
-      chooseMoment('day-choices', document.querySelector('#day-choices [data-day="tomorrow"]'));
-    }
-    previewWhen();
+    moment.setActive(urgency === 'timed');
   };
   document.querySelectorAll('#help-urgency .choice').forEach(button => {
     button.addEventListener('click', () => pickUrgency(button.dataset.urgency));
   });
-  const chooseMoment = (group, button) => {
-    document.querySelectorAll(`#${group} .choice`).forEach(item => item.classList.toggle('active', item === button));
-    if (group === 'day-choices') { day = button.dataset.day; $('custom-day').hidden = day !== 'custom'; }
-    else { time = button.dataset.time; $('custom-time').hidden = time !== 'custom'; }
-    previewWhen();
-  };
-  document.querySelectorAll('#day-choices .choice').forEach(button => button.addEventListener('click', () => chooseMoment('day-choices', button)));
-  document.querySelectorAll('#time-choices .choice').forEach(button => button.addEventListener('click', () => chooseMoment('time-choices', button)));
-  $('custom-day').addEventListener('change', previewWhen);
-  $('custom-time').addEventListener('change', previewWhen);
-
-  function chosenMoment() {
-    return pickMoment({ day, time, customDay: $('custom-day').value, customTime: $('custom-time').value });
-  }
-  function previewWhen() {
-    const preview = $('reminder-when-preview');
-    const chosen = urgency === 'timed' ? chosenMoment() : null;
-    if (!chosen) { preview.textContent = ''; preview.classList.remove('is-past'); return; }
-    const past = chosen.getTime() <= Date.now();
-    preview.textContent = past ? `${friendlyWhen(chosen.getTime())} — already gone by` : friendlyWhen(chosen.getTime());
-    preview.classList.toggle('is-past', past);
-  }
 
   $('help-form').addEventListener('submit', async event => {
     event.preventDefault();
@@ -76,7 +49,7 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
     if (!title) return;
     let dueAt = 0;
     if (urgency === 'timed') {
-      const chosen = chosenMoment();
+      const chosen = moment.chosen();
       if (!chosen) { toast('pick a day and time first'); return; }
       // Accepting "today" plus a time that has already gone by saved a nudge
       // that could never go off.
@@ -98,8 +71,7 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
       form.reset();
       delete $('help-title').dataset.emoji;
       pickUrgency('soon');
-      chooseMoment('day-choices', document.querySelector('#day-choices [data-day="today"]'));
-      chooseMoment('time-choices', document.querySelector('#time-choices [data-time="09:00"]'));
+      moment.reset();
       $('help-sent').hidden = false;
       $('help-sent').textContent = dueAt
         ? (sent.scheduled?.queued ? `${personName(other)} gets a nudge ${friendlyWhen(dueAt)}.` : `saved for ${friendlyWhen(dueAt)} — but sync is off on this phone, so no nudge will be sent.`)

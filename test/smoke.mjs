@@ -257,13 +257,18 @@ async function openSlow(path) {
   const { context, page, errors } = await open('her.html?as=her');
   await page.click('#fridge-open');
   await page.fill('#fridge-text', 'oat milk is critically low');
-  await page.fill('#fridge-emoji-input', '🥛');
+  await page.click('#fridge-emoji-pick');
+  await page.fill('#emoji-reaction-input', '🥛');
+  await page.click('[data-picker-use]');
   await page.click('#fridge-form [type="submit"]');
   await page.waitForTimeout(200);
   const noteText = await page.locator('#fridge-copy').textContent();
   const icon = await page.locator('#fridge-emoji').textContent();
-  note(noteText === 'oat milk is critically low' && icon === '🥛' && errors.length === 0,
-       'the shared fridge note pins and redraws', errors[0] || JSON.stringify({ noteText, icon }));
+  await page.click('#fridge-open');
+  const prefilled = await page.locator('#fridge-text').inputValue();
+  await page.click('#sheet-fridge [data-close-sheet]');
+  note(noteText === 'oat milk is critically low' && prefilled === noteText && icon === '🥛' && errors.length === 0,
+       'the shared fridge note pins, uses any emoji, and reopens with its text', errors[0] || JSON.stringify({ noteText, icon, prefilled }));
   // The fridge is a pinned note: it is in the notes, and unpinning it there
   // takes it off the fridge.
   await page.goto(`${BASE}/notes.html?from=her`, { waitUntil: 'domcontentloaded' });
@@ -544,13 +549,15 @@ async function openSlow(path) {
   await page.click('[data-open-sheet="quick"]');
   await page.click('[data-quick-kind="ask"]');
   await page.fill('#quick-text', 'call the vet');
-  const when = await page.evaluate(() => { const d = new Date(Date.now() + 26 * 3600000); d.setSeconds(0, 0); const pad = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; });
-  await page.fill('#quick-when', when);
+  await page.fill('#quick-ask-note', 'ask about the tiny dog');
+  await page.click('[data-quick-urgency="timed"]');
+  await page.click('#quick-day-choices [data-day="tomorrow"]');
+  await page.click('#quick-time-choices [data-time="19:00"]');
   await page.click('#quick-submit');
   await page.waitForTimeout(500);
   const saved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('our-little-list-help-v1')).items.find(item => item.title === 'call the vet'); } catch (_) { return null; } });
-  note(saved && saved.dueAt > Date.now() && saved.state === 'open' && saved.to === 'him' && errors.length === 0,
-       'quick add can set an ask with a time', errors[0] || JSON.stringify(saved));
+  note(saved && saved.dueAt > Date.now() && saved.state === 'open' && saved.to === 'him' && saved.note === 'ask about the tiny dog' && errors.length === 0,
+       'quick add uses the same day and time picker as asks', errors[0] || JSON.stringify(saved));
   await context.close();
 }
 
@@ -665,8 +672,12 @@ async function openSlow(path) {
   const { context, page, errors } = await open('status.html?as=her');
   await page.click('details.status-editor summary');
   await page.click('[data-energy="need company"]');
+  await page.click('#status-emoji-pick');
+  await page.fill('#emoji-reaction-input', '🪐');
+  await page.click('[data-picker-use]');
   await page.fill('#status-text', 'soup would fix me');
   await page.click('#status-save');
+  const chosenEmoji = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-statuses-v1')).items.find(item => item.id === 'her')?.emoji);
   await page.click('[data-arrival="almost there"]');
   await page.click('[data-status-picker="him"]');
   await page.click('[data-picker-emoji="❤️"]');
@@ -677,7 +688,7 @@ async function openSlow(path) {
   await page.click('[data-react-status="him"][data-emoji="❤️"]');
   await page.waitForTimeout(200);
   const undone=await page.locator('[data-react-status="him"][data-emoji="❤️"]').count()===0;
-  note(ready === 1 && visibleReaction === 1 && undone && errors.length === 0, 'status reactions are visible and undoable', errors[0] || '');
+  note(ready === 1 && chosenEmoji === '🪐' && visibleReaction === 1 && undone && errors.length === 0, 'status emoji and reactions use one picker', errors[0] || '');
   await context.close();
 }
 

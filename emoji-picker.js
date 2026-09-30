@@ -6,9 +6,12 @@ const COMMON_EMOJIS = [
 
 let activePicker = null;
 
-export function openEmojiPicker({ current = '', onSelect, onRemove } = {}) {
+export function openEmojiPicker({ current = '', label = 'reaction', onSelect, onRemove } = {}) {
   const dialog = ensurePicker();
   activePicker = { onSelect, onRemove };
+  dialog.querySelector('#emoji-picker-title').textContent = `pick ${/^[aeiou]/i.test(label) ? 'an' : 'a'} ${label}`;
+  dialog.querySelector('[data-picker-use]').textContent = `use ${label}`;
+  dialog.querySelector('[data-picker-remove]').textContent = `clear ${label}`;
   dialog.querySelector('[data-picker-current]').textContent = current || '♡';
   dialog.querySelector('[data-picker-remove]').hidden = !current;
   const input = dialog.querySelector('#emoji-reaction-input');

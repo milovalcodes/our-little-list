@@ -48,8 +48,9 @@ window.setInterval(render,30000);
 document.querySelectorAll('.status-choice').forEach(button=>button.addEventListener('click',()=>{
   state=button.dataset.state;document.querySelectorAll('.status-choice').forEach(item=>item.classList.toggle('active',item===button));
 }));
-document.querySelectorAll('.status-emoji').forEach(button=>button.addEventListener('click',()=>{
-  emoji=button.dataset.emoji;document.querySelectorAll('.status-emoji').forEach(item=>item.classList.toggle('active',item===button));
+$('status-emoji-pick').addEventListener('click',()=>openEmojiPicker({current:emoji,label:'emoji',
+  onSelect:value=>{emoji=value;$('status-emoji-pick').textContent=`${value} pick an emoji`;},
+  onRemove:()=>{emoji='🎧';$('status-emoji-pick').textContent='🎧 pick an emoji';}
 }));
 document.querySelectorAll('.energy-choice').forEach(button=>button.addEventListener('click',()=>{energy=button.dataset.energy;document.querySelectorAll('.energy-choice').forEach(item=>item.classList.toggle('active',item===button));}));
 $('status-category').addEventListener('change',event=>{$('custom-category-wrap').hidden=event.target.value!=='custom';});
@@ -91,7 +92,7 @@ function hydrateEditor(){
   $('status-form').dataset.hydrated='true';state=mine.state||'online';emoji=mine.emoji||'🎧';energy=mine.energy||'functioning';
   const typing=$('status-text').value.trim()!=='';
   document.querySelectorAll('.status-choice').forEach(item=>item.classList.toggle('active',item.dataset.state===state));
-  document.querySelectorAll('.status-emoji').forEach(item=>item.classList.toggle('active',item.dataset.emoji===emoji));
+  $('status-emoji-pick').textContent=`${emoji} pick an emoji`;
   document.querySelectorAll('.energy-choice').forEach(item=>item.classList.toggle('active',item.dataset.energy===energy));
   const presets=[...$('status-category').options].map(option=>option.value);const category=mine.category||'listening to';
   $('status-category').value=presets.includes(category)?category:'custom';$('custom-category-wrap').hidden=$('status-category').value!=='custom';$('status-custom-category').value=presets.includes(category)?'':category;
