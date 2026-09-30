@@ -34,15 +34,17 @@ export async function sendNote(data, { viewer, other, body, mood = 'heart', pinn
 
 // An ask, optionally for a particular moment. With a time it does what a
 // reminder used to: the other phone is told now, and nudged again at the time.
-export async function sendAsk(data, { viewer, other, title, note = '', emoji = '', urgency = 'soon', dueAt = 0, urgent = false }) {
+export async function sendAsk(data, { viewer, other, title, note = '', emoji = '', urgency = 'soon', dueAt = 0, urgent = false, forMe = false }) {
   const timed = Number(dueAt) > 0;
+  if(forMe&&!timed)throw new Error('a reminder for yourself needs a time');
+  const recipient=forMe?viewer:other;
   const record = await data.addTo('help', {
-    from: viewer, to: other, title, note, emoji: emoji || (timed ? '⏰' : '🙋'),
+    from: viewer, to: recipient, title, note, emoji: emoji || (timed ? '⏰' : '🙋'),
     urgency: timed ? 'timed' : urgency, urgent:urgent===true, state: 'open', createdAt: Date.now(),
     ...(timed ? { dueAt: Number(dueAt), scheduledAt: new Date(Number(dueAt)).toISOString() } : {})
   });
   const who = personName(viewer);
-  void data.notify(other, {
+  if(!forMe)void data.notify(recipient, {
     title: timed ? `${who} set you a reminder ⏰` : urgency === 'now' ? `${who} needs a hand, kind of now` : `${who} needs a hand`,
     body: timed ? `${title} · ${friendlyWhen(dueAt)}` : title,
     url: 'tasks.html#asks', kind: 'help', urgent:urgent===true
@@ -51,7 +53,7 @@ export async function sendAsk(data, { viewer, other, title, note = '', emoji = '
   if (timed) {
     // The id travels with the nudge so the delivery worker can drop it if the
     // ask is deleted, sorted or turned down before the time comes.
-    scheduled = await data.notify(other, {
+    scheduled = await data.notify(recipient, {
       title: `⏰ ${title}`, body: note || `from ${who}`, url: 'tasks.html#asks',
       kind: 'reminder', ref: `help/${record?.id || ''}`, sendAt: Number(dueAt), urgent:urgent===true
     });

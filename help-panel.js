@@ -42,12 +42,17 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
   document.querySelectorAll('#help-urgency .choice').forEach(button => {
     button.addEventListener('click', () => pickUrgency(button.dataset.urgency));
   });
+  $('ask-for-me').addEventListener('change',()=>{if($('ask-for-me').checked)pickUrgency('timed');render();});
 
   $('help-form').addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;
     const title = $('help-title').value.trim();
     if (!title) return;
+    const forMe=$('ask-for-me').checked;
+    if(forMe&&urgency!=='timed'){
+      pickUrgency('timed');toast('pick a time for your own reminder');return;
+    }
     let dueAt = 0;
     if (urgency === 'timed') {
       const chosen = moment.chosen();
@@ -63,24 +68,25 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
     const submit = $('help-submit');
     setButtonBusy(submit, true, 'checking…');
     try {
-      const urgent=await chooseAskUrgency(data,viewer,other);
+      const urgent=forMe?false:await chooseAskUrgency(data,viewer,other);
       submit.textContent='asking…';
       const sent = await sendAsk(data, {
         viewer, other, title,
         note: $('help-note').value.trim(),
         emoji: $('help-title').dataset.emoji || (dueAt ? '⏰' : '🙋'),
-        urgency, dueAt, urgent
+        urgency, dueAt, urgent, forMe
       });
       form.reset();
       delete $('help-title').dataset.emoji;
       pickUrgency('soon');
       moment.reset();
+      render();
       $('help-sent').hidden = false;
       $('help-sent').textContent = dueAt
-        ? (sent.scheduled?.queued ? `${personName(other)} gets a nudge ${friendlyWhen(dueAt)}.` : `saved for ${friendlyWhen(dueAt)} — but sync is off on this phone, so no nudge will be sent.`)
+        ? (sent.scheduled?.queued ? `${forMe?'your phone':personName(other)} gets a nudge ${friendlyWhen(dueAt)}.` : `saved for ${friendlyWhen(dueAt)} — but sync is off on this phone, so no nudge will be sent.`)
         : `asked ${personName(other)}.`;
       window.setTimeout(() => { $('help-sent').hidden = true; }, 6000);
-      toast('asked 🫡');
+      toast(forMe?'reminder saved':'asked 🫡');
     } catch (_) {
       showFailure('that ask did not go through.', 'check the internet and try again. Your words are still here.');
     } finally {
@@ -132,14 +138,14 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
 
   function render() {
     const live = requests.filter(item => !isPendingDelete('help', item.id));
-    const forMe = live.filter(item => item.to === viewer && item.state !== 'done');
+    const forMe = live.filter(item => item.to === viewer && item.from !== viewer && item.state !== 'done');
     const mine = live.filter(item => item.from === viewer && item.state !== 'done');
     $('help-inbox').hidden = forMe.length === 0;
     $('inbox-title').textContent = `${personName(other)} needs something`;
     $('help-inbox-list').innerHTML = forMe.map(inboxCard).join('');
     $('help-mine-empty').hidden = mine.length > 0;
     $('help-mine-list').innerHTML = mine.map(mineCard).join('');
-    $('help-heading').textContent = `Ask ${personName(other)} for a hand`;
+    $('help-heading').textContent = $('ask-for-me').checked?'A reminder for you':`Ask ${personName(other)} for a hand`;
   }
 
   function inboxCard(request) {
@@ -153,8 +159,9 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
 
   function mineCard(request) {
     const answer = ANSWERS[request.state];
+    const self=request.to===viewer;
     return `<article class="help-card mine urgency-${escapeHtml(request.urgency || 'soon')}" data-id="${escapeHtml(request.id)}">
-      <div class="help-card-top"><span class="help-emoji">${escapeHtml(request.emoji || '🙋')}</span><div><strong>${escapeHtml(request.title || '')}</strong><small>${escapeHtml(whenLine(request, 'asked '))}</small><p class="help-reply ${answer ? `tone-${answer.tone}` : 'tone-waiting'}">${answer ? `${escapeHtml(personName(other))} said ${escapeHtml(answer.theirs)}` : `waiting on ${escapeHtml(personName(other))}`}</p></div></div>
+      <div class="help-card-top"><span class="help-emoji">${escapeHtml(request.emoji || '🙋')}</span><div><strong>${escapeHtml(request.title || '')}</strong><small>${escapeHtml(whenLine(request, 'asked '))}</small><p class="help-reply ${answer ? `tone-${answer.tone}` : 'tone-waiting'}">${self?'your reminder':answer ? `${escapeHtml(personName(other))} said ${escapeHtml(answer.theirs)}` : `waiting on ${escapeHtml(personName(other))}`}</p></div></div>
       <div class="help-answers"><button type="button" class="help-answer tone-yes" data-action="done">sorted ✓</button><button type="button" class="help-answer tone-no" data-action="cancel">never mind</button></div>
     </article>`;
   }

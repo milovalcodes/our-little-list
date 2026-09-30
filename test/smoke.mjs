@@ -485,6 +485,23 @@ async function openSlow(path) {
   await context.close();
 }
 
+// A self-reminder has one scheduled nudge to this phone, with no immediate
+// heads-up (especially not to the partner).
+{
+  const {context,page,errors}=await open('tasks.html?as=her#asks');
+  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();window.__selfNudges=[];data.notify=async(...args)=>{window.__selfNudges.push(args);return {queued:true};};});
+  await page.locator('#ask-for-me').check();
+  const timeShown=await page.locator('#ask-when').isVisible();
+  await page.click('#day-choices [data-day="tomorrow"]');
+  await page.fill('#help-title','check the plant');
+  await page.click('#help-submit');
+  await page.locator('#help-mine-list .help-card',{hasText:'check the plant'}).waitFor();
+  const self=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return {record:(await data.readOnce('help')).find(item=>item.title==='check the plant'), nudges:window.__selfNudges};});
+  const noInbox=await page.locator('#help-inbox-list .help-card',{hasText:'check the plant'}).count()===0;
+  note(timeShown&&self.record?.to==='her'&&self.nudges.length===1&&self.nudges[0][0]==='her'&&self.nudges[0][1]?.kind==='reminder'&&noInbox&&errors.length===0,'self-reminders nudge only your own phone at the chosen time',errors[0]||JSON.stringify(self));
+  await context.close();
+}
+
 // Recurring tasks roll forward instead of disappearing, and groceries keep an aisle.
 {
   const { context, page, errors } = await open('tasks.html?as=her');

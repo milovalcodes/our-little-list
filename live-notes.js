@@ -56,7 +56,7 @@ async function boot(viewer) {
     });
 
     data.listenToQuery('help', recent, items => {
-      const fresh = firstFresh('help', items, item => item.to === viewer && item.state === 'open');
+      const fresh = firstFresh('help', items, item => item.to === viewer && item.from !== viewer && item.state === 'open');
       const timed = Number(fresh?.dueAt) > 0;
       if (fresh) announce({ icon: fresh.emoji || (timed ? '⏰' : '🙋'), label: timed ? `${personName(other)} set you a reminder` : `${personName(other)} needs a hand`, body: timed ? `${fresh.title} · ${friendlyWhen(Number(fresh.dueAt))}` : fresh.title, url: 'tasks.html#asks', kind: 'help', urgent:fresh.urgent===true });
     });

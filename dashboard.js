@@ -60,7 +60,7 @@ function renderBadge() {
       ...buckets.dates.filter(idea => idea.addedBy === other && !idea.imported && fresh(idea.createdAt)),
       // Automatic spot changes are not news; arrivals get their own ping.
       ...buckets.statuses.filter(status => (status.person === other || status.id === other) && status.updateKind !== 'location' && fresh(status.updatedAt)),
-      ...buckets.help.filter(request => request.to === viewer && fresh(request.createdAt)),
+      ...buckets.help.filter(request => request.to === viewer && request.from !== viewer && fresh(request.createdAt)),
       ...buckets.memories.filter(item => item.addedBy === other && fresh(item.createdAt)),
       ...buckets.reactions.filter(item => item.by === other && fresh(item.createdAt))
     ];
@@ -71,12 +71,12 @@ function renderBadge() {
   }
 
   if (helpBadge) {
-    const waiting = buckets.help.filter(request => request.to === viewer && request.state === 'open').length;
+    const waiting = buckets.help.filter(request => request.to === viewer && request.from !== viewer && request.state === 'open').length;
     helpBadge.hidden = waiting === 0;
     helpBadge.textContent = String(waiting);
     helpBadge.setAttribute('aria-label', `${waiting} waiting`);
   }
-  setIconBadge(newCount + buckets.help.filter(request => request.to === viewer && request.state === 'open' && !fresh(request.createdAt)).length);
+  setIconBadge(newCount + buckets.help.filter(request => request.to === viewer && request.from !== viewer && request.state === 'open' && !fresh(request.createdAt)).length);
 }
 
 // The number on the app icon (iPhone home-screen apps since iOS 16.4). The

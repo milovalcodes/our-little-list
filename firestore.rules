@@ -207,7 +207,7 @@ service cloud.firestore {
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId)
         && request.resource.data.from == mySide()
-        && request.resource.data.to == otherSide()
+        && request.resource.data.to in [mySide(), otherSide()]
         && shortText(request.resource.data.title, 180)
         && shortText(request.resource.data.note, 500)
         && (!request.resource.data.keys().hasAny(['urgent']) || request.resource.data.urgent is bool);
