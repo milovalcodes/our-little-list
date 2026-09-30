@@ -28,9 +28,17 @@ if (document.body.dataset.viewer !== viewer) {
 const other = partnerOf(viewer);
 const seenKey = `our-little-list-seen-${viewer}`;
 
-Object.keys(buckets).forEach(name =>
-  data.listenTo(name, items => { buckets[name] = items; scheduleDashboardRender(); })
-);
+const recent = { orderBy: { field: 'createdAt', direction: 'desc' }, limit: 50 };
+const doneSince = Date.now() - 7 * 86400000;
+let openItems = [], recentDone = [];
+const updateItems = () => { buckets.items = [...openItems, ...recentDone]; scheduleDashboardRender(); };
+data.listenToQuery('items', { where: { field: 'done', value: false } }, items => { openItems = items; updateItems(); });
+data.listenToQuery('items', { where: { field: 'doneAt', op: '>=', value: doneSince }, orderBy: { field: 'doneAt', direction: 'desc' }, limit: 50 }, items => { recentDone = items; updateItems(); });
+for (const name of Object.keys(buckets).filter(name => name !== 'items')) {
+  const receive = items => { buckets[name] = items; scheduleDashboardRender(); };
+  if (['notes', 'memories', 'reactions'].includes(name)) data.listenToQuery(name, recent, receive);
+  else data.listenTo(name, receive);
+}
 startPresence(data, viewer, 'home');
 // Keeps this phone's push subscription current. Does nothing until
 // notifications have actually been allowed.

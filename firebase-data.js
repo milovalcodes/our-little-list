@@ -26,7 +26,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
   const [
     { initializeApp, getApps, getApp },
     { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
-    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDocs, getDocsFromServer }
+    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, getDocsFromServer, query, where, orderBy, limit: limitQuery }
   ] = modules;
 
   // Better a plain sentence than a permission-denied nobody can read.
@@ -90,6 +90,31 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         }
       };
     },
+    listenToQuery(name, options, callback) {
+      const spec = querySpec(options);
+      if (!signedIn()) return () => {};
+      const key = `${name}:${JSON.stringify(spec)}`;
+      let live = liveCollections.get(key);
+      if (!live) {
+        const constraints = [
+          ...spec.where.map(({ field, op, value }) => where(field, op, value)),
+          ...(spec.orderBy ? [orderBy(spec.orderBy.field, spec.orderBy.direction)] : []),
+          ...(spec.limit ? [limitQuery(spec.limit)] : [])
+        ];
+        live = { callbacks: new Set(), latest: null, unsubscribe: null };
+        live.unsubscribe = onSnapshot(query(named(name), ...constraints), snapshot => {
+          live.latest = snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
+          live.callbacks.forEach(handler => safelyCall(handler, [...live.latest]));
+        }, problem => announceError(problem, 'listen'));
+        liveCollections.set(key, live);
+      }
+      live.callbacks.add(callback);
+      if (live.latest) queueMicrotask(() => safelyCall(callback, [...live.latest]));
+      return () => {
+        live.callbacks.delete(callback);
+        if (!live.callbacks.size) { live.unsubscribe?.(); liveCollections.delete(key); }
+      };
+    },
     // A single read, for the places that need to look at a collection once and
     // then act — push registration checking who else is filed against this
     // phone, for instance. A live listener there would sit open for the life of
@@ -102,6 +127,11 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       if (!signedIn()) return [];
       const snapshot = fromServer ? await getDocsFromServer(named(name)) : await getDocs(named(name));
       return snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
+    },
+    async readDoc(name, id) {
+      if (!signedIn()) return null;
+      const snapshot = await getDoc(doc(named(name), id));
+      return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
     },
     async addTo(name, item) {
       // The id is minted locally rather than handed back by the server, so a
@@ -171,6 +201,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
 function createLocalLayer(onAuth, onReady) {
   const key = name => `our-little-list-${name}-v1`;
   const listeners = new Map();
+  const queryListeners = new Map();
 
   const read = name => {
     try { return JSON.parse(localStorage.getItem(key(name)))?.items || []; } catch (_) { return []; }
@@ -200,8 +231,30 @@ function createLocalLayer(onAuth, onReady) {
       queueMicrotask(() => callback(read(name)));
       return () => listeners.get(name)?.delete(callback);
     },
+    listenToQuery(name, options, callback) {
+      const spec = querySpec(options);
+      const key = `${name}:${JSON.stringify(spec)}`;
+      let live = queryListeners.get(key);
+      if (!live) {
+        live = { callbacks: new Set(), unsubscribe: null, latest: null };
+        live.unsubscribe = this.listenTo(name, items => {
+          live.latest = applyQuery(items, spec);
+          live.callbacks.forEach(handler => safelyCall(handler, [...live.latest]));
+        });
+        queryListeners.set(key, live);
+      }
+      live.callbacks.add(callback);
+      if (live.latest) queueMicrotask(() => safelyCall(callback, [...live.latest]));
+      return () => {
+        live.callbacks.delete(callback);
+        if (!live.callbacks.size) { live.unsubscribe?.(); queryListeners.delete(key); }
+      };
+    },
     async readOnce(name) {
       return read(name);
+    },
+    async readDoc(name, id) {
+      return read(name).find(item => item.id === id) || null;
     },
     async addTo(name, item) {
       const items = read(name);
@@ -229,6 +282,38 @@ function createLocalLayer(onAuth, onReady) {
     async signIn() {}, async signOut() {},
     friendlyError() { return 'sync is offline.'; }
   };
+}
+
+function querySpec(options = {}) {
+  const filters = Array.isArray(options.where) ? options.where : options.where ? [options.where] : [];
+  return {
+    where: filters.map(({ field, op = '==', value }) => ({ field, op, value })),
+    orderBy: options.orderBy ? {
+      field: options.orderBy.field,
+      direction: options.orderBy.direction === 'asc' ? 'asc' : 'desc'
+    } : null,
+    limit: Number.isInteger(options.limit) && options.limit > 0 ? options.limit : null
+  };
+}
+
+function applyQuery(items, spec) {
+  let result = items.filter(item => spec.where.every(({ field, op, value }) => {
+    const actual = item[field];
+    if (op === '==') return actual === value;
+    if (op === '>=') return actual >= value;
+    if (op === '<=') return actual <= value;
+    if (op === '>') return actual > value;
+    if (op === '<') return actual < value;
+    throw new Error(`unsupported local query: ${op}`);
+  }));
+  if (spec.orderBy) {
+    const { field, direction } = spec.orderBy;
+    result = result.filter(item => item[field] !== undefined).sort((a, b) => {
+      const compared = a[field] < b[field] ? -1 : a[field] > b[field] ? 1 : 0;
+      return direction === 'asc' ? compared : -compared;
+    });
+  }
+  return spec.limit ? result.slice(0, spec.limit) : result;
 }
 
 function announceReady() {

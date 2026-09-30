@@ -15,7 +15,11 @@ const viewer=await awaitViewer();if(!viewer){showNotAMember();await new Promise(
 applyViewerTheme(viewer);document.querySelector('.back-to-side').href=`${viewer}.html`;
 $('today-date').textContent=new Intl.DateTimeFormat(undefined,{weekday:'long',month:'short',day:'numeric'}).format(new Date()).toLowerCase();
 
-Object.keys(buckets).forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();}));
+Object.keys(buckets).forEach(name=>{
+  const receive=items=>{buckets[name]=items;render();};
+  if(name==='items')data.listenToQuery(name,{where:{field:'done',value:false}},receive);
+  else data.listenTo(name,receive);
+});
 startActivityFeed({data,viewer,other});
 // A focus session is part of your status: while it runs, the status says
 // "⏱ locking in · <what>" everywhere. It lives in its own fields on the status

@@ -1065,12 +1065,15 @@ button.home-link { border:none; background:none; font:inherit; cursor:pointer; c
 .photo-picker small { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--page-muted); }
 .memory-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-top:14px; }
 .memory-card { overflow:hidden; border-radius:18px; color:var(--page-text); background:color-mix(in srgb,var(--accent-pale) 58%,white); box-shadow:0 7px 20px rgba(60,44,53,.06); }
+.memory-card { position:relative; }
 .memory-card.featured { border-radius:22px; background:linear-gradient(140deg,#fff1b7,#f4c8d8 52%,#d9cff4); box-shadow:0 12px 30px rgba(62,44,55,.12); }
 .memory-card img { width:100%; aspect-ratio:4/3; display:block; object-fit:cover; }
 .memory-card>div { position:relative; padding:13px; }
+.memory-card .memory-open { display:block; width:100%; padding:0; border:0; border-radius:0; background:none; color:inherit; text-align:left; cursor:pointer; }
+.memory-card .memory-open div { padding:13px 42px 13px 13px; }
 .memory-card p { margin:0; font-weight:750; line-height:1.4; }
 .memory-card small { display:block; margin-top:7px; color:var(--page-muted); font-size:.68rem; }
-.memory-card button { position:absolute; right:6px; bottom:5px; width:30px; height:30px; border:0; border-radius:50%; color:var(--page-muted); background:transparent; font-size:1rem; cursor:pointer; }
+.memory-card .memory-delete { position:absolute; right:6px; bottom:5px; width:30px; height:30px; border:0; border-radius:50%; color:var(--page-muted); background:transparent; font-size:1rem; cursor:pointer; }
 
 @media (max-width:520px) {
   .today-card { padding:13px; border-radius:20px; }

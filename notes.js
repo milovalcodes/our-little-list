@@ -24,8 +24,8 @@ const moods={heart:'💛',sun:'☀️',moon:'🌙',star:'✦'};
 let notes=[];let reactions=[];const markedRead=new Set();
 document.querySelectorAll('#note-starters button').forEach(button=>button.addEventListener('click',()=>{$('note-body').value=button.textContent;$('note-body').focus();}));
 
-data.listenTo('notes',items=>{notes=items.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));renderNotes();markIncomingRead();});
-data.listenTo('reactions',items=>{reactions=items;renderNotes();});
+data.listenToQuery('notes',{orderBy:{field:'createdAt',direction:'desc'},limit:50},items=>{notes=items;renderNotes();markIncomingRead();});
+data.listenToQuery('reactions',{orderBy:{field:'createdAt',direction:'desc'},limit:100},items=>{reactions=items;renderNotes();});
 
 $('note-form').addEventListener('submit',async event=>{
   event.preventDefault();const mood=document.querySelector('[name="mood"]:checked').value;const body=$('note-body').value.trim();

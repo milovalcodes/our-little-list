@@ -191,33 +191,32 @@ function setupQuickAdd(data, viewer, other) {
 function setupSearch(data, viewer, openQuick) {
   const input = document.getElementById('global-search');
   const results = document.getElementById('search-results');
-  let entries = null;
-  let loading = null;
-  const load = async () => {
-    if (entries) return entries;
-    if (loading) return loading;
-    results.innerHTML = '<div class="search-skeleton"><i></i><i></i><i></i></div>';
-    loading = Promise.all(SEARCH_COLLECTIONS.map(async collection => ({ collection, items: await data.readOnce(collection) })))
-      .then(groups => {
-        entries = groups.flatMap(group => group.items.map(item => searchable(group.collection, item, viewer)));
-        return entries;
-      }).catch(() => { entries = []; return entries; });
-    return loading;
-  };
-  // Fetched again each time the sheet opens. Loading once per page meant
-  // something added from quick add a moment earlier could not be found.
-  document.addEventListener('littlelist:sheet-open', event => {
-    if (event.detail?.name !== 'search') return;
-    entries = null; loading = null;
-    void load();
-  });
-  input.addEventListener('input', async () => {
+  const cache = new Map();
+  let started = false;
+  const render = () => {
     const query = normalize(input.value);
     if (!query) { results.innerHTML = '<div class="search-start"><span>✦</span><p>type literally anything</p></div>'; return; }
-    const all = await load();
-    const matches = all.filter(item => item.haystack.includes(query)).slice(0, 30);
+    if (!cache.size) { results.innerHTML = '<div class="search-skeleton"><i></i><i></i><i></i></div>'; return; }
+    const matches = [...cache].flatMap(([collection, items]) => items.map(item => searchable(collection, item, viewer)))
+      .filter(item => item.haystack.includes(query)).slice(0, 30);
     results.innerHTML = matches.length ? matches.map(item => `<a class="search-hit" href="${item.url}"><span>${item.icon}</span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.meta)}</small></div><i>›</i></a>`).join('') : `<div class="search-start"><span>🕵️</span><p>nothing. suspicious.</p><button type="button" data-open-quick-from-search>add it instead</button></div>`;
+  };
+  const start = () => {
+    if (started) return;
+    started = true;
+    for (const collection of SEARCH_COLLECTIONS) {
+      const receive = items => { cache.set(collection, items); render(); };
+      // Search watches a recent slice. Unlike six full readOnce calls on each
+      // opening, a newly added thing arrives through the same listener.
+      data.listenToQuery(collection, { orderBy: { field: 'createdAt', direction: 'desc' }, limit: 100 }, receive);
+    }
+  };
+  document.addEventListener('littlelist:sheet-open', event => {
+    if (event.detail?.name !== 'search') return;
+    start();
+    render();
   });
+  input.addEventListener('input', render);
   results.addEventListener('click', event => {
     if (!event.target.closest('[data-open-quick-from-search]')) return;
     const typed = input.value.trim();
@@ -277,7 +276,7 @@ function setupFridgeNote(data, viewer, other) {
       await data.removeFrom('pins', 'fridge');
     } catch (_) { migrating = false; }
   };
-  data.listenTo('notes', items => { notes = items; notesSeen = true; paint(); void migrate(); });
+  data.listenToQuery('notes', { where: { field: 'pinned', value: true } }, items => { notes = items; notesSeen = true; paint(); void migrate(); });
   data.listenTo('pins', items => { legacy = items.find(item => item.id === 'fridge') || null; pinsSeen = true; paint(); void migrate(); });
   document.getElementById('fridge-open').addEventListener('click', () => {
     const pinned = fridgeNote(notes);

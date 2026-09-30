@@ -17,9 +17,10 @@ async function boot(viewer) {
   let knownStatusAt = null;
 
   const data = await sharedLayer();
+  const recent = { orderBy: { field: 'createdAt', direction: 'desc' }, limit: 50 };
 
   {
-    data.listenTo('notes', notes => {
+    data.listenToQuery('notes', recent, notes => {
       const incoming = firstFresh('notes', notes, note => note.recipient === viewer && !note.read);
       if (!incoming) return;
       const shown = announce({
@@ -35,7 +36,7 @@ async function boot(viewer) {
       if (shown) window.setTimeout(() => void data.updateIn('notes', incoming.id, { read: true, readAt: Date.now() }).catch(() => {}), 1200);
     });
 
-    data.listenTo('items', items => {
+    data.listenToQuery('items', recent, items => {
       const fresh = firstFresh('items', items, item => item.addedBy === other);
       if (fresh) announce({ icon: '✓', label: 'new on our list', body: fresh.title, url: `tasks.html`, kind: 'item' });
     });
@@ -46,12 +47,12 @@ async function boot(viewer) {
       if (fresh) announce({ icon: '⏰', label: 'a reminder for you', body: fresh.title, url: `today.html#new`, kind: 'reminder' });
     });
 
-    data.listenTo('dates', items => {
+    data.listenToQuery('dates', recent, items => {
       const fresh = firstFresh('dates', items, item => item.addedBy === other && !item.imported);
       if (fresh) announce({ icon: '✦', label: 'new date idea', body: fresh.title, url: `dates.html`, kind: 'date' });
     });
 
-    data.listenTo('help', items => {
+    data.listenToQuery('help', recent, items => {
       const fresh = firstFresh('help', items, item => item.to === viewer && item.state === 'open');
       const timed = Number(fresh?.dueAt) > 0;
       if (fresh) announce({ icon: fresh.emoji || (timed ? '⏰' : '🙋'), label: timed ? `${personName(other)} set you a reminder` : `${personName(other)} needs a hand`, body: timed ? `${fresh.title} · ${friendlyWhen(Number(fresh.dueAt))}` : fresh.title, url: 'tasks.html#asks', kind: 'help' });

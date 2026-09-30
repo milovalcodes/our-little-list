@@ -79,7 +79,7 @@ async function toggleDone(idea){
     if(idea.memoryId)await data.removeFrom('memories',idea.memoryId).catch(()=>{});
     toast('back in the pile');return;
   }
-  const memory=await data.addTo('memories',{text:`✦ we did: ${idea.title}`,photo:'',addedBy:viewer,dateId:idea.id,createdAt:Date.now()});
+  const memory=await data.addTo('memories',{text:`✦ we did: ${idea.title}`,thumb:'',hasPhoto:false,addedBy:viewer,dateId:idea.id,createdAt:Date.now()});
   await data.updateIn('dates',idea.id,{done:true,doneAt:Date.now(),memoryId:memory?.id||''});
   toast('date completed. it is in the memory jar ◒');
 }

@@ -35,7 +35,15 @@ watchFeedVisibility();
 
 function start(){
   if(started)return;started=true;
-  ['items','notes','reminders','presence','dates','statuses','help','memories','reactions'].forEach(name=>data.listenTo(name,items=>{buckets[name]=items;render();if(name==='notes'||name==='reminders')scheduleMarkRead();}));
+  let openItems=[],recentDone=[];
+  const updateItems=()=>{buckets.items=[...openItems,...recentDone];render();};
+  data.listenToQuery('items',{where:{field:'done',value:false}},items=>{openItems=items;updateItems();});
+  data.listenToQuery('items',{where:{field:'doneAt',op:'>=',value:Date.now()-7*86400000},orderBy:{field:'doneAt',direction:'desc'},limit:50},items=>{recentDone=items;updateItems();});
+  ['notes','reminders','presence','dates','statuses','help','memories','reactions'].forEach(name=>{
+    const receive=items=>{buckets[name]=items;render();if(name==='notes'||name==='reminders')scheduleMarkRead();};
+    if(['notes','memories','reactions'].includes(name))data.listenToQuery(name,{orderBy:{field:'createdAt',direction:'desc'},limit:50},receive);
+    else data.listenTo(name,receive);
+  });
   window.setInterval(renderPresence,30000);
 }
 
@@ -100,6 +108,7 @@ async function handleActivityAction(event){
   button.disabled=true;button.textContent='deleting…';
   try{
     await data.removeFrom(row.dataset.collection,row.dataset.recordId);
+    if(row.dataset.collection==='memories')await data.removeFrom('memoryPhotos',row.dataset.recordId);
     if(data.mode==='local'&&row.dataset.collection!=='items')buckets[row.dataset.collection]=buckets[row.dataset.collection].filter(item=>item.id!==row.dataset.recordId);
     toast('deleted for both of you');render();
   }catch(_){showFailure('that did not delete.','check the internet and try again.');button.disabled=false;button.textContent='delete for us';button.classList.remove('confirming');}

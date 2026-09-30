@@ -224,9 +224,32 @@ service cloud.firestore {
       allow create: if inHousehold(householdId)
         && request.resource.data.addedBy == mySide()
         && shortText(request.resource.data.text, 500)
-        && shortText(request.resource.data.photo, 650000)
+        && (!request.resource.data.keys().hasAny(['photo']) || shortText(request.resource.data.photo, 650000))
+        && (!request.resource.data.keys().hasAny(['thumb']) || shortText(request.resource.data.thumb, 30000))
+        && (!request.resource.data.keys().hasAny(['hasPhoto']) || request.resource.data.hasPhoto is bool)
         && request.resource.data.createdAt is int;
-      allow update: if false;
+      // An owner may move an old inline photo out of this hot collection. The
+      // memory itself stays immutable; only its image bookkeeping can change.
+      allow update: if inHousehold(householdId)
+        && resource.data.addedBy == mySide()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photo', 'thumb', 'hasPhoto'])
+        && (!request.resource.data.keys().hasAny(['photo']) || shortText(request.resource.data.photo, 650000))
+        && (!request.resource.data.keys().hasAny(['thumb']) || shortText(request.resource.data.thumb, 30000))
+        && (!request.resource.data.keys().hasAny(['hasPhoto']) || request.resource.data.hasPhoto is bool);
+      allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/memoryPhotos/{memoryId} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && request.resource.data.addedBy == mySide()
+        && request.resource.data.createdAt is int
+        && shortText(request.resource.data.photo, 650000);
+      allow update: if inHousehold(householdId)
+        && resource.data.addedBy == mySide()
+        && request.resource.data.addedBy == resource.data.addedBy
+        && request.resource.data.createdAt == resource.data.createdAt
+        && shortText(request.resource.data.photo, 650000);
       allow delete: if inHousehold(householdId);
     }
 

@@ -533,6 +533,42 @@ async function openSlow(path) {
   await page.waitForTimeout(300);
   note(await page.locator('.memory-card', { hasText: 'the tiny mug incident' }).count() === 1 && errors.length === 0,
        'memory jar saves a moment', errors[0] || '');
+  await page.fill('#memory-text', 'sunny afternoon');
+  await page.setInputFiles('#memory-photo', {
+    name: 'sun.png', mimeType: 'image/png', buffer: readFileSync(new URL('../sun-profile.png', import.meta.url))
+  });
+  await page.click('#memory-save');
+  await page.waitForTimeout(500);
+  const photoSplit = await page.evaluate(() => {
+    const memory = JSON.parse(localStorage.getItem('our-little-list-memories-v1')).items.find(item => item.text === 'sunny afternoon');
+    const image = JSON.parse(localStorage.getItem('our-little-list-memoryPhotos-v1')).items.find(item => item.id === memory.id);
+    return { id: memory.id, thumb: memory.thumb?.length, inline: memory.photo?.length || 0, hasPhoto: memory.hasPhoto, full: image?.photo?.length || 0 };
+  });
+  await page.locator('.memory-card', { hasText: 'sunny afternoon' }).locator('[data-open]').click();
+  await page.waitForTimeout(250);
+  const featuredFull = await page.locator('#memory-random img').getAttribute('src');
+  note(photoSplit.hasPhoto && photoSplit.thumb < 30000 && photoSplit.inline === 0 && photoSplit.full > photoSplit.thumb && featuredFull?.length === photoSplit.full && errors.length === 0,
+       'photos stay out of the memory feed until opened', errors[0] || JSON.stringify({ photoSplit, featured: featuredFull?.length }));
+  await page.evaluate(() => {
+    const memories = JSON.parse(localStorage.getItem('our-little-list-memories-v1'));
+    const full = JSON.parse(localStorage.getItem('our-little-list-memoryPhotos-v1')).items[0].photo;
+    memories.items.push({ id: 'old-photo', text: 'old photo', photo: full, addedBy: 'her', createdAt: Date.now() - 1000 });
+    localStorage.setItem('our-little-list-memories-v1', JSON.stringify(memories));
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => {
+    const memory = JSON.parse(localStorage.getItem('our-little-list-memories-v1')).items.find(item => item.id === 'old-photo');
+    return memory?.hasPhoto && !memory.photo && JSON.parse(localStorage.getItem('our-little-list-memoryPhotos-v1')).items.some(item => item.id === 'old-photo');
+  });
+  note(errors.length === 0, 'old inline photos move without losing their original', errors[0] || '');
+  await page.locator('.memory-card', { hasText: 'old photo' }).locator('[data-delete]').click();
+  await page.waitForTimeout(5600);
+  const cleaned = await page.evaluate(() => {
+    const memories = JSON.parse(localStorage.getItem('our-little-list-memories-v1')).items;
+    const photos = JSON.parse(localStorage.getItem('our-little-list-memoryPhotos-v1')).items;
+    return !memories.some(item => item.id === 'old-photo') && !photos.some(item => item.id === 'old-photo');
+  });
+  note(cleaned && errors.length === 0, 'deleting a memory also removes its stored photo', errors[0] || String(cleaned));
   await context.close();
 }
 
