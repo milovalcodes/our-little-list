@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { pickMoment } from '../moment-picker.js';
 import { fridgeNote } from '../fridge.js';
 import { hereLine, statusShows, focusActive } from '../availability.js';
-import { normalizeNotificationPreferences, notificationKindEnabled, reminderSourcePath, reminderStillWanted } from '../notification-policy.js';
+import { normalizeNotificationPreferences, notificationKindEnabled, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../notification-policy.js';
 import { QUESTIONS, questionForDay } from '../question-prompts.js';
 
 assert.equal(QUESTIONS.length, 100);
@@ -29,6 +29,10 @@ console.log(' ok  asks with a time pick the moment the reminder page used to');
 
 // One switch for asks and reminders; arrivals get their own.
 assert.equal(notificationKindEnabled('reminder', { categories: { asks: false } }), false);
+assert.equal(notificationKindEnabled('item', { categories: { listsAdded: false, listsFinished: true } }), false);
+assert.equal(notificationKindEnabled('item-finished', { categories: { listsAdded: false, listsFinished: true } }), true);
+assert.equal(normalizeNotificationPreferences({ categories: { lists: false } }).categories.listsAdded, false);
+assert.equal(normalizeNotificationPreferences({ categories: { lists: false } }).categories.listsFinished, false);
 assert.equal(notificationKindEnabled('help', { categories: { asks: false } }), false);
 assert.equal(notificationKindEnabled('arrival', { categories: { arrivals: false } }), false);
 assert.equal(notificationKindEnabled('status', { categories: { arrivals: false } }), true, 'muting arrivals leaves status alone');
@@ -36,6 +40,13 @@ assert.equal(normalizeNotificationPreferences({ categories: { help: false } }).c
 assert.equal(normalizeNotificationPreferences({ categories: { help: false, reminders: false } }).categories.asks, false, 'both old switches off stays off');
 assert.equal(normalizeNotificationPreferences({ categories: { status: false } }).categories.arrivals, false, 'arrivals were part of the old status switch');
 console.log(' ok  notification switches merged without flipping anyone\'s choice');
+const quiet = { enabled:true, from:'22:00', to:'08:00' };
+const lateUtc = Date.UTC(2026, 8, 30, 2, 30); // 10:30 pm on a UTC-4 phone
+assert.equal(quietHoursEndUtc(lateUtc, quiet, -240), Date.UTC(2026, 8, 30, 12));
+assert.equal(quietHoursEndUtc(Date.UTC(2026, 8, 30, 13), quiet, -240), 0);
+assert.equal(quietHoursEndUtc(lateUtc, { ...quiet, enabled:false }, -240), 0);
+assert.equal(quietHoursEndUtc(lateUtc, quiet, NaN), 0, 'an old subscription without an offset does not guess a timezone');
+console.log(' ok  quiet hours end at the phone’s local morning');
 
 // Nudges for asks look up the ask; nothing else can be reached.
 assert.equal(reminderSourcePath('help/abc'), 'help/abc');

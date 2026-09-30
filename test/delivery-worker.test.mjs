@@ -1,5 +1,6 @@
 import { deliver } from '../worker/src/index.js';
 import { focusDelivery } from '../delivery-policy.js';
+import { quietHoursEndUtc } from '../notification-policy.js';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 
@@ -37,11 +38,17 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
         endpoint: { stringValue: s.endpoint },
         keys: { mapValue: { fields: { p256dh: { stringValue: s.keys.p256dh }, auth: { stringValue: s.keys.auth } } } }
       } } } };
+      if (Number.isFinite(raw.utcOffsetMinutes)) fields.utcOffsetMinutes = { integerValue: String(raw.utcOffsetMinutes) };
       if (preferences) fields.preferences = { mapValue: { fields: {
         backgroundSound: { stringValue: preferences.backgroundSound || 'default' },
         vibration: { stringValue: preferences.vibration || 'gentle' },
         inAppSound: { stringValue: preferences.inAppSound || 'twinkle' },
-        categories: { mapValue: { fields: Object.fromEntries(Object.entries(preferences.categories || {}).map(([key, value]) => [key, { booleanValue: value }])) } }
+        categories: { mapValue: { fields: Object.fromEntries(Object.entries(preferences.categories || {}).map(([key, value]) => [key, { booleanValue: value }])) } },
+        ...(preferences.quietHours ? { quietHours: { mapValue: { fields: {
+          enabled: { booleanValue: preferences.quietHours.enabled === true },
+          from: { stringValue: preferences.quietHours.from },
+          to: { stringValue: preferences.quietHours.to }
+        } } } } : {})
       } } };
       return { name: `p/documents/households/HOUSE/pushSubs/${id}`, fields };
     }) });
@@ -227,7 +234,38 @@ const now = Date.now();
   assert.equal(r.sent,1);
   assert.equal(h.pushes[0].headers.Urgency,'high');
   assert.equal(focusDelivery({kind:'help',urgent:true},{focusUntil:now+60000},now).quiet,false);
-  console.log(' ok  an urgent ask is not quieted by focus');
+console.log(' ok  an urgent ask is not quieted by focus');
+}
+
+// 14. Added and finished pings are independent choices, including phones that
+// used to have a single "lists" switch.
+{
+  const h=harness({outbox:[
+    {id:'ADDED',to:'her',title:'new',body:'x',kind:'item',sendAt:now-1000,createdAt:now-2000},
+    {id:'FINISHED',to:'her',title:'done',body:'x',kind:'item-finished',sendAt:now-1000,createdAt:now-2000}
+  ],subs:{her:{subscription:SUB,preferences:{categories:{listsAdded:false,listsFinished:true}}}}});
+  const r=await deliver(ENV);
+  assert.equal(r.muted,1);
+  assert.equal(r.sent,1);
+  assert.ok(h.deleted.some(path=>path.endsWith('outbox/ADDED')));
+  console.log(' ok  list additions and completions can be muted separately');
+}
+
+// 15. Quiet hours postpone ordinary messages until the recipient phone's local
+// morning. "Notify anyway" still goes through immediately.
+{
+  const clock=value=>new Date(value).toISOString().slice(11,16);
+  const quietHours={enabled:true,from:clock(now-5*60000),to:clock(now+20*60000)};
+  const h=harness({outbox:[
+    {id:'SLEEP',to:'her',title:'note',body:'x',kind:'note',sendAt:now-1000,createdAt:now-2000},
+    {id:'NOW',to:'her',title:'urgent ask',body:'x',kind:'help',urgent:true,sendAt:now-1000,createdAt:now-2000}
+  ],subs:{her:{subscription:SUB,preferences:{quietHours},utcOffsetMinutes:0}}});
+  const r=await deliver(ENV);
+  assert.equal(r.held,1);
+  assert.equal(r.sent,1);
+  assert.equal(h.moved[0].sendAt,quietHoursEndUtc(now,quietHours,0));
+  assert.ok(!h.deleted.some(path=>path.endsWith('outbox/SLEEP')));
+  console.log(' ok  quiet hours hold ordinary pings but not notify-anyway asks');
 }
 
 console.log('\nDELIVERY WORKER CLEAN');

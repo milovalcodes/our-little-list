@@ -95,12 +95,14 @@ byId('task-list').addEventListener('click', async event => {
   button.disabled=true;button.classList.add('is-busy');
   try{
     if(button.dataset.action==='toggle'){
-      if(!item.done&&item.recurrence&&item.recurrence!=='once'){
+      const finishing = !item.done;
+      if(finishing&&item.recurrence&&item.recurrence!=='once'){
         const rolled=nextDue(item.due,item.recurrence);
         await data.updateIn('items',item.id,{done:false,due:rolled,previousDue:item.due||'',lastDoneBy:viewer,lastDoneAt:Date.now()});
         toast(`done · back on ${prettyDue(rolled)}`);
       }
       else await data.updateIn('items',item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
+      if (finishing) void data.notify(other, { title:`${personName(viewer)} finished something ✓`, body:item.title, url:'tasks.html', kind:'item-finished' });
     }
     // A repeat has no Done tab to undo from, so "undo" puts the old date back.
     if(button.dataset.action==='undo-roll')await data.updateIn('items',item.id,{due:item.previousDue||'',previousDue:'',lastDoneBy:'',lastDoneAt:0});

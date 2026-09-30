@@ -7,7 +7,7 @@
 
 import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
-import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted } from '../../notification-policy.js';
+import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../../notification-policy.js';
 import { focusDelivery } from '../../delivery-policy.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
@@ -111,8 +111,10 @@ export async function deliver(env) {
         statusCache.set(message.to, recipientStatus);
       }
       const focus = focusDelivery(message, recipientStatus, now);
-      if (focus.holdUntil) {
-        await db.moveSendAt(message.path, focus.holdUntil);
+      const quietUntil = message.urgent === true ? 0 : quietHoursEndUtc(now, preferences.quietHours, Number(target.utcOffsetMinutes));
+      const holdUntil = Math.max(focus.holdUntil, quietUntil);
+      if (holdUntil) {
+        await db.moveSendAt(message.path, holdUntil);
         held += 1;
         continue;
       }

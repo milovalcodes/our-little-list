@@ -19,6 +19,9 @@ function renderForm() {
   document.querySelector(`input[name="background-sound"][value="${preferences.backgroundSound}"]`).checked = true;
   document.querySelector(`input[name="vibration"][value="${preferences.vibration}"]`).checked = true;
   $('in-app-sound').value = preferences.inAppSound;
+  $('quiet-enabled').checked = preferences.quietHours.enabled;
+  $('quiet-from').value = preferences.quietHours.from;
+  $('quiet-to').value = preferences.quietHours.to;
   $('notification-categories').innerHTML = NOTIFICATION_GROUPS.map(group => `
     <label class="notification-toggle-row">
       <span>${group.label}</span>
@@ -39,6 +42,7 @@ function valuesFromForm() {
     backgroundSound: document.querySelector('input[name="background-sound"]:checked')?.value,
     vibration: document.querySelector('input[name="vibration"]:checked')?.value,
     inAppSound: $('in-app-sound').value,
+    quietHours: { enabled: $('quiet-enabled').checked, from: $('quiet-from').value, to: $('quiet-to').value },
     categories: Object.fromEntries([...document.querySelectorAll('[data-category]')].map(input => [input.dataset.category, input.checked]))
   });
 }

@@ -310,13 +310,19 @@ async function openSlow(path) {
 // reach the registration later, even if permission has not been granted yet.
 {
   const { context, page, errors } = await open('phone-check.html?as=her#pings');
-  await page.locator('[data-category="lists"]').uncheck({ force:true });
+  await page.locator('[data-category="listsAdded"]').uncheck({ force:true });
+  await page.locator('[data-category="listsFinished"]').check({ force:true });
+  await page.locator('.quiet-hours-switch span').click();
+  await page.fill('#quiet-from', '23:00');
+  await page.fill('#quiet-to', '07:15');
   await page.selectOption('#in-app-sound', 'pop');
   await page.locator('input[name="vibration"][value="pulse"]').check({ force:true });
   // No save button any more: the switches save themselves.
   await page.waitForTimeout(900);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-notification-preferences-v1') || '{}'));
-  note(saved.categories?.lists === false && saved.inAppSound === 'pop' && saved.vibration === 'pulse' && errors.length === 0,
+  note(saved.categories?.listsAdded === false && saved.categories?.listsFinished === true
+       && saved.quietHours?.enabled && saved.quietHours?.from === '23:00' && saved.quietHours?.to === '07:15'
+       && saved.inAppSound === 'pop' && saved.vibration === 'pulse' && errors.length === 0,
        'notification choices save on this phone', errors[0] || JSON.stringify(saved));
   await context.close();
 }
@@ -505,6 +511,7 @@ async function openSlow(path) {
 // Recurring tasks roll forward instead of disappearing, and groceries keep an aisle.
 {
   const { context, page, errors } = await open('tasks.html?as=her');
+  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();window.listPings=[];data.notify=async(to,message)=>{window.listPings.push({to,message});return {queued:true};};});
   await page.fill('#shared-task-title', 'daily vitamin');
   await page.click('[data-repeat="daily"]');
   await page.click('#shared-task-form [type="submit"]');
@@ -521,6 +528,9 @@ async function openSlow(path) {
   note(await page.locator('.aisle-label', { hasText: 'produce' }).count() === 1, 'groceries group by aisle');
   await page.locator('.task-row', { hasText: 'avocados' }).locator('.task-check').click();
   await page.waitForTimeout(200);
+  const finishedPings = await page.evaluate(() => window.listPings.filter(ping => ping.message.kind === 'item-finished'));
+  note(finishedPings.length === 2 && finishedPings.every(ping => ping.to === 'him') && errors.length === 0,
+       'finishing list things sends a distinct ping', errors[0] || JSON.stringify(finishedPings));
   const recent = await page.locator('#recent-grocery-chips button', { hasText: 'avocados' }).count();
   await page.locator('#recent-grocery-chips button', { hasText: 'avocados' }).click();
   await page.waitForTimeout(250);

@@ -54,6 +54,7 @@ export async function ensurePushSubscription(data, person) {
       person,
       subscription: record,
       preferences: readNotificationPreferences(),
+      utcOffsetMinutes: -new Date().getTimezoneOffset(),
       updatedAt: Date.now(),
       device: navigator.userAgent.slice(0, 180)
     });

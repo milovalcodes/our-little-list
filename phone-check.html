@@ -50,6 +50,12 @@
         <div class="notification-toggle-list" id="notification-categories"></div>
       </section>
 
+      <section class="notification-settings-card quiet-hours-card">
+        <div class="settings-heading"><div><p class="tiny-kicker">when the phone gets a break</p><h2>Quiet hours</h2></div><label class="quiet-hours-switch"><input id="quiet-enabled" type="checkbox"><span>on</span></label></div>
+        <div class="quiet-hours-times"><label>from <input id="quiet-from" type="time" value="22:00"></label><label>until <input id="quiet-to" type="time" value="08:00"></label></div>
+        <p class="settings-device-note">non-urgent pings wait until quiet hours end. “notify anyway” still gets through.</p>
+      </section>
+
       <div class="notification-save-row"><span id="save-state" aria-live="polite">changes save by themselves</span><button class="primary-action compact-save" id="save-notifications" type="submit" hidden>save it</button></div>
     </form>
     </section>
