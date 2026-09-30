@@ -58,16 +58,15 @@ data.listenTo('dates',items=>{
 void importLegacyIdeas();
 
 document.querySelectorAll('.date-vibe').forEach(button=>button.addEventListener('click',()=>{vibe=button.dataset.vibe;document.querySelectorAll('.date-vibe').forEach(item=>item.classList.toggle('active',item===button));}));
-$('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');const details={cost:$('date-cost').value,energy:$('date-energy').value,weather:$('date-weather').value,distance:$('date-distance').value,duration:$('date-duration').value};setButtonBusy(button,true,'saving…');try{await addDateIdea(data,{viewer,other,title,note,vibe,details});event.target.reset();toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
-$('pick-random').addEventListener('click',event=>{const filters={cost:$('filter-cost').value,energy:$('filter-energy').value,weather:$('filter-weather').value,distance:$('filter-distance').value,duration:$('filter-duration').value};// The 26 imported ideas predate these five fields, so an exact match excludes
-// every one of them the moment a filter leaves "any" — the roulette said
-// "nothing matches" with a full pile behind it. Tagged ideas still win; the
-// untagged ones are the fallback rather than the exclusion.
-const chosen=Object.entries(filters).filter(([,value])=>value!=='any');
-const tagged=idea=>chosen.every(([key,value])=>idea[key]===value);
-const untagged=idea=>chosen.every(([key])=>!idea[key]);
-const pool=ideas.filter(idea=>!idea.done);
-const available=pool.filter(tagged).length?pool.filter(tagged):pool.filter(untagged);
+$('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');const details={cost:$('date-cost').value,energy:$('date-energy').value,weather:$('date-weather').value,distance:$('date-distance').value,duration:$('date-duration').value};setButtonBusy(button,true,'saving…');try{await addDateIdea(data,{viewer,other,title,note,vibe,details});event.target.reset();$('date-more-details').open=false;toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
+const rouletteFilters={vibe:'any',cost:'any'};
+document.querySelector('.roulette-filters').addEventListener('click',event=>{const button=event.target.closest('[data-filter-vibe],[data-filter-cost]');if(!button)return;const key=button.hasAttribute('data-filter-vibe')?'vibe':'cost';rouletteFilters[key]=button.dataset[`filter${key[0].toUpperCase()}${key.slice(1)}`];button.parentElement.querySelectorAll('button').forEach(item=>{const active=item===button;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active));});});
+$('pick-random').addEventListener('click',event=>{const chosen=Object.entries(rouletteFilters).filter(([,value])=>value!=='any');
+// Old imported dates have a vibe but no budget. Prefer exact matches; let an
+// untagged budget act as a fallback rather than making those ideas disappear.
+const compatible=ideas.filter(idea=>!idea.done&&chosen.every(([key,value])=>!idea[key]||idea[key]===value));
+const exact=compatible.filter(idea=>chosen.every(([key])=>Boolean(idea[key])));
+const available=exact.length?exact:compatible;
 if(!available.length){$('random-date').textContent='nothing matches that exact mood.';return;}event.currentTarget.classList.remove('is-picking');void event.currentTarget.offsetWidth;event.currentTarget.classList.add('is-picking');const idea=available[Math.floor(Math.random()*available.length)];$('random-date').innerHTML=`<strong>${escapeHtml(idea.title)}</strong>${idea.note?`<span>${escapeHtml(idea.note)}</span>`:''}`;});
 $('date-more').addEventListener('click',()=>{viewLimit+=8;render();});
 // A date you did goes in the memory jar, so there is one place to look back on

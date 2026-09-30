@@ -719,25 +719,26 @@ async function openSlow(path) {
   await context.close();
 }
 
-// Date roulette honors its filters instead of quietly pulling an untagged old idea.
+// The optional form stays out of the way, and roulette uses only vibe/budget.
 {
   const { context, page, errors } = await open('dates.html?as=her');
+  const detailsClosed = !await page.locator('#date-more-details').evaluate(element => element.open);
   await page.fill('#date-title', 'meteor picnic');
+  await page.locator('#date-more-details summary').click();
   await page.selectOption('#date-cost', 'treat');
   await page.selectOption('#date-energy', 'high');
   await page.selectOption('#date-weather', 'outdoor');
   await page.selectOption('#date-distance', 'drive');
   await page.selectOption('#date-duration', 'day');
   await page.click('#date-submit');
-  await page.selectOption('#filter-cost', 'treat');
-  await page.selectOption('#filter-energy', 'high');
-  await page.selectOption('#filter-weather', 'outdoor');
-  await page.selectOption('#filter-distance', 'drive');
-  await page.selectOption('#filter-duration', 'day');
+  const detailsReset = !await page.locator('#date-more-details').evaluate(element => element.open);
+  await page.click('[data-filter-vibe="go out"]');
+  await page.click('[data-filter-cost="treat"]');
   await page.click('#pick-random');
   await page.waitForTimeout(250);
-  note(await page.locator('#random-date', { hasText: 'meteor picnic' }).count() === 1 && errors.length === 0,
-       'date roulette respects every filter', errors[0] || '');
+  note(detailsClosed && detailsReset && await page.locator('#random-date', { hasText: 'meteor picnic' }).count() === 1
+       && await page.locator('.roulette-chip-group button[aria-pressed="true"]').count() === 2 && errors.length === 0,
+       'date details fold away and roulette uses vibe plus budget', errors[0] || '');
   await page.locator('.date-idea-card', { hasText: 'meteor picnic' }).locator('[data-action="edit"]').click();
   await page.fill('[data-edit-date] [name="title"]', 'meteor picnic with snacks');
   await page.fill('[data-edit-date] [name="note"]', 'bring the blanket');
