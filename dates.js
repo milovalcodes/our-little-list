@@ -3,6 +3,7 @@ import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { addDateIdea } from './records.js';
+import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
 const LEGACY_MIGRATION_ID='date-notes-v1';
 const LEGACY_CREATED_AT=1700000000000;
@@ -82,7 +83,7 @@ async function toggleDone(idea){
   await data.updateIn('dates',idea.id,{done:true,doneAt:Date.now(),memoryId:memory?.id||''});
   toast('date completed. it is in the memory jar ◒');
 }
-$('date-list').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const idea=ideas.find(item=>item.id===button.closest('[data-id]')?.dataset.id);if(!idea)return;button.disabled=true;try{if(button.dataset.action==='favorite')await data.updateIn('dates',idea.id,{favorite:!idea.favorite});else if(button.dataset.action==='complete'){await toggleDone(idea);}else if(button.dataset.action==='delete')await data.removeFrom('dates',idea.id);}catch(_){showFailure('that edit did not stick.','check the internet and tap it again.');button.disabled=false;}});
+$('date-list').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const idea=ideas.find(item=>item.id===button.closest('[data-id]')?.dataset.id);if(!idea)return;if(button.dataset.action==='delete'){deleteWithUndo(data,'dates',idea.id,{label:`deleted “${String(idea.title||'').slice(0,28)}”`,onChange:render});return;}button.disabled=true;try{if(button.dataset.action==='favorite')await data.updateIn('dates',idea.id,{favorite:!idea.favorite});else if(button.dataset.action==='complete'){await toggleDone(idea);}}catch(_){showFailure('that edit did not stick.','check the internet and tap it again.');button.disabled=false;}});
 
 function importLegacyIdeas(){
   if(migrationStarted||!data)return;
@@ -115,7 +116,9 @@ function importLegacyIdeas(){
   });
 }
 
+function allIdeas(){return ideas.filter(idea=>!isPendingDelete('dates',idea.id));}
 function render(){
+  const ideas=allIdeas();
   const finished=ideas.filter(idea=>idea.done).length;const left=ideas.length-finished;
   $('date-count').textContent=finished?`${left} left · ${finished} done`:`${ideas.length} saved`;
   $('date-empty').hidden=ideas.length>0;

@@ -4,6 +4,7 @@ import { locationSnapshot } from './auto-location.js';
 import { PLACE_PRESETS, placeDisplay, arrivalMessage, announcesArrival } from './place-presets.js';
 import { personName } from './profile-store.js';
 import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
+import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
 const root = document.getElementById('saved-places');
 if (root) void boot();
@@ -95,15 +96,14 @@ async function boot() {
     }
     const button = event.target.closest('[data-delete-place]');
     if (!button) return;
-    setButtonBusy(button, true, '…');
-    try { await data.removeFrom('places', button.dataset.deletePlace); toast('saved spot removed'); }
-    catch (_) { showFailure('that spot stayed put.', 'check the internet and try again.'); setButtonBusy(button, false); }
+    deleteWithUndo(data, 'places', button.dataset.deletePlace, { label: 'saved spot removed', onChange: renderPlaces });
   });
 
   function renderPlaces() {
     const list = document.getElementById('saved-place-list');
-    document.getElementById('saved-place-empty').hidden = places.length > 0;
-    list.innerHTML = places.map(place => {
+    const shown = places.filter(place => !isPendingDelete('places', place.id));
+    document.getElementById('saved-place-empty').hidden = shown.length > 0;
+    list.innerHTML = shown.map(place => {
       const display = placeDisplay(place);
       return `<article class="saved-place-row place-${escapeHtml(display.animation)}"><span>${escapeHtml(display.emoji)}</span><div><strong>${escapeHtml(display.label)}</strong><small>${escapeHtml(display.status)} · ${Number(place.radius) || 150} m</small></div><button type="button" data-toggle-ping="${escapeHtml(place.id)}" aria-label="${announcesArrival(place) ? 'Stop arrival pings for' : 'Send arrival pings for'} ${escapeHtml(display.label)}" aria-pressed="${announcesArrival(place)}">${announcesArrival(place) ? '🔔' : '🔕'}</button><button type="button" data-delete-place="${escapeHtml(place.id)}" aria-label="Delete ${escapeHtml(display.label)}">×</button></article>`;
     }).join('');

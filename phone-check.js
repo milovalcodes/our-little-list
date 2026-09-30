@@ -170,6 +170,8 @@ $('ask-location').addEventListener('click',()=>{
   navigator.geolocation.getCurrentPosition(
     ()=>{
       busy($('ask-location'),false);setStatus('location',true,'allowed and working.');$('ask-location').textContent='test again';
+      try{localStorage.setItem('our-little-list-location-asked','yes');}catch(_){}
+      void import('./auto-location.js').then(module=>module.locationSnapshot().phase==='needs-permission'&&module.resumeAutoLocation()).catch(()=>{});
       help('location','GPS answered. automatic sharing stays on while the app is open unless you pause it from the status page.');
     },
     async problem=>{

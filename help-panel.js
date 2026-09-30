@@ -3,6 +3,7 @@ import { personName } from './profile-store.js';
 import { timeAgo, friendlyWhen } from './time-format.js';
 import { pickMoment } from './moment-picker.js';
 import { sendAsk } from './records.js';
+import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
 const ANSWERS = {
   'on-it': { label: 'on it ✓', theirs: 'on it', tone: 'yes' },
@@ -144,10 +145,10 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
     if (!button) return;
     const id = button.closest('[data-id]')?.dataset.id;
     if (!id) return;
+    if (button.dataset.action === 'cancel') { deleteWithUndo(data, 'help', id, { label: 'ask taken back', onChange: render }); return; }
     button.disabled = true;
     try {
       if (button.dataset.action === 'done') await data.updateIn('help', id, { state: 'done', closedAt: Date.now() });
-      if (button.dataset.action === 'cancel') await data.removeFrom('help', id);
     } catch (_) {
       showFailure('that did not stick.', 'check the internet and try again.');
       button.disabled = false;
@@ -155,8 +156,9 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
   });
 
   function render() {
-    const forMe = requests.filter(item => item.to === viewer && item.state !== 'done');
-    const mine = requests.filter(item => item.from === viewer && item.state !== 'done');
+    const live = requests.filter(item => !isPendingDelete('help', item.id));
+    const forMe = live.filter(item => item.to === viewer && item.state !== 'done');
+    const mine = live.filter(item => item.from === viewer && item.state !== 'done');
     $('help-inbox').hidden = forMe.length === 0;
     $('inbox-title').textContent = `${personName(other)} needs something`;
     $('help-inbox-list').innerHTML = forMe.map(inboxCard).join('');

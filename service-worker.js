@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v50';
+const CACHE = 'our-little-list-v51';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -7,9 +7,11 @@ const CACHE = 'our-little-list-v50';
 const LIBRARY_CACHE = 'our-little-list-libraries';
 
 const PAGES = [
-  './', './index.html', './her.html', './him.html', './admire.html', './profiles.html',
-  './status.html', './dates.html', './tasks.html', './reminders.html', './notes.html',
-  './location.html', './activity.html', './phone-check.html', './notifications.html', './help.html', './today.html', './memories.html'
+  // The old addresses (reminders, activity, notifications, help, admire,
+  // location) are one-line redirects now and are not worth keeping offline.
+  './', './index.html', './her.html', './him.html', './profiles.html',
+  './status.html', './dates.html', './tasks.html', './notes.html',
+  './phone-check.html', './today.html', './memories.html'
 ];
 
 const ASSETS = [
@@ -20,7 +22,7 @@ const ASSETS = [
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
   './push-config.js', './push-client.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',
   './household.js', './viewer.js', './entry.js', './place-presets.js', './location-tags.js',
-  './moment-picker.js', './records.js', './activity-feed.js', './availability.js', './fridge.js', './pings-settings.js',
+  './moment-picker.js', './records.js', './activity-feed.js', './availability.js', './fridge.js', './pings-settings.js', './undo-delete.js', './settings-account.js', './setup-nudge.js',
   './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './icon-192.png',
   './notification-icon.png', './notification-badge.png', './manifest.webmanifest'
 ];
@@ -137,6 +139,9 @@ self.addEventListener('fetch', event => {
   );
 });
 
+const SHOWN_IN_PAGE = new Set(['note', 'item', 'date', 'help', 'help-answer', 'status', 'focus']);
+const PAGES_WITH_POPUPS = /\/(her|him|today|tasks|notes|dates|memories|status)\.html(?:[?#]|$)/;
+
 self.addEventListener('push', event => {
   let payload = { title: 'Our Little List', body: 'a little something for you ♡', url: './index.html' };
   try {
@@ -173,8 +178,20 @@ self.addEventListener('push', event => {
     requireInteraction: payload.kind === 'reminder',
     data: { url: target }
   };
-  event.waitUntil(
-    self.registration.showNotification(payload.title, options)
+  event.waitUntil((async () => {
+    // With the app open and in front, live-notes.js already popped this up in
+    // the page with its own sound. A push still has to show something (iOS
+    // drops subscriptions that don't), so show it quietly and take it back
+    // out of the tray a moment later instead of buzzing twice.
+    // Only for the kinds live-notes.js pops up in the page, and only on pages
+    // that load it. Arrivals, memories, reactions and a timed ask's nudge
+    // have no in-page popup, so they always ring normally.
+    const windows = await Promise.resolve().then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true })).catch(() => []);
+    const watching = SHOWN_IN_PAGE.has(payload.kind) && windows.some(client =>
+      client.visibilityState === 'visible' && client.focused && PAGES_WITH_POPUPS.test(client.url || ''));
+    const { vibrate: _buzz, ...quiet } = options;
+    const shown = watching ? { ...quiet, silent: true } : options;
+    await self.registration.showNotification(payload.title, shown)
       // Whatever else goes wrong with the options, a push has to show
       // something. The plainest possible notification still carries the words
       // and still opens the right page.
@@ -182,8 +199,20 @@ self.addEventListener('push', event => {
         body,
         tag,
         data: { url: target }
-      }))
-  );
+      }));
+    if (watching) {
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      const lingering = await self.registration.getNotifications({ tag }).catch(() => []);
+      lingering.forEach(notification => notification.close());
+      return;
+    }
+    // The app icon's number (iPhone home-screen apps since iOS 16.4). Home
+    // replaces it with the real count when the app opens.
+    try {
+      const waiting = await self.registration.getNotifications();
+      await self.navigator.setAppBadge?.(Math.max(1, waiting.length));
+    } catch (_) { /* no badge support */ }
+  })());
 });
 
 self.addEventListener('notificationclick', event => {

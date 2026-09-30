@@ -3,6 +3,7 @@ import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI, applyViewerTheme, escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { timeAgo } from './time-format.js';
+import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
 const $=id=>document.getElementById(id);let memories=[];let photo='';
 // Shrinking a 12MP photo takes seconds on a phone. The save button used to read
@@ -17,10 +18,12 @@ data.listenTo('memories',items=>{memories=items.sort((a,b)=>(b.createdAt||0)-(a.
 
 $('memory-photo').addEventListener('change',event=>{const file=event.target.files?.[0];photo='';$('photo-name').textContent='';if(!file)return;$('photo-name').textContent='shrinking…';photoPending=shrinkPhoto(file).then(result=>{photo=result;$('photo-name').textContent=file.name;}).catch(()=>{photo='';event.target.value='';$('photo-name').textContent='';showFailure('that photo is too mighty.','try a smaller photo or a screenshot.');});});
 $('memory-form').addEventListener('submit',async event=>{event.preventDefault();const text=$('memory-text').value.trim();const button=$('memory-save');setButtonBusy(button,true,'jarring…');await photoPending;try{await data.addTo('memories',{text,photo,addedBy:viewer,createdAt:Date.now()});void data.notify(other,{title:`${personName(viewer)} added to the memory jar`,body:text.slice(0,120),url:'memories.html',kind:'memory'});event.target.reset();photo='';photoPending=Promise.resolve();$('photo-name').textContent='';toast('secured for the historians');}catch(_){showFailure('the jar did not take it.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
-$('memory-list').addEventListener('click',async event=>{const button=event.target.closest('[data-delete]');if(!button)return;button.disabled=true;try{await data.removeFrom('memories',button.dataset.delete);}catch(_){showFailure('that memory stayed put.','check the internet and try again.');button.disabled=false;}});
+$('memory-list').addEventListener('click',async event=>{const button=event.target.closest('[data-delete]');if(!button)return;deleteWithUndo(data,'memories',button.dataset.delete,{label:'memory deleted',onChange:render});});
 $('memory-pick').addEventListener('click',()=>{if(!memories.length)return;const item=memories[Math.floor(Math.random()*memories.length)];featuredId=item.id;$('memory-random').hidden=false;$('memory-random').innerHTML=memoryMarkup(item,true);$('memory-random').scrollIntoView({behavior:'smooth',block:'nearest'});});
 
+function visibleMemories(){return memories.filter(item=>!isPendingDelete('memories',item.id));}
 function render(){
+  const memories=visibleMemories();
   $('memory-empty').hidden=memories.length>0;
   $('memory-list').innerHTML=memories.map(item=>memoryMarkup(item)).join('');
   const featured=featuredId&&memories.find(item=>item.id===featuredId);

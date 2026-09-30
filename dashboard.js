@@ -2,11 +2,9 @@ import { sharedLayer, onAuthChange } from './data-hub.js';
 import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI } from './ui-helpers.js';
 import { startPresence } from './presence.js';
-import { ensurePushSubscription, forgetPushSubscription } from './push-client.js';
-import { locationSnapshot } from './auto-location.js';
+import { ensurePushSubscription } from './push-client.js';
 import { personName } from './profile-store.js';
-import { togetherPlace, friendlyDistance, placeDistance as distanceMeters } from './place-presets.js';
-import { hereLine, statusShows } from './availability.js';
+import { hereLine, statusShows, orbitLine } from './availability.js';
 
 const badge = document.getElementById('activity-badge');
 const helpBadge = document.getElementById('help-badge');
@@ -38,71 +36,27 @@ startPresence(data, viewer, 'home');
 // notifications have actually been allowed.
 void ensurePushSubscription(data, viewer);
 
-const homeLocationState = document.getElementById('home-location-state');
-function showHomeLocation(next = locationSnapshot()) {
-  if (!homeLocationState) return;
-  const labels = {
-    live: 'location live',
-    starting: 'finding this phone…',
-    retrying: 'location trying again',
-    offline: 'waiting for internet',
-    paused: 'location paused',
-    blocked: 'location needs permission',
-    unavailable: 'location unavailable',
-    error: 'location took the day off',
-    preview: 'location preview',
-    loading: 'location starting…'
-  };
-  homeLocationState.textContent = labels[next?.phase] || 'location starting…';
-}
-showHomeLocation();
-window.addEventListener('littlelist:location-state', event => showHomeLocation(event.detail));
 window.addEventListener('littlelist:profile', renderSky);
 window.setInterval(renderSky, 30000);
-
-// Without this there is no way off an account. Her phone was still signed in
-// as his from the shared-login days, so the site sent her to his dashboard and
-// left her there with nothing to tap.
-document.getElementById('sign-out')?.addEventListener('click', async event => {
-  const button = event.currentTarget;
-  button.disabled = true;
-  button.textContent = 'signing out…';
-  // Drop this phone's push registration first, while the rules still let us:
-  // otherwise it keeps answering for whoever just left, and the next person to
-  // sign in here inherits their reminders.
-  // Bounded, though. A phone that believes it is online but is not — hotel
-  // wifi, a dead spot, a sleeping router — leaves the write pending for as long
-  // as it likes and never rejects, and this was awaited before anything else
-  // happened: the button said "signing out…" and stayed there, with no way off
-  // the account. The cleanup still runs and still finishes if it can; it just
-  // no longer holds the door shut. A registration left behind is picked up by
-  // the next sign-in, which claims the endpoint from whoever held it.
-  await Promise.race([
-    forgetPushSubscription(data, viewer),
-    new Promise(resolve => window.setTimeout(resolve, 2500))
-  ]);
-  try {
-    await data.signOut();
-  } catch (_) { /* already gone */ }
-  try { localStorage.removeItem(seenKey); } catch (_) {}
-  location.replace('index.html');
-});
 
 function renderBadge() {
   const since = Number(localStorage.getItem(seenKey) || 0);
   const fresh = value => Number(value) > since;
 
+  let newCount = 0;
   if (badge) {
     const incoming = [
       ...buckets.items.filter(item => item.addedBy === other && fresh(item.createdAt)),
       ...buckets.notes.filter(note => note.recipient === viewer && fresh(note.createdAt)),
       ...buckets.reminders.filter(reminder => reminder.recipient === viewer && fresh(reminder.createdAt)),
       ...buckets.dates.filter(idea => idea.addedBy === other && !idea.imported && fresh(idea.createdAt)),
-      ...buckets.statuses.filter(status => (status.person === other || status.id === other) && fresh(status.updatedAt)),
+      // Automatic spot changes are not news; arrivals get their own ping.
+      ...buckets.statuses.filter(status => (status.person === other || status.id === other) && status.updateKind !== 'location' && fresh(status.updatedAt)),
       ...buckets.help.filter(request => request.to === viewer && fresh(request.createdAt)),
       ...buckets.memories.filter(item => item.addedBy === other && fresh(item.createdAt)),
       ...buckets.reactions.filter(item => item.by === other && fresh(item.createdAt))
     ];
+    newCount = incoming.length;
     badge.hidden = incoming.length === 0;
     badge.textContent = incoming.length > 9 ? '9+' : String(incoming.length);
     badge.setAttribute('aria-label', `${incoming.length} new`);
@@ -114,6 +68,16 @@ function renderBadge() {
     helpBadge.textContent = String(waiting);
     helpBadge.setAttribute('aria-label', `${waiting} waiting`);
   }
+  setIconBadge(newCount + buckets.help.filter(request => request.to === viewer && request.state === 'open' && !fresh(request.createdAt)).length);
+}
+
+// The number on the app icon (iPhone home-screen apps since iOS 16.4). The
+// service worker bumps it when a ping lands; opening home sets the real count.
+function setIconBadge(count) {
+  try {
+    if (count > 0) void navigator.setAppBadge?.(count)?.catch?.(() => {});
+    else void navigator.clearAppBadge?.()?.catch?.(() => {});
+  } catch (_) { /* not supported */ }
 }
 
 function renderDashboard() {
@@ -192,29 +156,10 @@ function renderSkyOrbit(stage, now) {
     detail.textContent = known.length ? 'waiting for the other spot' : 'waiting for both spots';
     return;
   }
-  const meters = distanceMeters(her, him);
-  const bothLive = Number(her.shareUntil) > now && Number(him.shareUntil) > now;
-  const sharedPlace = bothLive && meters <= 500 ? togetherPlace(her, him) : null;
-  stage.dataset.orbit = meters <= 75 ? 'together' : meters <= 500 ? 'close' : meters <= 2000 ? 'near' : 'far';
-  if (!bothLive) {
-    title.textContent = 'last known orbit';
-    detail.textContent = `${friendlyDistance(meters)} apart at the last update`;
-  } else if (sharedPlace) {
-    title.textContent = sharedPlace;
-    detail.textContent = `${friendlyDistance(meters)} apart`;
-  } else if (meters <= 75) {
-    title.textContent = 'together at last :)';
-    detail.textContent = `${friendlyDistance(meters)} apart`;
-  } else if (meters <= 500) {
-    title.textContent = 'almost together';
-    detail.textContent = `${friendlyDistance(meters)} to go`;
-  } else if (meters <= 2000) {
-    title.textContent = 'getting closer';
-    detail.textContent = `${friendlyDistance(meters)} between you`;
-  } else {
-    title.textContent = 'same sky';
-    detail.textContent = `${friendlyDistance(meters)} apart for now`;
-  }
+  const line = orbitLine(her, him, now);
+  stage.dataset.orbit = line.orbit;
+  title.textContent = line.title;
+  detail.textContent = line.detail;
 }
 
 function renderSkyNote(now) {

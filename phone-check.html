@@ -2,19 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-  <title>Phone Check · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+  <title>Settings · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="sun-moon-personalized.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
 </head>
 <body class="profile-page" data-app="phone-check">
-  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← back</a><span class="mini-brand">phone check</span></header>
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">settings</span></header>
   <main class="app-shell feature-shell status-shell">
-    <section class="feature-hero status-hero"><span class="feature-icon">📡</span><p class="tiny-kicker">quick check</p><h1>Everything on?</h1></section>
+    <section class="feature-hero status-hero"><span class="feature-icon">⚙︎</span><p class="tiny-kicker">this phone & us</p><h1>Settings</h1></section>
+    <p class="tiny-kicker settings-section-label">this phone</p>
     <section class="status-card" aria-live="polite">
       <div class="status-row"><span class="status-symbol" id="sync-symbol">…</span><div><strong>Shared sync</strong><p id="sync-status">checking</p><button class="small-action" id="check-sync" type="button">test sync</button><p class="permission-help" id="sync-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol" id="online-symbol">…</span><div><strong>Internet</strong><p id="online-status">checking</p><button class="small-action" id="check-online" type="button">recheck</button><p class="permission-help" id="online-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol" id="install-symbol">…</span><div><strong>Home screen</strong><p id="install-status">checking</p><button class="small-action" id="ask-install" type="button">install / show me</button><p class="permission-help" id="install-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol" id="notification-symbol">…</span><div><strong>Popups & tiny noises</strong><p id="notification-status">checking</p><button class="small-action" id="ask-notifications" type="button">ask phone</button><p class="permission-help" id="notification-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol" id="location-symbol">…</span><div><strong>Location</strong><p id="location-status">checking</p><button class="small-action" id="ask-location" type="button">ask phone</button><p class="permission-help" id="location-help" hidden></p></div></div>
-      <div class="status-row"><span class="status-symbol warning" id="background-symbol">◐</span><div><strong>Background mode</strong><p id="background-status">the website may pause when the screen locks.</p><button class="small-action" id="ask-background" type="button">keep page awake</button><p class="permission-help" id="background-help" hidden></p></div></div>
+      <div class="status-row"><span class="status-symbol warning" id="background-symbol">◐</span><div><strong>Keep screen on</strong><p id="background-status">the website may pause when the screen locks.</p><button class="small-action" id="ask-background" type="button">keep page awake</button><p class="permission-help" id="background-help" hidden></p></div></div>
     </section>
     <p class="status-foot">green means ready. yellow needs a quick look.</p>
     <section class="ping-settings" id="pings">
@@ -49,10 +50,24 @@
         <div class="notification-toggle-list" id="notification-categories"></div>
       </section>
 
-      <div class="notification-save-row"><span id="save-state" aria-live="polite"></span><button class="primary-action compact-save" id="save-notifications" type="submit">save it</button></div>
+      <div class="notification-save-row"><span id="save-state" aria-live="polite">changes save by themselves</span><button class="primary-action compact-save" id="save-notifications" type="submit" hidden>save it</button></div>
     </form>
     </section>
+    <section class="profile-setup-card settings-names" id="names">
+      <p class="tiny-kicker">the two of us</p><h2>Our names</h2>
+      <form id="profile-form">
+        <div class="profile-name-grid">
+          <label class="profile-name-person sun-name-person"><img src="sun-profile.png" alt=""><span>Sun name</span><input id="sun-name" required maxlength="24" autocomplete="off" placeholder="her name"></label>
+          <label class="profile-name-person moon-name-person"><img src="moon-profile.png" alt=""><span>Moon name</span><input id="moon-name" required maxlength="24" autocomplete="off" placeholder="his name"></label>
+        </div>
+        <p class="profile-save-note" id="profile-save-note" role="status"></p>
+        <button class="primary-action roomy-action" id="profile-save" type="submit">save our names</button>
+      </form>
+    </section>
+    <section class="status-card settings-account" id="account">
+      <div class="status-row"><span class="status-symbol">☺</span><div><strong>This phone is signed in</strong><p id="account-status">as one of us</p><button class="small-action" id="sign-out" type="button">sign out</button></div></div>
+    </section>
   </main>
-  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="phone-check.js"></script>
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="phone-check.js"></script><script type="module" src="profiles.js"></script><script type="module" src="settings-account.js"></script>
 </body>
 </html>

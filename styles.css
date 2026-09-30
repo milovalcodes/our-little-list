@@ -142,6 +142,9 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 .inline-add button { flex:0 0 48px; border:0; border-radius:15px; background:var(--accent-deep); color:white; font-size:1.5rem; cursor:pointer; }
 .local-note { margin:20px auto 0; max-width:580px; text-align:center; color:var(--page-muted); font-size:.78rem; line-height:1.5; }
 .toast { position:fixed; left:50%; bottom:24px; translate:-50% 0; background:#2e2530; color:white; padding:12px 17px; border-radius:999px; font-weight:750; font-size:.84rem; box-shadow:0 12px 30px rgba(0,0,0,.2); z-index:20; }
+.undo-toast { display:flex; align-items:center; gap:14px; padding:8px 8px 8px 18px; z-index:60; }
+.undo-toast button { border:0; border-radius:999px; background:rgba(255,255,255,.16); color:inherit; font:inherit; padding:7px 14px; cursor:pointer; }
+.has-app-dock .toast { bottom:calc(92px + env(safe-area-inset-bottom)); }
 .auth-gate { position:fixed; inset:0; z-index:50; background:rgba(255,248,248,.72); backdrop-filter:blur(15px); display:grid; place-items:center; padding:20px; }
 .him-theme .auth-gate { background:rgba(235,244,245,.78); }
 .auth-gate[hidden] { display:none; }
@@ -767,6 +770,20 @@ button.home-link { border:none; background:none; font:inherit; cursor:pointer; c
 .arrival-strip { display:flex; justify-content:space-between; align-items:center; gap:9px; margin-top:10px; padding:9px 11px; border-radius:18px; color:var(--page-muted); background:var(--paper); box-shadow:0 9px 25px rgba(67,48,58,.06); }
 .arrival-strip>span { flex:0 0 auto; font-size:.68rem; font-weight:900; }
 .arrival-strip>div { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:5px; }
+.person-status-card.is-spotlit { outline:3px solid color-mix(in srgb,var(--accent) 55%,transparent); outline-offset:3px; transition:outline-color .6s; }
+.setup-nudge { display:grid; grid-template-columns:auto 1fr auto auto; align-items:center; gap:10px; margin:0 0 12px; padding:10px 10px 10px 14px; border-radius:18px; background:var(--accent-pale); color:var(--accent-deep); box-shadow:0 8px 22px rgba(0,0,0,.06); }
+.setup-nudge strong { display:block; font-size:.82rem; }
+.setup-nudge small { display:block; font-size:.7rem; opacity:.8; }
+.setup-nudge a { padding:7px 12px; border-radius:999px; background:var(--accent-deep); color:white; font-size:.72rem; font-weight:900; text-decoration:none; white-space:nowrap; }
+.setup-nudge button { border:0; background:none; color:inherit; font-size:1.1rem; padding:4px 6px; cursor:pointer; }
+.settings-names,.settings-account { margin-top:18px; }
+.small-action.confirming { background:#b83a4b; color:white; }
+.thinking-ping { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:46px; margin:0 0 12px; border:1.5px dashed color-mix(in srgb,var(--accent) 55%,transparent); border-radius:16px; background:transparent; color:var(--accent-deep); font:inherit; font-weight:850; cursor:pointer; }
+.thinking-ping span { font-size:1.1rem; }
+.him-theme .thinking-ping { color:#d6c0ff; }
+.pause-choices { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin:10px 0 2px; font-size:.72rem; font-weight:800; color:var(--muted,#6f6470); }
+.pause-choices[hidden] { display:none; }
+.pause-choices button { min-height:34px; padding:6px 11px; border:0; border-radius:999px; color:var(--accent-deep); background:var(--accent-pale); font-size:.7rem; font-weight:900; cursor:pointer; }
 .arrival-strip button { min-height:34px; padding:6px 9px; border:0; border-radius:999px; color:var(--accent-deep); background:var(--accent-pale); font-size:.66rem; font-weight:900; cursor:pointer; }
 .now-status-pair .person-status-card { gap:10px; padding:13px; border-radius:20px; }
 .now-status-pair .status-avatar { width:47px; height:47px; flex-basis:47px; }

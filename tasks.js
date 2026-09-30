@@ -4,6 +4,7 @@ import { setupAuthUI, applyViewerTheme, escapeHtml, toast, dateKey, setButtonBus
 import { personName } from './profile-store.js';
 import { initHelpPanel } from './help-panel.js';
 import { addTask } from './records.js';
+import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
 const byId = id => document.getElementById(id);
 let items = [];
@@ -78,6 +79,7 @@ byId('task-list').addEventListener('click', async event => {
   const row = button.closest('[data-id]');
   const item = items.find(entry => entry.id === row?.dataset.id);
   if (!item) return;
+  if (button.dataset.action === 'delete') { deleteWithUndo(data, 'items', item.id, { label: `deleted “${item.title.slice(0, 28)}”`, onChange: render }); return; }
 
   button.disabled=true;button.classList.add('is-busy');
   try{
@@ -92,7 +94,6 @@ byId('task-list').addEventListener('click', async event => {
     // A repeat has no Done tab to undo from, so "undo" puts the old date back.
     if(button.dataset.action==='undo-roll')await data.updateIn('items',item.id,{due:item.previousDue||'',previousDue:'',lastDoneBy:'',lastDoneAt:0});
     if(button.dataset.action==='readd')await data.updateIn('items',item.id,{done:false,doneBy:'',doneAt:0});
-    if(button.dataset.action==='delete')await data.removeFrom('items',item.id);
   }catch(_){showFailure('the list edit did not stick.','check the internet and try the button again.');button.disabled=false;button.classList.remove('is-busy');}
 });
 
@@ -100,6 +101,7 @@ function visibleItems() {
   if (tab === 'asks') return [];
   const wantedType = tab === 'tasks' ? 'task' : tab;
   return items
+    .filter(item => !isPendingDelete('items', item.id))
     .filter(item => tab === 'done' ? item.done : item.type === wantedType && !item.done)
     .sort((a, b) => {
       const dueOrder = (a.due || '9999').localeCompare(b.due || '9999');

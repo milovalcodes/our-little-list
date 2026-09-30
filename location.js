@@ -7,7 +7,7 @@ import { pauseAutoLocation, resumeAutoLocation, locationSnapshot } from './auto-
 import { escapeHtml, setButtonBusy, toast } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { timeAgo } from './time-format.js';
-import { togetherPlace, friendlyDistance, placeDistance as distanceMeters } from './place-presets.js';
+import { orbitLine } from './availability.js';
 
 const byId=id=>document.getElementById(id);
 let locations=[];
@@ -35,14 +35,25 @@ byId('location-action')?.addEventListener('click',async event=>{
   const button=event.currentTarget;
   state=locationSnapshot();
   if(['live','starting','retrying','offline'].includes(state.phase)){
-    setButtonBusy(button,true,'pausing…');
-    await pauseAutoLocation();
-    toast('location paused. stealth mode.');
+    byId('pause-choices').hidden=!byId('pause-choices').hidden;
+    return;
   }else{
     setButtonBusy(button,true,'finding you…');
     await resumeAutoLocation();
   }
   setButtonBusy(button,false);
+  renderControl();
+});
+
+byId('pause-choices')?.addEventListener('click',async event=>{
+  const choice=event.target.closest('[data-pause]');if(!choice)return;
+  const minutes=Number(choice.dataset.pause)||0;
+  byId('pause-choices').hidden=true;
+  const button=byId('location-action');
+  setButtonBusy(button,true,'pausing…');
+  await pauseAutoLocation({minutes});
+  setButtonBusy(button,false);
+  toast(minutes?`paused for ${minutes/60} hour${minutes===60?'':'s'} · back on by itself`:'location paused until you turn it on');
   renderControl();
 });
 
@@ -75,7 +86,7 @@ function render(){
   const newest=Math.max(...known.map(item=>Number(item.updatedAt)||0));
   byId('map-updated').textContent=newest?`updated ${timeAgo(newest)}`:'last known';
   if(her&&him){renderLiveDistance(her,him);return;}
-  if(knownHer&&knownHim){const meters=distanceMeters(knownHer,knownHim);setProximity('last known orbit',`${friendlyDistance(meters)} apart at the last update.`,'old news');return;}
+  if(knownHer&&knownHim){const line=orbitLine(knownHer,knownHim);setProximity(line.title,`${line.detail}.`,line.kicker);return;}
   const live=her||him;
   if(live){const missing=live.id==='her'?'him':'her';setProximity(`waiting for ${personName(missing)}`,`${personName(live.id)} is live on the map.`,'one phone online');return;}
   setProximity('last known only','open the app on either phone to go live again.','both offline');
@@ -83,7 +94,7 @@ function render(){
 
 function renderControl(){
   state=locationSnapshot();
-  const labels={live:'location on',starting:'finding you',retrying:'trying again',offline:'waiting for internet',paused:'location paused',blocked:'location blocked',unavailable:'not available',error:'could not locate',preview:'preview mode',loading:'starting'};
+  const labels={live:'location on',starting:'finding you',retrying:'trying again',offline:'waiting for internet',paused:'location paused','needs-permission':'location is off',blocked:'location blocked',unavailable:'not available',error:'could not locate',preview:'preview mode',loading:'starting'};
   const active=['live','starting','retrying','offline'].includes(state.phase);
   byId('location-state').textContent=labels[state.phase]||'location';
   byId('location-state-dot').className=`now-location-dot ${active?'is-live':state.phase==='blocked'||state.phase==='error'?'is-error':''}`;
@@ -93,14 +104,8 @@ function renderControl(){
 }
 
 function renderLiveDistance(her,him){
-  const meters=distanceMeters(her,him);const friendly=friendlyDistance(meters);
-  const place=meters<=500?togetherPlace(her,him):'';
-  if(place)setProximity(place,`${friendly} apart.`,'same saved spot');
-  else if(meters<=75)setProximity('together at last :)',`${friendly} apart.`,'made it');
-  else if(meters<=500)setProximity('almost together',`${friendly} to go.`,'so close');
-  else if(meters<=2000)setProximity('getting closer',`${friendly} between you.`,'on the way');
-  else if(meters<=10000)setProximity('on the way',`${friendly} between you.`,'getting there');
-  else setProximity('same planet, technically',`${friendly} between you.`,'for now');
+  const line=orbitLine(her,him);
+  setProximity(line.title,`${line.detail}.`,line.kicker);
 }
 
 

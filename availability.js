@@ -4,6 +4,7 @@
 // look invisible) still showed a green "here now".
 
 import { timeAgo } from './time-format.js';
+import { togetherPlace, friendlyDistance, placeDistance } from './place-presets.js';
 
 export const STATE_LABELS = { online: 'around', away: 'afk-ish', dnd: 'busy', invisible: 'lurking' };
 const HERE_MS = 120000;
@@ -38,4 +39,26 @@ export function hereLine({ presence, status, now = Date.now() } = {}) {
   const seen = here ? 'here now' : at ? `here ${timeAgo(at)}` : 'not here rn';
   const label = STATE_LABELS[state] || '';
   return { here, text: label && state !== 'online' ? `${seen} · ${label}` : seen, state };
+}
+
+// One wording for how far apart you are. Home and Right now each had their
+// own ladder, and they disagreed past 2 km ("same sky" vs "same planet,
+// technically"). Old positions say how old they are.
+export function orbitLine(her, him, now = Date.now()) {
+  const meters = placeDistance(her, him);
+  const friendly = friendlyDistance(meters);
+  const orbit = meters <= 75 ? 'together' : meters <= 500 ? 'close' : meters <= 2000 ? 'near' : 'far';
+  const bothLive = Number(her.shareUntil) > now && Number(him.shareUntil) > now;
+  if (!bothLive) {
+    const oldest = Math.min(Number(her.updatedAt) || 0, Number(him.updatedAt) || 0);
+    return { orbit, meters, live: false, title: 'last known orbit', detail: `${friendly} apart · ${oldest ? `as of ${timeAgo(oldest)}` : 'at the last update'}`, kicker: 'old news' };
+  }
+  const place = meters <= 500 ? togetherPlace(her, him) : '';
+  const line = (title, detail, kicker) => ({ orbit, meters, live: true, title, detail, kicker });
+  if (place) return line(place, `${friendly} apart`, 'same saved spot');
+  if (meters <= 75) return line('together at last :)', `${friendly} apart`, 'made it');
+  if (meters <= 500) return line('almost together', `${friendly} to go`, 'so close');
+  if (meters <= 2000) return line('getting closer', `${friendly} between you`, 'on the way');
+  if (meters <= 10000) return line('on the way', `${friendly} between you`, 'getting there');
+  return line('same sky', `${friendly} apart for now`, 'for now');
 }

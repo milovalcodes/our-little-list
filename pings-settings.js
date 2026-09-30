@@ -52,10 +52,25 @@ function updateSoundDependencies() {
 document.querySelectorAll('input[name="background-sound"]').forEach(input => input.addEventListener('change', updateSoundDependencies));
 $('in-app-sound').addEventListener('change', () => window.playLittleSound?.($('in-app-sound').value));
 
+// Switches save the moment they change, like the phone's own Settings. The
+// old "save it" button looked optional, and leaving the page dropped the change.
+// Every choice is kept on this phone at once; the copy filed beside the push
+// registration (so the sender can respect it) is refreshed shortly after.
+let autoSave = null;
+let savedNote = null;
+$('notification-settings-form').addEventListener('change', () => {
+  preferences = saveNotificationPreferences(valuesFromForm());
+  window.clearTimeout(autoSave);
+  autoSave = window.setTimeout(() => $('notification-settings-form').requestSubmit(), 600);
+});
+
 $('notification-settings-form').addEventListener('submit', async event => {
   event.preventDefault();
+  window.clearTimeout(autoSave);
+  window.clearTimeout(savedNote);
   const button = $('save-notifications');
   setButtonBusy(button, true, 'saving…');
+  $('save-state').textContent = 'saving…';
   preferences = saveNotificationPreferences(valuesFromForm());
   try {
     const state = await pushState();
@@ -64,8 +79,7 @@ $('notification-settings-form').addEventListener('submit', async event => {
       if (result.state === 'failed') throw result.problem || new Error('registration failed');
     }
     $('save-state').textContent = 'saved ✓';
-    window.setTimeout(() => { $('save-state').textContent = ''; }, 3500);
-    toast('phone lore updated');
+    savedNote = window.setTimeout(() => { $('save-state').textContent = 'changes save by themselves'; }, 2500);
   } catch (_) {
     showFailure('those settings stayed on this phone only.', 'check the internet, then save once more.');
   } finally {
@@ -113,7 +127,7 @@ $('test-notification').addEventListener('click', async event => {
     if (!silent) options.vibrate = vibrationPattern(preferences.vibration);
     await registration.showNotification('tiny ping check ✦', options);
   } catch (_) {
-    showFailure('the test ping did not happen.', 'check phone check, Focus mode, and this app’s notification settings.');
+    showFailure('the test ping did not happen.', 'check Settings, Focus mode, and this app’s notification settings.');
   } finally {
     setButtonBusy(button, false);
     onChange();

@@ -1,6 +1,8 @@
-import { sharedLayer, onAuthChange, whenReady } from './data-hub.js';
-import { setupAuthUI, setButtonBusy, showFailure } from './ui-helpers.js';
-import { awaitViewer, showNotAMember } from './viewer.js';
+// The names form, part of Settings (phone-check.html). The page's own module
+// handles the sign-in gate.
+import { sharedLayer, whenReady } from './data-hub.js';
+import { setButtonBusy, showFailure } from './ui-helpers.js';
+import { awaitViewer } from './viewer.js';
 import { cachedProfile, saveCachedProfile } from './profile-store.js';
 
 const $=id=>document.getElementById(id);
@@ -16,13 +18,11 @@ $('moon-name').value=cached.moonName;
 document.querySelectorAll('#profile-form input').forEach(input=>input.addEventListener('input',()=>{editing.add(input.id);$('profile-save-note').textContent='';}));
 
 data=await sharedLayer();
-onAuthChange(user=>setupAuthUI(data,user));
-if(data.mode==='local')setupAuthUI(data,{local:true});
 
 // Same gate as every other page: an account that signed in fine but is not one
 // of the two members stops here instead of editing the household's names.
 const viewer=await awaitViewer();
-if(!viewer){showNotAMember();await new Promise(()=>{});}
+if(!viewer)await new Promise(()=>{}); // phone-check.js shows the not-a-member screen
 
 whenReady(data,()=>{
   data.listenTo('profiles',items=>{

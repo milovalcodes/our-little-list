@@ -11,6 +11,14 @@ const ready = new Promise(resolve => { settle = resolve; });
 let settled = false;
 let side = null;
 
+// index.html reads this before loading anything, so opening the app goes
+// straight to your home instead of booting Firebase once on the front door
+// and again after the redirect. Signing out clears it.
+export const SIDE_KEY = 'our-little-list-side';
+function rememberSide(value) {
+  try { value ? localStorage.setItem(SIDE_KEY, value) : localStorage.removeItem(SIDE_KEY); } catch (_) { /* no storage */ }
+}
+
 const data = await sharedLayer();
 
 if (data.mode === 'local') {
@@ -22,6 +30,7 @@ if (data.mode === 'local') {
 } else {
   onAuthChange(user => {
     side = user ? sideForUid(user.uid) : null;
+    rememberSide(side);
     if (user && !settled) {
       settled = true;
       settle(side);

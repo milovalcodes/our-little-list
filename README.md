@@ -24,22 +24,27 @@ Each thing lives in one place:
 - **Right now** — both statuses in one place. A status is your own words (with
   an optional expiry), a running focus timer, and where you are if you are at a
   saved spot; "here now · busy" is one line, and "lurking" hides the "here now".
-  Also the map, "leaving now / almost there", and **saved spots**.
+  Also the map, "leaving now / almost there", and **saved spots**. Location can
+  be paused for 1 hour, 3 hours or until turned back on; the other phone hears
+  when it comes back. The phone is only asked for location after a "turn on" tap.
 - **Saved spots** — home, work, school, errands or anything you name. Arriving
   changes your status ("vibing at home", "working hard") and tells the other
   phone ("sun just got home! 🏠", "moon just got to work :c", or that you are
   both there). Each spot has a bell to turn its ping off. This only runs while
   the app is open on the phone — phones do not let websites track location in
   the background.
-- **Date pile** — ideas with vibes, filters and a random picker. Marking one done
+- **Date ideas** — ideas with vibes, filters and a random picker. Marking one done
   puts it in the memory jar.
-- **Memory jar** — little photos and things worth keeping, including the dates
+- **Memories** — little photos and things worth keeping, including the dates
   you did.
-- **Phone check** — sync, internet, install, notifications and location, with the
-  exact fix for anything off — and **little pings** below it: which kinds of
-  notification get through (asks & reminders, arrivals, notes…), quiet mode,
-  vibration and the in-app sound. A muted kind is dropped by the delivery worker
-  before it is sent, because a web push that arrives has to be shown.
+- **Settings** (`phone-check.html`) — sync, internet, install, notifications and
+  location, with the exact fix for anything off; **little pings** (which kinds of
+  notification get through, quiet mode, vibration, the in-app sound — switches
+  save on tap); **our names**; and sign out (two taps). A muted kind is dropped
+  by the delivery worker before it is sent, because a web push that arrives has
+  to be shown. Home shows a "finish setting up this phone" card until it's done.
+- **Deletes wait behind an undo bar** for five seconds; nothing is re-created.
+- **Quick add** (the ＋ in the dock) has a one-tap "thinking of you".
 - Installable on iPhone and Android; works offline for reading.
 
 Old links still work: `reminders.html`, `activity.html`, `notifications.html`,
@@ -142,7 +147,7 @@ their next visit.
 ### 3. Both phones
 
 Open the site, sign in with **your own** account, add it to the Home Screen, then
-open **phone check** (“Everything on?”) and allow notifications and location. The front door sends
+open **Settings** (⚙︎ top-left on home) and allow notifications and location. The front door sends
 you to your side automatically. That page reports
 whether the phone is actually registered for background nudges, rather than just
 whether permission was granted.

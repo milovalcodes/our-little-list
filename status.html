@@ -24,6 +24,7 @@
         <div class="now-location-copy"><p class="tiny-kicker">location</p><h2 id="location-state">starting</h2><p id="location-note">asking the satellites politely</p></div>
         <button class="now-location-action" id="location-action" type="button">pause</button>
       </div>
+      <div class="pause-choices" id="pause-choices" hidden><span>pause for</span><button type="button" data-pause="60">1 hour</button><button type="button" data-pause="180">3 hours</button><button type="button" data-pause="0">until I turn it on</button></div>
 
       <div class="now-proximity" aria-live="polite">
         <div class="proximity-orbit now-orbit" aria-hidden="true"><span class="profile-orbit"><img src="sun-profile.png" alt=""></span><i></i><span class="profile-orbit"><img src="moon-profile.png" alt=""></span></div>
@@ -33,7 +34,7 @@
       <div class="now-map-head"><div><p class="tiny-kicker">the evidence</p><h2>Map</h2></div><div class="map-heading-actions"><span class="map-updated" id="map-updated">no spots yet</span><button class="recenter-map" id="recenter-map" type="button" hidden>find us</button></div></div>
       <div id="couple-map" aria-label="Map showing our live or last known locations"></div>
       <div class="last-known-row" id="last-known-row" aria-live="polite"></div>
-      <div class="now-location-foot"><span>updates while the app is open</span><button class="hide-last-location" id="hide-last-location" type="button" hidden>delete my last spot</button></div>
+      <div class="now-location-foot"><span>updates only while the app is open on each phone</span><button class="hide-last-location" id="hide-last-location" type="button" hidden>delete my last spot</button></div>
     </section>
 
     <details class="composer-card saved-places" id="saved-places">

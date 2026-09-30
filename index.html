@@ -8,6 +8,11 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Our Little List</title>
+  <script>
+    // Straight to your side when this phone already knows it (viewer.js keeps
+    // it; signing out clears it). Saves a whole Firebase boot on every launch.
+    try { const side = localStorage.getItem('our-little-list-side'); if (side === 'her' || side === 'him') location.replace(`${side}.html${location.hash}`); } catch (_) {}
+  </script>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="sun-moon-personalized.png" type="image/png">
   <link rel="apple-touch-icon" href="sun-moon-personalized.png">

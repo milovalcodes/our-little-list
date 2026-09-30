@@ -57,8 +57,9 @@ function addSheets() {
   document.body.insertAdjacentHTML('beforeend', `<div class="sheet-scrim" data-close-sheet hidden></div>
     <section class="app-sheet" id="sheet-quick" role="dialog" aria-modal="true" aria-labelledby="quick-title" hidden>
       <header class="sheet-head"><div><small>put it in the app</small><h2 id="quick-title">Quick add</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
+      <button class="thinking-ping" id="quick-thinking" type="button"><span>♡</span> send “thinking of you”</button>
       <div class="quick-kind" role="tablist">
-        <button class="active" type="button" data-quick-kind="task">to-do</button><button type="button" data-quick-kind="note">note</button><button type="button" data-quick-kind="ask">ask / remind</button><button type="button" data-quick-kind="date">date idea</button>
+        <button class="active" type="button" data-quick-kind="task">to-do</button><button type="button" data-quick-kind="note">note</button><button type="button" data-quick-kind="ask">ask</button><button type="button" data-quick-kind="date">date idea</button>
       </div>
       <form class="quick-add-form" id="quick-add-form">
         <label><span id="quick-label">what needs doing?</span><input id="quick-text" maxlength="180" required autocomplete="off" placeholder="the thing"></label>
@@ -74,10 +75,10 @@ function addSheets() {
     <section class="app-sheet more-sheet" id="sheet-more" role="dialog" aria-modal="true" aria-labelledby="more-title" hidden>
       <header class="sheet-head"><div><small>the rest of it</small><h2 id="more-title">More</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <nav class="more-grid">
-        <a href="tasks.html"><i>✓</i><span>the list</span></a><a href="tasks.html#asks"><i>🙋</i><span>asks</span></a>
+        <a href="today.html"><i>◎</i><span>today</span></a><a href="tasks.html"><i>✓</i><span>the list</span></a><a href="tasks.html#asks"><i>🙋</i><span>asks</span></a>
         <a href="notes.html"><i>💌</i><span>notes</span></a><a href="status.html"><i>☀︎☾</i><span>right now</span></a>
-        <a href="dates.html"><i>✦</i><span>date pile</span></a><a href="memories.html"><i>◒</i><span>memories</span></a>
-        <a href="phone-check.html"><i>♪</i><span>phone & pings</span></a><a href="profiles.html"><i>☺</i><span>our names</span></a>
+        <a href="dates.html"><i>✦</i><span>date ideas</span></a><a href="memories.html"><i>◒</i><span>memories</span></a>
+        <a href="today.html#new"><i>✉︎</i><span>what's new</span></a><a href="phone-check.html"><i>⚙︎</i><span>settings</span></a>
       </nav>
       <button class="update-row" id="check-update" type="button"><span><b id="app-version">app version</b><small id="update-copy">tap to check for a fresh one</small></span><i>↻</i></button>
     </section>`);
@@ -127,6 +128,20 @@ function setupQuickAdd(data, viewer, other) {
     document.getElementById('quick-when-wrap').hidden = kind !== 'ask';
     document.getElementById('quick-text').focus();
   };
+  // One tap, no typing: the Locket-style "I thought of you" that a couple app
+  // gets most of its daily use from.
+  document.getElementById('quick-thinking').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    setButtonBusy(button, true, 'sending…');
+    try {
+      await sendNote(data, { viewer, other, body: 'thinking of you ♡', mood: 'heart' });
+      closeSheets();
+      toast(`sent to ${personName(other)} ♡`);
+      window.littleHaptic?.('success');
+    } catch (_) {
+      showFailure('that did not send.', 'check the internet and try again.');
+    } finally { setButtonBusy(button, false); }
+  });
   document.querySelector('.quick-kind').addEventListener('click', event => {
     const button = event.target.closest('[data-quick-kind]');
     if (button) pick(button.dataset.quickKind);
@@ -216,7 +231,7 @@ function searchable(collection, item, viewer) {
     notes: { icon: '💌', title: item.body || item.message, meta: item.sender === viewer ? 'note you sent' : `note from ${personName(item.sender || item.from)}`, url: 'notes.html' },
     help: { icon: item.emoji || (item.dueAt ? '⏰' : '🙋'), title: item.title, meta: item.dueAt ? 'ask with a time' : item.from === viewer ? 'you asked' : `${personName(item.from)} asked`, url: 'tasks.html#asks' },
     reminders: { icon: '⏰', title: item.title, meta: 'old reminder', url: 'today.html#new' },
-    dates: { icon: '✦', title: item.title, meta: item.done ? 'date we did' : 'date pile', url: 'dates.html' },
+    dates: { icon: '✦', title: item.title, meta: item.done ? 'date we did' : 'date idea', url: 'dates.html' },
     memories: { icon: '◒', title: item.text, meta: 'memory', url: 'memories.html' }
   };
   const value = map[collection];
@@ -398,19 +413,22 @@ async function showVersion() {
   } catch (_) { /* no cache access: leave the plain label */ }
 }
 
-// What an empty page's button should start. Memories are not in quick add, so
-// that one goes to the page's own form; the rest open quick add on the thing
-// the page is about instead of whatever kind was picked last.
-const EMPTY_ACTION = { tasks: 'task', today: 'task', notes: 'note', dates: 'date' };
+// What an empty page's button should start: the page's own form when it has
+// one (it is right there), quick add only on Today. "Nothing new" in the feed
+// gets no button at all: adding a to-do is not how news arrives.
+const EMPTY_COMPOSER = { tasks: 'shared-task-title', notes: 'note-body', dates: 'date-title', memories: 'memory-text' };
+const EMPTY_QUICK = { today: 'task' };
+const EMPTY_SKIP = new Set(['activity-empty']);
 
 function improveEmptyStates(openQuick) {
-  const composer = page === 'memories' ? document.getElementById('memory-text') : null;
-  const kind = EMPTY_ACTION[page];
+  const composer = EMPTY_COMPOSER[page] ? document.getElementById(EMPTY_COMPOSER[page]) : null;
+  const kind = EMPTY_QUICK[page];
   if (!composer && !kind) return;
   document.querySelectorAll('.empty-state').forEach(empty => {
-    if (empty.querySelector('button,a')) return;
+    if (EMPTY_SKIP.has(empty.id) || empty.querySelector('button,a')) return;
     const button = document.createElement('button');
     button.type = 'button'; button.className = 'empty-action'; button.textContent = 'add one';
+    button.id = `${empty.id || 'empty'}-action`;
     button.addEventListener('click', () => {
       if (composer) { composer.scrollIntoView({ block: 'center', behavior: 'smooth' }); composer.focus({ preventScroll: true }); }
       else openQuick(kind);

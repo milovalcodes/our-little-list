@@ -46,30 +46,43 @@ let placeRecheck = null;
 
 // Phases you do not come back from by yourself. Re-arming a denied watcher on
 // every app switch just asked the phone the same question and got the same no.
-const DEAD_PHASES = ['blocked', 'unavailable', 'paused', 'preview'];
+const DEAD_PHASES = ['blocked', 'unavailable', 'paused', 'preview', 'needs-permission'];
+
+// The phone's location prompt used to appear on the first page anyone opened,
+// with nothing on screen saying why. Until someone taps a "turn on" (Settings
+// or the Right now page), an unanswered permission stays unasked.
+export const LOCATION_ASKED_KEY = 'our-little-list-location-asked';
 
 restoreThrottle();
 
 const ready = boot();
 
 export function locationSnapshot() {
-  return { phase, detail, viewer, updatedAt: lastPoint?.updatedAt || 0, accuracy: lastPoint?.accuracy || 0, lat:lastPoint?.lat, lng:lastPoint?.lng, placeId:lastPoint?.placeId || '', placeLabel:lastPoint?.placeLabel || '', placePreset:lastPoint?.placePreset || '' };
+  return { phase, detail, viewer, pausedUntil: pausedUntil(), updatedAt: lastPoint?.updatedAt || 0, accuracy: lastPoint?.accuracy || 0, lat:lastPoint?.lat, lng:lastPoint?.lng, placeId:lastPoint?.placeId || '', placeLabel:lastPoint?.placeLabel || '', placePreset:lastPoint?.placePreset || '' };
 }
 
 export async function resumeAutoLocation() {
   await ready;
   if (!viewer || data?.mode === 'local') return locationSnapshot();
-  try { localStorage.removeItem(pauseKey()); } catch (_) {}
+  const wasPaused = isPaused() || expiredPause;
+  expiredPause = false;
+  try { localStorage.removeItem(pauseKey()); localStorage.setItem(LOCATION_ASKED_KEY, 'yes'); } catch (_) {}
+  window.clearTimeout(resumeTimer);
   startWatcher();
+  if (wasPaused) tellPartnerSharingIsBack();
   return locationSnapshot();
 }
 
-export async function pauseAutoLocation({ removeSpot = false } = {}) {
+// minutes = 0 pauses until turned back on; otherwise sharing comes back by
+// itself (Snap's Ghost Mode, Life360's Bubbles), and the other phone is told.
+export async function pauseAutoLocation({ removeSpot = false, minutes = 0 } = {}) {
   await ready;
   stopWatcher();
   phase = 'paused';
-  detail = removeSpot ? 'last spot hidden' : 'last spot kept';
-  try { localStorage.setItem(pauseKey(), 'yes'); } catch (_) {}
+  const until = minutes > 0 ? Date.now() + minutes * 60000 : 0;
+  detail = until ? `back on at ${new Date(until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : removeSpot ? 'last spot hidden' : 'last spot kept';
+  try { localStorage.setItem(pauseKey(), until ? String(until) : 'yes'); } catch (_) {}
+  armTimedResume();
   let synced = true;
   if (viewer && data?.mode !== 'local') {
     try {
@@ -102,11 +115,64 @@ async function boot() {
   });
   if (isPaused()) {
     phase = 'paused';
-    detail = 'paused on this phone';
+    const until = pausedUntil();
+    detail = until ? `back on at ${new Date(until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'paused on this phone';
+    armTimedResume();
     emit();
     return;
   }
+  if (await waitingForFirstAsk()) {
+    phase = 'needs-permission';
+    detail = 'tap turn on to share while the app is open';
+    emit();
+    return;
+  }
+  // A timed pause that ran out while the app was closed.
+  if (expiredPause) { expiredPause = false; tellPartnerSharingIsBack(); }
   startWatcher();
+}
+
+export async function locationPermissionState() {
+  try { return (await navigator.permissions?.query({ name: 'geolocation' }))?.state || 'unknown'; } catch (_) { return 'unknown'; }
+}
+
+async function waitingForFirstAsk() {
+  try { if (localStorage.getItem(LOCATION_ASKED_KEY)) return false; } catch (_) { return false; }
+  return (await locationPermissionState()) === 'prompt';
+}
+
+let resumeTimer = null;
+let expiredPause = false;
+function armTimedResume() {
+  window.clearTimeout(resumeTimer);
+  const until = pausedUntil();
+  if (!until) return;
+  // setTimeout caps near 24.8 days; a pause is hours, but stay safe.
+  resumeTimer = window.setTimeout(() => {
+    if (pausedUntil() !== until) return;
+    void resumeAutoLocation();
+  }, Math.min(until - Date.now() + 500, 2 ** 31 - 1));
+}
+
+function tellPartnerSharingIsBack() {
+  if (!viewer || data?.mode === 'local') return;
+  void data.notify(partnerOf(viewer), {
+    title: `${personName(viewer)} is sharing location again`,
+    body: 'back on the map',
+    url: 'status.html',
+    kind: 'arrival'
+  });
+}
+
+// Precise GPS is what drains a phone. It is only worth it on the map page or
+// when you are close enough to a saved spot for an arrival to hinge on it.
+let highAccuracyOn = null;
+function wantsHighAccuracy() {
+  if (document.body?.dataset.app === 'status') return true;
+  // The first fix decides "at a saved spot or not"; a rough one could look
+  // like leaving home and then arriving again a moment later.
+  if (!lastPoint) return true;
+  return places.some(place => metersBetween(lastPoint, place) <= (Number(place.radius) || 150) + 400);
 }
 
 function startWatcher() {
@@ -133,9 +199,10 @@ function startWatcher() {
 
 function armWatch() {
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  highAccuracyOn = wantsHighAccuracy();
   watchId = navigator.geolocation.watchPosition(savePosition, handleError, {
-    enableHighAccuracy: true,
-    maximumAge: 15000,
+    enableHighAccuracy: highAccuracyOn,
+    maximumAge: highAccuracyOn ? 15000 : 45000,
     timeout: 20000
   });
 }
@@ -178,6 +245,8 @@ async function savePosition(position) {
   detail = 'updating while the app is open';
   emit();
   void applyPlaceMatch(next, matched);
+  // Walked near a saved spot (or away from all of them): switch GPS mode.
+  if (watchId !== null && highAccuracyOn !== null && wantsHighAccuracy() !== highAccuracyOn) armWatch();
   // A GPS watcher can chatter several times a second. The map does not need
   // that many cloud writes: save meaningful movement, or refresh once a minute.
   await persistPoint(next);
@@ -345,7 +414,19 @@ function placeKey() {
 }
 
 function isPaused() {
-  try { return localStorage.getItem(pauseKey()) === 'yes'; } catch (_) { return false; }
+  let value = null;
+  try { value = localStorage.getItem(pauseKey()); } catch (_) { return false; }
+  if (!value) return false;
+  if (value === 'yes') return true;
+  if (Number(value) > Date.now()) return true;
+  try { localStorage.removeItem(pauseKey()); } catch (_) {}
+  expiredPause = true;
+  return false;
+}
+
+// 0 when not paused or paused until turned back on.
+function pausedUntil() {
+  try { const value = Number(localStorage.getItem(pauseKey())); return value > Date.now() ? value : 0; } catch (_) { return 0; }
 }
 
 function emit() {
@@ -358,6 +439,13 @@ function resumeIfSensible() {
     // Another page in the app paused this. Honour it rather than quietly
     // resuming and republishing a live badge the user thought they turned off.
     if (phase !== 'paused') { stopWatcher(); phase = 'paused'; detail = 'paused on this phone'; emit(); }
+    return;
+  }
+  if (phase === 'paused') {
+    // Turned back on from another page, or a timed pause ran out.
+    if (expiredPause) { expiredPause = false; tellPartnerSharingIsBack(); }
+    restoreThrottle();
+    startWatcher();
     return;
   }
   if (DEAD_PHASES.includes(phase)) return;

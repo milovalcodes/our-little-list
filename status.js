@@ -103,8 +103,11 @@ function mine(){return statuses.find(item=>item.id===viewer||item.person===viewe
 // first-ever status has to supply them even when it is only recording an arrival.
 function blankStatus(){return {state,text:'',category:'',emoji:'',energy,expiresAt:0};}
 
+let partnerShown=false;
 function render(){
   $('status-pair').innerHTML=['her','him'].map(person=>statusCard(person,statuses.find(item=>item.id===person||item.person===person))).join('');
+  // Home's partner avatar links here with #partner: land on their card, not yours.
+  if(!partnerShown&&location.hash==='#partner'){partnerShown=true;const card=$('status-pair').querySelector('.person-status-card:not(.is-me)');card?.scrollIntoView({block:'center'});card?.classList.add('is-spotlit');window.setTimeout(()=>card?.classList.remove('is-spotlit'),1600);}
 }
 function statusCard(person,item={}){
   const focus=focusActive(item);const custom=item.text&&!isExpired(item);const name=personName(person);const image=person==='her'?'sun-profile.png':'moon-profile.png';
