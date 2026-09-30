@@ -5,6 +5,7 @@ import { personName } from './profile-store.js';
 import { friendlyDate, friendlyWhen, timeAgo } from './time-format.js';
 import { startActivityFeed } from './activity-feed.js';
 import { focusActive } from './availability.js';
+import { startDailyQuestion } from './daily-question.js';
 
 const $=id=>document.getElementById(id);
 const buckets={items:[],reminders:[],help:[],statuses:[]};
@@ -21,6 +22,7 @@ Object.keys(buckets).forEach(name=>{
   else data.listenTo(name,receive);
 });
 startActivityFeed({data,viewer,other});
+startDailyQuestion({data,viewer,other});
 // A focus session is part of your status: while it runs, the status says
 // "⏱ locking in · <what>" everywhere. It lives in its own fields on the status
 // (see availability.js) instead of its own record that only this page showed.

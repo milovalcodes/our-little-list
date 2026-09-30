@@ -523,6 +523,48 @@ async function openSlow(path) {
 }
 
 // The Today hub stays focused on what is due and the shared focus session.
+// A daily answer stays hidden on the partner's side until both have answered.
+// Editing an answer must not send a second heads-up.
+{
+  const { context, page, errors } = await open('today.html?as=her');
+  await page.evaluate(async () => {
+    const { sharedLayer } = await import('./data-hub.js');
+    const data = await sharedLayer();
+    window.questionPings = [];
+    data.notify = async (to, message) => { window.questionPings.push({ to, message }); return { queued: true }; };
+  });
+  await page.fill('#question-answer', 'sun answer only');
+  await page.click('#question-save');
+  await page.waitForTimeout(150);
+  const herPings = await page.evaluate(() => window.questionPings);
+  const herOwn = await page.locator('#question-answers').innerText();
+  await page.goto(`${BASE}/today.html?as=him`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
+  const himBefore = await page.locator('#question-answers').innerText();
+  await page.evaluate(async () => {
+    const { sharedLayer } = await import('./data-hub.js');
+    const data = await sharedLayer();
+    window.questionPings = [];
+    data.notify = async (to, message) => { window.questionPings.push({ to, message }); return { queued: true }; };
+  });
+  await page.fill('#question-answer', 'moon answer too');
+  await page.click('#question-save');
+  await page.waitForTimeout(150);
+  const bothAnswers = await page.locator('#question-answers').innerText();
+  await page.click('#question-edit');
+  await page.fill('#question-answer', 'moon answer edited');
+  await page.click('#question-save');
+  await page.waitForTimeout(150);
+  const himPings = await page.evaluate(() => window.questionPings);
+  note(herOwn.includes('sun answer only') && !himBefore.includes('sun answer only')
+       && himBefore.includes('answered') && bothAnswers.includes('sun answer only') && bothAnswers.includes('moon answer too')
+       && himPings.length === 1 && herPings.length === 1 && himPings[0].to === 'her'
+       && herPings[0].to === 'him' && himPings[0].message.kind === 'note' && errors.length === 0,
+       'daily answers reveal together and ping only once', errors[0] || JSON.stringify({ herOwn, himBefore, bothAnswers, herPings, himPings }));
+  await context.close();
+}
+
+// The Today hub stays focused on what is due and the shared focus session.
 // A focus session is part of your status while it runs — and when it ends, the
 // status you had set is still there, with its own expiry, not the timer's.
 {

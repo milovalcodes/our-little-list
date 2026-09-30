@@ -252,6 +252,28 @@ service cloud.firestore {
       allow delete: if inHousehold(householdId);
     }
 
+    match /households/{householdId}/questions/{day} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && request.resource.data.day == day
+        && request.resource.data.promptId is int
+        && request.resource.data.promptId >= 0 && request.resource.data.promptId < 100
+        && request.resource.data.answers is map
+        && request.resource.data.answers.keys().hasOnly([mySide()])
+        && request.resource.data.answers.keys().hasAll([mySide()])
+        && shortText(request.resource.data.answers[mySide()].text, 240)
+        && request.resource.data.answers[mySide()].at is int;
+      allow update: if inHousehold(householdId)
+        && request.resource.data.day == resource.data.day
+        && request.resource.data.promptId == resource.data.promptId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers'])
+        && request.resource.data.answers.diff(resource.data.answers).affectedKeys().hasOnly([mySide()])
+        && shortText(request.resource.data.answers[mySide()].text, 240)
+        && request.resource.data.answers[mySide()].at is int;
+      allow delete: if false;
+    }
+
     match /households/{householdId}/memoryPhotos/{memoryId} {
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId)

@@ -4,6 +4,14 @@ import { pickMoment } from '../moment-picker.js';
 import { fridgeNote } from '../fridge.js';
 import { hereLine, statusShows, focusActive } from '../availability.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, reminderSourcePath, reminderStillWanted } from '../notification-policy.js';
+import { QUESTIONS, questionForDay } from '../question-prompts.js';
+
+assert.equal(QUESTIONS.length, 100);
+assert.equal(new Set(QUESTIONS).size, 100, 'no duplicate daily prompts');
+const dailyIds = Array.from({ length: 100 }, (_, index) => questionForDay(new Date(Date.UTC(2026, 0, index + 1)).toISOString().slice(0, 10)).promptId);
+assert.equal(new Set(dailyIds).size, 100, 'the daily question cycles through every prompt before repeating');
+assert.deepEqual(questionForDay('2026-09-30'), questionForDay('2026-09-30'));
+console.log(' ok  both sides get the same daily question without prompt repeats');
 
 // Asks with a time use the reminder page's old day/time chips.
 const saturdayMorning = new Date(2026, 9, 3, 8, 0);

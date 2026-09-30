@@ -267,7 +267,11 @@ function createLocalLayer(onAuth, onReady) {
     async setTo(name, id, item) {
       const items = read(name);
       const current = items.find(entry => entry.id === id);
-      if (current) Object.assign(current, item); else items.push({ id, ...item });
+      // Firestore's setDoc({merge:true}) merges nested answer maps. Mirror that
+      // here so the second answer in local preview never wipes the first.
+      if (current && name === 'questions') Object.assign(current, item, { answers: { ...(current.answers || {}), ...(item.answers || {}) } });
+      else if (current) Object.assign(current, item);
+      else items.push({ id, ...item });
       write(name, items);
     },
     async updateIn(name, id, changes) {
