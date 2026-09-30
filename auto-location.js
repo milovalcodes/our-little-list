@@ -8,7 +8,7 @@
 import { sharedLayer } from './data-hub.js';
 import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
-import { placeDisplay, matchSavedPlace, statusShowsPlace, placeDistance as metersBetween, arrivalMessage, announcesArrival } from './place-presets.js';
+import { placeDisplay, matchSavedPlace, statusShowsPlace, placeDistance as metersBetween, arrivalMessage, leaveMessage, announcesArrival, announcesLeave } from './place-presets.js';
 
 const LEASE_MS = 4 * 60 * 1000;
 const HEARTBEAT_MS = 60 * 1000;
@@ -269,9 +269,11 @@ async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } =
   if (placeMatchStarted && nextId === activePlaceId) return;
   const firstCheck = !placeMatchStarted;
   const previousId = activePlaceId;
+  const previousPlace = places.find(item => item.id === previousId);
   // Only a real arrival pings: not the first fix after a page opens, and not a
   // spot being saved (or edited) while you are already standing in it.
   const shouldNotify = moved && !firstCheck && Boolean(nextId) && nextId !== previousId && announcesArrival(place);
+  const shouldNotifyLeave = moved && !firstCheck && Boolean(previousPlace) && nextId !== previousId && announcesLeave(previousPlace);
   placeMatchStarted = true;
   rememberPlace(nextId);
   placeStatusInFlight = true;
@@ -286,7 +288,11 @@ async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } =
     // other phone got an "updated their status" popup and a fresh "changed
     // locations · left a saved spot" in its feed whenever this one opened a
     // page. Now only a real change is written.
-    if (statusShowsPlace(existing, place)) return;
+    if (statusShowsPlace(existing, place)) {
+      if (shouldNotifyLeave) void announcePlaceChange(previousPlace,'left');
+      if (shouldNotify) void announcePlaceChange(place,'arrived');
+      return;
+    }
     const payload = {
       person:viewer,
       locationText,
@@ -300,7 +306,8 @@ async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } =
       ...(existing ? {} : { state:'online', text:'', category:'', emoji:'', energy:'functioning', expiresAt:0 })
     };
     await data.setTo('statuses', viewer, payload);
-    if (shouldNotify) void announceArrival(place);
+    if (shouldNotifyLeave) void announcePlaceChange(previousPlace,'left');
+    if (shouldNotify) void announcePlaceChange(place,'arrived');
   } catch (_) {
     // The location itself can still be useful even when its cosmetic status
     // update has to wait. Forget that this one was applied, so the next fix
@@ -320,21 +327,25 @@ async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } =
 // "<name> just got home! 🏠" to the other phone. GPS near the edge of a spot
 // can step out and back in; one ping per spot per half hour is plenty.
 const ARRIVAL_QUIET_MS = 30 * 60 * 1000;
-async function announceArrival(place) {
-  const key = `our-little-list-arrived-${viewer}-${place.id}`;
+async function announcePlaceChange(place,change) {
+  const key = `our-little-list-${change}-${viewer}-${place.id}`;
   try { if (Date.now() - Number(localStorage.getItem(key) || 0) < ARRIVAL_QUIET_MS) return; } catch (_) {}
-  try { localStorage.setItem(key, String(Date.now())); } catch (_) {}
+  // Claim the cooldown before the async read/outbox write. Another tab can
+  // observe the same GPS transition while this one is still sending it.
+  const claimedAt=Date.now();
+  try { localStorage.setItem(key,String(claimedAt)); } catch (_) {}
   const partner = partnerOf(viewer);
   let together = false;
-  try {
+  if(change==='arrived')try {
     // If they are already there (live, inside this spot), say so.
     const points = await data.readOnce('locations');
     const theirs = points.find(point => point.id === partner || point.person === partner);
     const radius = Math.max(50, Math.min(1000, Number(place.radius) || 150)) + 60;
     together = Boolean(theirs && Number(theirs.shareUntil) > Date.now() && Number.isFinite(theirs.lat) && metersBetween(place, theirs) <= radius);
   } catch (_) { /* the plain message is fine */ }
-  const message = arrivalMessage(place, personName(viewer), { together });
-  void data.notify(partner, { ...message, url: 'status.html', kind: 'arrival', ref: `place-${place.id}` });
+  const message = change==='left'?leaveMessage(place,personName(viewer)):arrivalMessage(place, personName(viewer), { together });
+  const result=await data.notify(partner, { ...message, url: 'status.html', kind: 'arrival', ref: `place-${place.id}-${change}` });
+  if(!result?.queued)try { if(localStorage.getItem(key)===String(claimedAt))localStorage.removeItem(key); } catch (_) {}
 }
 
 function rememberPlace(id) {

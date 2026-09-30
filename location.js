@@ -86,7 +86,7 @@ function render(){
   const newest=Math.max(...known.map(item=>Number(item.updatedAt)||0));
   byId('map-updated').textContent=newest?`updated ${timeAgo(newest)}`:'last known';
   if(her&&him){renderLiveDistance(her,him);return;}
-  if(knownHer&&knownHim){const line=orbitLine(knownHer,knownHim);setProximity(line.title,`${line.detail}.`,line.kicker);return;}
+  if(knownHer&&knownHim){const line=orbitLine(knownHer,knownHim);const partner=known.find(item=>item.id!==viewer);const stale=partner&&Number(partner.shareUntil)<=now;setProximity(line.title,`${line.detail}.${stale?` ${personName(partner.id)} updates when they open the app.`:''}`,line.kicker);return;}
   const live=her||him;
   if(live){const missing=live.id==='her'?'him':'her';setProximity(`waiting for ${personName(missing)}`,`${personName(live.id)} is live on the map.`,'one phone online');return;}
   setProximity('last known only','open the app on either phone to go live again.','both offline');
@@ -115,7 +115,7 @@ function renderLastKnown(known,active){
     if(!point)return `<span class="known-pill missing"><b>${name}</b> no spot yet</span>`;
     const live=active.some(item=>item.id===person);
     const place=point.placeLabel?` · ${escapeHtml(point.placeEmoji||'📍')} ${escapeHtml(point.placeLabel)}`:'';
-    return `<span class="known-pill ${live?'live':'last'}"><b>${name}</b> ${live?'live now':`last seen ${escapeHtml(timeAgo(point.updatedAt))}`}${place}</span>`;
+    return `<span class="known-pill ${live?'live':'last'}"><b>${name}</b> ${live?'live now':`last seen ${escapeHtml(timeAgo(point.updatedAt))}`}${place}${!live&&person!==viewer?`<small>updates when ${name} opens the app</small>`:''}</span>`;
   }).join('');
 }
 

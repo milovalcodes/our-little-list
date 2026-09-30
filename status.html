@@ -47,7 +47,8 @@
           <label><span>call this place</span><input id="place-label" maxlength="40" value="home" required></label>
           <label id="place-status-wrap" hidden><span>what your status says here</span><input id="place-status" maxlength="90" placeholder="at the creature habitat"></label>
           <div class="place-preview place-cozy" id="place-preview"><span>🏠</span><div><small>automatic status</small><strong>vibing at home</strong></div></div>
-          <div class="place-options"><label><span>how close counts</span><select id="place-radius"><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option><option value="400">400 m</option></select></label><label class="place-notify"><input id="place-notify" type="checkbox" checked><span>ping them when I arrive</span></label></div>
+          <div class="place-options"><label><span>how close counts</span><select id="place-radius"><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option><option value="400">400 m</option></select><small>150 m to start · try 250 m if GPS is flaky</small></label><label class="place-notify"><input id="place-notify" type="checkbox" checked><span>ping them when I arrive</span></label><label class="place-notify"><input id="place-notify-leave" type="checkbox"><span>ping them when I leave</span></label></div>
+          <p class="place-overlap-hint" id="place-overlap-hint" role="alert" hidden></p>
           <button class="primary-action" id="place-save" type="submit">save where I am now</button>
         </form>
         <div class="saved-place-list" id="saved-place-list"></div>

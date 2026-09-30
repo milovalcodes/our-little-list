@@ -22,6 +22,20 @@ export function announcesArrival(place = {}) {
   return place.announce !== false;
 }
 
+export function announcesLeave(place = {}) {
+  return place.announceLeave === true;
+}
+
+export function leaveMessage(place = {}, name = 'someone') {
+  const display = placeDisplay(place);
+  return { title: `${name} left ${display.label}`, body: '' };
+}
+
+export function overlappingPlace(places = [], point, radius) {
+  return places.find(place => Number.isFinite(place?.lat) && Number.isFinite(place?.lng)
+    && placeDistance(place, point) < (Number(place.radius) || 150) + radius) || null;
+}
+
 export const PLACE_PRESETS = {
   home: { emoji:'🏠', label:'home', status:'vibing at home', together:'home together', animation:'cozy' },
   work: { emoji:'💻', label:'work', status:'working hard', together:'coworking arc', animation:'working' },

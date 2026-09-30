@@ -298,6 +298,11 @@ async function openSlow(path) {
   const custom = await page.locator('#place-preview').textContent();
   note(work.includes('working hard') && custom.includes('plotting at the creature habitat') && errors.length === 0,
        'saved spot presets and custom labels preview correctly', errors[0] || JSON.stringify({ work, custom }));
+  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();await data.setTo('places','my-spot',{person:'her',label:'home',preset:'home',statusText:'vibing at home',emoji:'🏠',lat:25.76,lng:-80.19,radius:150,announce:true,createdAt:Date.now()});await data.setTo('locations','him',{person:'him',lat:25.761,lng:-80.19,shareUntil:Date.now()-1000,updatedAt:Date.now()-60000,placeLabel:'home'});});
+  await page.locator('[data-toggle-leave="my-spot"]').click();
+  const leaveOn=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return (await data.readOnce('places')).find(item=>item.id==='my-spot')?.announceLeave;});
+  const staleWording=await page.locator('#last-known-row').textContent();
+  note(leaveOn===true&&staleWording.includes('updates when')&&errors.length===0,'leaving pings are opt-in and stale partner spots say when they update',errors[0]||JSON.stringify({leaveOn,staleWording}));
   await context.close();
 }
 

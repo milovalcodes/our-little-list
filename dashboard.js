@@ -161,13 +161,15 @@ function renderSkyOrbit(stage, now) {
     stage.dataset.orbit = 'waiting';
     const live = known.find(point => Number(point.shareUntil) > now);
     title.textContent = live ? `${personName(live.id || live.person)} is on the map` : 'orbit pending';
-    detail.textContent = known.length ? 'waiting for the other spot' : 'waiting for both spots';
+    const partner=known.find(point=>(point.id||point.person)===other);
+    detail.textContent = partner&&Number(partner.shareUntil)<=now?`last known · updates when ${personName(other)} opens the app`:known.length ? 'waiting for the other spot' : 'waiting for both spots';
     return;
   }
   const line = orbitLine(her, him, now);
   stage.dataset.orbit = line.orbit;
   title.textContent = line.title;
-  detail.textContent = line.detail;
+  const partner=[her,him].find(point=>(point.id||point.person)===other);
+  detail.textContent = partner&&Number(partner.shareUntil)<=now?`${line.detail} · updates when ${personName(other)} opens the app`:line.detail;
 }
 
 function renderSkyNote(now) {

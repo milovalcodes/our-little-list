@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { matchSavedPlace, placeDisplay, statusShowsPlace, arrivalMessage, announcesArrival, togetherPlace } from '../place-presets.js';
+import { matchSavedPlace, placeDisplay, statusShowsPlace, arrivalMessage, leaveMessage, announcesArrival, announcesLeave, overlappingPlace, togetherPlace } from '../place-presets.js';
 
 const home = { id:'home', preset:'home', label:'our place', lat:26.1, lng:-80.2, radius:150 };
 const near = { lat:26.1005, lng:-80.2, accuracy:10 };
@@ -40,6 +40,11 @@ assert.equal(arrivalMessage({ preset:'home' }, 'Sol', { together:true }).body, "
 assert.equal(announcesArrival({}), true, 'on unless switched off');
 assert.equal(announcesArrival({ notifyOnArrival:false }), true, 'the old unticked-by-default box is not an off switch');
 assert.equal(announcesArrival({ announce:false }), false);
+assert.equal(announcesLeave({}), false, 'leaving pings are opt-in, including on old saved spots');
+assert.equal(announcesLeave({ announceLeave:true }), true);
+assert.equal(leaveMessage(home,'Sol').title, 'Sol left our place');
+assert.equal(overlappingPlace([home],near,100)?.id,'home','overlapping circles cannot both be saved');
+assert.equal(overlappingPlace([home],far,100),null,'a separate spot is fine');
 assert.equal(togetherPlace({ placePreset:'school', placeLabel:'campus' }, { placePreset:'school', placeLabel:'library' }), 'study party');
 assert.equal(togetherPlace({ placePreset:'custom', placeLabel:'Gym' }, { placePreset:'custom', placeLabel:'gym' }), 'together at Gym');
 assert.equal(togetherPlace({ placeLabel:'home' }, { placeLabel:'work' }), '');

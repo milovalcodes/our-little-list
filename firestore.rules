@@ -70,7 +70,8 @@ service cloud.firestore {
         && shortText(request.resource.data.label, 40)
         && shortText(request.resource.data.statusText, 90)
         && shortText(request.resource.data.emoji, 16)
-        && request.resource.data.preset in ['home', 'work', 'school', 'errands', 'custom'];
+        && request.resource.data.preset in ['home', 'work', 'school', 'errands', 'custom']
+        && (!request.resource.data.keys().hasAny(['announceLeave']) || request.resource.data.announceLeave is bool);
       allow update: if inHousehold(householdId)
         && resource.data.person == mySide()
         && request.resource.data.person == resource.data.person
@@ -83,7 +84,8 @@ service cloud.firestore {
         && shortText(request.resource.data.label, 40)
         && shortText(request.resource.data.statusText, 90)
         && shortText(request.resource.data.emoji, 16)
-        && request.resource.data.preset in ['home', 'work', 'school', 'errands', 'custom'];
+        && request.resource.data.preset in ['home', 'work', 'school', 'errands', 'custom']
+        && (!request.resource.data.keys().hasAny(['announceLeave']) || request.resource.data.announceLeave is bool);
       allow delete: if inHousehold(householdId) && resource.data.person == mySide();
     }
 
