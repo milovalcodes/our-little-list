@@ -11,6 +11,7 @@ let items = [];
 let tab = 'tasks';
 let when = 'whenever';
 let recurrence = 'once';
+let editingTaskId = '';
 
 const data = await sharedLayer();
 onAuthChange(user => setupAuthUI(data, user));
@@ -79,6 +80,13 @@ byId('task-list').addEventListener('click', async event => {
   const row = button.closest('[data-id]');
   const item = items.find(entry => entry.id === row?.dataset.id);
   if (!item) return;
+  if (button.dataset.action === 'edit') {
+    editingTaskId = item.id;
+    render();
+    byId('task-list').querySelector('[data-edit-task] [name="title"]')?.focus();
+    return;
+  }
+  if (button.dataset.action === 'cancel-edit') { editingTaskId = ''; render(); return; }
   if (button.dataset.action === 'delete') { deleteWithUndo(data, 'items', item.id, { label: `deleted “${item.title.slice(0, 28)}”`, onChange: render }); return; }
 
   button.disabled=true;button.classList.add('is-busy');
@@ -95,6 +103,33 @@ byId('task-list').addEventListener('click', async event => {
     if(button.dataset.action==='undo-roll')await data.updateIn('items',item.id,{due:item.previousDue||'',previousDue:'',lastDoneBy:'',lastDoneAt:0});
     if(button.dataset.action==='readd')await data.updateIn('items',item.id,{done:false,doneBy:'',doneAt:0});
   }catch(_){showFailure('the list edit did not stick.','check the internet and try the button again.');button.disabled=false;button.classList.remove('is-busy');}
+});
+
+byId('task-list').addEventListener('submit', async event => {
+  const form = event.target.closest('[data-edit-task]');
+  if (!form) return;
+  event.preventDefault();
+  const item = items.find(entry => entry.id === form.dataset.editTask);
+  if (!item) return;
+  const title = form.querySelector('[name="title"]').value.trim();
+  if (!title) return;
+  const save = form.querySelector('[type="submit"]');
+  setButtonBusy(save, true, 'saving…');
+  try {
+    await data.updateIn('items', item.id, {
+      title,
+      due: item.type === 'grocery' ? '' : form.querySelector('[name="due"]').value,
+      aisle: item.type === 'grocery' ? form.querySelector('[name="aisle"]').value : '',
+      recurrence: item.type === 'grocery' ? 'once' : form.querySelector('[name="recurrence"]').value
+    });
+    editingTaskId = '';
+    render();
+    toast('fixed it');
+  } catch (_) { showFailure('that edit did not stick.', 'check the internet and try again.'); }
+  finally { if (save.isConnected) setButtonBusy(save, false); }
+});
+byId('task-list').addEventListener('keydown', event => {
+  if (event.key === 'Escape' && event.target.closest('[data-edit-task]')) { editingTaskId = ''; render(); }
 });
 
 function visibleItems() {
@@ -156,9 +191,16 @@ function taskMarkup(item) {
   const rolledBack=item.recurrence&&item.recurrence!=='once'&&item.lastDoneAt&&Date.now()-Number(item.lastDoneAt)<10*60000
     ?'<button class="readd-task" data-action="undo-roll" type="button">undo</button>':'';
   const aisle=item.type==='grocery'&&item.aisle?`<span>${escapeHtml(item.aisle)}</span>`:'';
+  const title = editingTaskId === item.id ? `<form class="inline-edit" data-edit-task="${escapeHtml(item.id)}">
+    <input name="title" aria-label="Task title" maxlength="180" required value="${escapeHtml(item.title)}">
+    ${item.type === 'grocery'
+      ? `<label>aisle<select name="aisle">${['produce','fridge','pantry','frozen','home','other'].map(value => `<option value="${value}"${item.aisle === value ? ' selected' : ''}>${value === 'home' ? 'home stuff' : value}</option>`).join('')}</select></label>`
+      : `<label>day<input type="date" name="due" value="${escapeHtml(item.due || '')}"></label><label>repeat<select name="recurrence">${['once','daily','weekly','monthly'].map(value => `<option value="${value}"${item.recurrence === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label>`}
+    <div class="inline-edit-actions"><button type="submit">save</button><button type="button" data-action="cancel-edit">cancel</button></div>
+  </form>` : `<button class="task-title" data-action="edit" type="button" aria-label="Edit ${escapeHtml(item.title)}">${escapeHtml(item.title)}</button>`;
   return `<li class="task-row${doneClass}" data-id="${escapeHtml(item.id)}">
     <button class="task-check" data-action="toggle" aria-label="Mark ${escapeHtml(item.title)} ${item.done ? 'not done' : 'done'}">${check}</button>
-    <div><span class="task-title">${escapeHtml(item.title)}</span><div class="task-meta"><span>${escapeHtml(due)}</span>${aisle}${repeat}<span>added by ${addedBy}</span>${finished}</div>${item.done&&item.type==='grocery'?'<button class="readd-task" data-action="readd" type="button">put back</button>':''}${rolledBack}</div>
+    <div>${title}<div class="task-meta"><span>${escapeHtml(due)}</span>${aisle}${repeat}<span>added by ${addedBy}</span>${finished}</div>${item.done&&item.type==='grocery'?'<button class="readd-task" data-action="readd" type="button">put back</button>':''}${rolledBack}</div>
     <button class="delete-task" data-action="delete" aria-label="Delete ${escapeHtml(item.title)}">×</button>
   </li>`;
 }

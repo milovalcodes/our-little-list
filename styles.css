@@ -133,6 +133,16 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 .task-row.done .task-check { background:var(--accent); }
 .task-row.done .task-title { text-decoration:line-through; opacity:.52; }
 .task-title { display:block; font-weight:820; color:var(--page-text); }
+.task-title,.date-title-button { border:0; padding:0; background:none; color:inherit; font:inherit; font-weight:inherit; text-align:left; cursor:text; }
+.task-title:focus-visible,.date-title-button:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:4px; }
+.inline-edit { display:grid; gap:8px; width:100%; margin:6px 0; }
+.inline-edit label { display:grid; gap:3px; color:var(--page-muted); font-size:.72rem; font-weight:750; }
+.inline-edit input,.inline-edit textarea,.inline-edit select { width:100%; min-width:0; box-sizing:border-box; padding:9px 11px; border:1px solid color-mix(in srgb,var(--page-muted) 35%,transparent); border-radius:11px; background:color-mix(in srgb,var(--accent-pale) 35%,white); color:var(--page-text); font:inherit; }
+.inline-edit textarea { min-height:70px; resize:vertical; }
+.inline-edit-actions { display:flex; gap:7px; }
+.inline-edit-actions button { min-height:33px; padding:6px 11px; border:0; border-radius:999px; background:var(--accent-pale); color:var(--accent-deep); font:inherit; font-size:.76rem; font-weight:800; cursor:pointer; }
+.inline-edit-actions button[type="submit"] { background:var(--accent-deep); color:white; }
+.him-theme .inline-edit input,.him-theme .inline-edit textarea,.him-theme .inline-edit select { background:#27395d; color:#fff8e8; }
 .task-meta { display:flex; flex-wrap:wrap; gap:7px; margin-top:5px; color:var(--page-muted); font-size:.77rem; }
 .task-note { margin:6px 0 0; color:var(--page-muted); font-size:.87rem; }
 .delete-task { border:0; background:transparent; color:var(--page-muted); cursor:pointer; padding:4px; font-size:1rem; }

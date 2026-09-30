@@ -364,6 +364,35 @@ async function openSlow(path) {
   await page.waitForTimeout(500);
   const shown = await page.locator('.task-row', { hasText: 'buy oat milk' }).count();
   note(shown === 1 && errors.length === 0, 'add a task', errors[0] || (shown !== 1 ? `found ${shown}` : ''));
+  await page.locator('.task-row', { hasText: 'buy oat milk' }).locator('.task-title').click();
+  await page.fill('[data-edit-task] [name="title"]', 'buy oat milk and tea');
+  await page.fill('[data-edit-task] [name="due"]', '2026-10-02');
+  await page.selectOption('[data-edit-task] [name="recurrence"]', 'weekly');
+  await page.click('[data-edit-task] [type="submit"]');
+  await page.waitForTimeout(300);
+  const editedTask = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-items-v1')).items.find(item => item.title === 'buy oat milk and tea'));
+  note(editedTask?.due === '2026-10-02' && editedTask?.recurrence === 'weekly' && errors.length === 0,
+       'a task title and details can be fixed in place', errors[0] || JSON.stringify(editedTask));
+  await context.close();
+}
+
+{
+  const { context, page, errors } = await open('notes.html?from=her');
+  await page.fill('#note-body', 'the small moon report');
+  await page.click('#note-submit');
+  await page.waitForTimeout(300);
+  await page.locator('.note-thread-row', { hasText: 'the small moon report' }).locator('[data-edit-note]').click();
+  await page.fill('[data-note-edit] textarea', 'the corrected moon report');
+  await page.click('[data-note-edit] [type="submit"]');
+  await page.waitForTimeout(300);
+  const editedNote = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items.find(item => item.body === 'the corrected moon report'));
+  note(editedNote?.editedAt > editedNote?.createdAt && errors.length === 0,
+       'a sent note can be edited', errors[0] || JSON.stringify(editedNote));
+  await page.locator('.note-thread-row', { hasText: 'the corrected moon report' }).locator('[data-delete-note]').click();
+  const hidden = await page.locator('.note-thread-row', { hasText: 'the corrected moon report' }).count() === 0;
+  await page.click('.undo-toast button');
+  const restored = await page.locator('.note-thread-row', { hasText: 'the corrected moon report' }).count() === 1;
+  note(hidden && restored && errors.length === 0, 'a note delete can be undone', errors[0] || JSON.stringify({ hidden, restored }));
   await context.close();
 }
 
@@ -619,6 +648,15 @@ async function openSlow(path) {
   await page.waitForTimeout(250);
   note(await page.locator('#random-date', { hasText: 'meteor picnic' }).count() === 1 && errors.length === 0,
        'date roulette respects every filter', errors[0] || '');
+  await page.locator('.date-idea-card', { hasText: 'meteor picnic' }).locator('[data-action="edit"]').click();
+  await page.fill('[data-edit-date] [name="title"]', 'meteor picnic with snacks');
+  await page.fill('[data-edit-date] [name="note"]', 'bring the blanket');
+  await page.selectOption('[data-edit-date] [name="vibe"]', 'stay in');
+  await page.click('[data-edit-date] [type="submit"]');
+  await page.waitForTimeout(300);
+  const editedDate = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-dates-v1')).items.find(item => item.title === 'meteor picnic with snacks'));
+  note(editedDate?.note === 'bring the blanket' && editedDate?.vibe === 'stay in' && errors.length === 0,
+       'a date idea can be edited without losing its other details', errors[0] || JSON.stringify(editedDate));
   await context.close();
 }
 

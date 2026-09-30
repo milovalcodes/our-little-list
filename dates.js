@@ -36,7 +36,7 @@ const LEGACY_DATE_IDEAS=[
   ['baking','Baking date','stay in',false]
 ];
 
-const $=id=>document.getElementById(id);let ideas=[];let vibe='go out';let migrationStarted=false;let viewLimit=8;
+const $=id=>document.getElementById(id);let ideas=[];let vibe='go out';let migrationStarted=false;let viewLimit=8;let editingDateId='';
 
 const data=await sharedLayer();
 onAuthChange(user=>setupAuthUI(data,user));
@@ -83,7 +83,21 @@ async function toggleDone(idea){
   await data.updateIn('dates',idea.id,{done:true,doneAt:Date.now(),memoryId:memory?.id||''});
   toast('date completed. it is in the memory jar ◒');
 }
-$('date-list').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const idea=ideas.find(item=>item.id===button.closest('[data-id]')?.dataset.id);if(!idea)return;if(button.dataset.action==='delete'){deleteWithUndo(data,'dates',idea.id,{label:`deleted “${String(idea.title||'').slice(0,28)}”`,onChange:render});return;}button.disabled=true;try{if(button.dataset.action==='favorite')await data.updateIn('dates',idea.id,{favorite:!idea.favorite});else if(button.dataset.action==='complete'){await toggleDone(idea);}}catch(_){showFailure('that edit did not stick.','check the internet and tap it again.');button.disabled=false;}});
+$('date-list').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const idea=ideas.find(item=>item.id===button.closest('[data-id]')?.dataset.id);if(!idea)return;
+  if(button.dataset.action==='edit'){editingDateId=idea.id;render();$('date-list').querySelector('[data-edit-date] [name="title"]')?.focus();return;}
+  if(button.dataset.action==='cancel-edit'){editingDateId='';render();return;}
+  if(button.dataset.action==='delete'){deleteWithUndo(data,'dates',idea.id,{label:`deleted “${String(idea.title||'').slice(0,28)}”`,onChange:render});return;}
+  button.disabled=true;try{if(button.dataset.action==='favorite')await data.updateIn('dates',idea.id,{favorite:!idea.favorite});else if(button.dataset.action==='complete'){await toggleDone(idea);}}catch(_){showFailure('that edit did not stick.','check the internet and tap it again.');button.disabled=false;}
+});
+$('date-list').addEventListener('submit',async event=>{
+  const form=event.target.closest('[data-edit-date]');if(!form)return;event.preventDefault();
+  const title=form.querySelector('[name="title"]').value.trim();if(!title)return;
+  const button=form.querySelector('[type="submit"]');setButtonBusy(button,true,'saving…');
+  try{await data.updateIn('dates',form.dataset.editDate,{title,note:form.querySelector('[name="note"]').value.trim(),vibe:form.querySelector('[name="vibe"]').value});editingDateId='';render();toast('fixed it');}
+  catch(_){showFailure('that edit did not stick.','check the internet and try again.');}
+  finally{if(button.isConnected)setButtonBusy(button,false);}
+});
+$('date-list').addEventListener('keydown',event=>{if(event.key==='Escape'&&event.target.closest('[data-edit-date]')){editingDateId='';render();}});
 
 function importLegacyIdeas(){
   if(migrationStarted||!data)return;
@@ -123,8 +137,18 @@ function render(){
   $('date-count').textContent=finished?`${left} left · ${finished} done`:`${ideas.length} saved`;
   $('date-empty').hidden=ideas.length>0;
   const visible=ideas.slice(0,viewLimit);
-  $('date-list').innerHTML=visible.map(idea=>`<article class="date-idea-card${idea.favorite?' favorite':''}${idea.done?' done':''}" data-id="${escapeHtml(idea.id)}"><div class="date-idea-top"><span>${escapeHtml(idea.vibe||'idea')}</span><div class="date-actions"><button data-action="favorite" aria-label="${idea.favorite?'Unfavorite':'Favorite'}">${idea.favorite?'★':'☆'}</button><button data-action="delete" aria-label="Delete">×</button></div></div><h3>${escapeHtml(idea.title)}</h3>${idea.note?`<p>${escapeHtml(idea.note)}</p>`:''}<div class="date-tags">${[idea.cost,idea.energy,idea.weather,idea.distance,idea.duration].filter(Boolean).map(value=>`<span>${escapeHtml(value)}</span>`).join('')}</div><div class="date-idea-foot"><small>added by ${escapeHtml(personName(idea.addedBy))}</small><button class="date-done-toggle" data-action="complete" type="button">${idea.done?'undo':'did it ✓'}</button></div>${idea.done?'<span class="date-complete-badge">we did this</span>':''}</article>`).join('');
+  $('date-list').innerHTML=visible.map(dateCardMarkup).join('');
   $('date-more').hidden=visible.length>=ideas.length;
   $('date-more').textContent=`show ${Math.min(8,ideas.length-visible.length)} more`;
+}
+function dateCardMarkup(idea){
+  const editing=editingDateId===idea.id;
+  const title=editing?`<form class="inline-edit" data-edit-date="${escapeHtml(idea.id)}">
+    <input name="title" aria-label="Date idea title" maxlength="180" required value="${escapeHtml(idea.title)}">
+    <textarea name="note" aria-label="Extra detail" maxlength="500" placeholder="extra detail, if any">${escapeHtml(idea.note||'')}</textarea>
+    <select name="vibe" aria-label="Vibe">${['go out','stay in','food','little trip'].map(value=>`<option value="${value}"${idea.vibe===value?' selected':''}>${value}</option>`).join('')}</select>
+    <div class="inline-edit-actions"><button type="submit">save</button><button type="button" data-action="cancel-edit">cancel</button></div>
+  </form>`:`<h3><button class="date-title-button" type="button" data-action="edit" aria-label="Edit ${escapeHtml(idea.title)}">${escapeHtml(idea.title)}</button></h3>`;
+  return `<article class="date-idea-card${idea.favorite?' favorite':''}${idea.done?' done':''}" data-id="${escapeHtml(idea.id)}"><div class="date-idea-top"><span>${escapeHtml(idea.vibe||'idea')}</span><div class="date-actions"><button data-action="favorite" aria-label="${idea.favorite?'Unfavorite':'Favorite'}">${idea.favorite?'★':'☆'}</button><button data-action="delete" aria-label="Delete">×</button></div></div>${title}${!editing&&idea.note?`<p>${escapeHtml(idea.note)}</p>`:''}<div class="date-tags">${[idea.cost,idea.energy,idea.weather,idea.distance,idea.duration].filter(Boolean).map(value=>`<span>${escapeHtml(value)}</span>`).join('')}</div><div class="date-idea-foot"><small>added by ${escapeHtml(personName(idea.addedBy))}</small><button class="date-done-toggle" data-action="complete" type="button">${idea.done?'undo':'did it ✓'}</button></div>${idea.done?'<span class="date-complete-badge">we did this</span>':''}</article>`;
 }
 window.addEventListener('littlelist:profile',render);
