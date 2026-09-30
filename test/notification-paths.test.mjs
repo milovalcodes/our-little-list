@@ -21,7 +21,11 @@ console.log(' ok  in-page popups never double up on a push, and never eat an uns
 // Every path through the push handler has to reach showNotification.
 const push = serviceWorker.slice(serviceWorker.indexOf("addEventListener('push'"), serviceWorker.indexOf("addEventListener('notificationclick'"));
 assert.ok(push.includes('showNotification('), 'the push handler shows a notification');
-assert.ok(!/getNotifications\(/.test(push), 'no branch may resolve the push without showing anything');
+// Looking at the tray is fine only after this push has shown its own
+// notification (to tidy it away while the app is open, or to count for the
+// icon badge) - never as a reason to skip showing one.
+assert.ok(!/getNotifications\(/.test(push) || push.indexOf('getNotifications(') > push.indexOf('await self.registration.showNotification('),
+  'no branch may resolve the push without showing anything');
 assert.match(push, /renotify: false/, 'a replaced tag does not make another sound');
 assert.match(push, /tag,/, 'the tag is what de-duplicates a re-sent message');
 assert.match(push, /notification-icon\.png/, 'expanded Android notification uses the small notification artwork');
@@ -34,7 +38,7 @@ console.log(' ok  every push shows something, and a repeat replaces it quietly')
 // rule: a silent notification may not name a vibration pattern at all, not even
 // an empty one. Quiet mode used to pass `vibrate: []`, so every push threw, showed
 // nothing, and Chrome posted its own "updated in the background" line instead.
-async function firePush(payload, { failFirst = false } = {}) {
+async function firePush(payload, { failFirst = false, watching = false } = {}) {
   const handlers = {};
   const shown = [];
   let calls = 0;
@@ -49,14 +53,15 @@ async function firePush(payload, { failFirst = false } = {}) {
         if (options.silent && 'vibrate' in options) {
           return Promise.reject(new TypeError('Silent notifications must not specify vibration patterns.'));
         }
-        shown.push({ title, options });
+        shown.push({ title, options, closed: false });
         return Promise.resolve();
-      }
+      },
+      getNotifications: async () => shown.map(entry => ({ close() { entry.closed = true; } }))
     },
-    clients: {},
+    clients: { matchAll: async () => watching ? [{ visibilityState: 'visible', focused: true, url: 'https://x.test/app/notes.html' }] : [] },
     skipWaiting() {}
   };
-  vm.runInNewContext(serviceWorker, { self, URL, Request: class {}, Response: {}, caches: {}, fetch() {}, setTimeout, console });
+  vm.runInNewContext(serviceWorker, { self, URL, Request: class {}, Response: {}, caches: {}, fetch() {}, setTimeout: fn => setTimeout(fn, 0), console });
   let settled;
   handlers.push({ data: { json: () => payload, text: () => '' }, waitUntil(promise) { settled = promise; } });
   await settled;
@@ -74,6 +79,17 @@ async function firePush(payload, { failFirst = false } = {}) {
   const rescued = await firePush({ title: 'hi', body: 'x', url: 'notes.html' }, { failFirst: true });
   assert.equal(rescued.length, 1, 'a push whose options are refused still shows something');
   assert.equal(rescued[0].options.body, 'x', 'with its words');
+
+  // App open and in front: the page already popped it up with its own sound,
+  // so the system copy is quiet and taken back out of the tray.
+  const open = await firePush({ title: 'hi', body: 'x', url: 'notes.html', kind: 'note', vibrate: [180, 90, 180] }, { watching: true });
+  assert.equal(open.length, 1, 'an open app still gets a notification shown');
+  assert.equal(open[0].options.silent, true, 'but a quiet one');
+  assert.ok(!('vibrate' in open[0].options), 'with no buzz');
+  assert.equal(open[0].closed, true, 'and it is cleared from the tray');
+  // An arrival has no in-page popup: it rings even with the app open.
+  const arrival = await firePush({ title: 'home', body: 'x', url: 'status.html', kind: 'arrival', vibrate: [180, 90, 180] }, { watching: true });
+  assert.ok(!arrival[0].options.silent && !arrival[0].closed, 'an arrival is not swallowed while the app is open');
 }
 console.log(' ok  quiet mode is quiet instead of broken, and a push always shows something');
 

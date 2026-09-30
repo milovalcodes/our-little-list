@@ -165,11 +165,61 @@ async function openSlow(path) {
   // (The date pile always has the imported ideas in it, so notes stands in.)
   const notes = await open('notes.html?from=her');
   await notes.page.click('#note-inbox-empty .empty-action');
-  await notes.page.waitForTimeout(300);
-  const noteKind = await notes.page.locator('[data-quick-kind].active').getAttribute('data-quick-kind');
-  note(!quickOpen && focused === 'memory-text' && noteKind === 'note',
-       'an empty page offers to add the thing that page is for', JSON.stringify({ quickOpen, focused, noteKind }));
+  await notes.page.waitForTimeout(400);
+  const noteFocus = await notes.page.evaluate(() => document.activeElement?.id || '');
+  const noteSheet = await notes.page.locator('#sheet-quick').isVisible();
+  // "Nothing new" is news, not a form: it should not offer to add a to-do.
+  const today = await open('today.html?as=her');
+  await today.page.waitForTimeout(500);
+  const feedButtons = await today.page.locator('#activity-empty .empty-action').count();
+  note(!quickOpen && focused === 'memory-text' && noteFocus === 'note-body' && !noteSheet && feedButtons === 0,
+       'an empty page offers to add the thing that page is for', JSON.stringify({ quickOpen, focused, noteFocus, noteSheet, feedButtons }));
+  await today.context.close();
   await notes.context.close();
+  await context.close();
+}
+
+// A delete waits behind an undo bar: undo keeps the thing, and letting the bar
+// run out really deletes it. Nothing is re-created, so no rule has to allow
+// putting back someone else's record.
+{
+  const { context, page, errors } = await open('tasks.html?as=her');
+  await page.fill('#shared-task-title', 'undo me');
+  await page.click('#shared-task-form [type="submit"]');
+  await page.waitForTimeout(400);
+  const row = () => page.locator('.task-row', { hasText: 'undo me' });
+  await row().locator('[data-action="delete"]').click();
+  await page.waitForTimeout(150);
+  const hidden = await row().count() === 0;
+  await page.click('.undo-toast button');
+  await page.waitForTimeout(200);
+  const back = await row().count() === 1;
+  await row().locator('[data-action="delete"]').click();
+  await page.waitForTimeout(5600);
+  const stored = await page.evaluate(() => (JSON.parse(localStorage.getItem('our-little-list-items-v1') || '{"items":[]}').items || []).some(item => item.title === 'undo me'));
+  note(hidden && back && !stored && errors.length === 0, 'deleting waits behind an undo bar, then really deletes',
+       errors[0] || JSON.stringify({ hidden, back, stored }));
+  await context.close();
+}
+
+// Timed pause: the status page offers 1 hour / 3 hours / until I turn it on.
+{
+  const { context, page, errors } = await open('status.html?as=her');
+  await page.waitForTimeout(500);
+  const choices = await page.locator('#pause-choices button').allTextContents();
+  note(choices.join('|') === '1 hour|3 hours|until I turn it on' && errors.length === 0, 'location can be paused for a set time', errors[0] || choices.join('|'));
+  await context.close();
+}
+
+// One tap sends "thinking of you" from quick add.
+{
+  const { context, page, errors } = await open('today.html?as=him');
+  await page.click('.dock-add');
+  await page.waitForTimeout(300);
+  await page.click('#quick-thinking');
+  await page.waitForTimeout(400);
+  const sent = await page.evaluate(() => (JSON.parse(localStorage.getItem('our-little-list-notes-v1') || '{"items":[]}').items || []).some(note => note.body === 'thinking of you ♡' && note.recipient === 'her'));
+  note(sent && errors.length === 0, 'one tap sends "thinking of you"', errors[0] || '');
   await context.close();
 }
 
@@ -243,8 +293,8 @@ async function openSlow(path) {
   await page.locator('[data-category="lists"]').uncheck({ force:true });
   await page.selectOption('#in-app-sound', 'pop');
   await page.locator('input[name="vibration"][value="pulse"]').check({ force:true });
-  await page.click('#save-notifications');
-  await page.waitForTimeout(250);
+  // No save button any more: the switches save themselves.
+  await page.waitForTimeout(900);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-notification-preferences-v1') || '{}'));
   note(saved.categories?.lists === false && saved.inAppSound === 'pop' && saved.vibration === 'pulse' && errors.length === 0,
        'notification choices save on this phone', errors[0] || JSON.stringify(saved));
@@ -700,13 +750,18 @@ async function openSlow(path) {
 // workers, so the cleanup's first step never finishes either - which is exactly
 // the shape being guarded against.
 {
-  const { context, page } = await open('her.html');
+  const { context, page } = await open('phone-check.html?as=her#account');
+  await page.waitForTimeout(600);
   let navigated = false;
   page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigated = true; });
+  // One tap only arms it; nobody signs out by brushing the button.
+  await page.click('#sign-out');
+  await page.waitForTimeout(300);
+  const armedOnly = !navigated && (await page.locator('#sign-out').textContent()).includes('tap again');
   await page.click('#sign-out');
   await page.waitForTimeout(7000);
-  note(navigated, 'signing out is not held hostage by a cleanup that never lands',
-       navigated ? '' : 'still on the dashboard');
+  note(navigated && armedOnly, 'signing out asks twice and is not held hostage by a cleanup that never lands',
+       JSON.stringify({ navigated, armedOnly }));
   await context.close();
 }
 

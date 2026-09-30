@@ -27,8 +27,19 @@ console.log(' ok  every repeat lands in the future, however far behind it was');
 assert.equal(nextDue(key(-3), 'daily'), key(1), 'a daily chore three days behind comes back tomorrow, not three days ago');
 console.log(' ok  a missed daily catches up instead of needing a tap per day');
 
-assert.equal(nextDue('2026-01-31', 'monthly').slice(-2), '30', 'monthly keeps the day it was given, clamped to the month');
-assert.equal(nextDue('2026-01-15', 'monthly'), '2026-10-15', 'monthly keeps the 15th while catching up');
+// Worked out from today rather than hardcoded: the old fixed answers
+// ("the 30th", "2026-10-15") were only true during September 2026.
+function expectedMonthly(anchorDay) {
+  for (let step = 0; step < 3; step++) {
+    const month = new Date(today.getFullYear(), today.getMonth() + step, 1, 12);
+    const last = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    const candidate = dateKey(new Date(month.getFullYear(), month.getMonth(), Math.min(anchorDay, last), 12));
+    if (candidate > dateKey(today)) return candidate;
+  }
+  throw new Error('no monthly date within three months');
+}
+assert.equal(nextDue('2026-01-31', 'monthly'), expectedMonthly(31), 'monthly keeps the day it was given, clamped to the month');
+assert.equal(nextDue('2026-01-15', 'monthly'), expectedMonthly(15), 'monthly keeps the 15th while catching up');
 console.log(' ok  monthly keeps its day of the month across a February');
 
 assert.ok(nextDue('', 'daily') > dateKey(today));
