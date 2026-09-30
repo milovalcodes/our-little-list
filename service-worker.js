@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v56';
+const CACHE = 'our-little-list-v57';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE

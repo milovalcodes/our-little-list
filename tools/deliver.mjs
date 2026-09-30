@@ -12,6 +12,7 @@ import webpush from 'web-push';
 import { signIn, createClient } from './firestore.mjs';
 import { readFileSync } from 'node:fs';
 import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted } from '../notification-policy.js';
+import { focusDelivery } from '../delivery-policy.js';
 
 const GRACE_MS = 0;               // never ring before the chosen time
 const STALE_MS = 3 * 60 * 60_000; // older than 3h: send it but do not shout about it
@@ -80,6 +81,8 @@ async function main() {
     let skipped = 0;
     let dropped = 0;
     let muted = 0;
+    let held = 0;
+    const statusCache = new Map();
 
     for (const message of due) {
       const dueAge = Math.max(0, now - Number(message.sendAt || message.createdAt || now));
@@ -119,6 +122,18 @@ async function main() {
       continue;
     }
 
+    let recipientStatus = statusCache.get(message.to);
+    if (recipientStatus === undefined) {
+      recipientStatus = await db.get(`${household}/statuses/${message.to}`) || null;
+      statusCache.set(message.to, recipientStatus);
+    }
+    const focus = focusDelivery(message, recipientStatus, now);
+    if (focus.holdUntil) {
+      await db.moveSendAt(message.path, focus.holdUntil);
+      held += 1;
+      continue;
+    }
+
     const payload = JSON.stringify({
       title: message.title || 'Our Little List',
       body: message.body || '',
@@ -128,7 +143,7 @@ async function main() {
       // stays on screen instead of sliding past while the phone is in a pocket.
       kind: message.kind || 'note',
       late: dueAge > STALE_MS,
-      silent: preferences.backgroundSound === 'silent',
+      silent: preferences.backgroundSound === 'silent' || focus.quiet,
       vibrate: vibrationPattern(preferences.vibration)
     });
 
@@ -136,7 +151,7 @@ async function main() {
       await webpush.sendNotification(target.subscription, payload, {
         TTL: 60 * 60 * 24,
         // Without this Android can hold the wake-up in doze for a long while.
-        urgency: message.kind === 'reminder' || message.kind === 'help' ? 'high' : 'normal'
+        urgency: message.kind === 'reminder' || message.kind === 'arrival' || message.urgent === true ? 'high' : 'normal'
       });
       await db.remove(message.path);
       sent += 1;
@@ -156,7 +171,7 @@ async function main() {
     }
     }
 
-    console.log(`sent ${sent}, left ${skipped}, dropped ${dropped}, muted ${muted}`);
+    console.log(`sent ${sent}, left ${skipped}, dropped ${dropped}, muted ${muted}, held ${held}`);
   } finally {
     await db.remove(lockPath).catch(problem => console.error(`could not release delivery lock: ${problem.message || problem}`));
   }

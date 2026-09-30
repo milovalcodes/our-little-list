@@ -7,6 +7,9 @@ import { personName } from './profile-store.js';
 import { friendlyWhen } from './time-format.js';
 import { startPresence } from './presence.js';
 import { readNotificationPreferences, shouldShowNotification } from './notification-preferences.js';
+import { focusDelivery } from './delivery-policy.js';
+
+let ownFocusUntil=0;
 
 const signedInSide = await awaitViewer();
 if (signedInSide) boot(signedInSide);
@@ -55,10 +58,13 @@ async function boot(viewer) {
     data.listenToQuery('help', recent, items => {
       const fresh = firstFresh('help', items, item => item.to === viewer && item.state === 'open');
       const timed = Number(fresh?.dueAt) > 0;
-      if (fresh) announce({ icon: fresh.emoji || (timed ? '⏰' : '🙋'), label: timed ? `${personName(other)} set you a reminder` : `${personName(other)} needs a hand`, body: timed ? `${fresh.title} · ${friendlyWhen(Number(fresh.dueAt))}` : fresh.title, url: 'tasks.html#asks', kind: 'help' });
+      if (fresh) announce({ icon: fresh.emoji || (timed ? '⏰' : '🙋'), label: timed ? `${personName(other)} set you a reminder` : `${personName(other)} needs a hand`, body: timed ? `${fresh.title} · ${friendlyWhen(Number(fresh.dueAt))}` : fresh.title, url: 'tasks.html#asks', kind: 'help', urgent:fresh.urgent===true });
     });
 
-    data.listenTo('statuses', items => watchStatus(items));
+    data.listenTo('statuses', items => {
+      ownFocusUntil=Number(items.find(entry=>entry.id===viewer||entry.person===viewer)?.focusUntil)||0;
+      watchStatus(items);
+    });
 
     // Pages other than the two dashboards still need to say they were here.
     if (!document.body.dataset.viewer) startPresence(data, viewer, document.body.dataset.app || 'somewhere');
@@ -127,7 +133,10 @@ function announce(message) {
   if (document.hidden) return false;
   if (!shouldShowNotification(message.kind)) return false;
 
-  window.playLittleSound?.(readNotificationPreferences().inAppSound);
+  const focus=focusDelivery(message,{focusUntil:ownFocusUntil});
+  if(focus.holdUntil)return false;
+
+  if(!focus.quiet)window.playLittleSound?.(readNotificationPreferences().inAppSound);
 
   document.querySelector('.incoming-note')?.remove();
   const popup = document.createElement('aside');

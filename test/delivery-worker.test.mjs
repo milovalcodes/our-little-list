@@ -1,4 +1,5 @@
 import { deliver } from '../worker/src/index.js';
+import { focusDelivery } from '../delivery-policy.js';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 
@@ -14,9 +15,10 @@ const ENV = {
   VAPID_PUBLIC_KEY: vapidKeys.publicKey, VAPID_PRIVATE_KEY: vapidKeys.privateKey
 };
 
-function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, pushStatus = 201, lockHeld = false }) {
+function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, pushStatus = 201, lockHeld = false }) {
   const deleted = [];
   const pushes = [];
+  const moved = [];
   globalThis.fetch = async (url, options = {}) => {
     url = String(url);
     if (url.includes('signInWithPassword')) return Response.json({ idToken: 'tok', localId: 'HOUSE' });
@@ -46,7 +48,11 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
     if (url.includes(':runQuery')) return Response.json(outbox.map(m => ({ document: {
       name: `p/documents/households/HOUSE/outbox/${m.id}`,
       fields: Object.fromEntries(Object.entries(m).filter(([k]) => k !== 'id').map(([k, v]) =>
-        [k, typeof v === 'number' ? { integerValue: String(v) } : { stringValue: String(v) }])) } })));
+        [k, typeof v === 'number' ? { integerValue: String(v) } : typeof v === 'boolean' ? { booleanValue: v } : { stringValue: String(v) }])) } })));
+    if (url.includes('/statuses/') && options.method !== 'DELETE') {
+      const status = statuses[url.split('/statuses/')[1]];
+      return status ? Response.json({ name:url, fields:{ focusUntil:{ integerValue:String(status.focusUntil || 0) } } }) : new Response('', { status:404 });
+    }
     if (url.includes('/help/') && options.method !== 'DELETE') {
       const ask = asks[url.split('/help/')[1]];
       return ask ? Response.json({ name: url, fields: { state: { stringValue: ask.state } } }) : new Response('', { status: 404 });
@@ -55,6 +61,7 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
       const id = url.split('/reminders/')[1];
       return reminders[id] ? Response.json({ name: url, fields: {} }) : new Response('', { status: 404 });
     }
+    if (options.method === 'PATCH' && url.includes('/outbox/')) { moved.push({url,sendAt:Number(JSON.parse(options.body).fields.sendAt.integerValue)});return Response.json({}); }
     if (options.method === 'DELETE') { deleted.push(url.split('/documents/')[1]); return Response.json({}); }
     if (url.startsWith('https://fcm.googleapis.com')) {
       pushes.push({ headers: options.headers, bytes: options.body.length });
@@ -62,7 +69,7 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
     }
     return Response.json({});
   };
-  return { deleted, pushes };
+  return { deleted, pushes, moved };
 }
 
 const now = Date.now();
@@ -189,6 +196,38 @@ const now = Date.now();
   for (const id of ['SORTED', 'CANT', 'GONE', 'ODD']) assert.ok(h.deleted.some(path => path.endsWith(`outbox/${id}`)), `${id} is dropped`);
   assert.ok(!h.deleted.some(path => path.endsWith('pushSubs/her')), 'a malformed reference cannot reach anything else');
   console.log(' ok  a timed ask nudges while open and not after it is sorted');
+}
+
+// 12. A focus session postpones only low-priority chatter. The outbox row
+// stays intact and is moved forward, so it cannot clog the due query.
+{
+  const until=now+15*60000;
+  const h=harness({outbox:[
+    {id:'HOLD',to:'her',title:'task',body:'x',kind:'item',sendAt:now-1000,createdAt:now-2000},
+    {id:'NOTE',to:'her',title:'note',body:'x',kind:'note',sendAt:now-1000,createdAt:now-2000},
+    {id:'ASK',to:'her',title:'ask',body:'x',kind:'help',sendAt:now-1000,createdAt:now-2000}
+  ],statuses:{her:{focusUntil:until}}});
+  const r=await deliver(ENV);
+  assert.equal(r.held,1);
+  assert.equal(r.sent,2,'notes and asks are not held');
+  assert.equal(h.moved[0].sendAt,until+1000);
+  assert.ok(h.moved[0].url.includes('updateMask.fieldPaths=sendAt'));
+  assert.ok(!h.deleted.some(path=>path.endsWith('outbox/HOLD')));
+  assert.equal(focusDelivery({kind:'help'},{focusUntil:until},now).quiet,true,'ordinary asks go through quietly during focus');
+  for(const kind of ['status','item','date','memory','reaction','keepsake'])assert.equal(focusDelivery({kind},{focusUntil:until},now).holdUntil,until+1000,`${kind} waits`);
+  assert.equal(focusDelivery({kind:'note'},{focusUntil:until},now).holdUntil,0,'notes stay open');
+  console.log(' ok  focus holds chatter, but notes and asks still go through');
+}
+
+// 13. “Notify anyway” marks the ask urgent. It stays audible and gets
+// high-priority delivery even while the recipient is focusing.
+{
+  const h=harness({outbox:[{id:'URGENT',to:'her',title:'ask',body:'x',kind:'help',urgent:true,sendAt:now-1000,createdAt:now-2000}],statuses:{her:{focusUntil:now+60000}}});
+  const r=await deliver(ENV);
+  assert.equal(r.sent,1);
+  assert.equal(h.pushes[0].headers.Urgency,'high');
+  assert.equal(focusDelivery({kind:'help',urgent:true},{focusUntil:now+60000},now).quiet,false);
+  console.log(' ok  an urgent ask is not quieted by focus');
 }
 
 console.log('\nDELIVERY WORKER CLEAN');

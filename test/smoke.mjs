@@ -466,6 +466,25 @@ async function openSlow(path) {
   await context.close();
 }
 
+// The first ask of the day while the other person focuses offers a real urgent
+// choice. Later asks do not repeatedly stop you with the same prompt.
+{
+  const {context,page,errors}=await open('tasks.html?as=her#asks');
+  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();await data.setTo('statuses','him',{person:'him',state:'online',text:'',category:'',emoji:'',focusUntil:Date.now()+15*60000,updatedAt:Date.now()});});
+  await page.fill('#help-title','urgent cup of water');
+  await page.click('#help-submit');
+  const prompted=await page.locator('.focus-ask-dialog').count();
+  await page.click('[data-focus-choice="urgent"]');
+  await page.locator('#help-mine-list .help-card',{hasText:'urgent cup of water'}).waitFor();
+  const first=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return (await data.readOnce('help')).find(item=>item.title==='urgent cup of water');});
+  await page.fill('#help-title','ordinary second ask');
+  await page.click('#help-submit');
+  await page.locator('#help-mine-list .help-card',{hasText:'ordinary second ask'}).waitFor();
+  const second=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return (await data.readOnce('help')).find(item=>item.title==='ordinary second ask');});
+  note(prompted===1&&first?.urgent===true&&second?.urgent===false&&await page.locator('.focus-ask-dialog').count()===0&&errors.length===0,'focus asks can notify anyway without nagging all day',errors[0]||JSON.stringify({prompted,first,second}));
+  await context.close();
+}
+
 // Recurring tasks roll forward instead of disappearing, and groceries keep an aisle.
 {
   const { context, page, errors } = await open('tasks.html?as=her');

@@ -160,6 +160,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
           body: String(message?.body || '').slice(0, 400),
           url: notificationUrl(message?.url),
           kind: String(message?.kind || 'note'),
+          urgent: message?.urgent === true,
           ref: message?.ref ? String(message.ref) : '',
           sendAt,
           createdAt: Date.now()

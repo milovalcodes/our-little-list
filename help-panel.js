@@ -3,6 +3,7 @@ import { personName } from './profile-store.js';
 import { timeAgo, friendlyWhen } from './time-format.js';
 import { momentPickerHtml, setupMomentPicker } from './moment-picker.js';
 import { sendAsk } from './records.js';
+import { chooseAskUrgency } from './focus-ask.js';
 import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
 const ANSWERS = {
@@ -60,13 +61,15 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
       dueAt = chosen.getTime();
     }
     const submit = $('help-submit');
-    setButtonBusy(submit, true, 'asking…');
+    setButtonBusy(submit, true, 'checking…');
     try {
+      const urgent=await chooseAskUrgency(data,viewer,other);
+      submit.textContent='asking…';
       const sent = await sendAsk(data, {
         viewer, other, title,
         note: $('help-note').value.trim(),
         emoji: $('help-title').dataset.emoji || (dueAt ? '⏰' : '🙋'),
-        urgency, dueAt
+        urgency, dueAt, urgent
       });
       form.reset();
       delete $('help-title').dataset.emoji;

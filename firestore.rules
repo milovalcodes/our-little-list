@@ -209,7 +209,8 @@ service cloud.firestore {
         && request.resource.data.from == mySide()
         && request.resource.data.to == otherSide()
         && shortText(request.resource.data.title, 180)
-        && shortText(request.resource.data.note, 500);
+        && shortText(request.resource.data.note, 500)
+        && (!request.resource.data.keys().hasAny(['urgent']) || request.resource.data.urgent is bool);
       allow update: if inHousehold(householdId)
         && request.resource.data.from == resource.data.from
         && request.resource.data.to == resource.data.to
@@ -286,9 +287,16 @@ service cloud.firestore {
         && shortText(request.resource.data.url, 200)
         && shortText(request.resource.data.kind, 60)
         && (!request.resource.data.keys().hasAny(['ref']) || shortText(request.resource.data.ref, 200))
+        && (!request.resource.data.keys().hasAny(['urgent']) || request.resource.data.urgent is bool)
         && request.resource.data.sendAt is int
         && request.resource.data.createdAt is int;
-      allow update: if false;
+      // The delivery worker defers low-priority messages until focus ends.
+      // It signs in as a member, and may only move the delivery time forward.
+      allow update: if inHousehold(householdId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sendAt'])
+        && request.resource.data.sendAt is int
+        && request.resource.data.sendAt >= resource.data.sendAt
+        && request.resource.data.sendAt <= request.time.toMillis() + 86400000;
     }
 
     match /households/{householdId}/deliveryLocks/{lockId} {

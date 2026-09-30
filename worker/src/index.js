@@ -8,6 +8,7 @@
 import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted } from '../../notification-policy.js';
+import { focusDelivery } from '../../delivery-policy.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
 const STALE_MS = 3 * 60 * 60_000;    // older than 3h: still send, but say it is late
@@ -61,6 +62,8 @@ export async function deliver(env) {
     let left = 0;
     let dropped = 0;
     let muted = 0;
+    let held = 0;
+    const statusCache = new Map();
 
     for (const message of due) {
       // Lateness starts when the message was due, not when it was created. A
@@ -102,6 +105,18 @@ export async function deliver(env) {
         continue;
       }
 
+      let recipientStatus = statusCache.get(message.to);
+      if (recipientStatus === undefined) {
+        recipientStatus = await db.get(`${household}/statuses/${message.to}`) || null;
+        statusCache.set(message.to, recipientStatus);
+      }
+      const focus = focusDelivery(message, recipientStatus, now);
+      if (focus.holdUntil) {
+        await db.moveSendAt(message.path, focus.holdUntil);
+        held += 1;
+        continue;
+      }
+
       const payload = JSON.stringify({
         title: message.title || 'Our Little List',
         body: message.body || '',
@@ -109,13 +124,13 @@ export async function deliver(env) {
         tag: `${message.kind || 'note'}-${message.id}`,
         kind: message.kind || 'note',
         late: dueAge > STALE_MS,
-        silent: preferences.backgroundSound === 'silent',
+        silent: preferences.backgroundSound === 'silent' || focus.quiet,
         vibrate: vibrationPattern(preferences.vibration)
       });
 
       const result = await sendNotification(target.subscription, payload, vapid, {
         ttl: 86400,
-        urgency: ['reminder', 'help', 'arrival'].includes(message.kind) ? 'high' : 'normal'
+        urgency: ['reminder', 'arrival'].includes(message.kind) || message.urgent === true ? 'high' : 'normal'
       });
 
       if (result.ok) {
@@ -134,7 +149,7 @@ export async function deliver(env) {
       }
     }
 
-    return { checked: true, sent, left, dropped, muted, subscribed: Object.keys(subscriptions).length };
+    return { checked: true, sent, left, dropped, muted, held, subscribed: Object.keys(subscriptions).length };
   } finally {
     await db.remove(lockPath).catch(problem => console.error(`could not release delivery lock: ${problem.message || problem}`));
   }

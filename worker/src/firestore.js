@@ -89,6 +89,12 @@ export function createClient({ projectId, idToken }) {
     },
     async remove(documentPath) {
       await call(`/${documentPath}`, { method: 'DELETE' });
+    },
+    async moveSendAt(documentPath, when) {
+      await call(`/${documentPath}?updateMask.fieldPaths=sendAt`, {
+        method: 'PATCH',
+        body: JSON.stringify({ fields: { sendAt: { integerValue: String(when) } } })
+      });
     }
   };
 }

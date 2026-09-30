@@ -3,6 +3,7 @@ import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
 import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
 import { addTask, sendNote, sendAsk, addDateIdea } from './records.js';
+import { chooseAskUrgency } from './focus-ask.js';
 import { fridgeNote, clearFridge } from './fridge.js';
 import { momentPickerHtml, setupMomentPicker } from './moment-picker.js';
 import { friendlyWhen } from './time-format.js';
@@ -186,7 +187,7 @@ function setupQuickAdd(data, viewer, other) {
       if (kind === 'task') await addTask(data, { viewer, other, title: text });
       else if (kind === 'note') await sendNote(data, { viewer, other, body: text });
       else if (kind === 'date') await addDateIdea(data, { viewer, other, title: text });
-      else await sendAsk(data, { viewer, other, title: text, note: document.getElementById('quick-ask-note').value.trim(), urgency, dueAt });
+      else { const urgent=await chooseAskUrgency(data,viewer,other);await sendAsk(data, { viewer, other, title: text, note: document.getElementById('quick-ask-note').value.trim(), urgency, dueAt, urgent }); }
       form.reset();
       urgency = 'soon';
       document.querySelectorAll('[data-quick-urgency]').forEach(item => item.classList.toggle('active', item.dataset.quickUrgency === 'soon'));

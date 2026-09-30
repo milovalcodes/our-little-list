@@ -34,18 +34,18 @@ export async function sendNote(data, { viewer, other, body, mood = 'heart', pinn
 
 // An ask, optionally for a particular moment. With a time it does what a
 // reminder used to: the other phone is told now, and nudged again at the time.
-export async function sendAsk(data, { viewer, other, title, note = '', emoji = '', urgency = 'soon', dueAt = 0 }) {
+export async function sendAsk(data, { viewer, other, title, note = '', emoji = '', urgency = 'soon', dueAt = 0, urgent = false }) {
   const timed = Number(dueAt) > 0;
   const record = await data.addTo('help', {
     from: viewer, to: other, title, note, emoji: emoji || (timed ? '⏰' : '🙋'),
-    urgency: timed ? 'timed' : urgency, state: 'open', createdAt: Date.now(),
+    urgency: timed ? 'timed' : urgency, urgent:urgent===true, state: 'open', createdAt: Date.now(),
     ...(timed ? { dueAt: Number(dueAt), scheduledAt: new Date(Number(dueAt)).toISOString() } : {})
   });
   const who = personName(viewer);
   void data.notify(other, {
     title: timed ? `${who} set you a reminder ⏰` : urgency === 'now' ? `${who} needs a hand, kind of now` : `${who} needs a hand`,
     body: timed ? `${title} · ${friendlyWhen(dueAt)}` : title,
-    url: 'tasks.html#asks', kind: 'help'
+    url: 'tasks.html#asks', kind: 'help', urgent:urgent===true
   });
   let scheduled = { queued: false };
   if (timed) {
@@ -53,7 +53,7 @@ export async function sendAsk(data, { viewer, other, title, note = '', emoji = '
     // ask is deleted, sorted or turned down before the time comes.
     scheduled = await data.notify(other, {
       title: `⏰ ${title}`, body: note || `from ${who}`, url: 'tasks.html#asks',
-      kind: 'reminder', ref: `help/${record?.id || ''}`, sendAt: Number(dueAt)
+      kind: 'reminder', ref: `help/${record?.id || ''}`, sendAt: Number(dueAt), urgent:urgent===true
     });
   }
   return { ...record, scheduled };
