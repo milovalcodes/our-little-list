@@ -63,10 +63,11 @@ function addSheets() {
       <header class="sheet-head"><div><small>put it in the app</small><h2 id="quick-title">Quick add</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <button class="thinking-ping" id="quick-thinking" type="button"><span>♡</span> send “thinking of you”</button>
       <div class="quick-kind" role="tablist">
-        <button class="active" type="button" data-quick-kind="task">to-do</button><button type="button" data-quick-kind="note">note</button><button type="button" data-quick-kind="ask">ask</button><button type="button" data-quick-kind="date">date idea</button>
+        <button class="active" type="button" data-quick-kind="task">to-do</button><button type="button" data-quick-kind="grocery">grocery</button><button type="button" data-quick-kind="note">note</button><button type="button" data-quick-kind="ask">ask</button><button type="button" data-quick-kind="date">date idea</button>
       </div>
       <form class="quick-add-form" id="quick-add-form">
         <label><span id="quick-label">what needs doing?</span><input id="quick-text" maxlength="180" required autocomplete="off" placeholder="the thing"></label>
+        <label id="quick-grocery-options" hidden><span>aisle-ish</span><select id="quick-grocery-aisle"><option value="produce">produce</option><option value="fridge">fridge</option><option value="pantry">pantry</option><option value="frozen">frozen</option><option value="home">home stuff</option><option value="other" selected>other</option></select></label>
         <div class="quick-ask-options" id="quick-ask-options" hidden>
           <div class="choice-cloud" id="quick-urgency"><button class="choice active" type="button" data-quick-urgency="soon">whenever</button><button class="choice" type="button" data-quick-urgency="now">kind of now</button><button class="choice" type="button" data-quick-urgency="timed">⏰ at a time</button></div>
           <label><span>extra detail, if any</span><textarea id="quick-ask-note" maxlength="500" placeholder="only if it helps"></textarea></label>
@@ -124,6 +125,7 @@ function setupQuickAdd(data, viewer, other) {
   const moment = setupMomentPicker(document.getElementById('quick-when-wrap'), friendlyWhen);
   const labels = {
     task: ['what needs doing?', 'the thing', 'add it'],
+    grocery: ['what should we grab?', 'oat milk, tiny treats…', 'add it'],
     note: [`note for ${personName(other)}`, 'say it here', 'send it'],
     ask: [`ask ${personName(other)} for…`, 'the thing', 'ask'],
     date: ['the date idea', 'what are we doing?', 'save it']
@@ -136,6 +138,7 @@ function setupQuickAdd(data, viewer, other) {
     document.getElementById('quick-text').placeholder = words[1];
     document.getElementById('quick-submit').textContent = words[2];
     document.getElementById('quick-ask-options').hidden = kind !== 'ask';
+    document.getElementById('quick-grocery-options').hidden = kind !== 'grocery';
     document.getElementById('quick-when-wrap').hidden = kind !== 'ask' || urgency !== 'timed';
     document.getElementById('quick-text').focus();
   };
@@ -185,6 +188,7 @@ function setupQuickAdd(data, viewer, other) {
       // The same builders the pages use, so a quick add is the same record the
       // full form would have made with its defaults.
       if (kind === 'task') await addTask(data, { viewer, other, title: text });
+      else if (kind === 'grocery') await addTask(data, { viewer, other, title: text, type: 'grocery', aisle: document.getElementById('quick-grocery-aisle').value });
       else if (kind === 'note') await sendNote(data, { viewer, other, body: text });
       else if (kind === 'date') await addDateIdea(data, { viewer, other, title: text });
       else { const urgent=await chooseAskUrgency(data,viewer,other);await sendAsk(data, { viewer, other, title: text, note: document.getElementById('quick-ask-note').value.trim(), urgency, dueAt, urgent }); }

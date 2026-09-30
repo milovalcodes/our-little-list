@@ -519,6 +519,25 @@ async function openSlow(path) {
   await page.click('#shared-task-form [type="submit"]');
   await page.waitForTimeout(250);
   note(await page.locator('.aisle-label', { hasText: 'produce' }).count() === 1, 'groceries group by aisle');
+  await page.locator('.task-row', { hasText: 'avocados' }).locator('.task-check').click();
+  await page.waitForTimeout(200);
+  const recent = await page.locator('#recent-grocery-chips button', { hasText: 'avocados' }).count();
+  await page.locator('#recent-grocery-chips button', { hasText: 'avocados' }).click();
+  await page.waitForTimeout(250);
+  const avocados = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-items-v1')).items.filter(item => item.title === 'avocados'));
+  note(recent === 1 && avocados.length === 2 && avocados.filter(item => !item.done).length === 1
+       && avocados.every(item => item.recurrence === 'once' && !item.due)
+       && avocados.every(item => item.aisle === 'produce') && await page.locator('#recent-grocery-chips button', { hasText: 'avocados' }).count() === 0
+       && errors.length === 0, 'recent grocery comes back with its aisle, without duplicating an active one', errors[0] || JSON.stringify(avocados));
+  await page.click('[data-open-sheet="quick"]');
+  await page.click('[data-quick-kind="grocery"]');
+  await page.fill('#quick-text', 'paper towels');
+  await page.selectOption('#quick-grocery-aisle', 'home');
+  await page.click('#quick-submit');
+  await page.waitForTimeout(250);
+  const quickGrocery = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-items-v1')).items.find(item => item.title === 'paper towels'));
+  note(quickGrocery?.type === 'grocery' && quickGrocery?.aisle === 'home' && errors.length === 0,
+       'quick add puts groceries in the right aisle', errors[0] || JSON.stringify(quickGrocery));
   await context.close();
 }
 

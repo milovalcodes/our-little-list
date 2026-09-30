@@ -12,6 +12,7 @@ let tab = 'tasks';
 let when = 'whenever';
 let recurrence = 'once';
 let editingTaskId = '';
+let recentGroceryOptions = [];
 
 const data = await sharedLayer();
 onAuthChange(user => setupAuthUI(data, user));
@@ -51,13 +52,15 @@ byId('shared-task-form').addEventListener('submit', async event => {
   const submit=event.submitter||event.currentTarget.querySelector('[type="submit"]');
   const title = byId('shared-task-title').value.trim();
   if (!title) return;
+  const grocery = tab === 'grocery';
+  const repeat = grocery ? 'once' : recurrence;
 
   // The when-chips are hidden on the grocery tab, so whatever was last picked on
   // the to-do tab must not follow the groceries over and set a due date nobody
   // can see or change.
   let due = '';
   const chosenDate = new Date();
-  if (tab !== 'grocery') {
+  if (!grocery) {
     if (when === 'today') due = dateKey(chosenDate);
     if (when === 'tomorrow') {
       chosenDate.setDate(chosenDate.getDate() + 1);
@@ -67,8 +70,8 @@ byId('shared-task-form').addEventListener('submit', async event => {
 
   setButtonBusy(submit,true,'…');
   try{
-    if(recurrence!=='once'&&!due)due=dateKey(new Date());
-    await addTask(data,{viewer,other,title,type:tab==='grocery'?'grocery':'task',due,recurrence,aisle:tab==='grocery'?byId('grocery-aisle').value:''});
+    if(repeat!=='once'&&!due)due=dateKey(new Date());
+    await addTask(data,{viewer,other,title,type:grocery?'grocery':'task',due,recurrence:repeat,aisle:grocery?byId('grocery-aisle').value:''});
     event.target.reset();toast(tab==='grocery'?'on the grocery list 🛒':'added 🫡');
   }catch(_){showFailure('that did not get added.','check the internet, then try again. Your text is still here.');}
   finally{setButtonBusy(submit,false);}
@@ -103,6 +106,20 @@ byId('task-list').addEventListener('click', async event => {
     if(button.dataset.action==='undo-roll')await data.updateIn('items',item.id,{due:item.previousDue||'',previousDue:'',lastDoneBy:'',lastDoneAt:0});
     if(button.dataset.action==='readd')await data.updateIn('items',item.id,{done:false,doneBy:'',doneAt:0});
   }catch(_){showFailure('the list edit did not stick.','check the internet and try the button again.');button.disabled=false;button.classList.remove('is-busy');}
+});
+
+byId('recent-grocery-chips').addEventListener('click', async event => {
+  const button = event.target.closest('[data-recent-index]');
+  if (!button) return;
+  const grocery = recentGroceryOptions[Number(button.dataset.recentIndex)];
+  if (!grocery) return;
+  setButtonBusy(button, true, '…');
+  try {
+    await addTask(data, { viewer, other, title: grocery.title, type: 'grocery', aisle: grocery.aisle });
+    toast('back on the grocery list 🛒');
+  } catch (_) {
+    showFailure('that did not get added.', 'check the internet and tap it again.');
+  } finally { if (button.isConnected) setButtonBusy(button, false); }
 });
 
 byId('task-list').addEventListener('submit', async event => {
@@ -162,6 +179,27 @@ function render() {
   empty.querySelector('span').textContent = labels[2];
   empty.querySelector('strong').textContent = labels[3];
   byId('task-list').innerHTML = tab==='grocery'?groceryMarkup(list):list.map(taskMarkup).join('');
+  renderRecentGroceries();
+}
+
+function renderRecentGroceries() {
+  const panel = byId('recent-groceries');
+  recentGroceryOptions = [];
+  if (tab !== 'grocery') { panel.hidden = true; return; }
+  const active = new Set(items.filter(item => item.type === 'grocery' && !item.done)
+    .map(item => item.title?.trim().toLocaleLowerCase()).filter(Boolean));
+  const seen = new Set();
+  for (const item of items.filter(item => item.type === 'grocery' && item.done)
+    .sort((a, b) => (b.doneAt || b.createdAt || 0) - (a.doneAt || a.createdAt || 0))) {
+    const key = item.title?.trim().toLocaleLowerCase();
+    if (!key || seen.has(key) || active.has(key)) continue;
+    seen.add(key);
+    recentGroceryOptions.push({ title: item.title.trim(), aisle: item.aisle || 'other' });
+    if (recentGroceryOptions.length === 12) break;
+  }
+  panel.hidden = recentGroceryOptions.length === 0;
+  byId('recent-grocery-chips').innerHTML = recentGroceryOptions.map((item, index) =>
+    `<button type="button" data-recent-index="${index}" aria-label="Add ${escapeHtml(item.title)} again">+ ${escapeHtml(item.title)}</button>`).join('');
 }
 
 function selectTab(next, updateHash = false) {
@@ -169,6 +207,7 @@ function selectTab(next, updateHash = false) {
   document.querySelectorAll('.tab').forEach(item => item.classList.toggle('active', item.dataset.tab === tab));
   const asks = tab === 'asks';
   const grocery = tab === 'grocery';
+  byId('recent-groceries').hidden = !grocery;
   byId('task-list-card').hidden = asks;
   byId('asks-workspace').hidden = !asks;
   byId('task-prompt').textContent = grocery ? 'What should we grab?' : 'What needs doing?';
