@@ -91,7 +91,9 @@ export function createClient({ projectId, idToken }) {
       await call(`/${documentPath}`, { method: 'DELETE' });
     },
     async moveSendAt(documentPath, when) {
-      await call(`/${documentPath}?updateMask.fieldPaths=sendAt`, {
+      // currentDocument.exists: a message deleted since the query must not be
+      // re-created as a bare { sendAt } document (the rules refuse that anyway).
+      await call(`/${documentPath}?updateMask.fieldPaths=sendAt&currentDocument.exists=true`, {
         method: 'PATCH',
         body: JSON.stringify({ fields: { sendAt: { integerValue: String(when) } } })
       });

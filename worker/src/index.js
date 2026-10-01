@@ -111,10 +111,23 @@ export async function deliver(env) {
         statusCache.set(message.to, recipientStatus);
       }
       const focus = focusDelivery(message, recipientStatus, now);
-      const quietUntil = message.urgent === true ? 0 : quietHoursEndUtc(now, preferences.quietHours, Number(target.utcOffsetMinutes));
-      const holdUntil = Math.max(focus.holdUntil, quietUntil);
+      // Quiet hours hold chatter until morning. A reminder is a time someone
+      // chose on purpose, so it is never held; an arrival is only news right
+      // now ("just got home" at 8am is not), so it comes through silently.
+      const quietEnd = message.urgent === true || message.kind === 'reminder'
+        ? 0
+        : quietHoursEndUtc(now, preferences.quietHours, Number(target.utcOffsetMinutes));
+      const quietArrival = Boolean(quietEnd) && message.kind === 'arrival';
+      const holdUntil = Math.max(focus.holdUntil, quietArrival ? 0 : quietEnd);
       if (holdUntil) {
-        await db.moveSendAt(message.path, holdUntil);
+        // One refused or vanished message must not stop the whole pass: it
+        // stays at the front of the queue, so every later pass would fail on
+        // it too and nothing behind it would ever go out.
+        try {
+          await db.moveSendAt(message.path, holdUntil);
+        } catch (problem) {
+          console.error(`could not hold ${message.id}: ${problem?.message || problem}`);
+        }
         held += 1;
         continue;
       }
@@ -126,13 +139,13 @@ export async function deliver(env) {
         tag: `${message.kind || 'note'}-${message.id}`,
         kind: message.kind || 'note',
         late: dueAge > STALE_MS,
-        silent: preferences.backgroundSound === 'silent' || focus.quiet,
+        silent: preferences.backgroundSound === 'silent' || focus.quiet || quietArrival,
         vibrate: vibrationPattern(preferences.vibration)
       });
 
       const result = await sendNotification(target.subscription, payload, vapid, {
         ttl: 86400,
-        urgency: ['reminder', 'arrival'].includes(message.kind) || message.urgent === true ? 'high' : 'normal'
+        urgency: ['reminder', 'help', 'arrival'].includes(message.kind) || message.urgent === true ? 'high' : 'normal'
       });
 
       if (result.ok) {
