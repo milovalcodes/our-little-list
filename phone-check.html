@@ -51,7 +51,7 @@
       </section>
 
       <section class="notification-settings-card quiet-hours-card">
-        <div class="settings-heading"><div><p class="tiny-kicker">when the phone gets a break</p><h2>Quiet hours</h2></div><label class="quiet-hours-switch"><input id="quiet-enabled" type="checkbox"><span>on</span></label></div>
+        <div class="settings-heading"><div><h2>Quiet hours</h2></div><label class="quiet-hours-switch"><input id="quiet-enabled" type="checkbox" aria-label="Quiet hours"><i aria-hidden="true"></i></label></div>
         <div class="quiet-hours-times"><label>from <input id="quiet-from" type="time" value="22:00"></label><label>until <input id="quiet-to" type="time" value="08:00"></label></div>
         <p class="settings-device-note">non-urgent pings wait until quiet hours end. “notify anyway” still gets through.</p>
       </section>
@@ -59,6 +59,22 @@
       <div class="notification-save-row"><span id="save-state" aria-live="polite">changes save by themselves</span><button class="primary-action compact-save" id="save-notifications" type="submit" hidden>save it</button></div>
     </form>
     </section>
+    <details class="composer-card saved-places" id="saved-places">
+      <summary><span><strong>Saved spots</strong></span><i>＋</i></summary>
+      <div class="saved-place-body">
+        <form id="saved-place-form">
+          <div class="place-presets" id="place-presets"><button class="active" type="button" data-place-preset="home">🏠 home</button><button type="button" data-place-preset="work">💻 work</button><button type="button" data-place-preset="school">📚 school</button><button type="button" data-place-preset="errands">🛒 errands</button><button type="button" data-place-preset="custom">📍 custom</button></div>
+          <label><span>call this place</span><input id="place-label" maxlength="40" value="home" required></label>
+          <label id="place-status-wrap" hidden><span>what your status says here</span><input id="place-status" maxlength="90" placeholder="at the creature habitat"></label>
+          <div class="place-preview place-cozy" id="place-preview"><span>🏠</span><div><small>automatic status</small><strong>vibing at home</strong></div></div>
+          <div class="place-options"><label><span>how close counts</span><select id="place-radius"><option value="50">50 m</option><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option><option value="400">400 m</option></select><small>150 m to start · try 250 m if GPS is flaky</small></label><label class="place-notify"><input id="place-notify" type="checkbox" checked><span>ping them when I arrive</span></label><label class="place-notify"><input id="place-notify-leave" type="checkbox"><span>ping them when I leave</span></label></div>
+          <p class="place-overlap-hint" id="place-overlap-hint" role="alert" hidden></p>
+          <button class="primary-action" id="place-save" type="submit">save where I am now</button>
+        </form>
+        <div class="saved-place-list" id="saved-place-list"></div>
+        <p class="saved-place-empty" id="saved-place-empty">no saved spots yet</p>
+      </div>
+    </details>
     <section class="profile-setup-card settings-names" id="names">
       <p class="tiny-kicker">the two of us</p><h2>Our names</h2>
       <form id="profile-form">
@@ -67,13 +83,13 @@
           <label class="profile-name-person moon-name-person"><img src="moon-profile.png" alt=""><span>Moon name</span><input id="moon-name" required maxlength="24" autocomplete="off" placeholder="his name"></label>
         </div>
         <p class="profile-save-note" id="profile-save-note" role="status"></p>
-        <button class="primary-action roomy-action" id="profile-save" type="submit">save our names</button>
+        <button class="primary-action roomy-action" id="profile-save" type="submit" hidden>save names</button>
       </form>
     </section>
     <section class="status-card settings-account" id="account">
       <div class="status-row"><span class="status-symbol">☺</span><div><strong>This phone is signed in</strong><p id="account-status">as one of us</p><button class="small-action" id="sign-out" type="button">sign out</button></div></div>
     </section>
   </main>
-  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="phone-check.js"></script><script type="module" src="profiles.js"></script><script type="module" src="settings-account.js"></script>
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="phone-check.js"></script><script type="module" src="profiles.js"></script><script type="module" src="location-tags.js"></script><script type="module" src="settings-account.js"></script>
 </body>
 </html>

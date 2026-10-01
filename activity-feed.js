@@ -60,7 +60,7 @@ function events(){
     const timed=Number(request.dueAt)>0;const self=request.from===request.to;all.push({id:`help-${request.id}`,recordId:request.id,collection:'help',at:Number(request.createdAt)||0,icon:request.emoji||(timed?'⏰':'🙋'),who:request.from,kind:self?'set a reminder for themselves':timed?`set a reminder for ${friendlyWhen(request.dueAt)}`:'asked for a hand',selfKind:self?'set a reminder for yourself':timed?`set a reminder for ${friendlyWhen(request.dueAt)}`:'asked for a hand',text:request.title,status:request.state&&request.state!=='open'?`answered: ${request.state==='on-it'?'on it':request.state==='later'?'in a bit':request.state==='cant'?"can't":'sorted'}`:self?'for you':'waiting'});
     if(request.answeredAt)all.push({id:`help-answer-${request.id}-${request.answeredAt}`,recordId:request.id,collection:'help',at:Number(request.answeredAt),icon:request.state==='cant'?'✗':'✓',who:request.to,kind:'answered a request',selfKind:'answered a request',text:request.title});
   });
-  buckets.statuses.forEach(status=>{
+  buckets.statuses.filter(status=>['manual','custom','arrival','focus'].includes(status.updateKind)).forEach(status=>{
     const kind=status.updateKind;const who=status.person||status.id;const at=Number(status.updatedAt)||0;const base={id:`status-${status.id}-${at}`,recordId:status.id,collection:'statuses',at,who};
     // Focus sessions are statuses with a timer now, and saved spots move the
     // status on their own; each says what actually happened.
@@ -72,7 +72,7 @@ function events(){
   });
   buckets.memories.forEach(item=>all.push({id:`memory-${item.id}`,recordId:item.id,collection:'memories',at:Number(item.createdAt)||0,icon:'◒',who:item.addedBy,kind:'added to the memory jar',text:item.text}));
   buckets.reactions.forEach(item=>all.push({id:`reaction-${item.id}`,recordId:item.id,collection:'reactions',at:Number(item.createdAt)||0,icon:item.emoji||'♡',who:item.by,kind:'reacted',text:item.targetType==='status'?'to a status':'to a note'}));
-  return all.filter(item=>item.at&&!hidden.has(item.id)).sort((a,b)=>b.at-a.at).slice(0,80);
+  return all.filter(item=>item.at&&item.who===other&&!hidden.has(item.id)).sort((a,b)=>b.at-a.at).slice(0,80);
 }
 
 function render(){

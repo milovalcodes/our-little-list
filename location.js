@@ -74,6 +74,10 @@ function render(){
   renderControl();
   const now=Date.now();
   const known=locations.filter(item=>Number.isFinite(item.lat)&&Number.isFinite(item.lng));
+  const mapCard=document.querySelector('.now-location-card');
+  const hadMap=mapCard.classList.contains('has-map');
+  mapCard.classList.toggle('has-map',known.length>0);
+  if(!hadMap&&known.length)window.setTimeout(()=>map?.invalidateSize({animate:false,pan:false}),80);
   const active=known.filter(item=>Number(item.shareUntil)>now);
   const her=active.find(item=>item.id==='her');const him=active.find(item=>item.id==='him');
   const knownHer=known.find(item=>item.id==='her');const knownHim=known.find(item=>item.id==='him');

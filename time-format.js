@@ -45,7 +45,7 @@ export function prettyDue(value) {
   const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   now.setDate(now.getDate()+1);
   const tomorrow = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  if (value === today) return 'today-ish';
+  if (value === today) return 'today';
   if (value === tomorrow) return 'tomorrow';
   return value;
 }

@@ -11,10 +11,11 @@ let wakeLock=null;
 const health = { sync:false, online:false, install:false, notification:false, location:false };
 let healthCollapsed=false;
 function renderHealthSummary(){
-  const ready=Object.values(health).every(Boolean);
+  // Home-screen install and location are choices, not unfinished setup.
+  const ready=health.sync&&health.online&&health.notification;
   $('health-summary').textContent=ready?'this phone is all set ✓':'this phone needs a look';
   if(ready&&!healthCollapsed){$('phone-health').open=false;healthCollapsed=true;}
-  if(!ready)$('phone-health').open=true;
+  if(!ready){healthCollapsed=false;$('phone-health').open=true;}
 }
 const { data, viewer } = await bootPage({onAuth:(user,layer)=>{
   const local=layer.mode==='local';

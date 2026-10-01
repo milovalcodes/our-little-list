@@ -1,7 +1,7 @@
 // The names form, part of Settings (phone-check.html). The page's own module
 // handles the sign-in gate.
 import { sharedLayer, whenReady } from './data-hub.js';
-import { setButtonBusy, showFailure } from './ui-helpers.js';
+import { showFailure } from './ui-helpers.js';
 import { awaitViewer } from './viewer.js';
 import { cachedProfile, saveCachedProfile } from './profile-store.js';
 
@@ -12,10 +12,11 @@ let data;
 // other phone's rename stopped arriving, and the next save wrote this phone's
 // stale copy of that name straight back over it.
 const editing=new Set();
+let saveTimer=0;let saving=false;let editVersion=0;
 const cached=cachedProfile();
 $('sun-name').value=cached.sunName;
 $('moon-name').value=cached.moonName;
-document.querySelectorAll('#profile-form input').forEach(input=>input.addEventListener('input',()=>{editing.add(input.id);$('profile-save-note').textContent='';}));
+document.querySelectorAll('#profile-form input').forEach(input=>input.addEventListener('input',()=>{editing.add(input.id);editVersion++;$('profile-save-note').textContent='saving…';window.clearTimeout(saveTimer);saveTimer=window.setTimeout(()=>void saveNames(),700);}));
 
 data=await sharedLayer();
 
@@ -34,14 +35,16 @@ whenReady(data,()=>{
   });
 });
 
-$('profile-form').addEventListener('submit',async event=>{
-  event.preventDefault();
+$('profile-form').addEventListener('submit',event=>{event.preventDefault();window.clearTimeout(saveTimer);void saveNames();});
+async function saveNames(){
+  if(saving){window.clearTimeout(saveTimer);saveTimer=window.setTimeout(()=>void saveNames(),350);return;}
   const profile={sunName:$('sun-name').value.trim(),moonName:$('moon-name').value.trim(),updatedAt:Date.now()};
-  if(!profile.sunName||!profile.moonName)return;
-  setButtonBusy($('profile-save'),true,'saving…');
+  if(!profile.sunName||!profile.moonName){$('profile-save-note').textContent='both names first';return;}
+  saving=true;
+  const savingVersion=editVersion;
   try{
-    await data.setTo('profiles','couple',profile);saveCachedProfile(profile);editing.clear();
-    $('profile-save-note').textContent='saved ♡';
+    await data.setTo('profiles','couple',profile);saveCachedProfile(profile);
+    if(savingVersion===editVersion){editing.clear();$('profile-save-note').textContent='saved ♡';}
   }catch(_){showFailure('the names did not save.','check the internet and try again.');}
-  finally{setButtonBusy($('profile-save'),false);}
-});
+  finally{saving=false;}
+}

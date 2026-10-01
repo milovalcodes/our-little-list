@@ -8,6 +8,7 @@ import { hereLine, statusShows, orbitLine } from './availability.js';
 import { newActivityCount } from './activity-summary.js';
 import { questionClock } from './question-prompts.js';
 import { escapeHtml, showFailure, toast } from './ui-helpers.js';
+import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
 
 const badge = document.getElementById('activity-badge');
 const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [] };
@@ -51,6 +52,7 @@ window.addEventListener('littlelist:profile', renderSky);
 const homeDay = questionClock().day;
 window.setInterval(() => { if (questionClock().day !== homeDay) location.reload(); else renderSky(); }, 30000);
 setupQuickStatus();
+document.getElementById('home-next-up')?.addEventListener('click', event => { void handleInlineAction(event,{data,viewer,other,items:buckets.items,help:buckets.help}); });
 
 function renderBadge() {
   const since = Number(localStorage.getItem(seenKey) || 0);
@@ -85,19 +87,19 @@ function renderNextUp() {
   const target = document.getElementById('home-next-up');
   if (!target) return;
   const today = new Intl.DateTimeFormat('sv-SE', { timeZone:'America/New_York', year:'numeric',month:'2-digit',day:'2-digit' }).format(new Date());
-  const due = buckets.items.filter(item => !item.done && item.due && item.due <= today).length;
-  const asks = buckets.help.filter(item => item.to === viewer && item.state === 'open').length;
+  const due = buckets.items.filter(item => !item.done && item.due && item.due <= today).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
+  const asks = buckets.help.filter(item => item.to === viewer && item.from !== viewer && item.state === 'open').sort((a,b)=>(a.dueAt||0)-(b.dueAt||0));
   const unread = buckets.notes.filter(note => (note.recipient === viewer || note.to === viewer) && !note.read).length;
   const clock = questionClock();
   const question = buckets.questions.find(item => item.day === clock.day);
   const answerNeeded = clock.open && question && !question.answers?.[viewer]?.at;
   const rows = [
-    due && { icon:'✓', text:`${due} due today`, url:'tasks.html' },
-    asks && { icon:'🙋', text:`${asks} ask${asks === 1 ? '' : 's'} waiting`, url:'tasks.html#asks' },
-    unread && { icon:'💌', text:`${unread} unread note${unread === 1 ? '' : 's'}`, url:'notes.html' },
-    answerNeeded && { icon:'◎', text:'today’s question', url:'today.html#question' }
+    ...due.slice(0,2).map(item=>({kind:'item',id:item.id,title:item.title,meta:item.due<today?'overdue':'today',href:`tasks.html#item-${item.id}`})),
+    ...asks.slice(0,2).map(item=>({kind:'ask',id:item.id,title:item.title,meta:'waiting for you',href:`tasks.html#ask-${item.id}`,icon:item.emoji||'🙋'})),
+    unread && {icon:'✉',title:`${unread} unread note${unread===1?'':'s'}`,href:'notes.html'},
+    answerNeeded && {icon:'◎',title:'today’s question',href:'today.html#question'}
   ].filter(Boolean);
-  target.innerHTML = rows.length ? rows.map(row => `<a href="${row.url}"><span>${row.icon}</span><strong>${escapeHtml(row.text)}</strong><i>›</i></a>`).join('') : '<p>nothing needs you right now ✦</p>';
+  target.innerHTML = rows.length ? rows.map(row=>inlineActionMarkup(row,'home-next-row')).join('') : '<p>nothing needs you right now ✦</p>';
 }
 
 function setupQuickStatus() {
@@ -209,12 +211,14 @@ function renderSkyOrbit(stage, now) {
   if (!her || !him) {
     stage.dataset.orbit = 'waiting';
     const live = known.find(point => Number(point.shareUntil) > now);
+    document.querySelector('.sky-footer').hidden = !live;
     title.textContent = live ? `${personName(live.id || live.person)} is on the map` : 'orbit pending';
     const partner=known.find(point=>(point.id||point.person)===other);
     detail.textContent = partner&&Number(partner.shareUntil)<=now?`last known · updates when ${personName(other)} opens the app`:known.length ? 'waiting for the other spot' : 'waiting for both spots';
     return;
   }
   const line = orbitLine(her, him, now);
+  document.querySelector('.sky-footer').hidden = ![her,him].some(point=>Number(point.shareUntil)>now);
   stage.dataset.orbit = line.orbit;
   title.textContent = line.title;
   const partner=[her,him].find(point=>(point.id||point.person)===other);

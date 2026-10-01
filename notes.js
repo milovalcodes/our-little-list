@@ -30,6 +30,15 @@ $('note-form').addEventListener('submit',async event=>{
   finally{setButtonBusy(submit,false);}
 });
 
+$('note-quick-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const input=$('note-quick-text');const body=input.value.trim();if(!body)return;
+  const button=$('note-quick-send');setButtonBusy(button,true,'…');
+  try{await sendNote(data,{viewer:sender,other:recipient,body,mood:'heart'});input.value='';toast('sent 💌');}
+  catch(_){showFailure('the note did not send.','check the internet and try again. Your words are still here.');}
+  finally{setButtonBusy(button,false);}
+});
+
 $('note-inbox-list').addEventListener('click',async event=>{
   const edit=event.target.closest('[data-edit-note]');
   if(edit){editingNoteId=edit.dataset.editNote;renderNotes();$('note-inbox-list').querySelector('[data-note-edit] textarea')?.focus();return;}
@@ -84,5 +93,5 @@ window.addEventListener('hashchange',()=>{renderNotes();markIncomingRead();});
 $('note-more').addEventListener('click',()=>{viewLimit+=20;renderNotes();markIncomingRead();});
 
 function markIncomingRead(){notes.slice(0,viewLimit).filter(note=>(note.recipient===sender||note.to===sender)&&!note.read&&!markedRead.has(note.id)).forEach(note=>{markedRead.add(note.id);void data.updateIn('notes',note.id,{read:true,readAt:Date.now()}).catch(()=>markedRead.delete(note.id));});}
-function setNames(){document.getElementById('note-page-add').setAttribute('aria-label',`Send ${personName(recipient)} a note`);}
+function setNames(){document.getElementById('note-page-add').setAttribute('aria-label',`Send ${personName(recipient)} a note`);$('note-quick-text').placeholder=`write ${personName(recipient)} a little note…`;}
 window.addEventListener('littlelist:profile',()=>{setNames();renderNotes();});

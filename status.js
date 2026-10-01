@@ -27,7 +27,9 @@ async function ready(){
 let expiryTouched=false;
 
 const { data, viewer, other } = await bootPage();
-document.querySelector('.now-status-pair')?.before(document.querySelector('.status-editor-disclosure'));
+function openStatusEditor(){const editor=document.querySelector('.status-editor-disclosure');editor.open=true;editor.scrollIntoView({behavior:'smooth',block:'start'});}
+$('status-pair').addEventListener('click',event=>{if(event.target.closest('.is-me')&&!event.target.closest('button'))openStatusEditor();});
+$('status-pair').addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.classList.contains('is-me')){event.preventDefault();openStatusEditor();}});
 document.getElementById('expand-map')?.addEventListener('click', event => {
   const card = document.querySelector('.now-location-card');
   const expanded = card.classList.toggle('is-expanded');
@@ -109,7 +111,12 @@ function blankStatus(){return {state,text:'',category:'',emoji:'',expiresAt:0};}
 
 let partnerShown=false;
 function render(){
-  $('status-pair').innerHTML=['her','him'].map(person=>statusCard(person,statuses.find(item=>item.id===person||item.person===person))).join('');
+  const arrivalStrip=document.querySelector('.arrival-strip');
+  const editor=document.querySelector('.status-editor-disclosure');
+  $('status-pair').innerHTML=[viewer,other].map(person=>statusCard(person,statuses.find(item=>item.id===person||item.person===person))).join('');
+  const ownCard=$('status-pair').querySelector('.is-me');
+  if(arrivalStrip)ownCard?.append(arrivalStrip);
+  if(editor)ownCard?.after(editor);
   // Home's partner avatar links here with #partner: land on their card, not yours.
   if(!partnerShown&&location.hash==='#partner'){partnerShown=true;const card=$('status-pair').querySelector('.person-status-card:not(.is-me)');card?.scrollIntoView({block:'center'});card?.classList.add('is-spotlit');window.setTimeout(()=>card?.classList.remove('is-spotlit'),1600);}
 }
@@ -117,7 +124,7 @@ function statusCard(person,item={}){
   const focus=focusActive(item);const custom=item.text&&!isExpired(item);const name=personName(person);const image=person==='her'?'sun-profile.png':'moon-profile.png';
   const arrival=arrivalActive(item)?`<p class="status-arrival">↗ ${escapeHtml(item.arrival)}</p>`:'';const location=item.locationText?`<p class="status-location place-${escapeHtml(item.locationPreset||'custom')}"><b>${escapeHtml(item.locationEmoji||'📍')}</b><span>${escapeHtml(item.locationText)}</span></p>`:'';const received=person===other?findStatusReaction(person):reactions.find(reaction=>reaction.targetType==='status'&&reaction.targetId===person&&reaction.by===other);const reactionDisplay=received?(person===other?`<button class="reaction-display" type="button" data-react-status="${escapeHtml(person)}" data-emoji="${escapeHtml(received.emoji)}" aria-label="Remove your ${escapeHtml(received.emoji)} reaction"><b>${escapeHtml(received.emoji)}</b><span>yours · tap to undo</span></button>`:`<div class="reaction-display is-readonly"><b>${escapeHtml(received.emoji)}</b><span>from ${escapeHtml(personName(other))}</span></div>`):'';const reactionButton=person===other?`<button class="reaction-trigger" type="button" data-status-picker="${escapeHtml(person)}">react</button>`:'';
   const legacy=!custom&&!location&&!focus&&!arrival?statusShows(item):null;
-  return `<article class="person-status-card ${person===viewer?'is-me':''} ${item.locationPreset?`has-place place-${escapeHtml(item.locationPreset)}`:''}"><div class="status-avatar"><img src="${image}" alt=""><i class="status-dot state-${escapeHtml(item.state||'invisible')}"></i></div><div class="status-person-copy"><div class="status-person-top"><strong>${escapeHtml(name)}</strong>${person===viewer?'<span>you</span>':''}</div><p class="status-presence">${escapeHtml(hereLine({presence:presence.find(entry=>entry.id===person||entry.person===person),status:item}).text)}</p>${location}${arrival}${focus?`<p class="status-custom"><b>⏱</b><span><small>locking in</small>${escapeHtml(item.focusLabel||'doing the thing')}</span></p>`:''}${custom?`<p class="status-custom"><b>${escapeHtml(item.emoji||'✦')}</b><span><small>${escapeHtml(item.category||'currently')}</small>${escapeHtml(item.text)}</span></p>`:legacy?.text?`<p class="status-custom"><b>✦</b><span><small>feeling</small>${escapeHtml(legacy.text)}</span></p>`:location||focus||arrival?'':'<p class="status-blank">no custom status rn</p>'}<div class="reaction-controls">${reactionDisplay}${reactionButton}</div></div></article>`;
+  return `<article class="person-status-card ${person===viewer?'is-me':''} ${item.locationPreset?`has-place place-${escapeHtml(item.locationPreset)}`:''}"${person===viewer?' tabindex="0" role="button" aria-label="Edit your status"':''}><div class="status-avatar"><img src="${image}" alt=""><i class="status-dot state-${escapeHtml(item.state||'invisible')}"></i></div><div class="status-person-copy"><div class="status-person-top"><strong>${escapeHtml(name)}</strong>${person===viewer?'<span>you · tap to edit</span>':''}</div><p class="status-presence">${escapeHtml(hereLine({presence:presence.find(entry=>entry.id===person||entry.person===person),status:item}).text)}</p>${location}${arrival}${focus?`<p class="status-custom"><b>⏱</b><span><small>locking in</small>${escapeHtml(item.focusLabel||'doing the thing')}</span></p>`:''}${custom?`<p class="status-custom"><b>${escapeHtml(item.emoji||'✦')}</b><span><small>${escapeHtml(item.category||'currently')}</small>${escapeHtml(item.text)}</span></p>`:legacy?.text?`<p class="status-custom"><b>✦</b><span><small>feeling</small>${escapeHtml(legacy.text)}</span></p>`:location||focus||arrival?'':'<p class="status-blank">tap to add your own words</p>'}<div class="reaction-controls">${reactionDisplay}${reactionButton}</div></div></article>`;
 }
 function expiryTime(value){if(value==='today'){const date=new Date();date.setHours(23,59,59,999);return date.getTime();}const hours=Number(value)||0;return hours?Date.now()+hours*3600000:0;}
 function isExpired(item){return Boolean(item.expiresAt&&item.expiresAt<Date.now());}

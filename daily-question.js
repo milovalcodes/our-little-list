@@ -16,6 +16,7 @@ export function startDailyQuestion({ data, viewer, other }) {
   let partnerAnswer = null;
   let answerRead = 0;
   let editing = false;
+  let answersExpanded = false;
   const available = Boolean(selected && (phase === 'open' || data.mode === 'local'));
   const firstDay = new Intl.DateTimeFormat('en-US', { month:'long', day:'numeric', timeZone:'UTC' }).format(new Date(`${QUESTION_START_DAY}T00:00:00Z`));
   $('question-prompt').textContent = phase === 'upcoming' && data.mode !== 'local' ? 'The first question is on its way' : phase === 'exhausted' ? 'No new question yet' : available ? 'getting today’s question…' : 'Back at 8 a.m.';
@@ -67,10 +68,12 @@ export function startDailyQuestion({ data, viewer, other }) {
 
   $('question-edit').addEventListener('click', () => {
     editing = true;
+    answersExpanded = true;
     $('question-answer').value = mineAnswer?.text || '';
     render();
     $('question-answer').focus();
   });
+  $('question-reveal').addEventListener('click',()=>{answersExpanded=!answersExpanded;render();});
 
   $('question-form').addEventListener('submit', async event => {
     event.preventDefault();
@@ -110,6 +113,10 @@ export function startDailyQuestion({ data, viewer, other }) {
     }
     const answers = question?.answers || {};
     const both = Boolean(answers.her?.at && answers.him?.at);
+    $('question').classList.toggle('is-folded',both&&!answersExpanded&&!editing);
+    $('question-reveal').hidden=!both;
+    $('question-reveal').textContent=answersExpanded?'hide answers':'see answers';
+    if(both&&!answersExpanded&&!editing)$('question-prompt').textContent='Today’s question ✓';
     $('question-form').hidden = Boolean(mineAnswer?.text) && !editing;
     $('question-save').textContent = mineAnswer?.text ? 'save edit' : 'answer';
     $('question-edit').hidden = !mineAnswer?.text || editing;

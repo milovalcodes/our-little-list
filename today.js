@@ -5,6 +5,7 @@ import { friendlyWhen, timeAgo } from './time-format.js';
 import { startActivityFeed } from './activity-feed.js';
 import { focusActive } from './availability.js';
 import { startDailyQuestion } from './daily-question.js';
+import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
 
 const $=id=>document.getElementById(id);
 const buckets={items:[],help:[],statuses:[]};
@@ -19,6 +20,7 @@ Object.keys(buckets).forEach(name=>{
 });
 startActivityFeed({data,viewer,other});
 startDailyQuestion({data,viewer,other});
+$('today-list').addEventListener('click', event => { void handleInlineAction(event,{data,viewer,other,items:buckets.items,help:buckets.help}); });
 // A focus session is part of your status: while it runs, the status says
 // "⏱ locking in · <what>" everywhere. It lives in its own fields on the status
 // (see availability.js) instead of its own record that only this page showed.
@@ -49,18 +51,18 @@ $('focus-pair').addEventListener('click',async event=>{const button=event.target
 
 function render(){renderToday();renderFocus();}
 function renderToday(){const today=dateKey(new Date());const end=new Date();end.setHours(23,59,59,999);const due=[
-  ...buckets.items.filter(item=>!item.done&&item.due&&item.due<=today).map(item=>({id:`item-${item.id}`,icon:item.type==='grocery'?'🛒':'✓',title:item.title,meta:item.due<today?'overdue':'today',href:`tasks.html#item-${item.id}`})),
+  ...buckets.items.filter(item=>!item.done&&item.due&&item.due<=today).map(item=>({id:item.id,kind:'item',icon:item.type==='grocery'?'🛒':'✓',title:item.title,meta:item.due<today?'overdue':'today',href:`tasks.html#item-${item.id}`})),
   // Asks waiting on you, and asks with a time (what reminders are now) that
   // come due today even once they have been answered.
   ...buckets.help.filter(item=>{if(item.to!==viewer)return false;const due=Number(item.dueAt);
     // An ask with a time belongs to its day, like a reminder did: "Friday" does
     // not crowd Monday. Asks without one wait here until they are answered.
     if(due>0)return due>Date.now()-3*3600000&&due<=end.getTime()&&!['done','cant'].includes(item.state);
-    return item.state==='open';}).map(item=>({id:`help-${item.id}`,icon:item.emoji||(item.dueAt?'⏰':'🙋'),title:item.title,meta:Number(item.dueAt)>0?`⏰ ${friendlyWhen(Number(item.dueAt))}`:'needs an answer',href:`tasks.html#ask-${item.id}`}))
+    return item.state==='open';}).map(item=>({id:item.id,kind:'ask',icon:item.emoji||(item.dueAt?'⏰':'🙋'),title:item.title,meta:Number(item.dueAt)>0?`⏰ ${friendlyWhen(Number(item.dueAt))}`:'needs an answer',href:`tasks.html#ask-${item.id}`}))
   ];
   const total=due.length;
   const shown=fairShare(due,12);
-  $('today-count').textContent=String(total);$('today-empty').hidden=total>0;$('today-list').innerHTML=shown.map(item=>`<a class="today-row" href="${item.href}"><span>${escapeHtml(item.icon)}</span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.meta)}</small></div><i>›</i></a>`).join('');}
+  $('today-count').textContent=String(total);$('today-empty').hidden=total>0;$('today-list').innerHTML=shown.map(item=>inlineActionMarkup(item)).join('');}
 let lastFocusMarkup='';
 function renderFocus(){if(!$('focus-pair'))return;const now=Date.now();const markup=['her','him'].map(person=>{const item=statusOf(person)||{};const active=focusActive(item,now);const remaining=Math.max(0,Number(item.focusUntil)-now);const ended=Number(item.focusEndedAt)||(Number(item.focusUntil)>0&&!active?Number(item.focusUntil):0);const clock=active?`${Math.ceil(remaining/60000)}m left`:(ended?`ended ${timeAgo(ended)}`:'not focusing');return `<article class="focus-person${active?' active':''}"><img src="${person==='her'?'sun-profile.png':'moon-profile.png'}" alt=""><div><strong>${escapeHtml(personName(person))}</strong><span>${escapeHtml(clock)}</span>${active?`<small>${escapeHtml(item.focusLabel||'doing the thing')}</small>`:''}</div>${active&&person===viewer?`<button type="button" data-stop="${person}">done</button>`:''}</article>`;}).join('');
   if(markup===lastFocusMarkup)return;
@@ -73,7 +75,7 @@ function renderFocus(){if(!$('focus-pair'))return;const now=Date.now();const mar
 function fairShare(rows,limit){
   if(rows.length<=limit)return rows;
   const kinds=new Map();
-  rows.forEach(row=>{const kind=row.id.split('-')[0];if(!kinds.has(kind))kinds.set(kind,[]);kinds.get(kind).push(row);});
+  rows.forEach(row=>{const kind=row.kind;if(!kinds.has(kind))kinds.set(kind,[]);kinds.get(kind).push(row);});
   const picked=[];
   while(picked.length<limit){
     let took=false;

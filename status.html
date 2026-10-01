@@ -17,7 +17,7 @@
 
     <section class="status-pair now-status-pair" id="status-pair" aria-live="polite"></section>
 
-    <section class="arrival-strip"><span>quick update</span><div id="arrival-presets"><button type="button" data-arrival="leaving now">leaving now</button><button type="button" data-arrival="almost there">almost there</button></div></section>
+    <section class="arrival-strip"><div id="arrival-presets"><button type="button" data-arrival="leaving now">leaving now</button><button type="button" data-arrival="almost there">almost there</button></div></section>
 
     <section class="now-location-card" aria-labelledby="location-state">
       <div class="now-location-head">
@@ -33,27 +33,8 @@
       <div class="now-location-foot"><span>updates only while the app is open on each phone</span><button class="hide-last-location" id="hide-last-location" type="button" hidden>delete my last spot</button></div>
     </section>
 
-    <details class="composer-card saved-places" id="saved-places">
-      <summary><span><small>saved spots</small><strong>automatic location statuses</strong></span><i>＋</i></summary>
-      <div class="saved-place-body">
-        <form id="saved-place-form">
-          <div class="place-presets" id="place-presets">
-            <button class="active" type="button" data-place-preset="home">🏠 home</button><button type="button" data-place-preset="work">💻 work</button><button type="button" data-place-preset="school">📚 school</button><button type="button" data-place-preset="errands">🛒 errands</button><button type="button" data-place-preset="custom">📍 custom</button>
-          </div>
-          <label><span>call this place</span><input id="place-label" maxlength="40" value="home" required></label>
-          <label id="place-status-wrap" hidden><span>what your status says here</span><input id="place-status" maxlength="90" placeholder="at the creature habitat"></label>
-          <div class="place-preview place-cozy" id="place-preview"><span>🏠</span><div><small>automatic status</small><strong>vibing at home</strong></div></div>
-          <div class="place-options"><label><span>how close counts</span><select id="place-radius"><option value="50">50 m</option><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option><option value="400">400 m</option></select><small>150 m to start · try 250 m if GPS is flaky</small></label><label class="place-notify"><input id="place-notify" type="checkbox" checked><span>ping them when I arrive</span></label><label class="place-notify"><input id="place-notify-leave" type="checkbox"><span>ping them when I leave</span></label></div>
-          <p class="place-overlap-hint" id="place-overlap-hint" role="alert" hidden></p>
-          <button class="primary-action" id="place-save" type="submit">save where I am now</button>
-        </form>
-        <div class="saved-place-list" id="saved-place-list"></div>
-        <p class="saved-place-empty" id="saved-place-empty">no saved spots yet</p>
-      </div>
-    </details>
-
     <details class="composer-card status-editor status-editor-disclosure">
-      <summary><span><small>your status</small><strong>change what it says</strong></span><i>＋</i></summary>
+      <summary><span><strong>Edit status</strong></span><i>＋</i></summary>
       <form id="status-form">
         <fieldset class="status-fieldset"><legend>availability</legend>
           <div class="status-choices">
@@ -79,6 +60,6 @@
   </main>
   <div id="auth-root"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
-  <script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="status.js"></script><script type="module" src="location.js"></script><script type="module" src="location-tags.js"></script><script type="module" src="live-notes.js"></script>
+  <script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="status.js"></script><script type="module" src="location.js"></script><script type="module" src="live-notes.js"></script>
 </body>
 </html>

@@ -109,7 +109,7 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
     button.disabled = true;
     try {
       await data.updateIn('help', id, { state: answer, answeredAt: Date.now() });
-      await data.notify(request.from, {
+      if (request.from !== viewer) await data.notify(request.from, {
         title: `${personName(viewer)}: ${ANSWERS[answer].theirs}`,
         body: request.title,
         url: `tasks.html#ask-${request.id}`,
@@ -142,7 +142,8 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
     const forMe = live.filter(item => item.to === viewer && item.from !== viewer && item.state !== 'done');
     const mine = live.filter(item => item.from === viewer && item.state !== 'done');
     $('help-inbox').hidden = forMe.length === 0;
-    $('inbox-title').textContent = `${personName(other)} needs something`;
+    const partner=personName(other);
+    $('inbox-title').textContent = partner===other?'A little ask from them':`${partner} needs something`;
     $('help-inbox-list').innerHTML = forMe.map(inboxCard).join('');
     $('help-mine-empty').hidden = mine.length > 0;
     $('help-mine-list').innerHTML = mine.map(mineCard).join('');

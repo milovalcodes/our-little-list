@@ -335,7 +335,7 @@ async function openSlow(path) {
 // Saved-spot presets have distinct behavior and custom spots keep their own
 // words. Geofence math itself is covered in the pure unit pass.
 {
-  const { context, page, errors } = await open('status.html?as=her');
+  const { context, page, errors } = await open('phone-check.html?as=her');
   await page.click('#saved-places > summary');
   await page.click('[data-place-preset="work"]');
   const work = await page.locator('#place-preview').textContent();
@@ -348,6 +348,8 @@ async function openSlow(path) {
   await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();await data.setTo('places','my-spot',{person:'her',label:'home',preset:'home',statusText:'vibing at home',emoji:'🏠',lat:25.76,lng:-80.19,radius:150,announce:true,createdAt:Date.now()});await data.setTo('locations','him',{person:'him',lat:25.761,lng:-80.19,shareUntil:Date.now()-1000,updatedAt:Date.now()-60000,placeLabel:'home'});});
   await page.locator('[data-toggle-leave="my-spot"]').click();
   const leaveOn=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return (await data.readOnce('places')).find(item=>item.id==='my-spot')?.announceLeave;});
+  await page.goto(`${BASE}/status.html?as=her`, { waitUntil:'domcontentloaded' });
+  await page.waitForTimeout(900);
   const staleWording=await page.locator('#last-known-row').textContent();
   note(leaveOn===true&&staleWording.includes('updates when')&&errors.length===0,'leaving pings are opt-in and stale partner spots say when they update',errors[0]||JSON.stringify({leaveOn,staleWording}));
   await context.close();
@@ -359,7 +361,7 @@ async function openSlow(path) {
   const { context, page, errors } = await open('phone-check.html?as=her#pings');
   await page.locator('[data-category="listsAdded"]').uncheck({ force:true });
   await page.locator('[data-category="listsFinished"]').check({ force:true });
-  await page.locator('.quiet-hours-switch span').click();
+  await page.locator('.quiet-hours-switch').click();
   await page.fill('#quiet-from', '23:00');
   await page.fill('#quiet-to', '07:15');
   await page.selectOption('#in-app-sound', 'pop');
@@ -644,6 +646,7 @@ async function openSlow(path) {
   await page.fill('#question-answer', 'moon answer too');
   await page.click('#question-save');
   await page.waitForTimeout(150);
+  await page.click('#question-reveal');
   const bothAnswers = await page.locator('#question-answers').innerText();
   await page.click('#question-edit');
   await page.fill('#question-answer', 'moon answer edited');
@@ -831,6 +834,7 @@ async function openSlow(path) {
   await page.selectOption('#date-duration', 'day');
   await page.click('#date-submit');
   const detailsReset = !await page.locator('#date-more-details').evaluate(element => element.open);
+  await page.click('#date-filter-toggle');
   await page.click('[data-filter-vibe="go out"]');
   await page.click('[data-filter-cost="treat"]');
   await page.click('#pick-random');
@@ -900,7 +904,7 @@ async function openSlow(path) {
 // Energy, arrival presets and partner-status reactions share the same status screen.
 {
   const { context, page, errors } = await open('status.html?as=her');
-  await page.click('details.status-editor summary');
+  await page.locator('.person-status-card.is-me').click({ position:{ x:65, y:25 } });
   await page.click('[data-energy="need company"]');
   const chipFilled=await page.locator('#status-text').inputValue()==='need company';
   await page.click('#status-emoji-pick');
@@ -921,8 +925,9 @@ async function openSlow(path) {
   await page.click('[data-react-status="him"][data-emoji="❤️"]');
   await page.waitForTimeout(200);
   const undone=await page.locator('[data-react-status="him"][data-emoji="❤️"]').count()===0;
-  await page.goto(`${BASE}/today.html?as=her#new`);
-  const arrivalFeed=await page.locator('.activity-row', {hasText:'almost there'}).filter({hasText:'are on the way'}).count();
+  await page.goto(`${BASE}/today.html?as=him#new`);
+  await page.waitForTimeout(900);
+  const arrivalFeed=await page.locator('.activity-row', {hasText:'almost there'}).filter({hasText:'is on the way'}).count();
   note(ready === 1 && chipFilled && chosenEmoji === '🪐' && visibleReaction === 1 && undone && arrivalFeed === 1 && errors.length === 0, 'status quick words, arrival feed, emoji and reactions work together', errors[0] || `arrival feed ${arrivalFeed}`);
   await context.close();
 }
@@ -975,8 +980,7 @@ async function openSlow(path) {
   const { context, page, errors } = await open('profiles.html');
   await page.fill('#sun-name', '<img src=x onerror=alert(1)>');
   await page.fill('#moon-name', 'Milo');
-  await page.click('#profile-save');
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(1050);
   await page.goto(`${BASE}/location.html?as=her`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1100);
   const injected = await page.evaluate(() => document.querySelectorAll('#last-known-row img').length);
@@ -1013,11 +1017,12 @@ async function openSlow(path) {
 {
   // What's new lives at the bottom of Today now.
   const { context, page, errors } = await open('today.html?as=her');
-  await page.setViewportSize({ width: 390, height: 500 });
+  await page.setViewportSize({ width: 390, height: 320 });
   await page.evaluate(() => localStorage.setItem('our-little-list-notes-v1', JSON.stringify({ items: [
     { id: 'n1', sender: 'him', recipient: 'her', body: 'a note to delete', mood: 'heart', createdAt: Date.now() }
   ] })));
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(1300);
   const rows = await page.locator('.activity-row').count();
   const readNow = () => page.evaluate(() => {
@@ -1064,8 +1069,7 @@ async function openSlow(path) {
   });
   await page.waitForTimeout(200);
   const mid = await page.evaluate(() => ({ sun: document.getElementById('sun-name').value, moon: document.getElementById('moon-name').value }));
-  await page.click('#profile-save');
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(1050);
   const saved = await page.evaluate(() => {
     try { return JSON.parse(localStorage.getItem('our-little-list-profiles-v1')).items[0]; } catch (_) { return {}; }
   });
@@ -1261,6 +1265,47 @@ async function openSlow(path) {
   const revealed = await row.count() === 1 && await row.evaluate(node => node.classList.contains('is-deep-linked'));
   note(grocerySelected && revealed && errors.length === 0,
     'a grocery link chooses the grocery tab and highlights the item', errors[0] || JSON.stringify({grocerySelected,revealed}));
+  await context.close();
+}
+
+// The things shown on Home and Today are actionable there, not extra doors
+// into List. Notes likewise has a real composer on its own page.
+{
+  const { context, page, errors } = await open('her.html');
+  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());await data.setTo('items','home-due',{title:'pay the electric bill',type:'task',due:today,done:false,addedBy:'him',createdAt:Date.now()});await data.setTo('help','home-ask',{from:'him',to:'her',title:'bring the charger',state:'open',createdAt:Date.now()});});
+  await page.locator('#home-next-up [data-inline-kind="item"] [data-inline-action="finish"]').click();
+  await page.locator('#home-next-up [data-inline-kind="ask"] [data-inline-action="on-it"]').click();
+  const result=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return {item:(await data.readOnce('items')).find(i=>i.id==='home-due'),ask:(await data.readOnce('help')).find(i=>i.id==='home-ask')};});
+  note(result.item?.done===true&&result.ask?.state==='on-it'&&errors.length===0,'Home finishes a task and answers an ask in place',errors[0]||JSON.stringify(result));
+  await context.close();
+}
+{
+  const { context, page, errors } = await open('today.html?as=her');
+  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());await data.setTo('items','today-due',{title:'water the plant',type:'task',due:today,done:false,addedBy:'her',createdAt:Date.now()});await data.setTo('help','today-ask',{from:'him',to:'her',title:'grab the keys',state:'open',createdAt:Date.now()});});
+  await page.locator('#today-list [data-inline-kind="item"] [data-inline-action="finish"]').click();
+  await page.locator('#today-list [data-inline-kind="ask"] [data-inline-action="later"]').click();
+  const result=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return {item:(await data.readOnce('items')).find(i=>i.id==='today-due'),ask:(await data.readOnce('help')).find(i=>i.id==='today-ask')};});
+  note(result.item?.done===true&&result.ask?.state==='later'&&errors.length===0,'Today finishes a task and answers an ask in place',errors[0]||JSON.stringify(result));
+  await context.close();
+}
+{
+  const { context, page, errors } = await open('notes.html?from=him');
+  await page.fill('#note-quick-text','a small moon dispatch');
+  await page.click('#note-quick-send');
+  await page.waitForTimeout(220);
+  const sent=await page.locator('.note-thread-row',{hasText:'a small moon dispatch'}).count();
+  const pinned=await page.locator('#note-quick-form').evaluate(node=>{const rect=node.getBoundingClientRect();return rect.bottom<innerHeight-65&&rect.bottom>innerHeight-180;});
+  note(sent===1&&pinned&&errors.length===0,'Notes sends from its bottom writing bar',errors[0]||JSON.stringify({sent,pinned}));
+  await context.close();
+}
+{
+  const { context, page, errors } = await open('status.html?as=him');
+  const first=await page.locator('#status-pair .person-status-card').first().evaluate(node=>node.classList.contains('is-me'));
+  const mapHidden=!await page.locator('#couple-map').isVisible();
+  await page.locator('#status-pair .person-status-card.is-me').click({position:{x:65,y:25}});
+  const editorOpen=await page.locator('.status-editor-disclosure').evaluate(node=>node.open);
+  const spotsMoved=await page.locator('#saved-places').count()===0;
+  note(first&&mapHidden&&editorOpen&&spotsMoved&&errors.length===0,'Right now starts with your editable card and hides an empty map',errors[0]||JSON.stringify({first,mapHidden,editorOpen,spotsMoved}));
   await context.close();
 }
 

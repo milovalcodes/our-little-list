@@ -15,6 +15,7 @@ let editingTaskId = '';
 let recentGroceryOptions = [];
 
 const { data, viewer, other } = await bootPage();
+byId('task-list-card').querySelector('.list-heading').after(byId('recent-groceries'));
 initHelpPanel({ data, viewer, other, openGroceries: () => { selectTab('grocery', true); byId('page-add').click(); byId('shared-task-title').focus(); } });
 
 data.listenTo('items', nextItems => {
@@ -261,13 +262,13 @@ function selectTab(next, updateHash = false) {
 function taskMarkup(item) {
   const doneClass = item.done ? ' done' : '';
   const check = item.done ? '✓' : '';
-  const due = item.due ? prettyDue(item.due) : 'whenever';
-  const addedBy = escapeHtml(personName(item.addedBy === 'her' ? 'her' : 'him'));
-  const finished = item.doneBy ? `<span>done by ${escapeHtml(personName(item.doneBy))}</span>` : '';
+  const due = item.due ? `<span>${escapeHtml(prettyDue(item.due))}</span>` : '';
+  const addedBy = item.addedBy===other ? `<span>from ${escapeHtml(personName(other))}</span>` : '';
+  const finished = item.doneBy===other ? `<span>done by ${escapeHtml(personName(other))}</span>` : '';
   const repeat=item.recurrence&&item.recurrence!=='once'?`<span>↻ ${escapeHtml(item.recurrence)}</span>`:'';
   const rolledBack=item.recurrence&&item.recurrence!=='once'&&item.lastDoneAt&&Date.now()-Number(item.lastDoneAt)<10*60000
     ?'<button class="readd-task" data-action="undo-roll" type="button">undo</button>':'';
-  const aisle=item.type==='grocery'&&item.aisle?`<span>${escapeHtml(item.aisle)}</span>`:'';
+  const aisle=item.type==='grocery'&&item.aisle&&tab!=='grocery'?`<span>${escapeHtml(item.aisle)}</span>`:'';
   const title = editingTaskId === item.id ? `<form class="inline-edit" data-edit-task="${escapeHtml(item.id)}">
     <input name="title" aria-label="Task title" maxlength="180" required value="${escapeHtml(item.title)}">
     ${item.type === 'grocery'
@@ -277,7 +278,7 @@ function taskMarkup(item) {
   </form>` : `<button class="task-title" data-action="edit" type="button" aria-label="Edit ${escapeHtml(item.title)}">${escapeHtml(item.title)}</button>`;
   return `<li class="task-row${doneClass}" data-id="${escapeHtml(item.id)}">
     <button class="task-check" data-action="toggle" aria-label="Mark ${escapeHtml(item.title)} ${item.done ? 'not done' : 'done'}">${check}</button>
-    <div>${title}<div class="task-meta"><span>${escapeHtml(due)}</span>${aisle}${repeat}<span>added by ${addedBy}</span>${finished}</div>${item.done&&item.type==='grocery'?'<button class="readd-task" data-action="readd" type="button">put back</button>':''}${rolledBack}</div>
+    <div>${title}${due||aisle||repeat||addedBy||finished?`<div class="task-meta">${due}${aisle}${repeat}${addedBy}${finished}</div>`:''}${item.done&&item.type==='grocery'?'<button class="readd-task" data-action="readd" type="button">put back</button>':''}${rolledBack}</div>
     <button class="delete-task" data-action="delete" aria-label="Delete ${escapeHtml(item.title)}">×</button>
   </li>`;
 }

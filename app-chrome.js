@@ -88,7 +88,7 @@ function addDock(viewer) {
     <a class="dock-item${active('home')}" href="${viewer}.html"><i>⌂</i><span>home</span></a>
     <a class="dock-item${active('tasks')}" href="tasks.html"><i>✓</i><span>list</span></a>
     <button class="dock-add" type="button" data-open-sheet="quick" aria-label="Add something"><i>＋</i><span>add</span></button>
-    <a class="dock-item${active('notes')}" href="notes.html"><i>💌</i><span>notes</span></a>
+    <a class="dock-item${active('notes')}" href="notes.html"><i>✉</i><span>notes</span></a>
     <button class="dock-item" type="button" data-open-sheet="more"><i>•••</i><span>more</span></button>
   </nav>`);
   document.body.classList.add('has-app-dock');

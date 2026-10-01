@@ -7,6 +7,11 @@ import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 const $=id=>document.getElementById(id);let ideas=[];let vibe='go out';let viewLimit=8;let editingDateId='';
 
 const { data, viewer, other } = await bootPage();
+document.querySelector('.date-list-card').after(document.querySelector('.date-roulette'));
+const rouletteFiltersNode=document.querySelector('.roulette-filters');rouletteFiltersNode.hidden=true;
+document.querySelector('.roulette-head').insertAdjacentHTML('beforeend','<button id="date-filter-toggle" type="button" aria-expanded="false">filters</button>');
+document.getElementById('date-filter-toggle').addEventListener('click',event=>{rouletteFiltersNode.hidden=!rouletteFiltersNode.hidden;event.currentTarget.setAttribute('aria-expanded',String(!rouletteFiltersNode.hidden));});
+document.getElementById('random-date').hidden=true;
 
 data.listenTo('dates',items=>{
   const flag=value=>value?1:0;
@@ -19,7 +24,7 @@ $('date-form').addEventListener('submit',async event=>{event.preventDefault();co
 const rouletteFilters={vibe:'any',cost:'any'};
 let chosenDateIdea = null;
 document.querySelector('.roulette-filters').addEventListener('click',event=>{const button=event.target.closest('[data-filter-vibe],[data-filter-cost]');if(!button)return;const key=button.hasAttribute('data-filter-vibe')?'vibe':'cost';rouletteFilters[key]=button.dataset[`filter${key[0].toUpperCase()}${key.slice(1)}`];button.parentElement.querySelectorAll('button').forEach(item=>{const active=item===button;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active));});});
-$('pick-random').addEventListener('click',event=>{const chosen=Object.entries(rouletteFilters).filter(([,value])=>value!=='any');
+$('pick-random').addEventListener('click',event=>{$('random-date').hidden=false;const chosen=Object.entries(rouletteFilters).filter(([,value])=>value!=='any');
 // Old imported dates have a vibe but no budget. Prefer exact matches; let an
 // untagged budget act as a fallback rather than making those ideas disappear.
 const compatible=ideas.filter(idea=>!idea.done&&chosen.every(([key,value])=>!idea[key]||idea[key]===value));
@@ -56,6 +61,7 @@ async function toggleDone(idea){
 }
 $('date-list').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const idea=ideas.find(item=>item.id===button.closest('[data-id]')?.dataset.id);if(!idea)return;
   if(button.dataset.action==='edit'){editingDateId=idea.id;render();$('date-list').querySelector('[data-edit-date] [name="title"]')?.focus();return;}
+  if(button.dataset.action==='more'){const menu=button.parentElement.querySelector('.date-menu');menu.hidden=!menu.hidden;return;}
   if(button.dataset.action==='cancel-edit'){editingDateId='';render();return;}
   if(button.dataset.action==='delete'){deleteWithUndo(data,'dates',idea.id,{label:`deleted “${String(idea.title||'').slice(0,28)}”`,onChange:render});return;}
   button.disabled=true;try{if(button.dataset.action==='favorite')await data.updateIn('dates',idea.id,{favorite:!idea.favorite});else if(button.dataset.action==='complete'){await toggleDone(idea);}}catch(_){showFailure('that edit did not stick.','check the internet and tap it again.');button.disabled=false;}
@@ -93,6 +99,6 @@ function dateCardMarkup(idea){
     <select name="vibe" aria-label="Vibe">${['go out','stay in','food','little trip'].map(value=>`<option value="${value}"${idea.vibe===value?' selected':''}>${value}</option>`).join('')}</select>
     <div class="inline-edit-actions"><button type="submit">save</button><button type="button" data-action="cancel-edit">cancel</button></div>
   </form>`:`<h3><button class="date-title-button" type="button" data-action="edit" aria-label="Edit ${escapeHtml(idea.title)}">${escapeHtml(idea.title)}</button></h3>`;
-  return `<article class="date-idea-card${idea.favorite?' favorite':''}${idea.done?' done':''}" data-id="${escapeHtml(idea.id)}"><div class="date-idea-top"><span>${escapeHtml(idea.vibe||'idea')}</span><div class="date-actions"><button data-action="favorite" aria-label="${idea.favorite?'Unfavorite':'Favorite'}">${idea.favorite?'★':'☆'}</button><button data-action="delete" aria-label="Delete">×</button></div></div>${title}${!editing&&idea.note?`<p>${escapeHtml(idea.note)}</p>`:''}<div class="date-tags">${[idea.cost,idea.energy,idea.weather,idea.distance,idea.duration].filter(Boolean).map(value=>`<span>${escapeHtml(value)}</span>`).join('')}</div><div class="date-idea-foot"><small>added by ${escapeHtml(personName(idea.addedBy))}</small><button class="date-done-toggle" data-action="complete" type="button">${idea.done?'undo':'did it ✓'}</button></div>${idea.done?'<span class="date-complete-badge">we did this</span>':''}</article>`;
+  return `<article class="date-idea-card${idea.favorite?' favorite':''}${idea.done?' done':''}" data-id="${escapeHtml(idea.id)}"><div class="date-idea-top"><span>${escapeHtml(idea.vibe||'idea')}</span><div class="date-actions"><button data-action="favorite" aria-label="${idea.favorite?'Unfavorite':'Favorite'}">${idea.favorite?'★':'☆'}</button><button data-action="more" aria-label="More options">⋯</button><div class="date-menu" hidden><button data-action="delete" type="button">delete idea</button></div></div></div>${title}${!editing&&idea.note?`<p>${escapeHtml(idea.note)}</p>`:''}<div class="date-tags">${[idea.cost,idea.energy,idea.weather,idea.distance,idea.duration].filter(Boolean).map(value=>`<span>${escapeHtml(value)}</span>`).join('')}</div><div class="date-idea-foot">${idea.addedBy===other?`<small>from ${escapeHtml(personName(other))}</small>`:''}<button class="date-done-toggle" data-action="complete" type="button">${idea.done?'undo':'did it ✓'}</button></div>${idea.done?'<span class="date-complete-badge">we did this</span>':''}</article>`;
 }
 window.addEventListener('littlelist:profile',render);
