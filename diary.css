@@ -1,0 +1,144 @@
+/* The shared diary layer. Keep layout and component decisions here; the two
+   themes only swap inks, paper, and accent colors. styles.css holds legacy
+   feature-specific rules and the original character art. */
+.profile-page {
+  --diary-radius: 22px;
+  --diary-small-radius: 14px;
+  --diary-gap: 10px;
+  --diary-shadow: 0 7px 24px rgba(77, 51, 31, .07);
+  --diary-rule: rgba(116, 76, 43, .16);
+  --diary-panel: rgba(255, 251, 235, .94);
+  --diary-raised: #fff7dc;
+  --diary-pressed-ink: #fff9e8;
+  --page-card: var(--diary-panel);
+  --page-border: var(--diary-rule);
+  --page-shadow: var(--diary-shadow);
+}
+.him-theme {
+  --diary-shadow: 0 8px 26px rgba(3, 9, 29, .17);
+  --diary-rule: rgba(209, 203, 247, .18);
+  --diary-panel: rgba(23, 36, 70, .95);
+  --diary-raised: #273960;
+  --diary-pressed-ink: #17264a;
+  --page-muted: #c8d0e5;
+  --page-card: var(--diary-panel);
+  --page-border: var(--diary-rule);
+  --page-shadow: var(--diary-shadow);
+}
+
+/* One small heading, one surface rhythm, and no second masthead on features. */
+.profile-page[data-app] .app-topbar { max-width:760px; margin-bottom:0; border-bottom:1px solid var(--diary-rule); }
+.profile-page[data-app] .app-topbar .mini-brand { display:none; }
+.profile-page .dock-item span,.profile-page .dock-add span { font-size:.69rem; }
+.feature-shell { width:min(740px,calc(100% - 24px)); }
+.feature-shell > .feature-hero,
+.feature-shell > .feature-hero:not(.now-hero) {
+  min-height:64px;
+  margin:0 0 2px;
+  padding:10px 2px;
+  border:0;
+  border-bottom:1px solid var(--diary-rule);
+  border-radius:0;
+  background:none;
+  box-shadow:none;
+  backdrop-filter:none;
+  text-align:left;
+}
+.feature-shell > .feature-hero .tiny-kicker { display:none; }
+.feature-shell > .feature-hero h1,
+.feature-shell > .feature-hero:not(.now-hero) h1 { font-size:clamp(1.65rem,5vw,2rem); line-height:1.05; letter-spacing:-.025em; }
+.feature-shell > .feature-hero .feature-icon,
+.feature-shell > .feature-hero:not(.now-hero) .feature-icon {
+  width:42px; height:42px; flex-basis:42px; margin:0; border:1px solid var(--diary-rule);
+  border-radius:var(--diary-small-radius); box-shadow:none; transform:rotate(-2deg);
+}
+.feature-shell > .feature-hero.now-hero { display:flex; align-items:center; gap:12px; }
+.feature-shell > .feature-hero.today-hero { padding-right:106px; }
+.feature-shell > :is(.list-card,.composer-card,.note-maker,.today-card,.activity-card,.status-card,.notification-settings-card,.profile-setup-card,.random-date-card,.now-location-card,.home-next-up) {
+  margin-top:var(--diary-gap); border:1px solid var(--diary-rule); border-radius:var(--diary-radius);
+  background:var(--diary-panel); box-shadow:var(--diary-shadow); backdrop-filter:none;
+}
+.dashboard-shell > :is(.our-sky,.home-next-up) { border:1px solid var(--diary-rule); border-radius:var(--diary-radius); box-shadow:var(--diary-shadow); }
+.him-theme .setup-nudge a { color:#19264a; }
+.feature-shell :is(.list-heading,.composer-heading,.activity-heading,.settings-heading) h2 {
+  color:var(--page-text); font-size:1.3rem; line-height:1.15; letter-spacing:-.015em;
+}
+.feature-shell :is(.list-heading,.composer-heading,.activity-heading,.settings-heading) .tiny-kicker { margin-bottom:3px; }
+.feature-shell :is(.task-row,.note-thread-row,.activity-row,.date-idea-card,.today-row,.focus-person,.memory-card) {
+  border:1px solid var(--diary-rule); border-radius:var(--diary-small-radius);
+  background:var(--diary-raised); box-shadow:none;
+}
+.him-theme .feature-shell :is(.task-row,.note-thread-row,.activity-row,.date-idea-card,.today-row,.focus-person,.memory-card) {
+  background:var(--diary-raised);
+}
+.feature-shell .empty-state { padding:22px 10px; color:var(--page-muted); }
+.feature-shell .empty-state strong { color:var(--page-muted); font-size:.93rem; font-weight:750; }
+.feature-shell .empty-state > span { color:var(--accent-deep); }
+.now-status-pair .status-blank { display:none; }
+
+/* Common controls. The moon's lavender button needs dark lettering. */
+.profile-page :is(.page-add,.tiny-button,.small-action,.create-space,.recenter-map,.now-location-action,.topbar-search,.activity-see-all) {
+  min-height:44px; border:1px solid var(--diary-rule); border-radius:var(--diary-small-radius);
+  color:var(--accent-deep); background:var(--accent-pale); box-shadow:none; font-size:.85rem;
+}
+.feature-shell .page-add { margin:0; }
+.feature-shell > .page-add { margin:9px 0 0 auto; }
+.profile-page :is(.primary-action,.random-date-card button#pick-random) {
+  min-height:48px; border:0; border-radius:var(--diary-small-radius);
+  color:#fff9ec; background:#84512a; box-shadow:none; font-size:.92rem;
+}
+.him-theme :is(.primary-action,.random-date-card button#pick-random) { color:#19264a; background:#d1b9fa; }
+.profile-page :is(.tab,.soft-chip,.choice,.note-starters button,.status-choice,.energy-choice,.repeat-chip,.roulette-chip-group button,.quick-kind button) {
+  min-height:44px; border:1px solid var(--diary-rule); border-radius:999px;
+  background:var(--accent-pale); color:var(--page-text); box-shadow:none; font-size:.82rem;
+}
+.profile-page :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active) {
+  border-color:transparent; color:var(--diary-pressed-ink); background:#84512a; box-shadow:none;
+}
+.him-theme :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active) { background:#d1b9fa; }
+.profile-page .random-date-card.date-roulette .roulette-chip-group button.active { color:#fff9ec; background:#84512a; border-color:#84512a; }
+.him-theme .random-date-card.date-roulette .roulette-chip-group button.active { color:#19264a; background:#d1b9fa; border-color:#d1b9fa; }
+.profile-page .tabs { padding:8px 0 0; gap:7px; mask-image:none; }
+.profile-page :is(input,select,textarea) { border-color:var(--diary-rule); border-radius:var(--diary-small-radius); }
+.feature-shell :is(.task-meta,.date-idea-card small,.note-thread-row small,.status-presence,.today-row small,.memory-card small) {
+  color:var(--page-muted); font-size:.78rem; line-height:1.35;
+}
+.profile-page :is(.row-more,.sheet-head>button,.emoji-picker-close,.memory-delete,.date-actions button) {
+  min-width:44px; min-height:44px; border-radius:var(--diary-small-radius);
+}
+.profile-page .app-sheet { border-color:var(--diary-rule); border-radius:28px 28px 0 0; background:var(--diary-panel); }
+
+/* Forms live in one sheet pattern. Notes and memories now open like list/date add. */
+.page-compose-sheet:is(.note-maker,.memory-composer) {
+  margin:0; border-radius:28px 28px 0 0; background:var(--diary-panel);
+  box-shadow:0 -18px 60px rgba(8, 15, 34, .25);
+}
+.page-compose-sheet .maker-question { margin:8px 0; font-size:.9rem; }
+.page-compose-sheet .note-starters { gap:7px; margin-bottom:12px; }
+.page-compose-sheet .note-maker textarea,
+.page-compose-sheet textarea { font-size:16px; }
+.page-compose-sheet .roomy-action { margin-top:10px; }
+.note-mood-row label { min-width:48px; min-height:44px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--diary-rule); }
+.note-mood-row label { position:relative; font-size:1.05rem; }
+.note-mood-row input { position:absolute; width:1px; height:1px; min-height:0; margin:0; opacity:0; }
+.note-mood-row label:has(input:checked) { outline:2px solid var(--accent-deep); outline-offset:1px; }
+.note-mood-row label:has(input:focus-visible) { outline:3px solid var(--accent-deep); outline-offset:3px; }
+.diary-heading-actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:7px; width:100%; }
+.note-inbox-card .list-heading,.memory-list-card .list-heading { justify-content:flex-end; }
+.memory-list-card .memory-grid { margin-top:10px; }
+.note-inbox-card .note-inbox-list { margin-top:10px; }
+.note-inbox-card .empty-state,.memory-list-card .empty-state { padding:28px 10px; }
+
+/* A little movement is enough; the OS reduced-motion setting still wins. */
+.profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.dock-add,.primary-action) { transition:transform .16s ease,background-color .16s ease; }
+.profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.dock-add,.primary-action):active { transform:scale(.97); }
+@media (max-width:520px) {
+  .feature-shell { width:calc(100% - 20px); }
+  .feature-shell > .feature-hero,.feature-shell > .feature-hero:not(.now-hero) { min-height:62px; padding:9px 2px; }
+  .feature-shell > .feature-hero h1,.feature-shell > .feature-hero:not(.now-hero) h1 { font-size:1.7rem; }
+  .feature-shell > :is(.list-card,.composer-card,.note-maker,.today-card,.activity-card,.status-card,.notification-settings-card,.profile-setup-card,.random-date-card,.now-location-card) { padding:15px; }
+  .feature-shell .note-thread-row { margin-left:0; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.dock-add,.primary-action) { transition:none; }
+}

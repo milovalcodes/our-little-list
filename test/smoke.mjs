@@ -178,22 +178,24 @@ async function openSlow(path) {
 
 {
   const { context, page } = await open('memories.html?as=her');
-  await page.click('#memory-empty .empty-action');
+  const duplicateMemoryButton = await page.locator('#memory-empty .empty-action').count();
+  await openSheet(page, 'memory-form');
   await page.waitForTimeout(400);
-  const quickOpen = await page.locator('#sheet-quick').isVisible();
+  const memorySheet = await page.locator('#sheet-memory-form').isVisible();
   const focused = await page.evaluate(() => document.activeElement?.id || '');
-  // (The date pile always has the imported ideas in it, so notes stands in.)
+  // Empty states stay quiet; the page-level add button opens its own sheet.
   const notes = await open('notes.html?from=her');
-  await notes.page.click('#note-inbox-empty .empty-action');
+  const duplicateNoteButton = await notes.page.locator('#note-inbox-empty .empty-action').count();
+  await openSheet(notes.page, 'note-form');
   await notes.page.waitForTimeout(400);
   const noteFocus = await notes.page.evaluate(() => document.activeElement?.id || '');
-  const noteSheet = await notes.page.locator('#sheet-quick').isVisible();
+  const noteSheet = await notes.page.locator('#sheet-note-form').isVisible();
   // "Nothing new" is news, not a form: it should not offer to add a to-do.
   const today = await open('today.html?as=her');
   await today.page.waitForTimeout(500);
   const feedButtons = await today.page.locator('#activity-empty .empty-action').count();
-  note(!quickOpen && focused === 'memory-text' && noteFocus === 'note-body' && !noteSheet && feedButtons === 0,
-       'an empty page offers to add the thing that page is for', JSON.stringify({ quickOpen, focused, noteFocus, noteSheet, feedButtons }));
+  note(memorySheet && noteSheet && focused === 'memory-text' && noteFocus === 'note-body' && !duplicateMemoryButton && !duplicateNoteButton && feedButtons === 0,
+       'empty pages use one add button and the right sheet', JSON.stringify({ memorySheet, focused, noteFocus, noteSheet, duplicateMemoryButton, duplicateNoteButton, feedButtons }));
   await today.context.close();
   await notes.context.close();
   await context.close();
@@ -406,6 +408,7 @@ async function openSlow(path) {
 
 {
   const { context, page, errors } = await open('notes.html?from=her');
+  await openSheet(page, 'note-form');
   await page.fill('#note-body', 'the small moon report');
   await page.click('#note-submit');
   await page.waitForTimeout(300);
@@ -707,11 +710,13 @@ async function openSlow(path) {
 // Text-only memories work everywhere; photos are optional.
 {
   const { context, page, errors } = await open('memories.html?as=her');
+  await openSheet(page, 'memory-form');
   await page.fill('#memory-text', 'the tiny mug incident');
   await page.click('#memory-save');
   await page.waitForTimeout(300);
   note(await page.locator('.memory-card', { hasText: 'the tiny mug incident' }).count() === 1 && errors.length === 0,
        'memory jar saves a moment', errors[0] || '');
+  await openSheet(page, 'memory-form');
   await page.fill('#memory-text', 'sunny afternoon');
   await page.setInputFiles('#memory-photo', {
     name: 'sun.png', mimeType: 'image/png', buffer: readFileSync(new URL('../sun-profile.png', import.meta.url))
@@ -1132,6 +1137,7 @@ async function openSlow(path) {
 }
 {
   const { context, page, errors } = await open('notes.html?from=her');
+  await openSheet(page, 'note-form');
   await page.fill('#note-body', 'notification target test');
   await page.click('#note-submit');
   await page.waitForTimeout(180);

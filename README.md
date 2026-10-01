@@ -148,6 +148,8 @@ whether permission was granted.
 ## Making small changes
 
 1. Run `pnpm install` once, then edit the files.
+   Shared diary colors, spacing, cards and controls are in `diary.css`; keep
+   feature behavior in its existing page files.
 2. Bump `CACHE` in `service-worker.js` whenever a cached file changes. Do not
    cache-bust with `?v=2` instead: the worker precaches the bare path, so a
    query string means that file is never served from the cache at all.
@@ -167,6 +169,7 @@ real flows and fails on any script error or sideways scroll:
 pnpm exec playwright install chromium
 python3 -m http.server 8777     # from a copy with apiKey set to REPLACE_ME
 pnpm run test:browser
+pnpm run test:visual     # screenshots both sides in your temp folder, checks 390px and 320px
 ```
 
 `.github/workflows/checks.yml` runs the unit and browser passes, plus static

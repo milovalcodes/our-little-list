@@ -64,6 +64,7 @@ $('memory-form').addEventListener('submit', async event => {
     photoPending = Promise.resolve();
     $('photo-name').textContent = '';
     toast('secured for the historians');
+    document.querySelector('#sheet-memory-form [data-close-sheet]')?.click();
   } catch (_) {
     showFailure('the jar did not take it.', 'check the internet and try again.');
   } finally { setButtonBusy(button, false); }

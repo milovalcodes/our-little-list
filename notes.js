@@ -24,6 +24,7 @@ $('note-form').addEventListener('submit',async event=>{
   try{
     const {delivery}=await sendNote(data,{viewer:sender,other:recipient,body,mood});
     event.target.reset();$('note-send-state').hidden=false;$('note-send-state').textContent=delivery.queued?`sent with a ${moods[mood]}`:`saved for ${personName(recipient)}.`;toast('sent 💌');
+    document.querySelector('#sheet-note-form [data-close-sheet]')?.click();
   }catch(_){showFailure('the note did not send.','check the internet and try again. The note is still here.');}
   finally{setButtonBusy(submit,false);}
 });
@@ -75,5 +76,5 @@ function renderNotes() {
 }
 
 function markIncomingRead(){notes.filter(note=>(note.recipient===sender||note.to===sender)&&!note.read&&!markedRead.has(note.id)).forEach(note=>{markedRead.add(note.id);void data.updateIn('notes',note.id,{read:true,readAt:Date.now()}).catch(()=>markedRead.delete(note.id));});}
-function setNames(){document.getElementById('note-heading').textContent=`Send ${personName(recipient)} a note`;}
+function setNames(){document.getElementById('note-page-add').setAttribute('aria-label',`Send ${personName(recipient)} a note`);}
 window.addEventListener('littlelist:profile',()=>{setNames();renderNotes();});

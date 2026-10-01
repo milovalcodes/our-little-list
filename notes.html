@@ -3,12 +3,18 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
   <title>A Tiny Note</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="diary.css">
 </head>
 <body class="profile-page" data-app="notes">
   <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">notes 💌</span></header>
   <main class="app-shell feature-shell note-shell">
-    <section class="feature-hero note-hero"><span class="feature-icon">💌</span><p class="tiny-kicker">just because</p><h1 id="note-heading">Send a note</h1></section>
-    <section class="note-maker">
+    <section class="feature-hero note-hero"><span class="feature-icon">💌</span><p class="tiny-kicker">just because</p><h1 id="note-heading">Notes</h1></section>
+    <section class="list-card note-inbox-card" aria-label="Our notes">
+      <div class="list-heading"><button class="page-add" id="note-page-add" type="button" data-open-sheet="note-form">＋ add</button></div>
+      <div class="empty-state" id="note-inbox-empty"><span>◌</span><strong>No notes yet</strong></div>
+      <div class="note-inbox-list" id="note-inbox-list"></div>
+    </section>
+    <section class="note-maker" hidden>
       <p class="maker-question">pick one</p>
       <div class="note-starters" id="note-starters">
         <button type="button">thinking of u ♡</button><button type="button">proud of u</button><button type="button">miss ur face</button><button type="button">drink water pls</button><button type="button">hurry up i miss u</button>
@@ -20,11 +26,6 @@
         <button class="primary-action roomy-action" id="note-submit" type="submit">send it</button>
       </form>
       <p class="inline-success" id="note-send-state" hidden></p>
-    </section>
-    <section class="list-card note-inbox-card">
-      <div class="list-heading"><div><p class="tiny-kicker">between us</p><h2>Our notes</h2></div><span>💌</span></div>
-      <div class="empty-state" id="note-inbox-empty"><span>◌</span><strong>No notes yet</strong></div>
-      <div class="note-inbox-list" id="note-inbox-list"></div>
     </section>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="notes.js"></script><script type="module" src="live-notes.js"></script>

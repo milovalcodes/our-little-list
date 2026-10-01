@@ -52,7 +52,6 @@ async function boot() {
   if (topbar && !topbar.querySelector('[data-open-sheet="search"]')) {
     topbar.insertAdjacentHTML('beforeend', '<button class="topbar-search" type="button" data-open-sheet="search" aria-label="Search">⌕</button>');
   }
-  improveEmptyStates(openQuick);
   setupUpdateCheck();
 }
 
@@ -76,6 +75,8 @@ function movePageComposers() {
   }
   if (page === 'dates') move('.date-composer', 'sheet-date-form', 'Add a date idea');
   if (page === 'today') move('.focus-card', 'sheet-focus', 'Focus together');
+  if (page === 'notes') move('.note-maker', 'sheet-note-form', 'Send a note');
+  if (page === 'memories') move('.memory-composer', 'sheet-memory-form', 'Add a memory');
 }
 
 function addDock(viewer) {
@@ -136,8 +137,8 @@ function openSheet(name) {
   window.littleHaptic?.('tap');
   requestAnimationFrame(() => sheet.classList.add('is-open'));
   document.dispatchEvent(new CustomEvent('littlelist:sheet-open', { detail: { name } }));
-  if (name === 'search') window.setTimeout(() => document.getElementById('global-search')?.focus(), 220);
-  if (name === 'quick') window.setTimeout(() => document.getElementById('quick-text')?.focus(), 220);
+  const firstField = { search:'global-search', quick:'quick-text', 'task-form':'shared-task-title', 'ask-form':'help-title', 'date-form':'date-title', 'note-form':'note-body', 'memory-form':'memory-text' }[name];
+  if (firstField) window.setTimeout(() => document.getElementById(firstField)?.focus(), 220);
 }
 
 function closeSheets(animate = true) {
@@ -552,30 +553,6 @@ async function showVersion() {
       .filter(Number.isFinite);
     if (shells.length) document.getElementById('app-version').textContent = `app version ${Math.max(...shells)}`;
   } catch (_) { /* no cache access: leave the plain label */ }
-}
-
-// What an empty page's button should start: the page's own form when it has
-// one (it is right there), quick add only on Today. "Nothing new" in the feed
-// gets no button at all: adding a to-do is not how news arrives.
-const EMPTY_COMPOSER = { tasks: 'shared-task-title', notes: 'note-body', dates: 'date-title', memories: 'memory-text' };
-const EMPTY_QUICK = { today: 'task' };
-const EMPTY_SKIP = new Set(['activity-empty']);
-
-function improveEmptyStates(openQuick) {
-  const composer = EMPTY_COMPOSER[page] ? document.getElementById(EMPTY_COMPOSER[page]) : null;
-  const kind = EMPTY_QUICK[page];
-  if (!composer && !kind) return;
-  document.querySelectorAll('.empty-state').forEach(empty => {
-    if (EMPTY_SKIP.has(empty.id) || empty.querySelector('button,a')) return;
-    const button = document.createElement('button');
-    button.type = 'button'; button.className = 'empty-action'; button.textContent = 'add one';
-    button.id = `${empty.id || 'empty'}-action`;
-    button.addEventListener('click', () => {
-      if (composer) { composer.scrollIntoView({ block: 'center', behavior: 'smooth' }); composer.focus({ preventScroll: true }); }
-      else openQuick(kind);
-    });
-    empty.append(button);
-  });
 }
 
 function markReturningVisit() {
