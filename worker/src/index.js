@@ -49,7 +49,12 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
   try {
 
     const now = Date.now();
-    if (scheduleQuestions) await ensureQuestionOfDay(db, household, now);
+    // The daily question is a nicety; a failure there (a 5xx, or rules not
+    // deployed yet) must not stop reminders, asks and notes going out.
+    if (scheduleQuestions) {
+      try { await ensureQuestionOfDay(db, household, now); }
+      catch (problem) { console.error(`daily question skipped: ${problem?.message || problem}`); }
+    }
 
     const subscriptions = {};
     for (const record of await db.list(`${household}/pushSubs`)) {
