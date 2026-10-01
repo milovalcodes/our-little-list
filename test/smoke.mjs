@@ -77,7 +77,9 @@ async function open(path) {
 }
 
 async function openSheet(page, name) {
-  await page.locator(`[data-open-sheet="${name}"]`).first().click();
+  const visible = page.locator(`[data-open-sheet="${name}"]:visible`).first();
+  if (await visible.count()) await visible.click();
+  else await page.locator('.dock-add').click();
   await page.waitForTimeout(220);
 }
 async function rowMenu(row, action) {
@@ -122,8 +124,9 @@ console.log('\n--- interactions ---');
   await page.locator('#guide-status summary').click();
   const mapExplanation = await page.locator('#guide-status').innerText();
   const link = await page.locator('#guide-status a').getAttribute('href');
-  note(latest === currentVersion && patchVisible && archivedVersions === 13 && firstSource?.includes('/commit/') && tutorialVisible && mapExplanation.includes('last-known') && link === 'status.html' && errors.length === 0,
-       'tutorial, source-linked history, and direct tabs work on the moon side', errors[0] || JSON.stringify({ latest, patchVisible, archivedVersions, firstSource, tutorialVisible, link }));
+  const homeLink = await page.locator('#guide-home a.back-to-side').getAttribute('href');
+  note(latest === currentVersion && patchVisible && archivedVersions === 13 && firstSource?.includes('/commit/') && tutorialVisible && mapExplanation.includes('last-known') && link === 'status.html' && homeLink === 'him.html' && errors.length === 0,
+       'tutorial, source-linked history, and direct tabs work on the moon side', errors[0] || JSON.stringify({ latest, patchVisible, archivedVersions, firstSource, tutorialVisible, link, homeLink }));
   await context.close();
 }
 
@@ -131,8 +134,8 @@ console.log('\n--- interactions ---');
   const { context, page, errors } = await open('her.html');
   await openSheet(page, 'more');
   const links = await page.locator('#sheet-more a[href^="guide.html"]').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
-  note(links.includes('guide.html#tutorial') && links.includes('guide.html#changes') && errors.length === 0,
-       'both guide tabs are one tap from More', errors[0] || JSON.stringify(links));
+  note(links.length === 1 && links[0] === 'guide.html#tutorial' && await page.locator('#sheet-more .more-grid a').count() === 6 && errors.length === 0,
+       'More keeps only the six secondary destinations', errors[0] || JSON.stringify(links));
   await context.close();
 }
 
@@ -152,7 +155,7 @@ async function openSlow(path) {
 }
 
 {
-  const { context, page, errors } = await openSlow('tasks.html?as=him');
+  const { context, page, errors } = await openSlow('today.html?as=him');
   await page.click('[data-open-sheet="quick"]');
   await page.fill('#quick-text', 'water the desk plant');
   await page.click('#quick-submit');
@@ -160,6 +163,7 @@ async function openSlow(path) {
   const failed = await page.locator('.global-failure').count();
   const sheetOpen = await page.locator('#sheet-quick').isVisible();
   const leftover = await page.locator('#quick-text').inputValue();
+  await page.goto(`${BASE}/tasks.html?as=him`, { waitUntil: 'domcontentloaded' });
   const added = await page.locator('.task-row', { hasText: 'water the desk plant' }).count();
   note(added === 1 && failed === 0 && !sheetOpen && leftover === '' && errors.length === 0,
        'quick add on a slow connection closes cleanly instead of reporting a failure',
@@ -171,6 +175,7 @@ async function openSlow(path) {
   await page.waitForTimeout(300);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(250);
+  await page.goto(`${BASE}/today.html?as=him`, { waitUntil: 'domcontentloaded' });
   await page.click('[data-open-sheet="quick"]');
   await page.fill('#quick-text', 'repot the other plant');
   await page.click('#quick-submit');
@@ -275,14 +280,14 @@ async function openSlow(path) {
   await context.close();
 }
 
-// The dock is the same everywhere: quick-add writes through the normal data
-// layer, search can find the result, and the home button respects the account.
+// The dock uses this page's full composer; search finds the result and Home
+// still respects the signed-in side.
 {
   const { context, page, errors } = await open('tasks.html?as=him');
   const home = await page.locator('.app-dock a').first().getAttribute('href');
-  await page.click('[data-open-sheet="quick"]');
-  await page.fill('#quick-text', 'charge the tiny fan');
-  await page.click('#quick-submit');
+  await page.click('.dock-add');
+  await page.fill('#shared-task-title', 'charge the tiny fan');
+  await page.click('#shared-task-form [type="submit"]');
   await page.waitForTimeout(250);
   const added = await page.locator('.task-row', { hasText:'charge the tiny fan' }).count();
   await page.click('[data-open-sheet="search"]');
@@ -290,7 +295,7 @@ async function openSlow(path) {
   await page.waitForTimeout(150);
   const found = await page.locator('.search-hit', { hasText:'charge the tiny fan' }).count();
   note(home === 'him.html' && added === 1 && found === 1 && errors.length === 0,
-       'dock, quick-add and search stay on the right side', errors[0] || JSON.stringify({ home, added, found }));
+       'dock add and search stay on the right side', errors[0] || JSON.stringify({ home, added, found }));
   await context.close();
 }
 
@@ -595,15 +600,14 @@ async function openSlow(path) {
        && avocados.every(item => item.recurrence === 'once' && !item.due)
        && avocados.every(item => item.aisle === 'produce') && await page.locator('#recent-grocery-chips button', { hasText: 'avocados' }).count() === 0
        && errors.length === 0, 'recent grocery comes back with its aisle, without duplicating an active one', errors[0] || JSON.stringify(avocados));
-  await page.click('[data-open-sheet="quick"]');
-  await page.click('[data-quick-kind="grocery"]');
-  await page.fill('#quick-text', 'paper towels');
-  await page.selectOption('#quick-grocery-aisle', 'home');
-  await page.click('#quick-submit');
+  await page.click('.dock-add');
+  await page.fill('#shared-task-title', 'paper towels');
+  await page.selectOption('#grocery-aisle', 'home');
+  await page.click('#shared-task-form [type="submit"]');
   await page.waitForTimeout(250);
   const quickGrocery = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-items-v1')).items.find(item => item.title === 'paper towels'));
   note(quickGrocery?.type === 'grocery' && quickGrocery?.aisle === 'home' && errors.length === 0,
-       'quick add puts groceries in the right aisle', errors[0] || JSON.stringify(quickGrocery));
+       'contextual add puts groceries in the right aisle', errors[0] || JSON.stringify(quickGrocery));
   await context.close();
 }
 
@@ -720,7 +724,7 @@ async function openSlow(path) {
 
 // Quick add makes the same asks the Asks tab does, time and all.
 {
-  const { context, page, errors } = await open('tasks.html?as=her');
+  const { context, page, errors } = await open('today.html?as=her');
   await page.click('[data-open-sheet="quick"]');
   await page.click('[data-quick-kind="ask"]');
   await page.fill('#quick-text', 'call the vet');
@@ -1149,7 +1153,7 @@ async function openSlow(path) {
 }
 {
   const { context, page, errors } = await open('dates.html?as=her');
-  await page.locator('[data-open-sheet="date-form"]').click();
+  await page.locator('.dock-add').click();
   await page.fill('#date-title', 'tiny museum afternoon');
   await page.click('#date-submit');
   await page.waitForTimeout(180);
@@ -1207,6 +1211,56 @@ async function openSlow(path) {
   const menu = await doneRow.locator('.row-context-menu').innerText();
   note(completed === true && menu.includes('edit') && menu.includes('delete') && errors.length === 0,
     'task swipe and row menu still offer clear actions', errors[0] || JSON.stringify({completed,menu}));
+  await context.close();
+}
+
+// Older links can point beyond the first page of notes or date ideas. Keep
+// them reachable, and make an item link select Groceries when appropriate.
+{
+  const { context, page, errors } = await open('notes.html?from=her');
+  await page.evaluate(() => localStorage.setItem('our-little-list-notes-v1', JSON.stringify({ items:
+    Array.from({ length: 28 }, (_, index) => ({
+      id: `older-${index}`, sender: 'him', recipient: 'her', body: `note ${index}`,
+      mood: 'heart', createdAt: Date.now() - index * 1000
+    }))
+  })));
+  await page.goto(`${BASE}/notes.html?from=her#note-older-27`, { waitUntil:'domcontentloaded' });
+  await page.reload({ waitUntil:'domcontentloaded' });
+  await page.waitForTimeout(1050);
+  const row = page.locator('.note-thread-row[data-id="older-27"]');
+  const revealed = await row.count() === 1 && await row.evaluate(node => node.classList.contains('is-deep-linked'));
+  note(revealed && errors.length === 0, 'an old note link reveals and highlights its exact note', errors[0] || `revealed ${revealed}`);
+  await context.close();
+}
+{
+  const { context, page, errors } = await open('dates.html?as=him');
+  await page.evaluate(() => localStorage.setItem('our-little-list-dates-v1', JSON.stringify({ items:
+    Array.from({ length: 14 }, (_, index) => ({
+      id: `older-${index}`, title: `date ${index}`, vibe: 'go out',
+      done: false, createdAt: Date.now() - index * 1000
+    }))
+  })));
+  await page.goto(`${BASE}/dates.html?as=him#date-older-13`, { waitUntil:'domcontentloaded' });
+  await page.reload({ waitUntil:'domcontentloaded' });
+  await page.waitForTimeout(1050);
+  const row = page.locator('.date-idea-card[data-id="older-13"]');
+  const revealed = await row.count() === 1 && await row.evaluate(node => node.classList.contains('is-deep-linked'));
+  note(revealed && errors.length === 0, 'an old date link reveals and highlights its exact idea', errors[0] || `revealed ${revealed}`);
+  await context.close();
+}
+{
+  const { context, page, errors } = await open('tasks.html?as=her');
+  await page.evaluate(() => localStorage.setItem('our-little-list-items-v1', JSON.stringify({ items: [
+    { id:'market-milk', title:'market milk', type:'grocery', aisle:'dairy', done:false, createdAt:Date.now() }
+  ] })));
+  await page.goto(`${BASE}/tasks.html?as=her#item-market-milk`, { waitUntil:'domcontentloaded' });
+  await page.reload({ waitUntil:'domcontentloaded' });
+  await page.waitForTimeout(1050);
+  const grocerySelected = await page.locator('.tab[data-tab="grocery"]').evaluate(node => node.classList.contains('active'));
+  const row = page.locator('.task-row[data-id="market-milk"]');
+  const revealed = await row.count() === 1 && await row.evaluate(node => node.classList.contains('is-deep-linked'));
+  note(grocerySelected && revealed && errors.length === 0,
+    'a grocery link chooses the grocery tab and highlights the item', errors[0] || JSON.stringify({grocerySelected,revealed}));
   await context.close();
 }
 

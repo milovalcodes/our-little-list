@@ -108,6 +108,7 @@ function visibleMemories() { return memories.filter(item => !isPendingDelete('me
 function render() {
   const visible = visibleMemories();
   $('memory-empty').hidden = visible.length > 0;
+  $('memory-pick').hidden = visible.length === 0;
   $('memory-list').innerHTML = visible.map(item => memoryMarkup(item)).join('');
   const featured = featuredId && visible.find(item => item.id === featuredId);
   $('memory-random').hidden = !featured;

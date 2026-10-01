@@ -49,14 +49,14 @@ $('focus-pair').addEventListener('click',async event=>{const button=event.target
 
 function render(){renderToday();renderFocus();}
 function renderToday(){const today=dateKey(new Date());const end=new Date();end.setHours(23,59,59,999);const due=[
-  ...buckets.items.filter(item=>!item.done&&item.due&&item.due<=today).map(item=>({id:`item-${item.id}`,icon:item.type==='grocery'?'🛒':'✓',title:item.title,meta:item.due<today?'overdue':'today',href:'tasks.html'})),
+  ...buckets.items.filter(item=>!item.done&&item.due&&item.due<=today).map(item=>({id:`item-${item.id}`,icon:item.type==='grocery'?'🛒':'✓',title:item.title,meta:item.due<today?'overdue':'today',href:`tasks.html#item-${item.id}`})),
   // Asks waiting on you, and asks with a time (what reminders are now) that
   // come due today even once they have been answered.
   ...buckets.help.filter(item=>{if(item.to!==viewer)return false;const due=Number(item.dueAt);
     // An ask with a time belongs to its day, like a reminder did: "Friday" does
     // not crowd Monday. Asks without one wait here until they are answered.
     if(due>0)return due>Date.now()-3*3600000&&due<=end.getTime()&&!['done','cant'].includes(item.state);
-    return item.state==='open';}).map(item=>({id:`help-${item.id}`,icon:item.emoji||(item.dueAt?'⏰':'🙋'),title:item.title,meta:Number(item.dueAt)>0?`⏰ ${friendlyWhen(Number(item.dueAt))}`:'needs an answer',href:'tasks.html#asks'}))
+    return item.state==='open';}).map(item=>({id:`help-${item.id}`,icon:item.emoji||(item.dueAt?'⏰':'🙋'),title:item.title,meta:Number(item.dueAt)>0?`⏰ ${friendlyWhen(Number(item.dueAt))}`:'needs an answer',href:`tasks.html#ask-${item.id}`}))
   ];
   const total=due.length;
   const shown=fairShare(due,12);

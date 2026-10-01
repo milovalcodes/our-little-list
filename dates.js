@@ -76,11 +76,15 @@ function render(){
   const finished=ideas.filter(idea=>idea.done).length;const left=ideas.length-finished;
   $('date-count').textContent=finished?`${left} left · ${finished} done`:`${ideas.length} saved`;
   $('date-empty').hidden=ideas.length>0;
+  document.querySelector('.date-roulette').hidden=left===0;
+  const linked=/^#date-([A-Za-z0-9_-]+)$/.exec(location.hash)?.[1];
+  if(linked){const index=ideas.findIndex(idea=>idea.id===linked);if(index>=0)viewLimit=Math.max(viewLimit,index+1);}
   const visible=ideas.slice(0,viewLimit);
   keepInlineEdits($('date-list'),()=>{$('date-list').innerHTML=visible.map(dateCardMarkup).join('');});
   $('date-more').hidden=visible.length>=ideas.length;
   $('date-more').textContent=`show ${Math.min(8,ideas.length-visible.length)} more`;
 }
+window.addEventListener('hashchange',render);
 function dateCardMarkup(idea){
   const editing=editingDateId===idea.id;
   const title=editing?`<form class="inline-edit" data-edit-date="${escapeHtml(idea.id)}">

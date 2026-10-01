@@ -61,7 +61,7 @@ $('status-expiry').addEventListener('change',()=>{expiryTouched=true;});
 
 $('arrival-presets').addEventListener('click',async event=>{const button=event.target.closest('[data-arrival]');if(!button)return;setButtonBusy(button,true,'…');
   if(!await ready()){setButtonBusy(button,false);return;}
-  const current=mine();try{await data.setTo('statuses',viewer,{person:viewer,arrival:button.dataset.arrival,arrivalAt:Date.now(),updateKind:'arrival',updatedAt:Date.now(),...(current?{}:blankStatus())});void data.notify(other,{title:`${personName(viewer)}: ${button.dataset.arrival}`,body:'',url:'status.html',kind:'arrival'});toast(button.dataset.arrival);}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
+  const current=mine();try{await data.setTo('statuses',viewer,{person:viewer,arrival:button.dataset.arrival,arrivalAt:Date.now(),updateKind:'arrival',updatedAt:Date.now(),...(current?{}:blankStatus())});void data.notify(other,{title:`${personName(viewer)}: ${button.dataset.arrival}`,body:'',url:'status.html#couple-map',kind:'arrival'});toast(button.dataset.arrival);}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
 $('status-pair').addEventListener('click',event=>{const picker=event.target.closest('[data-status-picker]');if(picker){const targetId=picker.dataset.statusPicker;const current=findStatusReaction(targetId);openEmojiPicker({current:current?.emoji,onSelect:value=>saveStatusReaction(targetId,value,picker),onRemove:()=>saveStatusReaction(targetId,'',picker)});return;}const button=event.target.closest('[data-react-status]');if(button)void saveStatusReaction(button.dataset.reactStatus,button.dataset.emoji,button);});
 
 function findStatusReaction(targetId){return reactions.find(item=>item.id===`status-${targetId}-${viewer}`||(item.targetType==='status'&&item.targetId===targetId&&item.by===viewer));}
@@ -76,7 +76,7 @@ $('status-form').addEventListener('submit',async event=>{
   try{
     await data.setTo('statuses',viewer,{person:viewer,state,text,category,emoji,energy:'',arrival:'',arrivalAt:0,...expiry,updateKind:'manual',updatedAt:Date.now()});
     const display=text?`${emoji} ${category} ${text}`:stateLabels[state];
-    void data.notify(other,{title:`${personName(viewer)} updated their status`,body:display,url:`status.html`,kind:'status'});
+    void data.notify(other,{title:`${personName(viewer)} updated their status`,body:display,url:`status.html#partner`,kind:'status'});
     toast('status saved. lore updated.');
   }catch(_){showFailure('the status did not save.','check the internet, then try it once more.');}
   finally{setButtonBusy(button,false);}

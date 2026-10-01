@@ -19,7 +19,10 @@ initHelpPanel({ data, viewer, other, openGroceries: () => { selectTab('grocery',
 
 data.listenTo('items', nextItems => {
   items = nextItems;
-  render();
+  // A grocery uses the same #item-id link as a to-do. Once its record lands,
+  // choose the right tab so search and notification links can reveal it.
+  if (location.hash.startsWith('#item-')) selectTab(tabFromHash());
+  else render();
 });
 
 document.querySelectorAll('.soft-chip').forEach(button => {
@@ -280,7 +283,13 @@ function taskMarkup(item) {
 function groceryMarkup(list){const groups=new Map();list.forEach(item=>{const aisle=item.aisle||'other';if(!groups.has(aisle))groups.set(aisle,[]);groups.get(aisle).push(item);});return [...groups].map(([aisle,entries])=>`<li class="aisle-label">${escapeHtml(aisle)}</li>${entries.map(taskMarkup).join('')}`).join('');}
 
 window.addEventListener('littlelist:profile',render);
-const tabFromHash = () => location.hash === '#asks' || location.hash.startsWith('#ask-') ? 'asks' : location.hash === '#grocery' ? 'grocery' : location.hash.startsWith('#done-') ? 'done' : 'tasks';
+function tabFromHash() {
+  if (location.hash === '#asks' || location.hash.startsWith('#ask-')) return 'asks';
+  if (location.hash === '#grocery') return 'grocery';
+  if (location.hash.startsWith('#done-')) return 'done';
+  const id = /^#item-([A-Za-z0-9_-]+)$/.exec(location.hash)?.[1];
+  return id && items.find(item => item.id === id)?.type === 'grocery' ? 'grocery' : 'tasks';
+}
 window.addEventListener('hashchange', () => selectTab(tabFromHash()));
 selectTab(tabFromHash());
 

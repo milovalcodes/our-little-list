@@ -31,7 +31,10 @@ async function boot() {
     const opener = event.target.closest('[data-open-sheet]');
     if (!opener) return;
     event.preventDefault();
-    openSheet(opener.dataset.openSheet);
+    // One visible add button. On a feature page it opens that page's full
+    // composer; elsewhere it remains the all-purpose quick chooser.
+    const contextual = opener.matches('.dock-add') ? document.querySelector('.page-add[data-open-sheet]:not([hidden])')?.dataset.openSheet : '';
+    openSheet(contextual || opener.dataset.openSheet);
   });
   document.addEventListener('click', event => {
     const closer = event.target.closest('[data-close-sheet]');
@@ -48,9 +51,9 @@ async function boot() {
   setupDeepLinkHighlight();
   window.addEventListener('hashchange', setupDeepLinkHighlight);
   setupRowMenus();
-  const topbar = document.querySelector('.app-topbar');
-  if (topbar && !topbar.querySelector('[data-open-sheet="search"]')) {
-    topbar.insertAdjacentHTML('beforeend', '<button class="topbar-search" type="button" data-open-sheet="search" aria-label="Search">⌕</button>');
+  const searchHost = document.querySelector('.feature-shell > .feature-hero') || document.querySelector('.app-topbar');
+  if (searchHost && !searchHost.querySelector('[data-open-sheet="search"]')) {
+    searchHost.insertAdjacentHTML('beforeend', '<button class="topbar-search" type="button" data-open-sheet="search" aria-label="Search">⌕</button>');
   }
   setupUpdateCheck();
 }
@@ -118,11 +121,9 @@ function addSheets() {
     <section class="app-sheet more-sheet" id="sheet-more" role="dialog" aria-modal="true" aria-labelledby="more-title" hidden>
       <header class="sheet-head"><div><small>the rest of it</small><h2 id="more-title">More</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <nav class="more-grid">
-        <a href="today.html"><i>◎</i><span>today</span></a><a href="tasks.html"><i>✓</i><span>the list</span></a><a href="tasks.html#asks"><i>🙋</i><span>asks</span></a>
-        <a href="notes.html"><i>💌</i><span>notes</span></a><a href="status.html"><i>☀︎☾</i><span>right now</span></a>
+        <a href="today.html"><i>◎</i><span>today</span></a><a href="status.html"><i>☀︎☾</i><span>right now</span></a>
         <a href="dates.html"><i>✦</i><span>date ideas</span></a><a href="memories.html"><i>◒</i><span>memories</span></a>
-        <a href="today.html#new"><i>✉︎</i><span>what's new</span></a><a href="phone-check.html"><i>⚙︎</i><span>settings</span></a>
-        <a href="guide.html#tutorial"><i>✎</i><span>tutorial</span></a><a href="guide.html#changes"><i>↺</i><span>patch notes</span></a>
+        <a href="phone-check.html"><i>⚙︎</i><span>settings</span></a><a href="guide.html#tutorial"><i>✎</i><span>guide &amp; history</span></a>
       </nav>
       <button class="update-row" id="check-update" type="button"><span><b id="app-version">app version</b><small id="update-copy">tap to check for a fresh one</small></span><i>↻</i></button>
     </section>`);

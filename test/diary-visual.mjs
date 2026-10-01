@@ -32,7 +32,7 @@ for (const side of ['her','him']) {
     if (!okay) problems++;
     console.log(`${okay ? 'ok  ' : 'FAIL'} ${side}/${name}: ${JSON.stringify(state)} · ${path}`);
     if (name === 'notes' || name === 'memories') {
-      await page.locator('[data-open-sheet]').filter({ hasText:'add' }).first().click();
+      await page.locator('.dock-add').click();
       await page.waitForTimeout(260);
       const sheet = name === 'notes' ? 'note-form' : 'memory-form';
       const open = await page.locator(`#sheet-${sheet}`).isVisible();

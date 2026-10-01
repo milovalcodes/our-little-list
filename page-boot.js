@@ -11,7 +11,6 @@ export async function bootPage({ onAuth } = {}) {
   const viewer = await awaitViewer();
   if (!viewer) { showNotAMember(); await new Promise(() => {}); }
   applyViewerTheme(viewer);
-  const back = document.querySelector('.back-to-side');
-  if (back) back.href = `${viewer}.html`;
+  document.querySelectorAll('.back-to-side').forEach(back => { back.href = `${viewer}.html`; });
   return { data, viewer, other: partnerOf(viewer) };
 }

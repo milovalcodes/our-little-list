@@ -31,7 +31,7 @@ async function boot(viewer) {
         icon: NOTE_MOODS[incoming.mood] || '💌',
         label: 'a note for you',
         body: incoming.body,
-        url: `notes.html`,
+        url: `notes.html#note-${incoming.id}`,
         kind: 'note'
       });
       // Only a note you were actually shown counts as read. A backgrounded page
@@ -42,18 +42,18 @@ async function boot(viewer) {
 
     data.listenToQuery('items', recent, items => {
       const fresh = firstFresh('items', items, item => item.addedBy === other);
-      if (fresh) announce({ icon: '✓', label: 'new on our list', body: fresh.title, url: `tasks.html`, kind: 'item' });
+      if (fresh) announce({ icon: '✓', label: 'new on our list', body: fresh.title, url: `tasks.html#item-${fresh.id}`, kind: 'item' });
     });
 
     data.listenToQuery('dates', recent, items => {
       const fresh = firstFresh('dates', items, item => item.addedBy === other && !item.imported);
-      if (fresh) announce({ icon: '✦', label: 'new date idea', body: fresh.title, url: `dates.html`, kind: 'date' });
+      if (fresh) announce({ icon: '✦', label: 'new date idea', body: fresh.title, url: `dates.html#date-${fresh.id}`, kind: 'date' });
     });
 
     data.listenToQuery('help', recent, items => {
       const fresh = firstFresh('help', items, item => item.to === viewer && item.from !== viewer && item.state === 'open');
       const timed = Number(fresh?.dueAt) > 0;
-      if (fresh) announce({ icon: fresh.emoji || (timed ? '⏰' : '🙋'), label: timed ? `${personName(other)} set you a reminder` : `${personName(other)} needs a hand`, body: timed ? `${fresh.title} · ${friendlyWhen(Number(fresh.dueAt))}` : fresh.title, url: 'tasks.html#asks', kind: 'help', urgent:fresh.urgent===true });
+      if (fresh) announce({ icon: fresh.emoji || (timed ? '⏰' : '🙋'), label: timed ? `${personName(other)} set you a reminder` : `${personName(other)} needs a hand`, body: timed ? `${fresh.title} · ${friendlyWhen(Number(fresh.dueAt))}` : fresh.title, url: `tasks.html#ask-${fresh.id}`, kind: 'help', urgent:fresh.urgent===true });
     });
 
     data.listenTo('statuses', items => {
@@ -101,7 +101,7 @@ async function boot(viewer) {
         icon: item.locationEmoji || '📍',
         label: `${personName(other)} changed locations`,
         body: item.locationText,
-        url: `status.html`,
+        url: `status.html#couple-map`,
         kind: 'status'
       });
     } else if (updatedAt > knownStatusAt && item.updateKind === 'arrival') {
@@ -113,7 +113,7 @@ async function boot(viewer) {
         icon: item.emoji || '●',
         label: `${personName(other)} updated their status`,
         body: item.text ? `${item.category || 'currently'} ${item.text}` : (item.state || 'updated'),
-        url: `status.html`,
+        url: `status.html#partner`,
         kind: 'status'
       });
     }

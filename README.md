@@ -19,7 +19,10 @@ Each thing lives in one place:
 - **Memories** — photos and small things worth keeping.
 - **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
   Quiet hours hold ordinary pings until morning; reminders still ring at their time, and arrivals come through silently. A focus session holds chatter five minutes at a time, so ending it early lets things through soon after.
-- **Tutorial & Patch notes** — under More, an in-app walkthrough and a record of each new release.
+- **Guide & history** — under More, an in-app walkthrough and a record of each new release.
+
+The bottom **add** button opens the current page's full composer on List,
+Notes, Date ideas, and Memories. Elsewhere it opens the quick chooser.
 
 Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 

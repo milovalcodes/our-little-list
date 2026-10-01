@@ -26,16 +26,16 @@
   --page-shadow: var(--diary-shadow);
 }
 
-/* One small heading, one surface rhythm, and no second masthead on features. */
-.profile-page[data-app] .app-topbar { max-width:760px; margin-bottom:0; border-bottom:1px solid var(--diary-rule); }
-.profile-page[data-app] .app-topbar .mini-brand { display:none; }
+/* The dock owns Home; the feature heading owns search. No second masthead. */
+.profile-page[data-app] .app-topbar { display:none; }
 .profile-page .dock-item span,.profile-page .dock-add span { font-size:.69rem; }
 .feature-shell { width:min(740px,calc(100% - 24px)); }
 .feature-shell > .feature-hero,
 .feature-shell > .feature-hero:not(.now-hero) {
+  position:relative;
   min-height:64px;
   margin:0 0 2px;
-  padding:10px 2px;
+  padding:10px 58px 10px 2px;
   border:0;
   border-bottom:1px solid var(--diary-rule);
   border-radius:0;
@@ -53,7 +53,10 @@
   border-radius:var(--diary-small-radius); box-shadow:none; transform:rotate(-2deg);
 }
 .feature-shell > .feature-hero.now-hero { display:flex; align-items:center; gap:12px; }
-.feature-shell > .feature-hero.today-hero { padding-right:106px; }
+.feature-shell > .feature-hero.today-hero { padding-right:152px!important; }
+.feature-shell > .feature-hero .topbar-search { position:absolute; right:2px; top:50%; translate:0 -50%; width:42px; height:42px; }
+.feature-shell > .feature-hero.today-hero .today-focus-open { right:54px; }
+.feature-shell .page-add { display:none!important; }
 .feature-shell > :is(.list-card,.composer-card,.note-maker,.today-card,.activity-card,.status-card,.notification-settings-card,.profile-setup-card,.random-date-card,.now-location-card,.home-next-up) {
   margin-top:var(--diary-gap); border:1px solid var(--diary-rule); border-radius:var(--diary-radius);
   background:var(--diary-panel); box-shadow:var(--diary-shadow); backdrop-filter:none;
@@ -71,7 +74,7 @@
 .him-theme .feature-shell :is(.task-row,.note-thread-row,.activity-row,.date-idea-card,.today-row,.focus-person,.memory-card) {
   background:var(--diary-raised);
 }
-.feature-shell .empty-state { padding:22px 10px; color:var(--page-muted); }
+.feature-shell .empty-state { padding:9px 4px; color:var(--page-muted); }
 .feature-shell .empty-state strong { color:var(--page-muted); font-size:.93rem; font-weight:750; }
 .feature-shell .empty-state > span { color:var(--accent-deep); }
 .now-status-pair .status-blank { display:none; }
@@ -127,7 +130,14 @@
 .note-inbox-card .list-heading,.memory-list-card .list-heading { justify-content:flex-end; }
 .memory-list-card .memory-grid { margin-top:10px; }
 .note-inbox-card .note-inbox-list { margin-top:10px; }
-.note-inbox-card .empty-state,.memory-list-card .empty-state { padding:28px 10px; }
+.note-inbox-card .empty-state,.memory-list-card .empty-state { padding:9px 4px; }
+.feature-shell .list-card:has(.empty-state:not([hidden])) { padding-bottom:12px; }
+.now-location-card .now-map-head { margin-top:12px; align-items:center; }
+.now-map-title { min-width:0; }
+.now-map-title h2 { font-size:1.12rem; line-height:1.15; }
+.now-map-title p:last-child { margin:3px 0 0; color:var(--page-muted); font-size:.78rem; line-height:1.3; }
+.now-map-head .map-heading-actions { flex:none; }
+.date-roulette[hidden],#memory-pick[hidden],#note-more[hidden] { display:none!important; }
 
 /* The in-app manual uses the same paper and controls as every other page. */
 .guide-shell { max-width:700px; }

@@ -15,7 +15,8 @@ const moods=NOTE_MOODS;
 let notes=[];let reactions=[];let editingNoteId='';const markedRead=new Set();
 document.querySelectorAll('#note-starters button').forEach(button=>button.addEventListener('click',()=>{$('note-body').value=button.textContent;$('note-body').focus();}));
 
-data.listenToQuery('notes',{orderBy:{field:'createdAt',direction:'desc'},limit:50},items=>{notes=items;renderNotes();markIncomingRead();});
+let viewLimit=20;
+data.listenTo('notes',items=>{notes=items.sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0));renderNotes();markIncomingRead();});
 data.listenToQuery('reactions',{orderBy:{field:'createdAt',direction:'desc'},limit:100},items=>{reactions=items;renderNotes();});
 
 $('note-form').addEventListener('submit',async event=>{
@@ -58,8 +59,13 @@ function findMyReaction(targetId){return reactions.find(item=>item.id===`note-${
 async function saveReaction(targetId,value,button){const id=`note-${targetId}-${sender}`;const existing=findMyReaction(targetId);button.disabled=true;try{if(!value||existing?.emoji===value){if(existing)await data.removeFrom('reactions',existing.id||id);toast('reaction removed');}else{await data.setTo('reactions',id,{targetType:'note',targetId,by:sender,to:recipient,emoji:value,createdAt:Date.now()});void data.notify(recipient,{title:`${personName(sender)} reacted ${value}`,body:'to your note',url:`notes.html#note-${targetId}`,kind:'reaction'});toast(`reacted ${value}`);}}catch(_){showFailure('that reaction did not stick.','check the internet and try again.');}finally{if(button.isConnected)button.disabled=false;}}
 
 function renderNotes() {
-  const list = notes.filter(note => !isPendingDelete('notes', note.id)).slice(0, 20);
+  const available = notes.filter(note => !isPendingDelete('notes', note.id));
+  const linked=/^#note-([A-Za-z0-9_-]+)$/.exec(location.hash)?.[1];
+  if(linked){const index=available.findIndex(note=>note.id===linked);if(index>=0)viewLimit=Math.max(viewLimit,index+1);}
+  const list = available.slice(0,viewLimit);
   $('note-inbox-empty').hidden = list.length > 0;
+  $('note-more').hidden = list.length >= available.length;
+  $('note-more').textContent = `show ${Math.min(20,available.length-list.length)} more`;
   const container = $('note-inbox-list');
   keepInlineEdits(container, () => { container.innerHTML = list.map(note => {
     const mine = note.sender === sender || note.from === sender;
@@ -74,7 +80,9 @@ function renderNotes() {
     return `<article class="note-thread-row${mine ? ' mine' : ''}" data-id="${escapeHtml(note.id)}"><span>${moods[note.mood] || '💌'}</span><div><small>${mine ? 'you' : escapeHtml(personName(from))} · ${timeAgo(note.createdAt)}${note.editedAt ? ' · edited' : ''}</small>${body}<div class="reaction-controls">${myReaction ? `<button class="reaction-display" type="button" data-note-picker="${escapeHtml(note.id)}"><b>${escapeHtml(myReaction.emoji)}</b><span>yours · tap to change</span></button>` : ''}${partnerReaction ? `<span class="reaction-display passive"><b>${escapeHtml(partnerReaction.emoji)}</b><span>${escapeHtml(personName(recipient))}</span></span>` : ''}${!mine ? `<button class="reaction-trigger" type="button" data-note-picker="${escapeHtml(note.id)}">react</button>` : ''}<button class="reaction-trigger note-tool" type="button" data-pin-note="${escapeHtml(note.id)}">${note.pinned ? '📌 unpin' : '📌 pin'}</button>${canEdit && !editing ? `<button class="reaction-trigger note-tool" type="button" data-edit-note="${escapeHtml(note.id)}">edit</button>` : ''}${mine ? `<button class="reaction-trigger note-tool" type="button" data-delete-note="${escapeHtml(note.id)}">delete</button>` : ''}</div></div></article>`;
   }).join(''); });
 }
+window.addEventListener('hashchange',()=>{renderNotes();markIncomingRead();});
+$('note-more').addEventListener('click',()=>{viewLimit+=20;renderNotes();markIncomingRead();});
 
-function markIncomingRead(){notes.filter(note=>(note.recipient===sender||note.to===sender)&&!note.read&&!markedRead.has(note.id)).forEach(note=>{markedRead.add(note.id);void data.updateIn('notes',note.id,{read:true,readAt:Date.now()}).catch(()=>markedRead.delete(note.id));});}
+function markIncomingRead(){notes.slice(0,viewLimit).filter(note=>(note.recipient===sender||note.to===sender)&&!note.read&&!markedRead.has(note.id)).forEach(note=>{markedRead.add(note.id);void data.updateIn('notes',note.id,{read:true,readAt:Date.now()}).catch(()=>markedRead.delete(note.id));});}
 function setNames(){document.getElementById('note-page-add').setAttribute('aria-label',`Send ${personName(recipient)} a note`);}
 window.addEventListener('littlelist:profile',()=>{setNames();renderNotes();});

@@ -159,7 +159,7 @@ function tellPartnerSharingIsBack() {
   void data.notify(partnerOf(viewer), {
     title: `${personName(viewer)} is sharing location again`,
     body: 'back on the map',
-    url: 'status.html',
+    url: 'status.html#couple-map',
     kind: 'arrival'
   });
 }
@@ -344,7 +344,7 @@ async function announcePlaceChange(place,change) {
     together = Boolean(theirs && Number(theirs.shareUntil) > Date.now() && Number.isFinite(theirs.lat) && metersBetween(place, theirs) <= radius);
   } catch (_) { /* the plain message is fine */ }
   const message = change==='left'?leaveMessage(place,personName(viewer)):arrivalMessage(place, personName(viewer), { together });
-  const result=await data.notify(partner, { ...message, url: 'status.html', kind: 'arrival', ref: `place-${place.id}-${change}` });
+  const result=await data.notify(partner, { ...message, url: 'status.html#couple-map', kind: 'arrival', ref: `place-${place.id}-${change}` });
   if(!result?.queued)try { if(localStorage.getItem(key)===String(claimedAt))localStorage.removeItem(key); } catch (_) {}
 }
 

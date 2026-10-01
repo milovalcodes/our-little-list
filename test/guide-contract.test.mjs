@@ -13,7 +13,7 @@ assert.match(guide, new RegExp(`data-release="${current}"`), 'write patch notes 
 assert.match(guide, /data-guide-tab="tutorial"/);
 assert.match(guide, /data-guide-tab="changes"/);
 assert.match(chrome, /guide\.html#tutorial/);
-assert.match(chrome, /guide\.html#changes/);
+assert.doesNotMatch(chrome, /guide\.html#changes/, 'More should have one guide entry, with the patch notes inside it');
 for (const topic of ['home','add','today','list','notes','status','dates','memories','settings']) {
   assert.match(guide, new RegExp(`id="guide-${topic}"`), `the ${topic} tutorial needs a section`);
 }
