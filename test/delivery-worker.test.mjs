@@ -16,7 +16,7 @@ const ENV = {
   VAPID_PUBLIC_KEY: vapidKeys.publicKey, VAPID_PRIVATE_KEY: vapidKeys.privateKey
 };
 
-function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, pushStatus = 201, lockHeld = false }) {
+function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, pushStatus = 201, lockHeld = false, moveStatus = 200 }) {
   const deleted = [];
   const pushes = [];
   const moved = [];
@@ -68,7 +68,7 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
       const id = url.split('/reminders/')[1];
       return reminders[id] ? Response.json({ name: url, fields: {} }) : new Response('', { status: 404 });
     }
-    if (options.method === 'PATCH' && url.includes('/outbox/')) { moved.push({url,sendAt:Number(JSON.parse(options.body).fields.sendAt.integerValue)});return Response.json({}); }
+    if (options.method === 'PATCH' && url.includes('/outbox/')) { moved.push({url,sendAt:Number(JSON.parse(options.body).fields.sendAt.integerValue)});return moveStatus === 200 ? Response.json({}) : new Response('denied', { status: moveStatus }); }
     if (options.method === 'DELETE') { deleted.push(url.split('/documents/')[1]); return Response.json({}); }
     if (url.startsWith('https://fcm.googleapis.com')) {
       pushes.push({ headers: options.headers, bytes: options.body.length });
@@ -217,11 +217,14 @@ const now = Date.now();
   const r=await deliver(ENV);
   assert.equal(r.held,1);
   assert.equal(r.sent,2,'notes and asks are not held');
-  assert.equal(h.moved[0].sendAt,until+1000);
+  // Held five minutes at a time, so ending focus early releases it soon.
+  assert.ok(Math.abs(h.moved[0].sendAt-(now+5*60000))<5000,`held in five-minute steps, got ${h.moved[0].sendAt-now}ms`);
   assert.ok(h.moved[0].url.includes('updateMask.fieldPaths=sendAt'));
+  assert.ok(h.moved[0].url.includes('currentDocument.exists=true'),'a vanished message is not re-created by the hold');
   assert.ok(!h.deleted.some(path=>path.endsWith('outbox/HOLD')));
   assert.equal(focusDelivery({kind:'help'},{focusUntil:until},now).quiet,true,'ordinary asks go through quietly during focus');
-  for(const kind of ['status','item','date','memory','reaction','keepsake'])assert.equal(focusDelivery({kind},{focusUntil:until},now).holdUntil,until+1000,`${kind} waits`);
+  for(const kind of ['status','item','date','memory','reaction','keepsake'])assert.equal(focusDelivery({kind},{focusUntil:until},now).holdUntil,now+5*60000,`${kind} waits`);
+  assert.equal(focusDelivery({kind:'item'},{focusUntil:now+60000},now).holdUntil,now+61000,'a session ending sooner holds only until it ends');
   assert.equal(focusDelivery({kind:'note'},{focusUntil:until},now).holdUntil,0,'notes stay open');
   console.log(' ok  focus holds chatter, but notes and asks still go through');
 }
@@ -266,6 +269,42 @@ console.log(' ok  an urgent ask is not quieted by focus');
   assert.equal(h.moved[0].sendAt,quietHoursEndUtc(now,quietHours,0));
   assert.ok(!h.deleted.some(path=>path.endsWith('outbox/SLEEP')));
   console.log(' ok  quiet hours hold ordinary pings but not notify-anyway asks');
+}
+
+// 16. Quiet hours never hold a reminder (someone picked that time) and never
+// hold an arrival ("just got home" in the morning is not news): the arrival
+// comes through silently instead.
+{
+  const clock=value=>new Date(value).toISOString().slice(11,16);
+  const quietHours={enabled:true,from:clock(now-5*60000),to:clock(now+20*60000)};
+  const h=harness({outbox:[
+    {id:'REMIND',to:'her',title:'⏰ water',body:'x',kind:'reminder',sendAt:now-1000,createdAt:now-2000},
+    {id:'HOME',to:'her',title:'home',body:'x',kind:'arrival',sendAt:now-1000,createdAt:now-2000}
+  ],subs:{her:{subscription:SUB,preferences:{quietHours},utcOffsetMinutes:0}}});
+  const r=await deliver(ENV);
+  assert.equal(r.held,0);
+  assert.equal(r.sent,2);
+  console.log(' ok  quiet hours let reminders ring and arrivals through quietly');
+}
+
+// 17. A hold the database refuses must not stop the pass: the message stays
+// at the front of the queue, and everything behind it still goes out.
+{
+  const h=harness({outbox:[
+    {id:'STUCK',to:'her',title:'task',body:'x',kind:'item',sendAt:now-2000,createdAt:now-3000},
+    {id:'NOTE2',to:'her',title:'note',body:'x',kind:'note',sendAt:now-1000,createdAt:now-2000}
+  ],statuses:{her:{focusUntil:now+60000}},moveStatus:403});
+  const r=await deliver(ENV);
+  assert.equal(r.sent,1,'the note behind a refused hold still goes out');
+  console.log(' ok  a refused hold does not stall delivery');
+}
+
+// 18. Asks keep high push priority so a dozing Android phone does not batch them.
+{
+  const h=harness({outbox:[{id:'ASKHI',to:'her',title:'ask',body:'x',kind:'help',sendAt:now-1000,createdAt:now-2000}]});
+  await deliver(ENV);
+  assert.equal(h.pushes[0].headers.Urgency,'high');
+  console.log(' ok  asks are delivered with high priority');
 }
 
 console.log('\nDELIVERY WORKER CLEAN');

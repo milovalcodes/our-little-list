@@ -780,6 +780,48 @@ async function openSlow(path) {
   await context.close();
 }
 
+// The other phone changing anything re-renders the list. A half-typed inline
+// edit used to snap back to the saved title and lose focus when that happened.
+// Groceries also keep their repeat when edited.
+{
+  const { context, page, errors } = await open('tasks.html?as=her');
+  await page.fill('#shared-task-title', 'keep my typing');
+  await page.click('#shared-task-form [type="submit"]');
+  await page.waitForTimeout(400);
+  await page.locator('.task-row', { hasText: 'keep my typing' }).locator('[data-action="edit"]').click();
+  await page.locator('[data-edit-task] [name="title"]').press('End');
+  await page.keyboard.type(' please');
+  await page.evaluate(() => {
+    const key = 'our-little-list-items-v1';
+    const stored = JSON.parse(localStorage.getItem(key) || '{"items":[]}');
+    stored.items.push({ id: 'from-him', title: 'his new thing', type: 'task', addedBy: 'him', done: false, createdAt: Date.now() });
+    localStorage.setItem(key, JSON.stringify(stored));
+    window.dispatchEvent(new StorageEvent('storage', { key }));
+  });
+  await page.waitForTimeout(400);
+  const kept = await page.evaluate(() => ({
+    value: document.querySelector('[data-edit-task] [name="title"]')?.value,
+    focused: document.activeElement?.name === 'title',
+    hisArrived: [...document.querySelectorAll('.task-row')].some(row => row.textContent.includes('his new thing'))
+  }));
+  note(kept.value === 'keep my typing please' && kept.focused && kept.hisArrived && errors.length === 0,
+       'an inline edit survives the other phone changing the list', errors[0] || JSON.stringify(kept));
+
+  await page.click('.tab[data-tab="grocery"]');
+  await page.click('.repeat-chip[data-repeat="weekly"]');
+  await page.fill('#shared-task-title', 'oat milk weekly');
+  await page.click('#shared-task-form [type="submit"]');
+  await page.waitForTimeout(400);
+  await page.locator('.task-row', { hasText: 'oat milk weekly' }).locator('[data-action="edit"]').click();
+  await page.fill('[data-edit-task] [name="title"]', 'oat milk (the good one)');
+  await page.click('[data-edit-task] [type="submit"]');
+  await page.waitForTimeout(400);
+  const grocery = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-items-v1')).items.find(item => item.title === 'oat milk (the good one)'));
+  note(grocery?.recurrence === 'weekly' && Boolean(grocery?.due) && errors.length === 0,
+       'a repeating grocery keeps its repeat when edited', errors[0] || JSON.stringify(grocery));
+  await context.close();
+}
+
 // Energy, arrival presets and partner-status reactions share the same status screen.
 {
   const { context, page, errors } = await open('status.html?as=her');
