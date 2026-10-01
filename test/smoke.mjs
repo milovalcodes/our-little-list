@@ -90,6 +90,7 @@ const PAGES = ['her.html','him.html','tasks.html?as=her','notes.html?from=her',
   'location.html?as=her','status.html?as=her','dates.html?as=her','tasks.html?as=her#asks',
   'phone-check.html?as=her','profiles.html','status.html?as=him#partner','tasks.html?as=him#asks'];
 PAGES.push('today.html?as=her','memories.html?as=her');
+PAGES.push('guide.html?as=her#tutorial','guide.html?as=him#changes');
 
 for (const path of PAGES) {
   const { context, page, errors } = await open(path);
@@ -106,6 +107,30 @@ for (const path of PAGES) {
 }
 
 console.log('\n--- interactions ---');
+
+{
+  const { context, page, errors } = await open('guide.html?as=him#changes');
+  const latest = await page.locator('#guide-changes .release-entry').first().getAttribute('data-release');
+  const currentVersion = await page.locator('body').getAttribute('data-guide-version');
+  const patchVisible = await page.locator('#guide-changes').isVisible();
+  await page.locator('[data-guide-tab="tutorial"]').click();
+  const tutorialVisible = await page.locator('#guide-tutorial').isVisible();
+  await page.locator('#guide-status summary').click();
+  const mapExplanation = await page.locator('#guide-status').innerText();
+  const link = await page.locator('#guide-status a').getAttribute('href');
+  note(latest === currentVersion && patchVisible && tutorialVisible && mapExplanation.includes('last-known') && link === 'status.html' && errors.length === 0,
+       'tutorial, patch notes, and direct tabs work on the moon side', errors[0] || JSON.stringify({ latest, patchVisible, tutorialVisible, link }));
+  await context.close();
+}
+
+{
+  const { context, page, errors } = await open('her.html');
+  await openSheet(page, 'more');
+  const links = await page.locator('#sheet-more a[href^="guide.html"]').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
+  note(links.includes('guide.html#tutorial') && links.includes('guide.html#changes') && errors.length === 0,
+       'both guide tabs are one tap from More', errors[0] || JSON.stringify(links));
+  await context.close();
+}
 
 // A real write takes a network round trip. The local layer answers in the same
 // tick, which hid a whole class of bug: code that touched event.currentTarget

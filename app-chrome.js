@@ -122,6 +122,7 @@ function addSheets() {
         <a href="notes.html"><i>💌</i><span>notes</span></a><a href="status.html"><i>☀︎☾</i><span>right now</span></a>
         <a href="dates.html"><i>✦</i><span>date ideas</span></a><a href="memories.html"><i>◒</i><span>memories</span></a>
         <a href="today.html#new"><i>✉︎</i><span>what's new</span></a><a href="phone-check.html"><i>⚙︎</i><span>settings</span></a>
+        <a href="guide.html#tutorial"><i>✎</i><span>tutorial</span></a><a href="guide.html#changes"><i>↺</i><span>patch notes</span></a>
       </nav>
       <button class="update-row" id="check-update" type="button"><span><b id="app-version">app version</b><small id="update-copy">tap to check for a fresh one</small></span><i>↻</i></button>
     </section>`);

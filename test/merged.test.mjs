@@ -4,7 +4,7 @@ import { pickMoment } from '../moment-picker.js';
 import { fridgeNote } from '../fridge.js';
 import { hereLine, statusShows, focusActive } from '../availability.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../notification-policy.js';
-import { QUESTIONS, QUESTION_START_DAY, questionClock, questionForDay } from '../question-prompts.js';
+import { QUESTIONS, QUESTION_START_DAY, questionClock, questionForDay, questionPhase } from '../question-prompts.js';
 import { newActivityCount } from '../activity-summary.js';
 import { readFileSync } from 'node:fs';
 
@@ -15,6 +15,10 @@ const dayAt = index => new Date(start + index * 86400000).toISOString().slice(0,
 const dailyIds = Array.from({ length: QUESTIONS.length }, (_, index) => questionForDay(dayAt(index)).promptId);
 assert.equal(new Set(dailyIds).size, QUESTIONS.length, 'each question appears exactly once');
 assert.equal(questionForDay(dayAt(QUESTIONS.length)), null, 'the bank stops instead of repeating');
+assert.equal(questionPhase({ day:'2026-10-01', open:true }), 'upcoming', 'before launch is not an exhausted bank');
+assert.equal(questionPhase({ day:'2026-10-02', open:false }), 'waiting');
+assert.equal(questionPhase({ day:'2026-10-02', open:true }), 'open');
+assert.equal(questionPhase({ day:dayAt(QUESTIONS.length), open:true }), 'exhausted');
 assert.equal(questionClock(new Date('2026-10-02T11:59:00Z')).open, false);
 assert.equal(questionClock(new Date('2026-10-02T12:00:00Z')).open, true);
 assert.equal(questionClock(new Date('2026-11-01T12:00:00Z')).open, false, '8 a.m. follows daylight saving time');

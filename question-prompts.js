@@ -188,6 +188,12 @@ export function questionForDay(day) {
   return { promptId, ...QUESTIONS[promptId] };
 }
 
+export function questionPhase(clock) {
+  if (clock.day < QUESTION_START_DAY) return 'upcoming';
+  if (!questionForDay(clock.day)) return 'exhausted';
+  return clock.open ? 'open' : 'waiting';
+}
+
 export function questionClock(now = new Date()) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
     timeZone: QUESTION_TIME_ZONE, year:'numeric',month:'2-digit',day:'2-digit',

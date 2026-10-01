@@ -27,6 +27,9 @@ jobs:
       - name: Both home pages keep the same layout
         run: node test/home-parity.test.mjs
 
+      - name: Tutorial and patch notes match this release
+        run: node test/guide-contract.test.mjs
+
       - name: Delivery layer behaves
         run: node test/delivery.test.mjs
 

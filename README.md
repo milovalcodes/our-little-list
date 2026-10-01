@@ -19,6 +19,7 @@ Each thing lives in one place:
 - **Memories** — photos and small things worth keeping.
 - **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
   Quiet hours hold ordinary pings until morning; reminders still ring at their time, and arrivals come through silently. A focus session holds chatter five minutes at a time, so ending it early lets things through soon after.
+- **Tutorial & Patch notes** — under More, an in-app walkthrough and a record of each new release.
 
 Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 
@@ -147,13 +148,18 @@ whether permission was granted.
 
 ## Making small changes
 
-1. Run `pnpm install` once, then edit the files.
-   Shared diary colors, spacing, cards and controls are in `diary.css`; keep
-   feature behavior in its existing page files.
-2. Bump `CACHE` in `service-worker.js` whenever a cached file changes. Do not
+1. Run `pnpm install` once, then edit the files. Shared diary colors, spacing,
+   cards and controls are in `diary.css`; keep feature behavior in its existing
+   page files.
+2. Update the relevant Tutorial topic in `guide.html` when behavior changes or
+   a function is added. Add an Added/Changed/Fixed entry under Patch notes for
+   this release. The guide is part of the update, not an optional follow-up.
+3. Bump `CACHE` in `service-worker.js` whenever a cached file changes and match
+   that number in `guide.html`'s `data-guide-version` and newest `data-release`.
+   `test/guide-contract.test.mjs` checks this in CI. Do not
    cache-bust with `?v=2` instead: the worker precaches the bare path, so a
    query string means that file is never served from the cache at all.
-3. Commit and push `main`. GitHub Pages publishes it; open copies pick up the new
+4. Commit and push `main`. GitHub Pages publishes it; open copies pick up the new
    service worker and reload themselves.
 
 ## Checking your work

@@ -129,6 +129,37 @@
 .note-inbox-card .note-inbox-list { margin-top:10px; }
 .note-inbox-card .empty-state,.memory-list-card .empty-state { padding:28px 10px; }
 
+/* The in-app manual uses the same paper and controls as every other page. */
+.guide-shell { max-width:700px; }
+.guide-shell .guide-tabs { margin:9px 0 0; padding:0; }
+.guide-shell .guide-tabs .tab { flex:1; min-height:48px; font-size:.92rem; }
+.guide-panel[hidden] { display:none!important; }
+.guide-panel { padding:18px; }
+.guide-intro h2 { margin:2px 0 8px; color:var(--page-text); font-size:1.4rem; }
+.guide-intro p:last-child { margin:0 0 15px; color:var(--page-muted); font-size:.92rem; line-height:1.5; }
+.guide-topics { border-top:1px solid var(--diary-rule); }
+.guide-topic { border-bottom:1px solid var(--diary-rule); }
+.guide-topic summary { min-height:60px; display:grid; grid-template-columns:40px minmax(0,1fr) 32px; gap:11px; align-items:center; list-style:none; cursor:pointer; }
+.guide-topic summary::-webkit-details-marker { display:none; }
+.guide-topic summary>span { width:40px; height:40px; display:grid; place-items:center; border:1px solid var(--diary-rule); border-radius:13px; color:var(--accent-deep); background:var(--accent-pale); font-size:1.1rem; }
+.guide-topic summary strong { color:var(--page-text); font-family:var(--font-display); font-size:1.04rem; font-weight:600; }
+.guide-topic summary i { color:var(--accent-deep); font-size:1.35rem; font-style:normal; text-align:center; transition:rotate .18s ease; }
+.guide-topic[open] summary i { rotate:45deg; }
+.guide-topic>div { padding:0 4px 16px 51px; }
+.guide-topic p { margin:0 0 10px; color:var(--page-muted); font-size:.9rem; line-height:1.55; }
+.guide-topic p b { color:var(--page-text); }
+.guide-topic a { min-height:42px; display:inline-flex; align-items:center; color:var(--accent-deep); font-size:.87rem; font-weight:900; text-decoration:none; }
+.guide-topic a:focus-visible,.guide-topic summary:focus-visible { outline:3px solid var(--accent); outline-offset:3px; border-radius:8px; }
+.release-entry { padding:16px 0; border-top:1px solid var(--diary-rule); }
+.release-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--page-muted); font-size:.78rem; font-weight:850; }
+.release-heading span { padding:5px 9px; border-radius:999px; color:var(--accent-deep); background:var(--accent-pale); }
+.release-entry h3 { margin:9px 0 13px; color:var(--page-text); font-size:1.12rem; }
+.release-entry dl { display:grid; grid-template-columns:70px minmax(0,1fr); gap:9px 12px; margin:0; font-size:.9rem; line-height:1.45; }
+.release-entry dt { color:var(--page-text); font-weight:900; }
+.release-entry dd { margin:0; color:var(--page-muted); }
+.guide-endnote { margin:0; padding:13px 0 3px; border-top:1px solid var(--diary-rule); color:var(--page-muted); font-size:.78rem; line-height:1.5; }
+@media (max-width:390px) { .guide-panel { padding:15px; } .guide-topic>div { padding-left:4px; } }
+
 /* A little movement is enough; the OS reduced-motion setting still wins. */
 .profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.dock-add,.primary-action) { transition:transform .16s ease,background-color .16s ease; }
 .profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.dock-add,.primary-action):active { transform:scale(.97); }
