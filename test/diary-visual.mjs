@@ -42,6 +42,13 @@ for (const side of ['her','him']) {
       console.log(`${open ? 'ok  ' : 'FAIL'} ${side}/${name} sheet · ${sheetPath}`);
       await page.locator(`#sheet-${sheet} [data-close-sheet]`).click();
     }
+    if (name === 'guide') {
+      await page.locator('[data-guide-tab="changes"]').click();
+      await page.locator('.history-group').filter({ hasText:'Sep 30' }).locator('summary').click();
+      const historyPath = join(tmpdir(), `ourlittlelist-diary-${side}-history.png`);
+      await page.screenshot({ path:historyPath, fullPage:true });
+      console.log(`ok   ${side}/history · ${historyPath}`);
+    }
     await page.setViewportSize({ width:320,height:700 });
     const narrowOverflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     if (narrowOverflow > 2) problems++;

@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
   <title>Guide &amp; Patch Notes · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="diary.css">
 </head>
-<body class="profile-page" data-app="guide" data-guide-version="67">
+<body class="profile-page" data-app="guide" data-guide-version="68">
   <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">the manual ✎</span></header>
   <main class="app-shell feature-shell guide-shell">
     <section class="feature-hero"><span class="feature-icon">✎</span><h1>Our little manual</h1></section>
@@ -29,10 +29,78 @@
     </section>
 
     <section class="list-card guide-panel" id="guide-changes" role="tabpanel" aria-labelledby="guide-tab-changes" hidden>
-      <div class="guide-intro"><p class="tiny-kicker">the tiny record</p><h2>Patch notes</h2><p>What got added, changed, and fixed. New app versions get a note here too.</p></div>
+      <div class="guide-intro"><p class="tiny-kicker">the tiny record</p><h2>Patch notes</h2><p>The latest bits are here. Open a date below to wander through the older ones.</p></div>
+      <article class="release-entry" data-release="68"><div class="release-heading"><span>v68</span><time datetime="2026-10-01">Oct 1, 2026</time></div><h3>The older pages</h3><dl><dt>Added</dt><dd>A browsable history of earlier updates, grouped by date with links back to their source commits.</dd><dt>Changed</dt><dd>Older patch notes fold away so the newest changes stay easy to find.</dd><dt>Fixed</dt><dd>The log no longer stops at v66 when the app had a whole life before that.</dd></dl></article>
       <article class="release-entry" data-release="67"><div class="release-heading"><span>v67</span><time datetime="2026-10-01">Oct 1, 2026</time></div><h3>The manual exists now</h3><dl><dt>Added</dt><dd>Tutorial and Patch notes in More, available offline.</dd><dt>Changed</dt><dd>The More menu now has a place to check how things work and what’s new.</dd><dt>Fixed</dt><dd>Before the first question, Today no longer claims all questions were used.</dd></dl></article>
       <article class="release-entry" data-release="66"><div class="release-heading"><span>v66</span><time datetime="2026-10-01">Oct 1, 2026</time></div><h3>A calmer little diary</h3><dl><dt>Changed</dt><dd>One shared layout and control style across the sun and moon pages. Notes and Memories now show content first and use the same add-sheet pattern as the list and dates.</dd><dt>Fixed</dt><dd>Removed duplicate add buttons from empty states and improved the moon-side selected-button contrast.</dd></dl></article>
-      <p class="guide-endnote">This log starts with the diary update. Earlier work still exists in the project history; we’re keeping the readable notes here from now on.</p>
+      <div class="history-archive" aria-label="Earlier app history">
+        <h3>Earlier pages</h3>
+        <p>From the Git history. These are short summaries, not a made-up play-by-play.</p>
+        <details class="history-group"><summary><span>Oct 1 · v64–65</span><small>2 updates</small></summary><ol>
+          <li data-release="65"><a href="https://github.com/milovalcodes/our-little-list/commit/d6f0102">v65</a><span><strong>Daily questions got their proper place.</strong> Navigation, private delivery, and a round of fixes came together.</span></li>
+          <li data-release="64"><a href="https://github.com/milovalcodes/our-little-list/commit/022f8f3">v64</a><span><strong>Review fixes.</strong> Patched rough edges found in the previous pass.</span></li>
+        </ol></details>
+        <details class="history-group"><summary><span>Sep 30 · v51–63</span><small>13 updates</small></summary><ol>
+          <li data-release="63"><a href="https://github.com/milovalcodes/our-little-list/commit/8feb532">v63</a><span><strong>Fewer duplicate screens.</strong> Old paths were retired and shared features moved together.</span></li>
+          <li data-release="62"><a href="https://github.com/milovalcodes/our-little-list/commit/283c927">v62</a><span><strong>Quieter list pings.</strong> Added and finished items got distinct notifications that respect quiet hours.</span></li>
+          <li data-release="61"><a href="https://github.com/milovalcodes/our-little-list/commit/9e8b25e">v61</a><span><strong>Groceries return.</strong> Recent items can come back in one tap.</span></li>
+          <li data-release="60"><a href="https://github.com/milovalcodes/our-little-list/commit/d4fe5fb">v60</a><span><strong>Less date-idea clutter.</strong> Extra details fold away and the picker got simpler.</span></li>
+          <li data-release="59"><a href="https://github.com/milovalcodes/our-little-list/commit/27f447c">v59</a><span><strong>Daily question, first pass.</strong> Answers stayed private until both people replied.</span></li>
+          <li data-release="58"><a href="https://github.com/milovalcodes/our-little-list/commit/dd66e19">v58</a><span><strong>Reminders to yourself.</strong> Timed self-asks no longer ping the other phone.</span></li>
+          <li data-release="57"><a href="https://github.com/milovalcodes/our-little-list/commit/8dfe574">v57</a><span><strong>Focus got quieter.</strong> Routine pings wait; urgent asks can still get through.</span></li>
+          <li data-release="56"><a href="https://github.com/milovalcodes/our-little-list/commit/b2a44fd">v56</a><span><strong>Clearer saved places.</strong> Arrival pings and stale-location wording were cleaned up.</span></li>
+          <li data-release="55"><a href="https://github.com/milovalcodes/our-little-list/commit/1dbffc4">v55</a><span><strong>Temporary trip words.</strong> Quick travel updates stop on their own; energy became status words.</span></li>
+          <li data-release="54"><a href="https://github.com/milovalcodes/our-little-list/commit/5915e4d">v54</a><span><strong>One picker for more places.</strong> Asks share a time picker and emoji chooser with quick add.</span></li>
+          <li data-release="53"><a href="https://github.com/milovalcodes/our-little-list/commit/7085d98">v53</a><span><strong>Fix typos in place.</strong> Tasks, notes, and date ideas became editable.</span></li>
+          <li data-release="52"><a href="https://github.com/milovalcodes/our-little-list/commit/14370ab">v52</a><span><strong>Lighter memories.</strong> Photos stopped loading in every shared feed card.</span></li>
+          <li data-release="51"><a href="https://github.com/milovalcodes/our-little-list/commit/96bc9f3">v51</a><span><strong>A handful of useful fixes.</strong> Undo, settings, timed location pause, lighter GPS, and a badge.</span></li>
+        </ol></details>
+        <details class="history-group"><summary><span>Sep 29 · v48–50</span><small>3 updates</small></summary><ol>
+          <li data-release="50"><a href="https://github.com/milovalcodes/our-little-list/commit/dd2e5f3">v50</a><span><strong>One of each.</strong> Overlapping couple tools were merged and arrival pings were added.</span></li>
+          <li data-release="49"><a href="https://github.com/milovalcodes/our-little-list/commit/5e6e298">v49</a><span><strong>Real-phone fixes.</strong> Quick add, saved spots, and the sync chip were corrected.</span></li>
+          <li data-release="48"><a href="https://github.com/milovalcodes/our-little-list/commit/1048d02">v48</a><span><strong>A shared shell.</strong> Navigation and saved-location statuses arrived together.</span></li>
+        </ol></details>
+        <details class="history-group"><summary><span>Sep 28 · v47</span><small>1 update</small></summary><ol>
+          <li data-release="47"><a href="https://github.com/milovalcodes/our-little-list/commit/fa96d62">v47</a><span><strong>Weekend means this weekend.</strong> Fixed that date phrase on Saturdays and Sundays and cleared dead code.</span></li>
+        </ol></details>
+        <details class="history-group"><summary><span>Sep 25 · v45–46</span><small>2 updates</small></summary><ol>
+          <li data-release="46"><a href="https://github.com/milovalcodes/our-little-list/commit/ccd0c50">v46</a><span><strong>Quiet mode, actually quiet.</strong> Its notification behavior was repaired.</span></li>
+          <li data-release="45"><a href="https://github.com/milovalcodes/our-little-list/commit/0a8c09c">v45</a><span><strong>Notification controls.</strong> Choices for pings and Android notification artwork arrived.</span></li>
+        </ol></details>
+        <details class="history-group"><summary><span>Sep 24 · v41–44</span><small>4 updates</small></summary><ol>
+          <li data-release="44"><a href="https://github.com/milovalcodes/our-little-list/commit/fd5af08">v44</a><span><strong>No endless button.</strong> A bad network signal could no longer freeze an action.</span></li>
+          <li data-release="43"><a href="https://github.com/milovalcodes/our-little-list/commit/b28c2f9">v43</a><span><strong>Safer edits.</strong> A redraw stopped eating a delete, and one name stopped overwriting the other.</span></li>
+          <li data-release="42"><a href="https://github.com/milovalcodes/our-little-list/commit/0e7ac97">v42</a><span><strong>Offline follow-up.</strong> Repaired four problems found in the first offline pass.</span></li>
+          <li data-release="41"><a href="https://github.com/milovalcodes/our-little-list/commit/7627b8a">v41</a><span><strong>Bad-network survival.</strong> The installed site became more usable when the connection failed.</span></li>
+        </ol></details>
+        <details class="history-group"><summary><span>Sep 23 · v31–40</span><small>10 updates</small></summary><ol>
+          <li data-release="40"><a href="https://github.com/milovalcodes/our-little-list/commit/e7dcbc2">v40</a><span><strong>Less location churn.</strong> Reduced repeat writes and stopped re-asking a phone that denied access.</span></li>
+          <li data-release="39"><a href="https://github.com/milovalcodes/our-little-list/commit/ccbbfe3">v39</a><span><strong>Less overlap.</strong> Similar couple tools were brought together.</span></li>
+          <li data-release="38"><a href="https://github.com/milovalcodes/our-little-list/commit/19592ab">v38</a><span><strong>Our Sky.</strong> Home became the shared sun-and-moon view.</span></li>
+          <li data-release="37"><a href="https://github.com/milovalcodes/our-little-list/commit/659816a">v37</a><span><strong>Any emoji.</strong> Reactions got the full emoji picker.</span></li>
+          <li data-release="36"><a href="https://github.com/milovalcodes/our-little-list/commit/381d9f9">v36</a><span><strong>Reactions that stick.</strong> Fixed them and added undo.</span></li>
+          <li data-release="35"><a href="https://github.com/milovalcodes/our-little-list/commit/b13f1fe">v35</a><span><strong>More shared day-to-day tools.</strong> Couple features and daily helpers arrived.</span></li>
+          <li data-release="34"><a href="https://github.com/milovalcodes/our-little-list/commit/aec4097">v34</a><span><strong>One phone size.</strong> Compact spacing spread across the site.</span></li>
+          <li data-release="33"><a href="https://github.com/milovalcodes/our-little-list/commit/9443421">v33</a><span><strong>Push fixes.</strong> Notification delivery and shared-app handling were hardened.</span></li>
+          <li data-release="32"><a href="https://github.com/milovalcodes/our-little-list/commit/6f08d29">v32</a><span><strong>Location met status.</strong> The live spot joined the smaller Right now view.</span></li>
+          <li data-release="31"><a href="https://github.com/milovalcodes/our-little-list/commit/2eb6cf7">v31</a><span><strong>Separate answers.</strong> Fixed one phone acting for both people.</span></li>
+        </ol></details>
+        <details class="history-group"><summary><span>Sep 18 · v25–30</span><small>6 updates</small></summary><ol>
+          <li data-release="30"><a href="https://github.com/milovalcodes/our-little-list/commit/2a007da">v30</a><span><strong>Sun sign-in.</strong> The sun account was admitted.</span></li>
+          <li data-release="29"><a href="https://github.com/milovalcodes/our-little-list/commit/3f0aae4">v29</a><span><strong>Clearer sign-in words.</strong> Removed copy that still described one shared login.</span></li>
+          <li data-release="28"><a href="https://github.com/milovalcodes/our-little-list/commit/5c23876">v28</a><span><strong>Sign out.</strong> Added a way to leave the current account.</span></li>
+          <li data-release="27"><a href="https://github.com/milovalcodes/our-little-list/commit/fb2ac1b">v27</a><span><strong>Smaller art.</strong> Shrunk the main artwork from 5.6 MB to 234 KB.</span></li>
+          <li data-release="26"><a href="https://github.com/milovalcodes/our-little-list/commit/875a0ff">v26</a><span><strong>Two accounts.</strong> Replaced the shared login and side PINs with one account each.</span></li>
+          <li data-release="25"><a href="https://github.com/milovalcodes/our-little-list/commit/533258c">v25</a><span><strong>Reminders that arrive.</strong> Delivery and the bugs behind it got a repair pass.</span></li>
+        </ol></details>
+        <details class="history-group"><summary><span>Sep 16–17 · early days</span><small>before the steady numbering</small></summary><ol>
+          <li><a href="https://github.com/milovalcodes/our-little-list/commit/3e09929">v5</a><span><strong>First cozy website.</strong> The little home went online.</span></li>
+          <li><a href="https://github.com/milovalcodes/our-little-list/commit/5f2d282">Sep 16</a><span><strong>Sun and moon.</strong> The site picked its look; the portraits, map markers, and mobile map were refined through the day.</span></li>
+          <li><a href="https://github.com/milovalcodes/our-little-list/commit/5ebdeb0">Sep 16</a><span><strong>Shared space.</strong> The website connected to a private place for two.</span></li>
+          <li><a href="https://github.com/milovalcodes/our-little-list/commit/84e671b">Sep 17</a><span><strong>Talking across phones.</strong> Shared updates, Android pushes, permission checks, and clearer feedback took shape.</span></li>
+          <li><a href="https://github.com/milovalcodes/our-little-list/commit/04907f2">Sep 17</a><span><strong>More us.</strong> Profiles, statuses, and date ideas joined the app.</span></li>
+        </ol><p class="history-footnote">The early offline cache jumps from v5 to v25, so we’re not inventing v6–24 notes. The commits are linked if you want the little archaeological dig.</p></details>
+      </div>
     </section>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="guide.js"></script><script type="module" src="live-notes.js"></script>

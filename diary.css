@@ -158,6 +158,22 @@
 .release-entry dt { color:var(--page-text); font-weight:900; }
 .release-entry dd { margin:0; color:var(--page-muted); }
 .guide-endnote { margin:0; padding:13px 0 3px; border-top:1px solid var(--diary-rule); color:var(--page-muted); font-size:.78rem; line-height:1.5; }
+.history-archive { border-top:1px solid var(--diary-rule); padding-top:17px; }
+.history-archive>h3 { margin:0 0 4px; color:var(--page-text); font-size:1.1rem; }
+.history-archive>p { margin:0 0 14px; color:var(--page-muted); font-size:.84rem; line-height:1.45; }
+.history-group { border-top:1px solid var(--diary-rule); }
+.history-group summary { min-height:55px; display:flex; align-items:center; justify-content:space-between; gap:12px; list-style:none; cursor:pointer; color:var(--page-text); font-family:var(--font-display); font-size:.98rem; font-weight:800; }
+.history-group summary::-webkit-details-marker { display:none; }
+.history-group summary::before { content:'＋'; color:var(--accent-deep); font-size:1.1rem; margin-right:4px; }
+.history-group[open] summary::before { content:'−'; }
+.history-group summary span { flex:1; }
+.history-group summary small { color:var(--page-muted); font-family:var(--font-body); font-size:.78rem; font-weight:700; text-align:right; }
+.history-group summary:focus-visible,.history-group a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; border-radius:6px; }
+.history-group ol { list-style:none; margin:0 0 13px; padding:0; }
+.history-group li { display:grid; grid-template-columns:62px minmax(0,1fr); gap:11px; padding:11px 0; border-top:1px solid var(--diary-rule); color:var(--page-muted); font-size:.89rem; line-height:1.48; }
+.history-group li>a { align-self:start; justify-self:start; padding:4px 7px; border-radius:9px; background:var(--accent-pale); color:var(--accent-deep); font-weight:900; text-decoration:none; }
+.history-group li strong { color:var(--page-text); font-weight:850; }
+.history-footnote { margin:0 0 18px; color:var(--page-muted); font-size:.78rem; line-height:1.5; }
 @media (max-width:390px) { .guide-panel { padding:15px; } .guide-topic>div { padding-left:4px; } }
 
 /* A little movement is enough; the OS reduced-motion setting still wins. */

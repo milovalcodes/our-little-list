@@ -113,13 +113,17 @@ console.log('\n--- interactions ---');
   const latest = await page.locator('#guide-changes .release-entry').first().getAttribute('data-release');
   const currentVersion = await page.locator('body').getAttribute('data-guide-version');
   const patchVisible = await page.locator('#guide-changes').isVisible();
+  const archive = page.locator('.history-group');
+  await archive.filter({ hasText:'Sep 30' }).locator('summary').click();
+  const archivedVersions = await archive.filter({ hasText:'Sep 30' }).locator('[data-release]').count();
+  const firstSource = await archive.filter({ hasText:'Sep 30' }).locator('[data-release]').first().locator('a').getAttribute('href');
   await page.locator('[data-guide-tab="tutorial"]').click();
   const tutorialVisible = await page.locator('#guide-tutorial').isVisible();
   await page.locator('#guide-status summary').click();
   const mapExplanation = await page.locator('#guide-status').innerText();
   const link = await page.locator('#guide-status a').getAttribute('href');
-  note(latest === currentVersion && patchVisible && tutorialVisible && mapExplanation.includes('last-known') && link === 'status.html' && errors.length === 0,
-       'tutorial, patch notes, and direct tabs work on the moon side', errors[0] || JSON.stringify({ latest, patchVisible, tutorialVisible, link }));
+  note(latest === currentVersion && patchVisible && archivedVersions === 13 && firstSource?.includes('/commit/') && tutorialVisible && mapExplanation.includes('last-known') && link === 'status.html' && errors.length === 0,
+       'tutorial, source-linked history, and direct tabs work on the moon side', errors[0] || JSON.stringify({ latest, patchVisible, archivedVersions, firstSource, tutorialVisible, link }));
   await context.close();
 }
 
