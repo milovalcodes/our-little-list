@@ -10,7 +10,6 @@ import { questionClock } from './question-prompts.js';
 import { escapeHtml, showFailure, toast } from './ui-helpers.js';
 
 const badge = document.getElementById('activity-badge');
-const helpBadge = document.getElementById('help-badge');
 const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [] };
 let dashboardFrame = 0;
 
@@ -64,12 +63,6 @@ function renderBadge() {
     badge.setAttribute('aria-label', `${newCount} new`);
   }
 
-  if (helpBadge) {
-    const waiting = buckets.help.filter(request => request.to === viewer && request.from !== viewer && request.state === 'open').length;
-    helpBadge.hidden = waiting === 0;
-    helpBadge.textContent = String(waiting);
-    helpBadge.setAttribute('aria-label', `${waiting} waiting`);
-  }
   setIconBadge(newCount + buckets.help.filter(request => request.to === viewer && request.from !== viewer && request.state === 'open' && !fresh(request.createdAt)).length);
 }
 

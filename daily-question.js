@@ -34,19 +34,34 @@ export function startDailyQuestion({ data, viewer, other }) {
     void loadAnswers();
   });
 
-  async function loadAnswers() {
+  // Answers are private until both are in, and the rules enforce that. So:
+  // - your own answer is only read once you have one (reading a missing doc
+  //   is refused, which used to pop "answers did not load" every morning);
+  // - the partner's is read once both are in, and when you answered second
+  //   the server may not have your answer yet, so a refusal or no signal just
+  //   waits and tries again instead of showing an error.
+  let retryTimer = 0;
+  async function loadAnswers(attempt = 0) {
     if (!question) return;
+    window.clearTimeout(retryTimer);
     const revision = ++answerRead;
-    try {
-      const mine = await data.readDoc('questionAnswers', `${day}-${viewer}`);
-      const both = Boolean(question.answers?.her?.at && question.answers?.him?.at);
-      const theirs = both ? await data.readDoc('questionAnswers', `${day}-${other}`) : null;
-      if (revision !== answerRead) return;
-      mineAnswer = mine;
-      partnerAnswer = theirs;
-      render();
-    } catch (_) {
-      if (revision === answerRead) showFailure('answers did not load.', 'check the internet and reopen today.');
+    const iAnswered = Boolean(question.answers?.[viewer]?.at);
+    const both = iAnswered && Boolean(question.answers?.[other]?.at);
+    let mine = mineAnswer;
+    let theirs = partnerAnswer;
+    let missed = false;
+    if (iAnswered && !(mine?.text && Number(mine.at) >= Number(question.answers[viewer].at))) {
+      try { mine = await data.readDoc('questionAnswers', `${day}-${viewer}`) || mine; } catch (_) { missed = true; }
+    }
+    if (both && !theirs?.text) {
+      try { theirs = await data.readDoc('questionAnswers', `${day}-${other}`); } catch (_) { missed = true; }
+    }
+    if (revision !== answerRead) return;
+    mineAnswer = iAnswered ? mine : null;
+    partnerAnswer = both ? theirs : null;
+    render();
+    if ((missed || (both && !partnerAnswer?.text)) && attempt < 6) {
+      retryTimer = window.setTimeout(() => void loadAnswers(attempt + 1), Math.min(30000, 2000 * 2 ** attempt));
     }
   }
 

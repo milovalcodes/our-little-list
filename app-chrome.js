@@ -357,7 +357,9 @@ function setupRowMenus() {
     const actions = menus[kindOf(row)].filter(([,selector]) => row.querySelector(selector));
     if (!actions.length) return;
     row.classList.add('menu-open');
-    row.insertAdjacentHTML('beforeend', `<div class="row-context-menu" role="menu">${actions.map(([label],index) => `<button type="button" role="menuitem" data-menu-index="${index}">${label}</button>`).join('')}</div>`);
+    // The pin button already says "pin" or "unpin"; the menu uses its words.
+    const labelOf = ([label, selector]) => label === 'pin / unpin' ? (row.querySelector(selector)?.textContent.replace(/[^a-z ]/gi, '').trim() || 'pin') : label;
+    row.insertAdjacentHTML('beforeend', `<div class="row-context-menu" role="menu">${actions.map((action,index) => `<button type="button" role="menuitem" data-menu-index="${index}">${escapeHtml(labelOf(action))}</button>`).join('')}</div>`);
     row._menuActions = actions;
     window.littleHaptic?.('tap');
   };
@@ -403,6 +405,9 @@ function setupFridgeNote(data, viewer, other) {
   const launchpad = document.querySelector('.home-next-up');
   if (!launchpad) return;
   launchpad.insertAdjacentHTML('beforebegin', `<section class="fridge-note" id="fridge-note"><button class="fridge-paper" id="fridge-open" type="button"><span id="fridge-emoji">📌</span><div><small id="fridge-kicker">on the fridge</small><strong id="fridge-copy">tap to pin something</strong></div><i>✎</i></button></section>`);
+  // Home is built before this section exists, so the browser's own jump to
+  // #fridge-note (from a "pinned on the fridge" ping) found nothing.
+  if (location.hash === '#fridge-note') requestAnimationFrame(() => document.getElementById('fridge-note')?.scrollIntoView({ block: 'center' }));
   document.body.insertAdjacentHTML('beforeend', `<section class="app-sheet fridge-sheet" id="sheet-fridge" role="dialog" aria-modal="true" aria-labelledby="fridge-title" hidden><header class="sheet-head"><div><small>a note that stays up</small><h2 id="fridge-title">On the fridge</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header><form id="fridge-form"><label><span>tiny icon</span><button class="emoji-select" id="fridge-emoji-pick" type="button">📌 pick an emoji</button></label><label><span>the note</span><textarea id="fridge-text" maxlength="240" placeholder="important-ish household lore"></textarea></label><div class="fridge-actions"><button class="primary-action" type="submit">pin it</button><button class="soft-delete" id="fridge-clear" type="button">take it down</button></div></form></section>`);
   let notes = [];
   let fridgeEmoji = '📌';

@@ -247,6 +247,8 @@ function selectTab(next, updateHash = false) {
   byId('shared-task-title').placeholder = grocery ? 'oat milk, batteries, tiny treats…' : 'type it before it leaves your brain';
   byId('task-options').hidden = grocery || tab === 'done';
   byId('grocery-aisle-wrap').hidden = !grocery;
+  // Groceries have no day, only an aisle and a repeat.
+  if (byId('task-more-summary')) byId('task-more-summary').textContent = grocery ? '⋯ aisle / repeat' : '⋯ when / repeat';
   byId('repeat-options').hidden = tab === 'done';
   byId('page-add').hidden = tab === 'done';
   byId('page-add').dataset.openSheet = asks ? 'ask-form' : 'task-form';

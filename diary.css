@@ -199,3 +199,29 @@
 @media (prefers-reduced-motion:reduce) {
   .profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.dock-add,.primary-action) { transition:none; }
 }
+
+/* Review fixes (v70) */
+/* The moon gradient sits behind the header's corner buttons; give them a solid face. */
+.him-theme .feature-shell > .feature-hero :is(.topbar-search,.today-focus-open) { background:#273960; color:#f1e6ff; border-color:rgba(255,255,255,.2); }
+.profile-page .topbar-search { font-size:1.35rem; line-height:1; }
+/* Today keeps its date: it is the one header kicker that carries information. */
+.feature-shell > .feature-hero #today-date { display:block; margin:0 0 2px; }
+/* Moved into a sheet, the focus card already has the sheet's title. */
+.page-compose-sheet .today-card-head { display:none; }
+/* Cards nested one level down still look like cards. */
+.feature-shell :is(.asks-workspace > :is(.help-inbox,.help-mine),.today-new > .activity-card,.phone-health > .status-card) {
+  margin-top:var(--diary-gap); padding:15px; border:1px solid var(--diary-rule); border-radius:var(--diary-radius);
+  background:var(--diary-panel); box-shadow:var(--diary-shadow);
+}
+.feature-shell .asks-workspace { margin-top:var(--diary-gap); }
+/* Date cards: keep the vibe label on one line; the hit area comes from negative margin. */
+.feature-shell .date-idea-top { gap:6px; }
+.feature-shell .date-idea-top > span { white-space:nowrap; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.profile-page .date-actions button { min-width:40px; min-height:40px; margin:-4px -2px; }
+/* Moon side: typed text and labels on light fields must be dark. */
+.him-theme :is(.quick-add-form,.fridge-sheet) :is(input,textarea),
+.him-theme .settings-names input { color:#19264a; }
+.him-theme .settings-names .profile-name-person > span { color:#2b2350; }
+@media (max-width:520px) {
+  .feature-shell > .feature-hero:not(.today-hero),.feature-shell > .feature-hero:not(.now-hero):not(.today-hero) { padding-right:54px; }
+}
