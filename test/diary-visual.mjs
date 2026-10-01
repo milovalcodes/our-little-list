@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const base = 'http://127.0.0.1:8777';
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
 const pages = ['home','tasks','notes','today','status','dates','memories','phone-check','guide'];
 let problems = 0;
 

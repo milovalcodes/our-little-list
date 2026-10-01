@@ -322,7 +322,7 @@ async function openSlow(path) {
   await page.waitForTimeout(900);
   const row = page.locator('.note-thread-row', { hasText: 'oat milk is critically low' });
   const pinnedThere = await row.locator('[data-pin-note]').innerText().catch(() => '');
-  await rowMenu(row, 'pin / unpin');
+  await rowMenu(row, 'unpin');
   await page.waitForTimeout(400);
   await page.goto(`${BASE}/her.html`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(900);
