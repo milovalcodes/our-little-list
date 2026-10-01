@@ -30,7 +30,10 @@ export function startDailyQuestion({ data, viewer, other }) {
     const button = $('question-save');
     setButtonBusy(button, true, 'saving…');
     try {
-      const existing = await data.readDoc('questions', day);
+      // The live copy, not a server read: a read with no signal threw, and the
+      // answer was lost even though the write itself would have queued. The
+      // merge keeps the other answer either way.
+      const existing = question;
       const hadAnswered = Boolean(existing?.answers?.[viewer]?.text);
       const answer = { text, at:Date.now() };
       await data.setTo('questions', day, { day, promptId, answers:{ [viewer]:answer } });

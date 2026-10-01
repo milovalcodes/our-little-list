@@ -4,13 +4,13 @@
 // and links to Settings, where each one has its own button.
 
 import { locationPermissionState, LOCATION_ASKED_KEY } from './auto-location.js';
-import { isStandalone } from './device-mode.js';
+import { isStandalone, isApplePhone } from './device-mode.js';
 
 const LATER_KEY = 'our-little-list-setup-later';
 const LATER_MS = 3 * 24 * 60 * 60 * 1000;
 
 const standalone = isStandalone();
-const iPhone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const iPhone = isApplePhone();
 
 async function missing() {
   const list = [];

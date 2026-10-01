@@ -1,6 +1,6 @@
 import { VAPID_PUBLIC_KEY, PUSH_SUBS } from './push-config.js';
 import { readNotificationPreferences } from './notification-preferences.js';
-import { isStandalone } from './device-mode.js';
+import { isStandalone, isApplePhone } from './device-mode.js';
 
 // Turns the URL-safe base64 VAPID key into the Uint8Array pushManager wants.
 function keyBytes(base64) {
@@ -18,7 +18,7 @@ function pushSupported() {
 export async function pushState() {
   if (!pushSupported()) {
     const installed = isStandalone();
-    const apple = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const apple = isApplePhone();
     if (apple && !installed) return 'needs-install';
     return 'unsupported';
   }

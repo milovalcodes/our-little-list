@@ -1,4 +1,4 @@
-import { escapeHtml, toast, dateKey, setButtonBusy, showFailure } from './ui-helpers.js';
+import { escapeHtml, toast, dateKey, setButtonBusy, showFailure, keepInlineEdits } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { initHelpPanel } from './help-panel.js';
@@ -41,7 +41,8 @@ byId('shared-task-form').addEventListener('submit', async event => {
   const title = byId('shared-task-title').value.trim();
   if (!title) return;
   const grocery = tab === 'grocery';
-  const repeat = grocery ? 'once' : recurrence;
+  // Groceries can repeat too (weekly milk); the repeat chips show on that tab.
+  const repeat = recurrence;
 
   // The when-chips are hidden on the grocery tab, so whatever was last picked on
   // the to-do tab must not follow the groceries over and set a due date nobody
@@ -90,7 +91,11 @@ byId('task-list').addEventListener('click', async event => {
         toast(`done · back on ${prettyDue(rolled)}`);
       }
       else await data.updateIn('items',item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
-      if (finishing) void data.notify(other, { title:`${personName(viewer)} finished something ✓`, body:item.title, url:'tasks.html', kind:'item-finished' });
+      // Ticking off a whole shop used to send one ping per item. Groceries say
+      // something once, when the list is empty; tasks still ping each time.
+      const groceriesLeft = item.type === 'grocery' ? items.filter(entry => entry.type === 'grocery' && !entry.done && entry.id !== item.id && (!entry.recurrence || entry.recurrence === 'once')).length : 0;
+      if (finishing && item.type !== 'grocery') void data.notify(other, { title:`${personName(viewer)} finished something ✓`, body:item.title, url:'tasks.html', kind:'item-finished' });
+      else if (finishing && groceriesLeft === 0) void data.notify(other, { title:`${personName(viewer)} got all the groceries 🛒`, body:'the grocery list is empty', url:'tasks.html#grocery', kind:'item-finished' });
     }
     // A repeat has no Done tab to undo from, so "undo" puts the old date back.
     if(button.dataset.action==='undo-roll')await data.updateIn('items',item.id,{due:item.previousDue||'',previousDue:'',lastDoneBy:'',lastDoneAt:0});
@@ -125,9 +130,10 @@ byId('task-list').addEventListener('submit', async event => {
   try {
     await data.updateIn('items', item.id, {
       title,
-      due: item.type === 'grocery' ? '' : form.querySelector('[name="due"]').value,
+      // A grocery has no day field in the form: keep the day its repeat runs on.
+      due: item.type === 'grocery' ? (item.due || '') : form.querySelector('[name="due"]').value,
       aisle: item.type === 'grocery' ? form.querySelector('[name="aisle"]').value : '',
-      recurrence: item.type === 'grocery' ? 'once' : form.querySelector('[name="recurrence"]').value
+      recurrence: form.querySelector('[name="recurrence"]').value
     });
     editingTaskId = '';
     render();
@@ -168,7 +174,7 @@ function render() {
   const empty = byId('empty-state');
   empty.querySelector('span').textContent = labels[2];
   empty.querySelector('strong').textContent = labels[3];
-  byId('task-list').innerHTML = tab==='grocery'?groceryMarkup(list):list.map(taskMarkup).join('');
+  keepInlineEdits(byId('task-list'), () => { byId('task-list').innerHTML = tab==='grocery'?groceryMarkup(list):list.map(taskMarkup).join(''); });
   renderRecentGroceries();
 }
 
@@ -193,7 +199,14 @@ function renderRecentGroceries() {
 }
 
 function selectTab(next, updateHash = false) {
+  const previous = tab;
   tab = ['tasks', 'grocery', 'asks', 'done'].includes(next) ? next : 'tasks';
+  // A repeat picked on one tab must not follow you to the other and quietly
+  // make the next grocery (or task) repeat.
+  if (previous !== tab) {
+    recurrence = 'once';
+    document.querySelectorAll('.repeat-chip').forEach(item => item.classList.toggle('active', item.dataset.repeat === 'once'));
+  }
   document.querySelectorAll('.tab').forEach(item => item.classList.toggle('active', item.dataset.tab === tab));
   const asks = tab === 'asks';
   const grocery = tab === 'grocery';
@@ -224,7 +237,7 @@ function taskMarkup(item) {
     <input name="title" aria-label="Task title" maxlength="180" required value="${escapeHtml(item.title)}">
     ${item.type === 'grocery'
       ? `<label>aisle<select name="aisle">${['produce','fridge','pantry','frozen','home','other'].map(value => `<option value="${value}"${item.aisle === value ? ' selected' : ''}>${value === 'home' ? 'home stuff' : value}</option>`).join('')}</select></label>`
-      : `<label>day<input type="date" name="due" value="${escapeHtml(item.due || '')}"></label><label>repeat<select name="recurrence">${['once','daily','weekly','monthly'].map(value => `<option value="${value}"${item.recurrence === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label>`}
+      : `<label>day<input type="date" name="due" value="${escapeHtml(item.due || '')}"></label>`}<label>repeat<select name="recurrence">${['once','daily','weekly','monthly'].map(value => `<option value="${value}"${(item.recurrence || 'once') === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label>
     <div class="inline-edit-actions"><button type="submit">save</button><button type="button" data-action="cancel-edit">cancel</button></div>
   </form>` : `<button class="task-title" data-action="edit" type="button" aria-label="Edit ${escapeHtml(item.title)}">${escapeHtml(item.title)}</button>`;
   return `<li class="task-row${doneClass}" data-id="${escapeHtml(item.id)}">
@@ -237,8 +250,9 @@ function taskMarkup(item) {
 function groceryMarkup(list){const groups=new Map();list.forEach(item=>{const aisle=item.aisle||'other';if(!groups.has(aisle))groups.set(aisle,[]);groups.get(aisle).push(item);});return [...groups].map(([aisle,entries])=>`<li class="aisle-label">${escapeHtml(aisle)}</li>${entries.map(taskMarkup).join('')}`).join('');}
 
 window.addEventListener('littlelist:profile',render);
-window.addEventListener('hashchange', () => selectTab(location.hash === '#asks' ? 'asks' : 'tasks'));
-selectTab(location.hash === '#asks' ? 'asks' : 'tasks');
+const tabFromHash = () => location.hash === '#asks' ? 'asks' : location.hash === '#grocery' ? 'grocery' : 'tasks';
+window.addEventListener('hashchange', () => selectTab(tabFromHash()));
+selectTab(tabFromHash());
 
 function nextDue(value,repeat){
   const today=new Date();today.setHours(12,0,0,0);

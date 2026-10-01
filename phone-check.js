@@ -1,11 +1,11 @@
 import { setButtonBusy } from './ui-helpers.js';
-import { isStandalone } from './device-mode.js';
+import { isStandalone, isApplePhone } from './device-mode.js';
 import { bootPage } from './page-boot.js';
 import { ensurePushSubscription, pushState } from './push-client.js';
 import { startPresence } from './presence.js';
 import { startPingSettings } from './pings-settings.js';
 
-const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isApple=isApplePhone();
 const $=id=>document.getElementById(id);
 let wakeLock=null;
 const { data, viewer } = await bootPage({onAuth:(user,layer)=>{

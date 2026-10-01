@@ -1,4 +1,4 @@
-import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
+import { escapeHtml, setButtonBusy, showFailure, toast, keepInlineEdits } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { addDateIdea } from './records.js';
@@ -62,7 +62,7 @@ function render(){
   $('date-count').textContent=finished?`${left} left · ${finished} done`:`${ideas.length} saved`;
   $('date-empty').hidden=ideas.length>0;
   const visible=ideas.slice(0,viewLimit);
-  $('date-list').innerHTML=visible.map(dateCardMarkup).join('');
+  keepInlineEdits($('date-list'),()=>{$('date-list').innerHTML=visible.map(dateCardMarkup).join('');});
   $('date-more').hidden=visible.length>=ideas.length;
   $('date-more').textContent=`show ${Math.min(8,ideas.length-visible.length)} more`;
 }

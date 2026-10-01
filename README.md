@@ -18,6 +18,7 @@ Each thing lives in one place:
 - **Date ideas** — ideas with optional details, filters and a random picker; completed dates can become memories.
 - **Memories** — photos and small things worth keeping.
 - **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
+  Quiet hours hold ordinary pings until morning; reminders still ring at their time, and arrivals come through silently. A focus session holds chatter five minutes at a time, so ending it early lets things through soon after.
 
 Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 

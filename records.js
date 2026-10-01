@@ -54,7 +54,7 @@ export async function sendAsk(data, { viewer, other, title, note = '', emoji = '
     // The id travels with the nudge so the delivery worker can drop it if the
     // ask is deleted, sorted or turned down before the time comes.
     scheduled = await data.notify(recipient, {
-      title: `⏰ ${title}`, body: note || `from ${who}`, url: 'tasks.html#asks',
+      title: `⏰ ${title}`, body: note || (forMe ? 'your reminder' : `from ${who}`), url: 'tasks.html#asks',
       kind: 'reminder', ref: `help/${record?.id || ''}`, sendAt: Number(dueAt), urgent:urgent===true
     });
   }
