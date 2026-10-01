@@ -71,7 +71,7 @@ async function boot() {
     const overlap=overlappingPlace(places.filter(place=>!isPendingDelete('places',place.id)),point,radius);
     if(overlap){
       const distance=placeDistance(overlap,point);
-      const smaller=[100,150,250,400].filter(value=>value<radius&&distance>(Number(overlap.radius)||150)+value).pop();
+      const smaller=[50,100,150,250,400].filter(value=>value<radius&&distance>(Number(overlap.radius)||150)+value).pop();
       overlapHint.hidden=false;
       overlapHint.textContent=`This circle overlaps ${placeDisplay(overlap).label}. ${smaller?`Try ${smaller} m instead.`:'Move farther away, or remove the old spot first.'}`;
       if(smaller)radiusField.value=String(smaller);

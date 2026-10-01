@@ -1,4 +1,4 @@
-import { escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
+import { escapeHtml, toast, setButtonBusy, showFailure, keepInlineEdits } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { timeAgo } from './time-format.js';
@@ -59,7 +59,8 @@ async function saveReaction(targetId,value,button){const id=`note-${targetId}-${
 function renderNotes() {
   const list = notes.filter(note => !isPendingDelete('notes', note.id)).slice(0, 20);
   $('note-inbox-empty').hidden = list.length > 0;
-  $('note-inbox-list').innerHTML = list.map(note => {
+  const container = $('note-inbox-list');
+  keepInlineEdits(container, () => { container.innerHTML = list.map(note => {
     const mine = note.sender === sender || note.from === sender;
     const from = mine ? sender : recipient;
     const myReaction = !mine ? findMyReaction(note.id) : null;
@@ -69,8 +70,8 @@ function renderNotes() {
     const body = editing
       ? `<form class="inline-edit" data-note-edit="${escapeHtml(note.id)}"><textarea maxlength="500" required aria-label="Edit note">${escapeHtml(note.body || note.message || '')}</textarea><div class="inline-edit-actions"><button type="submit">save</button><button type="button" data-cancel-note>cancel</button></div></form>`
       : `<p>${escapeHtml(note.body || note.message || '')}</p>`;
-    return `<article class="note-thread-row${mine ? ' mine' : ''}" data-id="${escapeHtml(note.id)}"><span>${moods[note.mood] || '💌'}</span><div><small>${mine ? 'you' : escapeHtml(personName(from))} · ${timeAgo(note.createdAt)}${note.editedAt ? ' · edited' : ''}</small>${body}<div class="reaction-controls">${myReaction ? `<button class="reaction-display" type="button" data-note-picker="${escapeHtml(note.id)}"><b>${escapeHtml(myReaction.emoji)}</b><span>yours · tap to change</span></button>` : ''}${partnerReaction ? `<span class="reaction-display passive"><b>${escapeHtml(partnerReaction.emoji)}</b><span>${escapeHtml(personName(recipient))}</span></span>` : ''}${!mine ? `<button class="reaction-trigger" type="button" data-note-picker="${escapeHtml(note.id)}">react</button>` : ''}<button class="reaction-trigger" type="button" data-pin-note="${escapeHtml(note.id)}">${note.pinned ? '📌 unpin' : '📌 pin'}</button>${canEdit && !editing ? `<button class="reaction-trigger" type="button" data-edit-note="${escapeHtml(note.id)}">edit</button>` : ''}${mine ? `<button class="reaction-trigger" type="button" data-delete-note="${escapeHtml(note.id)}">delete</button>` : ''}</div></div></article>`;
-  }).join('');
+    return `<article class="note-thread-row${mine ? ' mine' : ''}" data-id="${escapeHtml(note.id)}"><span>${moods[note.mood] || '💌'}</span><div><small>${mine ? 'you' : escapeHtml(personName(from))} · ${timeAgo(note.createdAt)}${note.editedAt ? ' · edited' : ''}</small>${body}<div class="reaction-controls">${myReaction ? `<button class="reaction-display" type="button" data-note-picker="${escapeHtml(note.id)}"><b>${escapeHtml(myReaction.emoji)}</b><span>yours · tap to change</span></button>` : ''}${partnerReaction ? `<span class="reaction-display passive"><b>${escapeHtml(partnerReaction.emoji)}</b><span>${escapeHtml(personName(recipient))}</span></span>` : ''}${!mine ? `<button class="reaction-trigger" type="button" data-note-picker="${escapeHtml(note.id)}">react</button>` : ''}<button class="reaction-trigger note-tool" type="button" data-pin-note="${escapeHtml(note.id)}">${note.pinned ? '📌 unpin' : '📌 pin'}</button>${canEdit && !editing ? `<button class="reaction-trigger note-tool" type="button" data-edit-note="${escapeHtml(note.id)}">edit</button>` : ''}${mine ? `<button class="reaction-trigger note-tool" type="button" data-delete-note="${escapeHtml(note.id)}">delete</button>` : ''}</div></div></article>`;
+  }).join(''); });
 }
 
 function markIncomingRead(){notes.filter(note=>(note.recipient===sender||note.to===sender)&&!note.read&&!markedRead.has(note.id)).forEach(note=>{markedRead.add(note.id);void data.updateIn('notes',note.id,{read:true,readAt:Date.now()}).catch(()=>markedRead.delete(note.id));});}

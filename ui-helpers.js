@@ -21,3 +21,39 @@ export function setButtonBusy(button,busy,label='thinking…'){
 }
 export function showFailure(message,solution){window.showLittleFailure?.(message,solution);}
 
+
+// Lists re-render from their live listener on every change either phone
+// makes. An inline edit form rebuilt that way lost whatever was half-typed
+// (and the cursor) the moment the other phone added a task or read a note.
+// Paint through this and open edit forms keep their text, focus and caret.
+export function keepInlineEdits(container, paint) {
+  if (!container) { paint(); return; }
+  const key = form => Object.entries(form.dataset).map(([name, value]) => `${name}=${value}`).join('&');
+  const fields = form => [...form.elements].filter(el => /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+  const saved = [...container.querySelectorAll('form.inline-edit')].map(form => ({
+    key: key(form),
+    values: fields(form).map(el => (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value)
+  }));
+  const active = document.activeElement;
+  const activeForm = container.contains(active) ? active.closest('form.inline-edit') : null;
+  const activeKey = activeForm ? key(activeForm) : '';
+  const activeIndex = activeForm ? fields(activeForm).indexOf(active) : -1;
+  let caret = null;
+  try { if (activeForm) caret = [active.selectionStart, active.selectionEnd]; } catch (_) { caret = null; }
+  paint();
+  if (!saved.length) return;
+  const forms = [...container.querySelectorAll('form.inline-edit')];
+  for (const entry of saved) {
+    const form = forms.find(candidate => key(candidate) === entry.key);
+    if (!form) continue;
+    fields(form).forEach((el, index) => {
+      if (!(index in entry.values)) return;
+      if (el.type === 'checkbox' || el.type === 'radio') el.checked = entry.values[index]; else el.value = entry.values[index];
+    });
+    if (entry.key === activeKey && activeIndex >= 0) {
+      const target = fields(form)[activeIndex];
+      target?.focus({ preventScroll: true });
+      try { if (caret && caret[0] != null) target.setSelectionRange(caret[0], caret[1]); } catch (_) { /* not a text field */ }
+    }
+  }
+}

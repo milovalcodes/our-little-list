@@ -4,13 +4,14 @@
 // the permission row up there is the one place that says whether pings work.
 
 import { setButtonBusy, showFailure, toast } from './ui-helpers.js';
+import { isApplePhone } from './device-mode.js';
 import { ensurePushSubscription, pushState } from './push-client.js';
 import { NOTIFICATION_GROUPS, normalizeNotificationPreferences, vibrationPattern } from './notification-policy.js';
 import { readNotificationPreferences, saveNotificationPreferences } from './notification-preferences.js';
 
 export function startPingSettings({ data, viewer, onChange = () => {} }) {
 const $ = id => document.getElementById(id);
-const isApple = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isApple = isApplePhone();
 const isAndroid = /Android/i.test(navigator.userAgent);
 let preferences = readNotificationPreferences();
 renderForm();

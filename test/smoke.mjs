@@ -592,6 +592,10 @@ async function openSlow(path) {
   await page.waitForTimeout(150);
   const herPings = await page.evaluate(() => window.questionPings);
   const herOwn = await page.locator('#question-answers').innerText();
+  const sharedQuestionHasWords = await page.evaluate(async () => {
+    const { sharedLayer } = await import('./data-hub.js');
+    return JSON.stringify(await (await sharedLayer()).readOnce('questions')).includes('sun answer only');
+  });
   await page.goto(`${BASE}/today.html?as=him`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(900);
   const himBefore = await page.locator('#question-answers').innerText();
@@ -610,10 +614,10 @@ async function openSlow(path) {
   await page.click('#question-save');
   await page.waitForTimeout(150);
   const himPings = await page.evaluate(() => window.questionPings);
-  note(herOwn.includes('sun answer only') && !himBefore.includes('sun answer only')
+  note(herOwn.includes('sun answer only') && !sharedQuestionHasWords && !himBefore.includes('sun answer only')
        && himBefore.includes('answered') && bothAnswers.includes('sun answer only') && bothAnswers.includes('moon answer too')
        && himPings.length === 0 && herPings.length === 0 && errors.length === 0,
-       'daily answers reveal together; only the Worker queues pings', errors[0] || JSON.stringify({ herOwn, himBefore, bothAnswers, herPings, himPings }));
+       'daily answers stay private until both reply; only the Worker queues pings', errors[0] || JSON.stringify({ herOwn, sharedQuestionHasWords, himBefore, bothAnswers, herPings, himPings }));
   await context.close();
 }
 
@@ -805,6 +809,53 @@ async function openSlow(path) {
   const editedDate = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-dates-v1')).items.find(item => item.title === 'meteor picnic with snacks'));
   note(editedDate?.note === 'bring the blanket' && editedDate?.vibe === 'stay in' && errors.length === 0,
        'a date idea can be edited without losing its other details', errors[0] || JSON.stringify(editedDate));
+  await context.close();
+}
+
+// The other phone changing anything re-renders the list. A half-typed inline
+// edit used to snap back to the saved title and lose focus when that happened.
+// Groceries also keep their repeat when edited.
+{
+  const { context, page, errors } = await open('tasks.html?as=her');
+  await openSheet(page, 'task-form');
+  await page.fill('#shared-task-title', 'keep my typing');
+  await page.click('#shared-task-form [type="submit"]');
+  await page.waitForTimeout(400);
+  await page.locator('.task-row', { hasText: 'keep my typing' }).locator('[data-action="edit"]').click();
+  await page.locator('[data-edit-task] [name="title"]').press('End');
+  await page.keyboard.type(' please');
+  await page.evaluate(() => {
+    const key = 'our-little-list-items-v1';
+    const stored = JSON.parse(localStorage.getItem(key) || '{"items":[]}');
+    stored.items.push({ id: 'from-him', title: 'his new thing', type: 'task', addedBy: 'him', done: false, createdAt: Date.now() });
+    localStorage.setItem(key, JSON.stringify(stored));
+    window.dispatchEvent(new StorageEvent('storage', { key }));
+  });
+  await page.waitForTimeout(400);
+  const kept = await page.evaluate(() => ({
+    value: document.querySelector('[data-edit-task] [name="title"]')?.value,
+    focused: document.activeElement?.name === 'title',
+    hisArrived: [...document.querySelectorAll('.task-row')].some(row => row.textContent.includes('his new thing'))
+  }));
+  note(kept.value === 'keep my typing please' && kept.focused && kept.hisArrived && errors.length === 0,
+       'an inline edit survives the other phone changing the list', errors[0] || JSON.stringify(kept));
+
+  await page.click('.tab[data-tab="grocery"]');
+  await openSheet(page, 'task-form');
+  if (!await page.locator('#task-composer details.compose-more').evaluate(element => element.open)) {
+    await page.locator('#task-composer details.compose-more summary').click();
+  }
+  await page.click('.repeat-chip[data-repeat="weekly"]');
+  await page.fill('#shared-task-title', 'oat milk weekly');
+  await page.click('#shared-task-form [type="submit"]');
+  await page.waitForTimeout(400);
+  await page.locator('.task-row', { hasText: 'oat milk weekly' }).locator('[data-action="edit"]').click();
+  await page.fill('[data-edit-task] [name="title"]', 'oat milk (the good one)');
+  await page.click('[data-edit-task] [type="submit"]');
+  await page.waitForTimeout(400);
+  const grocery = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-items-v1')).items.find(item => item.title === 'oat milk (the good one)'));
+  note(grocery?.recurrence === 'weekly' && Boolean(grocery?.due) && errors.length === 0,
+       'a repeating grocery keeps its repeat when edited', errors[0] || JSON.stringify(grocery));
   await context.close();
 }
 
@@ -1092,6 +1143,35 @@ async function openSlow(path) {
   await page.waitForTimeout(1150);
   const highlighted = await page.locator(`.note-thread-row[data-id="${id}"]`).evaluate(node => node.classList.contains('is-deep-linked'));
   note(Boolean(id) && highlighted && errors.length === 0, 'notification opens and highlights its note', errors[0] || String(id));
+  await context.close();
+}
+{
+  const { context, page, errors } = await open('tasks.html?as=her');
+  await openSheet(page, 'task-form');
+  await page.fill('#shared-task-title', 'swipeable little thing');
+  await page.click('#shared-task-form [type="submit"]');
+  const row = page.locator('.task-row', { hasText:'swipeable little thing' });
+  await page.waitForTimeout(180);
+  await row.evaluate(node => {
+    const fire = (type, x) => {
+      const event = new Event(type, { bubbles:true, cancelable:true });
+      Object.defineProperty(event, 'changedTouches', { value:[{ clientX:x, clientY:200 }] });
+      node.dispatchEvent(event);
+    };
+    fire('touchstart', 60);
+    fire('touchend', 190);
+  });
+  await page.waitForTimeout(250);
+  const completed = await page.evaluate(async () => {
+    const { sharedLayer } = await import('./data-hub.js');
+    return (await (await sharedLayer()).readOnce('items')).find(item => item.title === 'swipeable little thing')?.done;
+  });
+  await page.click('.tab[data-tab="done"]');
+  const doneRow = page.locator('.task-row', { hasText:'swipeable little thing' });
+  await doneRow.locator('.row-more').click();
+  const menu = await doneRow.locator('.row-context-menu').innerText();
+  note(completed === true && menu.includes('edit') && menu.includes('delete') && errors.length === 0,
+    'task swipe and row menu still offer clear actions', errors[0] || JSON.stringify({completed,menu}));
   await context.close();
 }
 

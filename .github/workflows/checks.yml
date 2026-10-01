@@ -45,6 +45,9 @@ jobs:
       - name: Things that were merged behave as one
         run: node test/merged.test.mjs
 
+      - name: Every module the pages load works offline after an update
+        run: node test/precache.test.mjs
+
       - name: The app can still start with no network
         run: node test/offline.test.mjs
 

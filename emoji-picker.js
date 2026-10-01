@@ -13,7 +13,7 @@ export function openEmojiPicker({ current = '', label = 'reaction', onSelect, on
   dialog.querySelector('[data-picker-use]').textContent = `use ${label}`;
   dialog.querySelector('[data-picker-remove]').textContent = `clear ${label}`;
   dialog.querySelector('[data-picker-current]').textContent = current || '♡';
-  dialog.querySelector('[data-picker-remove]').hidden = !current;
+  dialog.querySelector('[data-picker-remove]').hidden = !current || typeof onRemove !== 'function';
   const input = dialog.querySelector('#emoji-reaction-input');
   const useButton = dialog.querySelector('[data-picker-use]');
   const hint = dialog.querySelector('[data-picker-hint]');
@@ -22,6 +22,7 @@ export function openEmojiPicker({ current = '', label = 'reaction', onSelect, on
   useButton.dataset.emoji = '';
   hint.textContent = 'any emoji works';
   dialog.querySelectorAll('[data-picker-emoji]').forEach(button => {
+    button.setAttribute('aria-label', `${label === 'reaction' ? 'React' : 'Use'} ${button.dataset.pickerEmoji}`);
     button.classList.toggle('active', button.dataset.pickerEmoji === current);
   });
   if (typeof dialog.showModal === 'function') dialog.showModal();

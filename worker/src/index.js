@@ -90,6 +90,22 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
         }
       }
 
+      if (String(message.kind || '').startsWith('question-')) {
+        const clock = questionClock(now);
+        const day = String(message.ref || '').split('/').pop();
+        const record = day === clock.day && clock.open ? await db.get(`${household}/questions/${day}`) : null;
+        // Drop stale question pings even when this side has no subscription.
+        // Otherwise a late registration could resurrect an obsolete message.
+        const bothAnswered = Boolean(record?.answers?.her?.at && record?.answers?.him?.at);
+        if (!record
+          || (message.kind === 'question-open' && record.answers?.[message.to]?.at)
+          || (message.kind === 'question-answered' && bothAnswered)) {
+          await db.remove(message.path);
+          dropped += 1;
+          continue;
+        }
+      }
+
       const target = subscriptions[message.to];
       if (!target) {
       // Nobody on that side has turned notifications on yet. Leave it queued so
@@ -108,29 +124,29 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
         continue;
       }
 
-      if (String(message.kind || '').startsWith('question-')) {
-        const clock = questionClock(now);
-        const day = String(message.ref || '').split('/').pop();
-        const record = day === clock.day && clock.open ? await db.get(`${household}/questions/${day}`) : null;
-        // A yesterday question should never interrupt today's. Nor should a
-        // stale “your turn” ping land after the answers have been revealed.
-        if (!record || (message.kind === 'question-answered' && record.answers?.her?.at && record.answers?.him?.at)) {
-          await db.remove(message.path);
-          dropped += 1;
-          continue;
-        }
-      }
-
       let recipientStatus = statusCache.get(message.to);
       if (recipientStatus === undefined) {
         recipientStatus = await db.get(`${household}/statuses/${message.to}`) || null;
         statusCache.set(message.to, recipientStatus);
       }
       const focus = focusDelivery(message, recipientStatus, now);
-      const quietUntil = message.urgent === true ? 0 : quietHoursEndUtc(now, preferences.quietHours, Number(target.utcOffsetMinutes));
-      const holdUntil = Math.max(focus.holdUntil, quietUntil);
+      // Quiet hours hold chatter until morning. A reminder is a time someone
+      // chose on purpose, so it is never held; an arrival is only news right
+      // now ("just got home" at 8am is not), so it comes through silently.
+      const quietEnd = message.urgent === true || message.kind === 'reminder'
+        ? 0
+        : quietHoursEndUtc(now, preferences.quietHours, Number(target.utcOffsetMinutes));
+      const quietArrival = Boolean(quietEnd) && message.kind === 'arrival';
+      const holdUntil = Math.max(focus.holdUntil, quietArrival ? 0 : quietEnd);
       if (holdUntil) {
-        await db.moveSendAt(message.path, holdUntil);
+        // One refused or vanished message must not stop the whole pass: it
+        // stays at the front of the queue, so every later pass would fail on
+        // it too and nothing behind it would ever go out.
+        try {
+          await db.moveSendAt(message.path, holdUntil);
+        } catch (problem) {
+          console.error(`could not hold ${message.id}: ${problem?.message || problem}`);
+        }
         held += 1;
         continue;
       }
@@ -142,13 +158,13 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
         tag: `${message.kind || 'note'}-${message.id}`,
         kind: message.kind || 'note',
         late: dueAge > STALE_MS,
-        silent: preferences.backgroundSound === 'silent' || focus.quiet,
+        silent: preferences.backgroundSound === 'silent' || focus.quiet || quietArrival,
         vibrate: vibrationPattern(preferences.vibration)
       });
 
       const result = await sendNotification(target.subscription, payload, vapid, {
         ttl: 86400,
-        urgency: ['reminder', 'arrival'].includes(message.kind) || message.urgent === true ? 'high' : 'normal'
+        urgency: ['reminder', 'help', 'arrival'].includes(message.kind) || message.urgent === true ? 'high' : 'normal'
       });
 
       if (result.ok) {

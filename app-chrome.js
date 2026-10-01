@@ -46,6 +46,7 @@ async function boot() {
   });
   setupSearch(data, viewer, openQuick);
   setupDeepLinkHighlight();
+  window.addEventListener('hashchange', setupDeepLinkHighlight);
   setupRowMenus();
   const topbar = document.querySelector('.app-topbar');
   if (topbar && !topbar.querySelector('[data-open-sheet="search"]')) {
@@ -229,6 +230,7 @@ function setupQuickAdd(data, viewer, other) {
       document.querySelectorAll('[data-quick-urgency]').forEach(item => item.classList.toggle('active', item.dataset.quickUrgency === 'soon'));
       moment.setActive(false);
       moment.reset();
+      document.getElementById('quick-when-wrap').hidden = true;
       closeSheets();
       toast(kind === 'note' ? 'sent 💌' : kind === 'ask' ? (dueAt ? 'reminder secured' : 'asked 🫡') : 'added');
       window.littleHaptic?.('success');
@@ -257,13 +259,26 @@ function setupSearch(data, viewer, openQuick) {
     results.innerHTML = matches.length ? matches.map(item => `<a class="search-hit" href="${item.url}"><span>${item.icon}</span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.meta)}</small></div><i>›</i></a>`).join('') : `<div class="search-start"><span>🕵️</span><p>nothing. suspicious.</p><button type="button" data-open-quick-from-search>add it instead</button></div>`;
   };
   const start = () => {
-    if (started) return;
+    // Opened before sign-in finished: try again next time instead of marking
+    // search as started with no listeners behind it.
+    if (started || (data.mode !== 'local' && !data.signedIn())) return;
     started = true;
+    const recent = { orderBy: { field: 'createdAt', direction: 'desc' }, limit: 100 };
     for (const collection of SEARCH_COLLECTIONS) {
       const receive = items => { cache.set(collection, items); render(); };
-      // Search watches a recent slice. Unlike six full readOnce calls on each
-      // opening, a newly added thing arrives through the same listener.
-      data.listenToQuery(collection, { orderBy: { field: 'createdAt', direction: 'desc' }, limit: 100 }, receive);
+      if (collection === 'items') {
+        // Every open task, however old, plus the newest finished ones.
+        const parts = { open: [], recent: [] };
+        const merge = () => receive([...new Map([...parts.recent, ...parts.open].map(item => [item.id, item])).values()]);
+        data.listenToQuery('items', { where: { field: 'done', value: false } }, items => { parts.open = items; merge(); });
+        data.listenToQuery('items', recent, items => { parts.recent = items; merge(); });
+      } else if (collection === 'dates' || collection === 'help') {
+        // Small, and the imported date ideas carry old timestamps: keep them all.
+        data.listenTo(collection, receive);
+      } else {
+        // Notes and memories grow forever; search watches the newest slice.
+        data.listenToQuery(collection, recent, receive);
+      }
     }
   };
   document.addEventListener('littlelist:sheet-open', event => {
