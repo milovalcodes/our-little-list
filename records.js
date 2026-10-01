@@ -15,7 +15,7 @@ export async function addTask(data, { viewer, other, title, type = 'task', due =
     title, type: grocery ? 'grocery' : 'task', due, recurrence,
     aisle: grocery ? aisle : '', addedBy: viewer, done: false, createdAt: Date.now()
   });
-  void data.notify(other, { title: grocery ? 'grocery list update 🛒' : 'new thing on the list ✓', body: title, url: 'tasks.html', kind: 'item' });
+  void data.notify(other, { title: grocery ? 'grocery list update 🛒' : 'new thing on the list ✓', body: title, url: `tasks.html#item-${record.id}`, kind: 'item' });
   return record;
 }
 
@@ -27,7 +27,7 @@ export async function sendNote(data, { viewer, other, body, mood = 'heart', pinn
   });
   const delivery = await data.notify(other, {
     title: pinned ? `📌 on the fridge` : viewer === 'her' ? 'the sun says ☀️' : 'the moon says 🌙',
-    body, url: pinned ? `${other}.html` : 'notes.html', kind: 'note'
+    body, url: pinned ? `${other}.html#fridge-note` : `notes.html#note-${record.id}`, kind: 'note'
   });
   return { ...record, delivery };
 }
@@ -47,14 +47,14 @@ export async function sendAsk(data, { viewer, other, title, note = '', emoji = '
   if(!forMe)void data.notify(recipient, {
     title: timed ? `${who} set you a reminder ⏰` : urgency === 'now' ? `${who} needs a hand, kind of now` : `${who} needs a hand`,
     body: timed ? `${title} · ${friendlyWhen(dueAt)}` : title,
-    url: 'tasks.html#asks', kind: 'help', urgent:urgent===true
+    url: `tasks.html#ask-${record.id}`, kind: 'help', urgent:urgent===true
   });
   let scheduled = { queued: false };
   if (timed) {
     // The id travels with the nudge so the delivery worker can drop it if the
     // ask is deleted, sorted or turned down before the time comes.
     scheduled = await data.notify(recipient, {
-      title: `⏰ ${title}`, body: note || `from ${who}`, url: 'tasks.html#asks',
+      title: `⏰ ${title}`, body: note || `from ${who}`, url: `tasks.html#ask-${record.id}`,
       kind: 'reminder', ref: `help/${record?.id || ''}`, sendAt: Number(dueAt), urgent:urgent===true
     });
   }
@@ -66,6 +66,6 @@ export async function addDateIdea(data, { viewer, other, title, note = '', vibe 
     title, note, vibe: DATE_VIBES.includes(vibe) ? vibe : 'go out', ...details,
     addedBy: viewer, favorite: false, done: false, createdAt: Date.now()
   });
-  void data.notify(other, { title: 'new date idea ✦', body: title, url: 'dates.html', kind: 'date' });
+  void data.notify(other, { title: 'new date idea ✦', body: title, url: `dates.html#date-${record.id}`, kind: 'date' });
   return record;
 }

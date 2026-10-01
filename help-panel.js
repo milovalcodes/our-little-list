@@ -87,6 +87,7 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
         : `asked ${personName(other)}.`;
       window.setTimeout(() => { $('help-sent').hidden = true; }, 6000);
       toast(forMe?'reminder saved':'asked 🫡');
+      document.getElementById('sheet-ask-form')?.querySelector('[data-close-sheet]')?.click();
     } catch (_) {
       showFailure('that ask did not go through.', 'check the internet and try again. Your words are still here.');
     } finally {
@@ -111,7 +112,7 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
       await data.notify(request.from, {
         title: `${personName(viewer)}: ${ANSWERS[answer].theirs}`,
         body: request.title,
-        url: 'tasks.html#asks',
+        url: `tasks.html#ask-${request.id}`,
         kind: 'help-answer'
       });
       toast(ANSWERS[answer].label);

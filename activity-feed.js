@@ -11,6 +11,7 @@ import { newActivityCount } from './activity-summary.js';
 export function startActivityFeed({ data, viewer, other }) {
 const $=id=>document.getElementById(id);const buckets={items:[],notes:[],dates:[],statuses:[],help:[],memories:[],reactions:[]};
 let started=false;
+let expanded=false;
 // The "delete for us" confirm used to be stored on the button element itself.
 // render() replaces the whole list, and a presence beat alone does that about
 // twice a minute, so the second tap kept landing on a fresh button that had
@@ -30,6 +31,7 @@ const hidden=readHidden();
 
 start();
 $('mark-seen').addEventListener('click',markSeen);
+$('activity-see-all')?.addEventListener('click', () => { expanded=!expanded; render(); });
 $('activity-list').addEventListener('click',handleActivityAction);
 watchFeedVisibility();
 
@@ -78,7 +80,8 @@ function render(){
   $('new-count').hidden=newCount===0;
   $('new-count').textContent=newCount>9?'9+':String(newCount);
   const list=events();$('activity-empty').hidden=list.length>0;
-  $('activity-list').innerHTML=list.map(event=>{const mine=event.who===viewer;const canDelete=mine||event.collection!=='statuses';return `<li class="activity-row" data-event-id="${escapeHtml(event.id)}" data-record-id="${escapeHtml(event.recordId)}" data-collection="${escapeHtml(event.collection)}"><span class="activity-icon">${escapeHtml(event.icon)}</span><div class="activity-row-copy"><p><b>${mine?'you':escapeHtml(event.who?personName(event.who):'someone')}</b> ${escapeHtml(mine&&event.selfKind?event.selfKind:event.kind)}</p><strong>${escapeHtml(event.text||'')}</strong><small>${timeAgo(event.at)}${event.status?` · ${escapeHtml(event.status)}`:''}</small><div class="activity-row-actions"><button type="button" data-action="hide">delete for me</button>${canDelete?'<button class="delete-for-us" type="button" data-action="delete">delete for us</button>':''}</div></div></li>`;}).join('');
+  const more=$('activity-see-all');more.hidden=list.length<=3;more.textContent=expanded?'show less':'see all';
+  $('activity-list').innerHTML=(expanded?list:list.slice(0,3)).map(event=>{const mine=event.who===viewer;const canDelete=mine||event.collection!=='statuses';return `<li class="activity-row" data-event-id="${escapeHtml(event.id)}" data-record-id="${escapeHtml(event.recordId)}" data-collection="${escapeHtml(event.collection)}"><span class="activity-icon">${escapeHtml(event.icon)}</span><div class="activity-row-copy"><p><b>${mine?'you':escapeHtml(event.who?personName(event.who):'someone')}</b> ${escapeHtml(mine&&event.selfKind?event.selfKind:event.kind)}</p><strong>${escapeHtml(event.text||'')}</strong><small>${timeAgo(event.at)}${event.status?` · ${escapeHtml(event.status)}`:''}</small><div class="activity-row-actions"><button type="button" data-action="hide">delete for me</button>${canDelete?'<button class="delete-for-us" type="button" data-action="delete">delete for us</button>':''}</div></div><button class="row-more" type="button" aria-label="More options" data-toggle-row-menu>⋯</button></li>`;}).join('');
   showArmedDelete();
 }
 

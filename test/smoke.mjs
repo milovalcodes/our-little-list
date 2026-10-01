@@ -51,6 +51,7 @@ async function open(path) {
     serviceWorkers: 'block'
   });
   const page = await context.newPage();
+  page.setDefaultTimeout(10000);
   const errors = [];
   // The browser pass exercises the UI and local data behavior, not the real
   // household account. Keep it deterministic instead of letting Firebase auth
@@ -73,6 +74,15 @@ async function open(path) {
   await page.goto(`${BASE}/${path}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.waitForTimeout(900);
   return { context, page, errors };
+}
+
+async function openSheet(page, name) {
+  await page.locator(`[data-open-sheet="${name}"]`).first().click();
+  await page.waitForTimeout(220);
+}
+async function rowMenu(row, action) {
+  await row.locator(':scope > .row-more').click();
+  await row.locator('.row-context-menu button', { hasText: action }).click();
 }
 
 console.log('--- every page renders, no script errors, no sideways scroll ---');
@@ -194,17 +204,18 @@ async function openSlow(path) {
 // putting back someone else's record.
 {
   const { context, page, errors } = await open('tasks.html?as=her');
+  await openSheet(page, 'task-form');
   await page.fill('#shared-task-title', 'undo me');
   await page.click('#shared-task-form [type="submit"]');
   await page.waitForTimeout(400);
   const row = () => page.locator('.task-row', { hasText: 'undo me' });
-  await row().locator('[data-action="delete"]').click();
+  await rowMenu(row(), 'delete');
   await page.waitForTimeout(150);
   const hidden = await row().count() === 0;
   await page.click('.undo-toast button');
   await page.waitForTimeout(200);
   const back = await row().count() === 1;
-  await row().locator('[data-action="delete"]').click();
+  await rowMenu(row(), 'delete');
   await page.waitForTimeout(5600);
   const stored = await page.evaluate(() => (JSON.parse(localStorage.getItem('our-little-list-items-v1') || '{"items":[]}').items || []).some(item => item.title === 'undo me'));
   note(hidden && back && !stored && errors.length === 0, 'deleting waits behind an undo bar, then really deletes',
@@ -275,7 +286,7 @@ async function openSlow(path) {
   await page.waitForTimeout(900);
   const row = page.locator('.note-thread-row', { hasText: 'oat milk is critically low' });
   const pinnedThere = await row.locator('[data-pin-note]').innerText().catch(() => '');
-  await row.locator('[data-pin-note]').click();
+  await rowMenu(row, 'pin / unpin');
   await page.waitForTimeout(400);
   await page.goto(`${BASE}/her.html`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(900);
@@ -375,6 +386,7 @@ async function openSlow(path) {
 // Add a task, it should show up in the list.
 {
   const { context, page, errors } = await open('tasks.html?as=her');
+  await openSheet(page, 'task-form');
   await page.fill('#shared-task-title', 'buy oat milk');
   await page.click('#shared-task-form [type="submit"]');
   await page.waitForTimeout(500);
@@ -397,14 +409,14 @@ async function openSlow(path) {
   await page.fill('#note-body', 'the small moon report');
   await page.click('#note-submit');
   await page.waitForTimeout(300);
-  await page.locator('.note-thread-row', { hasText: 'the small moon report' }).locator('[data-edit-note]').click();
+  await rowMenu(page.locator('.note-thread-row', { hasText: 'the small moon report' }), 'edit');
   await page.fill('[data-note-edit] textarea', 'the corrected moon report');
   await page.click('[data-note-edit] [type="submit"]');
   await page.waitForTimeout(300);
   const editedNote = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items.find(item => item.body === 'the corrected moon report'));
   note(editedNote?.editedAt > editedNote?.createdAt && errors.length === 0,
        'a sent note can be edited', errors[0] || JSON.stringify(editedNote));
-  await page.locator('.note-thread-row', { hasText: 'the corrected moon report' }).locator('[data-delete-note]').click();
+  await rowMenu(page.locator('.note-thread-row', { hasText: 'the corrected moon report' }), 'delete');
   const hidden = await page.locator('.note-thread-row', { hasText: 'the corrected moon report' }).count() === 0;
   await page.click('.undo-toast button');
   const restored = await page.locator('.note-thread-row', { hasText: 'the corrected moon report' }).count() === 1;
@@ -421,6 +433,8 @@ async function openSlow(path) {
     await page.clock.install({ time: when });
     await page.goto(`${BASE}/tasks.html?as=her#asks`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(900);
+    await openSheet(page, 'ask-form');
+    await page.click('#help-form .compose-more summary');
     await page.click('#help-urgency [data-urgency="timed"]');
     await page.click('#day-choices [data-day="weekend"]');
     await page.click(`#time-choices [data-time="${time}"]`);
@@ -439,6 +453,8 @@ async function openSlow(path) {
 // shows its time on both sides, and appears on the other side's Today.
 {
   const { context, page, errors } = await open('tasks.html?as=her#asks');
+  await openSheet(page, 'ask-form');
+  await page.click('#help-form .compose-more summary');
   await page.fill('#help-title', 'past thing');
   await page.click('#help-urgency [data-urgency="timed"]');
   await page.click('#day-choices [data-day="today"]');
@@ -458,6 +474,7 @@ async function openSlow(path) {
   const whenHidden = await page.locator('#ask-when').isHidden();
 
   // "grab something" is the grocery list, not a second list of things to pick up.
+  await openSheet(page, 'ask-form');
   await page.click('#help-presets [data-groceries]');
   await page.waitForTimeout(200);
   const onGroceries = await page.locator('.tab.active[data-tab="grocery"]').count();
@@ -477,12 +494,14 @@ async function openSlow(path) {
 {
   const {context,page,errors}=await open('tasks.html?as=her#asks');
   await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();await data.setTo('statuses','him',{person:'him',state:'online',text:'',category:'',emoji:'',focusUntil:Date.now()+15*60000,updatedAt:Date.now()});});
+  await openSheet(page, 'ask-form');
   await page.fill('#help-title','urgent cup of water');
   await page.click('#help-submit');
   const prompted=await page.locator('.focus-ask-dialog').count();
   await page.click('[data-focus-choice="urgent"]');
   await page.locator('#help-mine-list .help-card',{hasText:'urgent cup of water'}).waitFor();
   const first=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return (await data.readOnce('help')).find(item=>item.title==='urgent cup of water');});
+  await openSheet(page, 'ask-form');
   await page.fill('#help-title','ordinary second ask');
   await page.click('#help-submit');
   await page.locator('#help-mine-list .help-card',{hasText:'ordinary second ask'}).waitFor();
@@ -496,6 +515,8 @@ async function openSlow(path) {
 {
   const {context,page,errors}=await open('tasks.html?as=her#asks');
   await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();window.__selfNudges=[];data.notify=async(...args)=>{window.__selfNudges.push(args);return {queued:true};};});
+  await openSheet(page, 'ask-form');
+  await page.click('#help-form .compose-more summary');
   await page.locator('#ask-for-me').check();
   const timeShown=await page.locator('#ask-when').isVisible();
   await page.click('#day-choices [data-day="tomorrow"]');
@@ -512,7 +533,9 @@ async function openSlow(path) {
 {
   const { context, page, errors } = await open('tasks.html?as=her');
   await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();window.listPings=[];data.notify=async(to,message)=>{window.listPings.push({to,message});return {queued:true};};});
+  await openSheet(page, 'task-form');
   await page.fill('#shared-task-title', 'daily vitamin');
+  await page.click('#shared-task-form .compose-more summary');
   await page.click('[data-repeat="daily"]');
   await page.click('#shared-task-form [type="submit"]');
   await page.waitForTimeout(250);
@@ -521,6 +544,7 @@ async function openSlow(path) {
   const recurring = await page.locator('.task-row', { hasText: 'daily vitamin' }).count();
   note(recurring === 1 && errors.length === 0, 'recurring task rolls forward', errors[0] || '');
   await page.click('[data-tab="grocery"]');
+  await openSheet(page, 'task-form');
   await page.fill('#shared-task-title', 'avocados');
   await page.selectOption('#grocery-aisle', 'produce');
   await page.click('#shared-task-form [type="submit"]');
@@ -553,7 +577,8 @@ async function openSlow(path) {
 
 // The Today hub stays focused on what is due and the shared focus session.
 // A daily answer stays hidden on the partner's side until both have answered.
-// Editing an answer must not send a second heads-up.
+// The Worker, not either browser, sends the three question pings. Editing an
+// answer must not create an extra client-side notification.
 {
   const { context, page, errors } = await open('today.html?as=her');
   await page.evaluate(async () => {
@@ -587,9 +612,8 @@ async function openSlow(path) {
   const himPings = await page.evaluate(() => window.questionPings);
   note(herOwn.includes('sun answer only') && !himBefore.includes('sun answer only')
        && himBefore.includes('answered') && bothAnswers.includes('sun answer only') && bothAnswers.includes('moon answer too')
-       && himPings.length === 1 && herPings.length === 1 && himPings[0].to === 'her'
-       && herPings[0].to === 'him' && himPings[0].message.kind === 'note' && errors.length === 0,
-       'daily answers reveal together and ping only once', errors[0] || JSON.stringify({ herOwn, himBefore, bothAnswers, herPings, himPings }));
+       && himPings.length === 0 && herPings.length === 0 && errors.length === 0,
+       'daily answers reveal together; only the Worker queues pings', errors[0] || JSON.stringify({ herOwn, himBefore, bothAnswers, herPings, himPings }));
   await context.close();
 }
 
@@ -605,6 +629,7 @@ async function openSlow(path) {
 
   await page.goto(`${BASE}/today.html?as=her`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(900);
+  await openSheet(page, 'focus');
   await page.fill('#focus-label', 'fold laundry');
   await page.click('#focus-start');
   await page.waitForTimeout(350);
@@ -617,6 +642,7 @@ async function openSlow(path) {
   const during = await page.locator('.person-status-card.is-me').innerText();
   await page.goto(`${BASE}/today.html?as=her`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(900);
+  await openSheet(page, 'focus');
   await page.click('.focus-person [data-stop="her"]');
   await page.waitForTimeout(400);
   const stopped = await page.locator('.focus-person.active').count();
@@ -634,6 +660,7 @@ async function openSlow(path) {
 // A date you did goes in the memory jar, and undoing it takes it back out.
 {
   const { context, page, errors } = await open('dates.html?as=her');
+  await openSheet(page, 'date-form');
   await page.fill('#date-title', 'picnic at the lake');
   await page.click('#date-submit');
   await page.waitForTimeout(400);
@@ -752,6 +779,7 @@ async function openSlow(path) {
 {
   const { context, page, errors } = await open('dates.html?as=her');
   const detailsClosed = !await page.locator('#date-more-details').evaluate(element => element.open);
+  await openSheet(page, 'date-form');
   await page.fill('#date-title', 'meteor picnic');
   await page.locator('#date-more-details summary').click();
   await page.selectOption('#date-cost', 'treat');
@@ -832,10 +860,11 @@ async function openSlow(path) {
 // Help request round trip: her asks, him answers.
 {
   const her = await open('tasks.html?as=her#asks');
+  await openSheet(her.page, 'ask-form');
   await her.page.click('#help-presets [data-title="bring me water"]');
   await her.page.click('#help-submit');
   await her.page.waitForTimeout(500);
-  const asked = await her.page.locator('#help-sent:visible').count();
+  const asked = await her.page.locator('#help-mine-list .help-card', { hasText:'bring me water' }).count();
   note(asked === 1 && her.errors.length === 0, 'send a help request', her.errors[0] || '');
 
   // Local mode keeps data per browser context, so answer it in the same one.
@@ -912,12 +941,12 @@ async function openSlow(path) {
   const markedRead = await readNow();
   note(!readBeforeScrolling && markedRead, 'reading the feed marks the note read, and only then',
        JSON.stringify({ readBeforeScrolling, markedRead }));
-  await page.click('.activity-row .delete-for-us');
+  await rowMenu(page.locator('.activity-row').first(), 'delete for us');
   // Stand in for the snapshot that lands between the two taps.
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('littlelist:profile')));
   await page.waitForTimeout(100);
   const armed = await page.evaluate(() => document.querySelector('.delete-for-us')?.textContent || '');
-  await page.click('.activity-row .delete-for-us');
+  await rowMenu(page.locator('.activity-row').first(), 'delete for us');
   await page.waitForTimeout(500);
   const left = await page.evaluate(() => {
     try { return JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items.length; } catch (_) { return -1; }
@@ -1016,6 +1045,53 @@ async function openSlow(path) {
        errors[0] || `text ${text}, composer ${composer}`);
 
   await context.setOffline(false);
+  await context.close();
+}
+
+// The new shortcuts must save the same records as their full pages, and a
+// notification URL should land on the actual row rather than just the page.
+{
+  const { context, page, errors } = await open('her.html');
+  await page.locator('#sky-person-her').click();
+  await page.locator('[data-quick-status="busy"]').click();
+  await page.waitForTimeout(180);
+  const status = await page.evaluate(async () => {
+    const { sharedLayer } = await import('./data-hub.js');
+    return (await (await sharedLayer()).readDoc('statuses', 'her'))?.text;
+  });
+  note(status === 'busy' && errors.length === 0, 'home avatar changes status', errors[0] || status);
+  await context.close();
+}
+{
+  const { context, page, errors } = await open('dates.html?as=her');
+  await page.locator('[data-open-sheet="date-form"]').click();
+  await page.fill('#date-title', 'tiny museum afternoon');
+  await page.click('#date-submit');
+  await page.waitForTimeout(180);
+  await page.click('#pick-random');
+  await page.fill('#date-plan-day', '2026-10-20');
+  await page.locator('#date-plan [type="submit"]').click();
+  const tasks = await page.evaluate(async () => {
+    const { sharedLayer } = await import('./data-hub.js');
+    return (await (await sharedLayer()).readOnce('items')).filter(item => item.title === 'date: tiny museum afternoon');
+  });
+  note(tasks.length === 1 && tasks[0].due === '2026-10-20' && errors.length === 0,
+    'surprise date can become a dated task', errors[0] || JSON.stringify(tasks));
+  await context.close();
+}
+{
+  const { context, page, errors } = await open('notes.html?from=her');
+  await page.fill('#note-body', 'notification target test');
+  await page.click('#note-submit');
+  await page.waitForTimeout(180);
+  const id = await page.evaluate(async () => {
+    const { sharedLayer } = await import('./data-hub.js');
+    return (await (await sharedLayer()).readOnce('notes')).find(note => note.body === 'notification target test')?.id;
+  });
+  await page.goto(`${BASE}/notes.html?from=her#note-${id}`, { waitUntil:'domcontentloaded' });
+  await page.waitForTimeout(1150);
+  const highlighted = await page.locator(`.note-thread-row[data-id="${id}"]`).evaluate(node => node.classList.contains('is-deep-linked'));
+  note(Boolean(id) && highlighted && errors.length === 0, 'notification opens and highlights its note', errors[0] || String(id));
   await context.close();
 }
 

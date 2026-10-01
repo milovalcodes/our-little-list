@@ -9,6 +9,7 @@ import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../../notification-policy.js';
 import { focusDelivery } from '../../delivery-policy.js';
+import { questionClock, questionForDay } from '../../question-prompts.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
 const STALE_MS = 3 * 60 * 60_000;    // older than 3h: still send, but say it is late
@@ -22,7 +23,7 @@ function required(env, name) {
   return value;
 }
 
-export async function deliver(env) {
+export async function deliver(env, { scheduleQuestions = true } = {}) {
   const apiKey = required(env, 'FIREBASE_API_KEY');
   const projectId = required(env, 'FIREBASE_PROJECT_ID');
   const householdId = required(env, 'HOUSEHOLD_ID');
@@ -47,12 +48,14 @@ export async function deliver(env) {
 
   try {
 
+    const now = Date.now();
+    if (scheduleQuestions) await ensureQuestionOfDay(db, household, now);
+
     const subscriptions = {};
     for (const record of await db.list(`${household}/pushSubs`)) {
       if (record?.subscription?.endpoint) subscriptions[record.id] = record;
     }
 
-    const now = Date.now();
     const due = await db.dueFrom(`${household}/outbox`, 'sendAt', now + GRACE_MS, 50);
     if (due.length === 0) {
       return { checked: true, sent: 0, subscribed: Object.keys(subscriptions).length };
@@ -105,6 +108,19 @@ export async function deliver(env) {
         continue;
       }
 
+      if (String(message.kind || '').startsWith('question-')) {
+        const clock = questionClock(now);
+        const day = String(message.ref || '').split('/').pop();
+        const record = day === clock.day && clock.open ? await db.get(`${household}/questions/${day}`) : null;
+        // A yesterday question should never interrupt today's. Nor should a
+        // stale “your turn” ping land after the answers have been revealed.
+        if (!record || (message.kind === 'question-answered' && record.answers?.her?.at && record.answers?.him?.at)) {
+          await db.remove(message.path);
+          dropped += 1;
+          continue;
+        }
+      }
+
       let recipientStatus = statusCache.get(message.to);
       if (recipientStatus === undefined) {
         recipientStatus = await db.get(`${household}/statuses/${message.to}`) || null;
@@ -155,6 +171,48 @@ export async function deliver(env) {
   } finally {
     await db.remove(lockPath).catch(problem => console.error(`could not release delivery lock: ${problem.message || problem}`));
   }
+}
+
+export async function ensureQuestionOfDay(db, household, now) {
+  const clock = questionClock(now);
+  if (!clock.open) return { open: false };
+  const selected = questionForDay(clock.day);
+  if (!selected) return { open: false, exhausted: true };
+  const path = `${household}/questions/${clock.day}`;
+  let question = await db.get(path);
+  if (!question) {
+    await db.create(path, { day: clock.day, promptId: selected.promptId, answers: {}, openedAt: now });
+    question = await db.get(path);
+  }
+  if (!question) throw new Error(`question ${clock.day} could not be read after opening`);
+
+  const queueEvent = async (event, people, title, body) => {
+    const marker = `${household}/questionEvents/${clock.day}-${event}`;
+    if (await db.get(marker)) return false;
+    const documents = [{ path: marker, fields: { day: clock.day, event, createdAt: now } }];
+    for (const person of people) {
+      documents.push({
+        path: `${household}/outbox/question-${clock.day}-${event}-${person}`,
+        fields: {
+          to: person, title, body, url: 'today.html#question',
+          kind: `question-${event}`, ref: `questions/${clock.day}`,
+          sendAt: now, createdAt: now
+        }
+      });
+    }
+    return db.createMany(documents);
+  };
+
+  await queueEvent('open', ['her', 'him'], 'Question of the day', 'A new one is ready when you are.');
+  const her = Boolean(question.answers?.her?.at);
+  const him = Boolean(question.answers?.him?.at);
+  if (her !== him) {
+    await queueEvent('answered', [her ? 'him' : 'her'], 'One answer is in', 'Your turn whenever. You both get to peek after.');
+  }
+  if (her && him) {
+    await queueEvent('reveal', ['her', 'him'], 'Both answers are in', 'Go see what you both said.');
+  }
+  return { open: true, day: clock.day, answered: Number(her) + Number(him) };
 }
 
 async function tokenFor(credentials) {

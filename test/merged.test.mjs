@@ -4,16 +4,22 @@ import { pickMoment } from '../moment-picker.js';
 import { fridgeNote } from '../fridge.js';
 import { hereLine, statusShows, focusActive } from '../availability.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../notification-policy.js';
-import { QUESTIONS, questionForDay } from '../question-prompts.js';
+import { QUESTIONS, QUESTION_START_DAY, questionClock, questionForDay } from '../question-prompts.js';
 import { newActivityCount } from '../activity-summary.js';
 import { readFileSync } from 'node:fs';
 
-assert.equal(QUESTIONS.length, 100);
-assert.equal(new Set(QUESTIONS).size, 100, 'no duplicate daily prompts');
-const dailyIds = Array.from({ length: 100 }, (_, index) => questionForDay(new Date(Date.UTC(2026, 0, index + 1)).toISOString().slice(0, 10)).promptId);
-assert.equal(new Set(dailyIds).size, 100, 'the daily question cycles through every prompt before repeating');
-assert.deepEqual(questionForDay('2026-09-30'), questionForDay('2026-09-30'));
-console.log(' ok  both sides get the same daily question without prompt repeats');
+assert.equal(QUESTIONS.length, 150);
+assert.equal(new Set(QUESTIONS.map(question => question.prompt)).size, QUESTIONS.length, 'no duplicate daily prompts');
+const start = Date.parse(`${QUESTION_START_DAY}T00:00:00Z`);
+const dayAt = index => new Date(start + index * 86400000).toISOString().slice(0, 10);
+const dailyIds = Array.from({ length: QUESTIONS.length }, (_, index) => questionForDay(dayAt(index)).promptId);
+assert.equal(new Set(dailyIds).size, QUESTIONS.length, 'each question appears exactly once');
+assert.equal(questionForDay(dayAt(QUESTIONS.length)), null, 'the bank stops instead of repeating');
+assert.equal(questionClock(new Date('2026-10-02T11:59:00Z')).open, false);
+assert.equal(questionClock(new Date('2026-10-02T12:00:00Z')).open, true);
+assert.equal(questionClock(new Date('2026-11-01T12:00:00Z')).open, false, '8 a.m. follows daylight saving time');
+assert.equal(questionClock(new Date('2026-11-01T13:00:00Z')).open, true);
+console.log(' ok  one shared question opens at 8 a.m. Eastern and never repeats');
 
 // Asks with a time use the reminder page's old day/time chips.
 const saturdayMorning = new Date(2026, 9, 3, 8, 0);

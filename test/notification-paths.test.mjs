@@ -115,7 +115,7 @@ console.log(' ok  a reminder set far in advance is not treated as stale');
 const records = readFileSync(new URL('../records.js', import.meta.url), 'utf8');
 const sendAsk = records.slice(records.indexOf('export async function sendAsk'), records.indexOf('export async function addDateIdea'));
 assert.doesNotMatch(sendAsk, /reminders\.html/, 'a nudge must not open the old compose form');
-assert.equal((sendAsk.match(/url: 'tasks\.html#asks'/g) || []).length, 2, 'the heads-up and the nudge both open the asks');
+assert.equal((sendAsk.match(/tasks\.html#ask-\$\{record\.id\}/g) || []).length, 2, 'the heads-up and the nudge both open the exact ask');
 assert.match(sendAsk, /ref: `help\/\$\{record\?\.id/, 'the nudge names its ask so it can be dropped if the ask goes away');
 assert.doesNotMatch(live, /a reminder for you[\s\S]{0,160}url: `reminders\.html`/, 'the in-page reminder popup must not open the compose form either');
 assert.match(worker, /reminderStillWanted\(reminder\)/, 'the shared sender drops nudges for sorted asks');

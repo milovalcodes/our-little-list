@@ -27,6 +27,14 @@ async function ready(){
 let expiryTouched=false;
 
 const { data, viewer, other } = await bootPage();
+document.querySelector('.now-status-pair')?.before(document.querySelector('.status-editor-disclosure'));
+document.getElementById('expand-map')?.addEventListener('click', event => {
+  const card = document.querySelector('.now-location-card');
+  const expanded = card.classList.toggle('is-expanded');
+  event.currentTarget.textContent = expanded ? 'shrink' : 'expand';
+  event.currentTarget.setAttribute('aria-expanded', String(expanded));
+  window.dispatchEvent(new Event('resize'));
+});
 
 data.listenTo('statuses',items=>{statuses=items;loaded=true;settleLoaded();render();hydrateEditor();});
 data.listenTo('reactions',items=>{reactions=items;render();});

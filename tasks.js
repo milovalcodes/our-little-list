@@ -15,7 +15,7 @@ let editingTaskId = '';
 let recentGroceryOptions = [];
 
 const { data, viewer, other } = await bootPage();
-initHelpPanel({ data, viewer, other, openGroceries: () => { selectTab('grocery', true); byId('shared-task-title').focus(); } });
+initHelpPanel({ data, viewer, other, openGroceries: () => { selectTab('grocery', true); byId('page-add').click(); byId('shared-task-title').focus(); } });
 
 data.listenTo('items', nextItems => {
   items = nextItems;
@@ -61,6 +61,7 @@ byId('shared-task-form').addEventListener('submit', async event => {
     if(repeat!=='once'&&!due)due=dateKey(new Date());
     await addTask(data,{viewer,other,title,type:grocery?'grocery':'task',due,recurrence:repeat,aisle:grocery?byId('grocery-aisle').value:''});
     event.target.reset();toast(tab==='grocery'?'on the grocery list 🛒':'added 🫡');
+    byId('task-composer').querySelector('[data-close-sheet]')?.click();
   }catch(_){showFailure('that did not get added.','check the internet, then try again. Your text is still here.');}
   finally{setButtonBusy(submit,false);}
 });
@@ -90,13 +91,39 @@ byId('task-list').addEventListener('click', async event => {
         toast(`done · back on ${prettyDue(rolled)}`);
       }
       else await data.updateIn('items',item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
-      if (finishing) void data.notify(other, { title:`${personName(viewer)} finished something ✓`, body:item.title, url:'tasks.html', kind:'item-finished' });
+      if (finishing) void data.notify(other, { title:`${personName(viewer)} finished something ✓`, body:item.title, url:`tasks.html#done-${item.id}`, kind:'item-finished' });
     }
     // A repeat has no Done tab to undo from, so "undo" puts the old date back.
     if(button.dataset.action==='undo-roll')await data.updateIn('items',item.id,{due:item.previousDue||'',previousDue:'',lastDoneBy:'',lastDoneAt:0});
     if(button.dataset.action==='readd')await data.updateIn('items',item.id,{done:false,doneBy:'',doneAt:0});
   }catch(_){showFailure('the list edit did not stick.','check the internet and try the button again.');button.disabled=false;button.classList.remove('is-busy');}
 });
+
+// On a phone: right finishes, left deletes with the same undo path as the ×.
+// Vertical scrolling is left alone, and the visible buttons remain for mouse,
+// keyboard and anyone who would rather tap.
+let swipeStart = null;
+byId('task-list').addEventListener('touchstart', event => {
+  const row = event.target.closest('.task-row');
+  if (!row || event.target.closest('input,select,textarea,form')) return;
+  const touch = event.changedTouches[0];
+  swipeStart = { row, x:touch.clientX, y:touch.clientY };
+}, { passive:true });
+byId('task-list').addEventListener('touchend', event => {
+  if (!swipeStart) return;
+  const { row, x, y } = swipeStart;
+  swipeStart = null;
+  if (!row.isConnected) return;
+  const touch = event.changedTouches[0];
+  const dx = touch.clientX - x;
+  const dy = touch.clientY - y;
+  if (Math.abs(dx) < 78 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+  event.preventDefault();
+  row.classList.add(dx > 0 ? 'swiped-done' : 'swiped-delete');
+  window.setTimeout(() => row.classList.remove('swiped-done', 'swiped-delete'), 350);
+  row.querySelector(dx > 0 ? '[data-action="toggle"]' : '[data-action="delete"]')?.click();
+}, { passive:false });
+byId('task-list').addEventListener('touchcancel', () => { swipeStart = null; });
 
 byId('recent-grocery-chips').addEventListener('click', async event => {
   const button = event.target.closest('[data-recent-index]');
@@ -205,7 +232,10 @@ function selectTab(next, updateHash = false) {
   byId('task-options').hidden = grocery || tab === 'done';
   byId('grocery-aisle-wrap').hidden = !grocery;
   byId('repeat-options').hidden = tab === 'done';
-  byId('task-composer').hidden = asks || tab === 'done';
+  byId('page-add').hidden = tab === 'done';
+  byId('page-add').dataset.openSheet = asks ? 'ask-form' : 'task-form';
+  byId('page-add').textContent = asks ? '＋ ask' : grocery ? '＋ grocery' : '＋ add';
+  byId('task-composer').querySelector('.compose-more').open = grocery;
   if (updateHash) history.replaceState(null, '', asks ? '#asks' : location.pathname + location.search);
   if (!asks) render();
 }
@@ -237,8 +267,9 @@ function taskMarkup(item) {
 function groceryMarkup(list){const groups=new Map();list.forEach(item=>{const aisle=item.aisle||'other';if(!groups.has(aisle))groups.set(aisle,[]);groups.get(aisle).push(item);});return [...groups].map(([aisle,entries])=>`<li class="aisle-label">${escapeHtml(aisle)}</li>${entries.map(taskMarkup).join('')}`).join('');}
 
 window.addEventListener('littlelist:profile',render);
-window.addEventListener('hashchange', () => selectTab(location.hash === '#asks' ? 'asks' : 'tasks'));
-selectTab(location.hash === '#asks' ? 'asks' : 'tasks');
+const tabFromHash = () => location.hash === '#asks' || location.hash.startsWith('#ask-') ? 'asks' : location.hash.startsWith('#done-') ? 'done' : 'tasks';
+window.addEventListener('hashchange', () => selectTab(tabFromHash()));
+selectTab(tabFromHash());
 
 function nextDue(value,repeat){
   const today=new Date();today.setHours(12,0,0,0);

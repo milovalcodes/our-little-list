@@ -60,6 +60,21 @@ export function createClient({ projectId, idToken }) {
       if (!response.ok) throw new Error(`firestore ${response.status}: ${text.slice(0, 300)}`);
       return true;
     },
+    // All-or-nothing creation keeps an event marker and its notifications in
+    // sync. A retry after a successful commit sees the marker and does nothing.
+    async createMany(documents) {
+      const writes = documents.map(({ path, fields }) => ({
+        update: { name: `${root}/${path}`, fields: writeMap(fields) },
+        currentDocument: { exists: false }
+      }));
+      const response = await fetch(`${root}:commit`, {
+        method: 'POST', headers, body: JSON.stringify({ writes })
+      });
+      const result = await response.text();
+      if (response.status === 409 || (!response.ok && (result.includes('ALREADY_EXISTS') || result.includes('FAILED_PRECONDITION')))) return false;
+      if (!response.ok) throw new Error(`firestore ${response.status}: ${result.slice(0, 300)}`);
+      return true;
+    },
     // Equality/ordering on a single field only, so Firestore's automatic
     // single-field index covers it and nobody has to create a composite one.
     async dueFrom(collectionPath, field, atOrBefore, limit = 50) {
@@ -104,6 +119,8 @@ function writeMap(fields) {
 }
 
 function writeValue(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return { mapValue: { fields: writeMap(value) } };
+  if (Array.isArray(value)) return { arrayValue: { values: value.map(writeValue) } };
   if (typeof value === 'boolean') return { booleanValue: value };
   if (typeof value === 'number' && Number.isInteger(value)) return { integerValue: String(value) };
   if (typeof value === 'number') return { doubleValue: value };

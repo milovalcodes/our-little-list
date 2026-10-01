@@ -11,7 +11,7 @@ Live: https://milovalcodes.github.io/our-little-list/
 Each thing lives in one place:
 
 - **Home** — both people at a glance, the pinned fridge note, quick add and search.
-- **Today** — due items, one daily question, a shared focus timer and the activity feed.
+- **Today** — due items, one question of the day, a focus timer and the latest activity.
 - **The list** — repeatable tasks, groceries by aisle and requests; a timed request is also a reminder, for either person or yourself.
 - **Notes** — short notes, reactions and the option to pin one on both home screens.
 - **Right now** — statuses, availability, opt-in map and saved spots that can change a status when someone arrives.
@@ -49,6 +49,28 @@ Things to know:
 - **On iPhone, notifications only work once the site is on the Home Screen.**
   That is an Apple rule, not something the site can route around. The phone
   checker says so and walks through it.
+
+## Question of the day
+
+The delivery Worker opens one question at **8 a.m. America/New_York time**
+each day and queues one opening ping per person. After the first answer, it
+pings the person who has not answered; after both answer, it pings both to
+compare. Those event markers are written atomically with their outbox records,
+so a retry cannot duplicate the pings. Quiet hours and each phone's question
+notification switch still apply. A push needs an active subscription on that
+phone; without one it waits in the outbox until the phone registers again.
+
+Each answer is stored in its own Firestore document. The shared question has
+only answered-at markers. Security rules let either person read their own words,
+but the other person's words become readable only after **both** markers exist.
+Edits to your answer remain possible. The 150 prompts are selected in a fixed,
+non-repeating order; after all 150 days the app asks for a new batch rather than
+silently repeating an old question. This batch begins October 2, 2026.
+
+The prompts are original wording inspired by [Gottman's Love Maps](https://www.gottman.com/product/love-map-cards-for-couples/)
+and [relationship-building questions](https://info.gottman.com/blog/20-relationship-building-questions-for-couples?hs_amp=true),
+with intimate prompts framed around [consent](https://www.plannedparenthood.org/learn/relationships/sexual-consent/how-do-i-talk-about-consent)
+and [talking about sex](https://www.plannedparenthood.org/learn/sex-pleasure-and-sexual-dysfunction/sex-and-pleasure/how-do-i-talk-my-partner-about-sex).
 
 ## One-time setup
 

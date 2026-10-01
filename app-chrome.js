@@ -23,11 +23,11 @@ async function boot() {
   markReturningVisit();
   addDock(viewer);
   addSheets();
+  movePageComposers();
   addSyncTray();
   if (page === 'home') setupFridgeNote(data, viewer, other);
 
-  const dock = document.querySelector('.app-dock');
-  dock?.addEventListener('click', event => {
+  document.addEventListener('click', event => {
     const opener = event.target.closest('[data-open-sheet]');
     if (!opener) return;
     event.preventDefault();
@@ -40,18 +40,50 @@ async function boot() {
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeSheets(); });
 
   const openQuick = setupQuickAdd(data, viewer, other);
+  document.addEventListener('click', event => {
+    const opener = event.target.closest('[data-open-quick]');
+    if (opener) { event.preventDefault(); openQuick(opener.dataset.openQuick); }
+  });
   setupSearch(data, viewer, openQuick);
+  setupDeepLinkHighlight();
+  setupRowMenus();
+  const topbar = document.querySelector('.app-topbar');
+  if (topbar && !topbar.querySelector('[data-open-sheet="search"]')) {
+    topbar.insertAdjacentHTML('beforeend', '<button class="topbar-search" type="button" data-open-sheet="search" aria-label="Search">⌕</button>');
+  }
   improveEmptyStates(openQuick);
   setupUpdateCheck();
+}
+
+function movePageComposers() {
+  const move = (selector, id, title) => {
+    const node = document.querySelector(selector);
+    if (!node) return;
+    if (!node.id) node.id = id;
+    node.dataset.sheetName = id.slice(6);
+    node.hidden = true;
+    node.classList.add('app-sheet', 'page-compose-sheet');
+    node.setAttribute('role', 'dialog');
+    node.setAttribute('aria-modal', 'true');
+    node.setAttribute('aria-label', title);
+    node.insertAdjacentHTML('afterbegin', `<header class="sheet-head"><div><h2>${title}</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>`);
+    document.body.append(node);
+  };
+  if (page === 'tasks') {
+    move('#task-composer', 'sheet-task-form', 'Add to the list');
+    move('.help-maker', 'sheet-ask-form', 'Ask for a hand');
+  }
+  if (page === 'dates') move('.date-composer', 'sheet-date-form', 'Add a date idea');
+  if (page === 'today') move('.focus-card', 'sheet-focus', 'Focus together');
 }
 
 function addDock(viewer) {
   const active = name => page === name ? ' is-active' : '';
   document.body.insertAdjacentHTML('beforeend', `<nav class="app-dock" aria-label="Main navigation">
     <a class="dock-item${active('home')}" href="${viewer}.html"><i>⌂</i><span>home</span></a>
-    <a class="dock-item${active('today')}" href="today.html"><i>◎</i><span>today</span></a>
+    <a class="dock-item${active('tasks')}" href="tasks.html"><i>✓</i><span>list</span></a>
     <button class="dock-add" type="button" data-open-sheet="quick" aria-label="Add something"><i>＋</i><span>add</span></button>
-    <button class="dock-item" type="button" data-open-sheet="search"><i>⌕</i><span>find</span></button>
+    <a class="dock-item${active('notes')}" href="notes.html"><i>💌</i><span>notes</span></a>
     <button class="dock-item" type="button" data-open-sheet="more"><i>•••</i><span>more</span></button>
   </nav>`);
   document.body.classList.add('has-app-dock');
@@ -95,7 +127,7 @@ function addSheets() {
 
 function openSheet(name) {
   closeSheets(false);
-  const sheet = document.getElementById(`sheet-${name}`);
+  const sheet = document.getElementById(`sheet-${name}`) || document.querySelector(`[data-sheet-name="${name}"]`);
   if (!sheet) return;
   sheet.hidden = false;
   document.querySelector('.sheet-scrim').hidden = false;
@@ -249,18 +281,108 @@ function setupSearch(data, viewer, openQuick) {
 
 function searchable(collection, item, viewer) {
   const map = {
-    items: { icon: item.type === 'grocery' ? '🛒' : '✓', title: item.title, meta: item.done ? 'finished list thing' : 'on the list', url: 'tasks.html' },
-    notes: { icon: '💌', title: item.body || item.message, meta: item.sender === viewer ? 'note you sent' : `note from ${personName(item.sender || item.from)}`, url: 'notes.html' },
-    help: { icon: item.emoji || (item.dueAt ? '⏰' : '🙋'), title: item.title, meta: item.dueAt ? 'ask with a time' : item.from === viewer ? 'you asked' : `${personName(item.from)} asked`, url: 'tasks.html#asks' },
-    dates: { icon: '✦', title: item.title, meta: item.done ? 'date we did' : 'date idea', url: 'dates.html' },
-    memories: { icon: '◒', title: item.text, meta: 'memory', url: 'memories.html' }
+    items: { icon: item.type === 'grocery' ? '🛒' : '✓', title: item.title, meta: item.done ? 'finished list thing' : 'on the list', url: `tasks.html#${item.done ? 'done' : 'item'}-${item.id}` },
+    notes: { icon: '💌', title: item.body || item.message, meta: item.sender === viewer ? 'note you sent' : `note from ${personName(item.sender || item.from)}`, url: `notes.html#note-${item.id}` },
+    help: { icon: item.emoji || (item.dueAt ? '⏰' : '🙋'), title: item.title, meta: item.dueAt ? 'ask with a time' : item.from === viewer ? 'you asked' : `${personName(item.from)} asked`, url: `tasks.html#ask-${item.id}` },
+    dates: { icon: '✦', title: item.title, meta: item.done ? 'date we did' : 'date idea', url: `dates.html#date-${item.id}` },
+    memories: { icon: '◒', title: item.text, meta: 'memory', url: `memories.html#memory-${item.id}` }
   };
   const value = map[collection];
   return { ...value, title: String(value.title || 'untitled'), haystack: normalize(`${value.title} ${value.meta} ${item.note || ''}`) };
 }
 
+function setupDeepLinkHighlight() {
+  const fragment = decodeURIComponent(location.hash.slice(1));
+  const match = /^(item|done|ask|note|date|memory)-([A-Za-z0-9_-]+)$/.exec(fragment);
+  if (!match) return;
+  const [, kind, id] = match;
+  const selectors = {
+    item: '.task-row', done: '.task-row', ask: '.help-card',
+    note: '.note-thread-row', date: '.date-idea-card', memory: '.memory-card'
+  };
+  const find = () => [...document.querySelectorAll(selectors[kind])].find(node =>
+    node.dataset.id === id || node.dataset.noteId === id ||
+    (kind === 'note' && [...node.querySelectorAll('[data-note-picker],[data-edit-note],[data-delete-note]')]
+      .some(button => (button.dataset.notePicker || button.dataset.editNote || button.dataset.deleteNote) === id)));
+  let highlighted = null;
+  let clearTimer;
+  const observer = new MutationObserver(() => { show(); });
+  const show = () => {
+    const node = find();
+    if (!node) return false;
+    if (node === highlighted && node.classList.contains('is-deep-linked')) return true;
+    highlighted = node;
+    node.classList.add('is-deep-linked');
+    node.scrollIntoView({ behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth', block:'center' });
+    window.clearTimeout(clearTimer);
+    clearTimer = window.setTimeout(() => { node.classList.remove('is-deep-linked'); observer.disconnect(); }, 4000);
+    return true;
+  };
+  observer.observe(document.body, { childList:true, subtree:true });
+  show();
+  window.setTimeout(() => observer.disconnect(), 15000);
+}
+
+function setupRowMenus() {
+  const rowSelector = '.task-row,.note-thread-row,.activity-row';
+  const menus = {
+    task: [ ['finish', '[data-action="toggle"]'], ['edit', '[data-action="edit"]'], ['delete', '[data-action="delete"]'] ],
+    note: [ ['pin / unpin', '[data-pin-note]'], ['edit', '[data-edit-note]'], ['delete', '[data-delete-note]'] ],
+    activity: [ ['delete for me', '[data-action="hide"]'], ['delete for us', '[data-action="delete"]'] ]
+  };
+  const kindOf = row => row.matches('.task-row') ? 'task' : row.matches('.note-thread-row') ? 'note' : 'activity';
+  const close = () => document.querySelectorAll(`${rowSelector.split(',').join('.menu-open,')}.menu-open`).forEach(row => {
+    row.classList.remove('menu-open'); row.querySelector('.row-context-menu')?.remove();
+  });
+  const show = row => {
+    close();
+    const actions = menus[kindOf(row)].filter(([,selector]) => row.querySelector(selector));
+    if (!actions.length) return;
+    row.classList.add('menu-open');
+    row.insertAdjacentHTML('beforeend', `<div class="row-context-menu" role="menu">${actions.map(([label],index) => `<button type="button" role="menuitem" data-menu-index="${index}">${label}</button>`).join('')}</div>`);
+    row._menuActions = actions;
+    window.littleHaptic?.('tap');
+  };
+  const ensure = () => document.querySelectorAll(rowSelector).forEach(row => {
+    if (row.querySelector(':scope > .row-more')) return;
+    row.insertAdjacentHTML('beforeend', '<button class="row-more" type="button" aria-label="More options" data-toggle-row-menu>⋯</button>');
+  });
+  ensure();
+  const observer = new MutationObserver(ensure);
+  observer.observe(document.body, { childList:true, subtree:true });
+  let hold = 0, point = null, suppressUntil = 0;
+  document.addEventListener('pointerdown', event => {
+    const row = event.target.closest(rowSelector);
+    if (!row || event.target.closest('input,textarea,select,form')) return;
+    point = { x:event.clientX, y:event.clientY };
+    hold = window.setTimeout(() => { show(row); suppressUntil=Date.now()+450; hold=0; }, 550);
+  });
+  document.addEventListener('pointermove', event => {
+    if (point && Math.hypot(event.clientX-point.x,event.clientY-point.y)>12) { window.clearTimeout(hold); hold=0; point=null; }
+  });
+  for (const type of ['pointerup','pointercancel']) document.addEventListener(type, () => { window.clearTimeout(hold); hold=0; point=null; });
+  document.addEventListener('contextmenu', event => {
+    const row=event.target.closest(rowSelector);
+    if (row) { event.preventDefault(); show(row); }
+  });
+  document.addEventListener('click', event => {
+    if (Date.now()<suppressUntil && !event.target.closest('.row-context-menu,.row-more')) { event.preventDefault(); event.stopImmediatePropagation(); return; }
+    const menuButton = event.target.closest('[data-menu-index]');
+    if (menuButton) {
+      const row=menuButton.closest(rowSelector);
+      const action=row?._menuActions?.[Number(menuButton.dataset.menuIndex)];
+      close();
+      row?.querySelector(action?.[1])?.click();
+      return;
+    }
+    const more = event.target.closest('[data-toggle-row-menu]');
+    if (more) { const row=more.closest(rowSelector); row?.classList.contains('menu-open') ? close() : show(row); return; }
+    if (!event.target.closest('.row-context-menu')) close();
+  });
+}
+
 function setupFridgeNote(data, viewer, other) {
-  const launchpad = document.querySelector('.sky-launchpad');
+  const launchpad = document.querySelector('.home-next-up');
   if (!launchpad) return;
   launchpad.insertAdjacentHTML('beforebegin', `<section class="fridge-note" id="fridge-note"><button class="fridge-paper" id="fridge-open" type="button"><span id="fridge-emoji">📌</span><div><small id="fridge-kicker">on the fridge</small><strong id="fridge-copy">tap to pin something</strong></div><i>✎</i></button></section>`);
   document.body.insertAdjacentHTML('beforeend', `<section class="app-sheet fridge-sheet" id="sheet-fridge" role="dialog" aria-modal="true" aria-labelledby="fridge-title" hidden><header class="sheet-head"><div><small>a note that stays up</small><h2 id="fridge-title">On the fridge</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header><form id="fridge-form"><label><span>tiny icon</span><button class="emoji-select" id="fridge-emoji-pick" type="button">📌 pick an emoji</button></label><label><span>the note</span><textarea id="fridge-text" maxlength="240" placeholder="important-ish household lore"></textarea></label><div class="fridge-actions"><button class="primary-action" type="submit">pin it</button><button class="soft-delete" id="fridge-clear" type="button">take it down</button></div></form></section>`);

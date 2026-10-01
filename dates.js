@@ -1,7 +1,7 @@
 import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
-import { addDateIdea } from './records.js';
+import { addDateIdea, addTask } from './records.js';
 import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
 const $=id=>document.getElementById(id);let ideas=[];let vibe='go out';let viewLimit=8;let editingDateId='';
@@ -15,8 +15,9 @@ data.listenTo('dates',items=>{
 });
 
 document.querySelectorAll('.date-vibe').forEach(button=>button.addEventListener('click',()=>{vibe=button.dataset.vibe;document.querySelectorAll('.date-vibe').forEach(item=>item.classList.toggle('active',item===button));}));
-$('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');const details={cost:$('date-cost').value,energy:$('date-energy').value,weather:$('date-weather').value,distance:$('date-distance').value,duration:$('date-duration').value};setButtonBusy(button,true,'saving…');try{await addDateIdea(data,{viewer,other,title,note,vibe,details});event.target.reset();$('date-more-details').open=false;toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
+$('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');const details={cost:$('date-cost').value,energy:$('date-energy').value,weather:$('date-weather').value,distance:$('date-distance').value,duration:$('date-duration').value};setButtonBusy(button,true,'saving…');try{await addDateIdea(data,{viewer,other,title,note,vibe,details});event.target.reset();$('date-more-details').open=false;$('sheet-date-form')?.querySelector('[data-close-sheet]')?.click();toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
 const rouletteFilters={vibe:'any',cost:'any'};
+let chosenDateIdea = null;
 document.querySelector('.roulette-filters').addEventListener('click',event=>{const button=event.target.closest('[data-filter-vibe],[data-filter-cost]');if(!button)return;const key=button.hasAttribute('data-filter-vibe')?'vibe':'cost';rouletteFilters[key]=button.dataset[`filter${key[0].toUpperCase()}${key.slice(1)}`];button.parentElement.querySelectorAll('button').forEach(item=>{const active=item===button;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active));});});
 $('pick-random').addEventListener('click',event=>{const chosen=Object.entries(rouletteFilters).filter(([,value])=>value!=='any');
 // Old imported dates have a vibe but no budget. Prefer exact matches; let an
@@ -24,7 +25,21 @@ $('pick-random').addEventListener('click',event=>{const chosen=Object.entries(ro
 const compatible=ideas.filter(idea=>!idea.done&&chosen.every(([key,value])=>!idea[key]||idea[key]===value));
 const exact=compatible.filter(idea=>chosen.every(([key])=>Boolean(idea[key])));
 const available=exact.length?exact:compatible;
-if(!available.length){$('random-date').textContent='nothing matches that exact mood.';return;}event.currentTarget.classList.remove('is-picking');void event.currentTarget.offsetWidth;event.currentTarget.classList.add('is-picking');const idea=available[Math.floor(Math.random()*available.length)];$('random-date').innerHTML=`<strong>${escapeHtml(idea.title)}</strong>${idea.note?`<span>${escapeHtml(idea.note)}</span>`:''}`;});
+if(!available.length){$('random-date').textContent='nothing matches that exact mood.';$('date-plan').hidden=true;chosenDateIdea=null;return;}event.currentTarget.classList.remove('is-picking');void event.currentTarget.offsetWidth;event.currentTarget.classList.add('is-picking');const idea=available[Math.floor(Math.random()*available.length)];chosenDateIdea=idea;$('random-date').innerHTML=`<strong>${escapeHtml(idea.title)}</strong>${idea.note?`<span>${escapeHtml(idea.note)}</span>`:''}`;$('date-plan').hidden=false;});
+$('date-plan').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!chosenDateIdea) return;
+  const due = $('date-plan-day').value;
+  if (!due) return;
+  const button = event.currentTarget.querySelector('[type="submit"]');
+  setButtonBusy(button, true, 'adding…');
+  try {
+    await addTask(data, { viewer, other, title:`date: ${chosenDateIdea.title}`, due });
+    toast('on the list ✓');
+    $('date-plan').hidden = true;
+  } catch (_) { showFailure('that plan did not save.', 'check the internet and try again.'); }
+  finally { setButtonBusy(button, false); }
+});
 $('date-more').addEventListener('click',()=>{viewLimit+=8;render();});
 // A date you did goes in the memory jar, so there is one place to look back on
 // things you did together instead of a done pile here and a jar over there.

@@ -26,7 +26,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
   const [
     { initializeApp, getApps, getApp },
     { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
-    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, getDocsFromServer, query, where, orderBy, limit: limitQuery }
+    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, getDocsFromServer, writeBatch, query, where, orderBy, limit: limitQuery }
   ] = modules;
 
   // Better a plain sentence than a permission-denied nobody can read.
@@ -142,6 +142,12 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       return { id: entry.id };
     },
     setTo: (name, id, item) => applied(setDoc(doc(named(name), id), item, { merge: true }), name),
+    answerQuestion(day, person, text, at) {
+      const batch = writeBatch(db);
+      batch.set(doc(named('questionAnswers'), `${day}-${person}`), { day, person, text, at });
+      batch.set(doc(named('questions'), day), { answers:{ [person]:{ at } } }, { merge:true });
+      return applied(batch.commit(), 'questions');
+    },
     updateIn: (name, id, changes) => applied(updateDoc(doc(named(name), id), changes), name),
     removeFrom: (name, id) => applied(deleteDoc(doc(named(name), id)), name),
 
@@ -273,6 +279,17 @@ function createLocalLayer(onAuth, onReady) {
       else if (current) Object.assign(current, item);
       else items.push({ id, ...item });
       write(name, items);
+    },
+    async answerQuestion(day, person, text, at) {
+      const key = `${day}-${person}`;
+      const answers = read('questionAnswers');
+      const current = answers.find(entry => entry.id === key);
+      if (current) Object.assign(current, { day, person, text, at });
+      else answers.push({ id:key, day, person, text, at });
+      write('questionAnswers', answers);
+      const questions = read('questions');
+      const question = questions.find(entry => entry.id === day);
+      if (question) { question.answers = { ...(question.answers || {}), [person]:{ at } }; write('questions', questions); }
     },
     async updateIn(name, id, changes) {
       const items = read(name);

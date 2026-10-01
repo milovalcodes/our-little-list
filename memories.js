@@ -58,7 +58,7 @@ $('memory-form').addEventListener('submit', async event => {
         showFailure('the words saved, but the photo did not.', 'check the internet, then add it again if you want the photo.');
       }
     }
-    void data.notify(other, { title: `${personName(viewer)} added to the memory jar`, body: text.slice(0, 120), url: 'memories.html', kind: 'memory' });
+    void data.notify(other, { title: `${personName(viewer)} added to the memory jar`, body: text.slice(0, 120), url: `memories.html#memory-${saved.id}`, kind: 'memory' });
     event.target.reset();
     photo = null;
     photoPending = Promise.resolve();
@@ -93,9 +93,14 @@ $('memory-pick').addEventListener('click', () => {
 function feature(id) {
   featuredId = id;
   render();
-  $('memory-random').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.body.classList.add('memory-open');
   void loadFullPhoto(id);
 }
+$('memory-random').addEventListener('click', event => {
+  if (event.target === event.currentTarget || event.target.closest('[data-close-memory]')) closeMemory();
+});
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && featuredId) closeMemory(); });
+function closeMemory() { featuredId=''; document.body.classList.remove('memory-open'); render(); }
 
 function visibleMemories() { return memories.filter(item => !isPendingDelete('memories', item.id)); }
 
@@ -105,13 +110,13 @@ function render() {
   $('memory-list').innerHTML = visible.map(item => memoryMarkup(item)).join('');
   const featured = featuredId && visible.find(item => item.id === featuredId);
   $('memory-random').hidden = !featured;
-  $('memory-random').innerHTML = featured ? memoryMarkup(featured, true) : '';
+  $('memory-random').innerHTML = featured ? `<div class="memory-full"><button type="button" data-close-memory aria-label="Close memory">×</button>${memoryMarkup(featured, true)}</div>` : '';
   if (featuredId && !featured) featuredId = '';
 }
 
 function memoryMarkup(item, featured = false) {
   const image = safePhoto(featured ? fullPhotos.get(item.id) || item.thumb || item.photo : item.thumb || item.photo);
-  return `<article class="memory-card${featured ? ' featured' : ''}">
+  return `<article class="memory-card${featured ? ' featured' : ''}${image ? ' has-photo' : ' text-only'}" data-id="${escapeHtml(item.id)}">
     ${featured ? '' : `<button class="memory-open" type="button" data-open="${escapeHtml(item.id)}" aria-label="Open memory">`}
     ${image ? `<img src="${image}" alt="">` : ''}
     <div><p>${escapeHtml(item.text || '')}</p><small>${escapeHtml(personName(item.addedBy))} · ${timeAgo(item.createdAt)}</small></div>

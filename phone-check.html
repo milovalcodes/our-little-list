@@ -9,15 +9,14 @@
   <main class="app-shell feature-shell status-shell">
     <section class="feature-hero status-hero"><span class="feature-icon">⚙︎</span><p class="tiny-kicker">this phone & us</p><h1>Settings</h1></section>
     <p class="tiny-kicker settings-section-label">this phone</p>
-    <section class="status-card" aria-live="polite">
+    <details class="phone-health" id="phone-health" open><summary id="health-summary">Checking this phone…</summary><section class="status-card" aria-live="polite">
       <div class="status-row"><span class="status-symbol" id="sync-symbol">…</span><div><strong>Shared sync</strong><p id="sync-status">checking</p><button class="small-action" id="check-sync" type="button">test sync</button><p class="permission-help" id="sync-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol" id="online-symbol">…</span><div><strong>Internet</strong><p id="online-status">checking</p><button class="small-action" id="check-online" type="button">recheck</button><p class="permission-help" id="online-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol" id="install-symbol">…</span><div><strong>Home screen</strong><p id="install-status">checking</p><button class="small-action" id="ask-install" type="button">install / show me</button><p class="permission-help" id="install-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol" id="notification-symbol">…</span><div><strong>Popups & tiny noises</strong><p id="notification-status">checking</p><button class="small-action" id="ask-notifications" type="button">ask phone</button><p class="permission-help" id="notification-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol" id="location-symbol">…</span><div><strong>Location</strong><p id="location-status">checking</p><button class="small-action" id="ask-location" type="button">ask phone</button><p class="permission-help" id="location-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol warning" id="background-symbol">◐</span><div><strong>Keep screen on</strong><p id="background-status">the website may pause when the screen locks.</p><button class="small-action" id="ask-background" type="button">keep page awake</button><p class="permission-help" id="background-help" hidden></p></div></div>
-    </section>
-    <p class="status-foot">green means ready. yellow needs a quick look.</p>
+    </section></details>
     <section class="ping-settings" id="pings">
       <div class="ping-settings-head"><img class="notification-hero-icon" src="notification-icon.png" alt=""><div><p class="tiny-kicker">your phone, your rules</p><h2>Little pings</h2></div></div>
     <form id="notification-settings-form">

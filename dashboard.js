@@ -6,10 +6,12 @@ import { ensurePushSubscription } from './push-client.js';
 import { personName } from './profile-store.js';
 import { hereLine, statusShows, orbitLine } from './availability.js';
 import { newActivityCount } from './activity-summary.js';
+import { questionClock } from './question-prompts.js';
+import { escapeHtml, showFailure, toast } from './ui-helpers.js';
 
 const badge = document.getElementById('activity-badge');
 const helpBadge = document.getElementById('help-badge');
-const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [] };
+const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [] };
 let dashboardFrame = 0;
 
 const data = await sharedLayer();
@@ -37,6 +39,7 @@ data.listenToQuery('items', { where: { field: 'done', value: false } }, items =>
 data.listenToQuery('items', { where: { field: 'doneAt', op: '>=', value: doneSince }, orderBy: { field: 'doneAt', direction: 'desc' }, limit: 50 }, items => { recentDone = items; updateItems(); });
 for (const name of Object.keys(buckets).filter(name => name !== 'items')) {
   const receive = items => { buckets[name] = items; scheduleDashboardRender(); };
+  if (name === 'questions') { data.listenToQuery('questions', { where:{field:'day', value:questionClock().day} }, receive); continue; }
   if (['notes', 'memories', 'reactions'].includes(name)) data.listenToQuery(name, recent, receive);
   else data.listenTo(name, receive);
 }
@@ -46,7 +49,9 @@ startPresence(data, viewer, 'home');
 void ensurePushSubscription(data, viewer);
 
 window.addEventListener('littlelist:profile', renderSky);
-window.setInterval(renderSky, 30000);
+const homeDay = questionClock().day;
+window.setInterval(() => { if (questionClock().day !== homeDay) location.reload(); else renderSky(); }, 30000);
+setupQuickStatus();
 
 function renderBadge() {
   const since = Number(localStorage.getItem(seenKey) || 0);
@@ -80,6 +85,68 @@ function setIconBadge(count) {
 function renderDashboard() {
   renderBadge();
   renderSky();
+  renderNextUp();
+}
+
+function renderNextUp() {
+  const target = document.getElementById('home-next-up');
+  if (!target) return;
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone:'America/New_York', year:'numeric',month:'2-digit',day:'2-digit' }).format(new Date());
+  const due = buckets.items.filter(item => !item.done && item.due && item.due <= today).length;
+  const asks = buckets.help.filter(item => item.to === viewer && item.state === 'open').length;
+  const unread = buckets.notes.filter(note => (note.recipient === viewer || note.to === viewer) && !note.read).length;
+  const clock = questionClock();
+  const question = buckets.questions.find(item => item.day === clock.day);
+  const answerNeeded = clock.open && question && !question.answers?.[viewer]?.at;
+  const rows = [
+    due && { icon:'✓', text:`${due} due today`, url:'tasks.html' },
+    asks && { icon:'🙋', text:`${asks} ask${asks === 1 ? '' : 's'} waiting`, url:'tasks.html#asks' },
+    unread && { icon:'💌', text:`${unread} unread note${unread === 1 ? '' : 's'}`, url:'notes.html' },
+    answerNeeded && { icon:'◎', text:'today’s question', url:'today.html#question' }
+  ].filter(Boolean);
+  target.innerHTML = rows.length ? rows.map(row => `<a href="${row.url}"><span>${row.icon}</span><strong>${escapeHtml(row.text)}</strong><i>›</i></a>`).join('') : '<p>nothing needs you right now ✦</p>';
+}
+
+function setupQuickStatus() {
+  const avatar = document.getElementById(`sky-person-${viewer}`);
+  if (!avatar) return;
+  avatar.dataset.openSheet = 'quick-status';
+  avatar.setAttribute('aria-label', 'Quick status');
+  document.body.insertAdjacentHTML('beforeend', `<section class="app-sheet quick-status-sheet" id="sheet-quick-status" role="dialog" aria-modal="true" aria-labelledby="quick-status-title" hidden>
+    <header class="sheet-head"><div><small>your side</small><h2 id="quick-status-title">Quick status</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
+    <div class="quick-status-options"><button type="button" data-quick-status="busy">🫠 busy</button><button type="button" data-quick-status="home-soon">🏠 home soon</button><button type="button" data-quick-status="out">👟 out</button><button type="button" data-quick-status="focus">⏱ focus 30m</button></div>
+    <form id="quick-status-form"><label><span>or your own words</span><input id="quick-status-text" maxlength="90" placeholder="currently doing the thing"></label><button class="primary-action" type="submit">set status</button></form>
+  </section>`);
+  const save = async (choice, custom = '') => {
+    const words = {
+      busy: { text:'busy', state:'dnd', emoji:'🫠' },
+      'home-soon': { text:'home soon', state:'online', emoji:'🏠' },
+      out: { text:'out', state:'away', emoji:'👟' },
+      custom: { text:custom, state:'online', emoji:'✦' }
+    };
+    const now = Date.now();
+    try {
+      const existing = await data.readDoc('statuses', viewer);
+      const blank = existing ? {} : { text:'', category:'', emoji:'' };
+      if (choice === 'focus') {
+        await data.setTo('statuses', viewer, { person:viewer, ...blank, focusLabel:'doing the thing', focusMinutes:30, focusStartedAt:now, focusUntil:now + 1800000, focusEndedAt:0, updateKind:'focus', updatedAt:now });
+      } else {
+        await data.setTo('statuses', viewer, { person:viewer, ...blank, ...words[choice], category:'', updateKind:'custom', updatedAt:now });
+      }
+      void data.notify(other, { title:`${personName(viewer)} changed status`, body:choice === 'focus' ? 'focus mode for 30 minutes' : words[choice].text, url:'status.html#partner', kind:'status' });
+      document.querySelector('#sheet-quick-status [data-close-sheet]')?.click();
+      toast('status set');
+    } catch (_) { showFailure('status did not save.', 'check the internet and try again.'); }
+  };
+  document.getElementById('sheet-quick-status').addEventListener('click', event => {
+    const button = event.target.closest('[data-quick-status]');
+    if (button) void save(button.dataset.quickStatus);
+  });
+  document.getElementById('quick-status-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const text = document.getElementById('quick-status-text').value.trim();
+    if (text) void save('custom', text);
+  });
 }
 
 function scheduleDashboardRender() {

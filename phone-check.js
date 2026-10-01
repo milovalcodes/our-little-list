@@ -8,6 +8,14 @@ import { startPingSettings } from './pings-settings.js';
 const isApple=/iPhone|iPad|iPod/i.test(navigator.userAgent);
 const $=id=>document.getElementById(id);
 let wakeLock=null;
+const health = { sync:false, online:false, install:false, notification:false, location:false };
+let healthCollapsed=false;
+function renderHealthSummary(){
+  const ready=Object.values(health).every(Boolean);
+  $('health-summary').textContent=ready?'this phone is all set ✓':'this phone needs a look';
+  if(ready&&!healthCollapsed){$('phone-health').open=false;healthCollapsed=true;}
+  if(!ready)$('phone-health').open=true;
+}
 const { data, viewer } = await bootPage({onAuth:(user,layer)=>{
   const local=layer.mode==='local';
   setStatus('sync',Boolean(user)&&!local,local?'only saved on this phone.':user?'connected to our shared space.':'sign in so both phones can see the same things.');
@@ -18,13 +26,14 @@ startPingSettings({data,viewer,onChange:()=>void renderNotifications()});
 void ensurePushSubscription(data,viewer).then(renderNotifications);
 
 function setStatus(name,okay,text){
+  if(name in health){health[name]=okay;renderHealthSummary();}
   $(`${name}-symbol`).textContent=okay?'✓':'!';
   $(`${name}-symbol`).classList.toggle('okay',okay);
   $(`${name}-symbol`).classList.toggle('warning',!okay);
   $(`${name}-symbol`).classList.remove('failed');
   $(`${name}-status`).textContent=text;
 }
-function setFailure(name,text){const symbol=$(`${name}-symbol`);symbol.textContent='×';symbol.classList.remove('okay','warning');symbol.classList.add('failed');$(`${name}-status`).textContent=text;}
+function setFailure(name,text){if(name in health){health[name]=false;renderHealthSummary();}const symbol=$(`${name}-symbol`);symbol.textContent='×';symbol.classList.remove('okay','warning');symbol.classList.add('failed');$(`${name}-status`).textContent=text;}
 function help(name,text,tone=''){const el=$(`${name}-help`);el.textContent=tone==='fail'?`try this: ${text}`:text;el.hidden=false;el.classList.toggle('fail',tone==='fail');}
 function clearHelp(name){$(`${name}-help`).hidden=true;}
 const busy=setButtonBusy;

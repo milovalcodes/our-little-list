@@ -1,4 +1,4 @@
-import { deliver } from '../worker/src/index.js';
+import { deliver as realDeliver, ensureQuestionOfDay } from '../worker/src/index.js';
 import { focusDelivery } from '../delivery-policy.js';
 import { quietHoursEndUtc } from '../notification-policy.js';
 import crypto from 'node:crypto';
@@ -15,6 +15,42 @@ const ENV = {
   LITTLE_EMAIL: 'a@b.c', LITTLE_PASSWORD: 'pw',
   VAPID_PUBLIC_KEY: vapidKeys.publicKey, VAPID_PRIVATE_KEY: vapidKeys.privateKey
 };
+const deliver = env => realDeliver(env, { scheduleQuestions: false });
+
+// A Firestore-shaped in-memory client proves the morning/open/waiting/reveal
+// transitions are idempotent, including across Worker retries.
+{
+  const docs = new Map();
+  const db = {
+    async create(path, fields) { if (docs.has(path)) return false; docs.set(path, structuredClone(fields)); return true; },
+    async get(path) { return docs.get(path) || null; },
+    async createMany(records) {
+      if (records.some(record => docs.has(record.path))) return false;
+      records.forEach(record => docs.set(record.path, structuredClone(record.fields)));
+      return true;
+    }
+  };
+  const base = 'households/HOUSE';
+  const before = Date.parse('2026-10-02T11:59:00Z');
+  assert.equal((await ensureQuestionOfDay(db, base, before)).open, false);
+  assert.equal(docs.size, 0, 'nothing opens before 8 Eastern');
+  const morning = Date.parse('2026-10-02T12:00:00Z');
+  assert.equal((await ensureQuestionOfDay(db, base, morning)).open, true);
+  assert.equal([...docs.keys()].filter(key => key.includes('/outbox/')).length, 2);
+  await ensureQuestionOfDay(db, base, morning + 60000);
+  assert.equal([...docs.keys()].filter(key => key.includes('/outbox/')).length, 2, 'retry cannot duplicate the opening pings');
+  const question = docs.get(`${base}/questions/2026-10-02`);
+  question.answers.her = { at:morning };
+  await ensureQuestionOfDay(db, base, morning + 120000);
+  assert.ok(docs.has(`${base}/outbox/question-2026-10-02-answered-him`));
+  question.answers.him = { at:morning + 180000 };
+  await ensureQuestionOfDay(db, base, morning + 180000);
+  assert.ok(docs.has(`${base}/outbox/question-2026-10-02-reveal-her`));
+  assert.ok(docs.has(`${base}/outbox/question-2026-10-02-reveal-him`));
+  const count = docs.size;
+  await ensureQuestionOfDay(db, base, morning + 240000);
+  assert.equal(docs.size, count, 'reveal is sent once per person');
+}
 
 function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, pushStatus = 201, lockHeld = false }) {
   const deleted = [];

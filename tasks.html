@@ -14,14 +14,15 @@
     <nav class="tabs" aria-label="List sections">
       <button class="tab active" data-tab="tasks">To do</button><button class="tab" data-tab="grocery">Groceries</button><button class="tab" data-tab="asks">Asks</button><button class="tab" data-tab="done">Done</button>
     </nav>
+    <button class="page-add" id="page-add" type="button" data-open-sheet="task-form">＋ add</button>
 
-    <section class="composer-card compact-composer" id="task-composer">
+    <section class="composer-card compact-composer" id="task-composer" hidden>
       <form id="shared-task-form">
         <label><span id="task-prompt">What needs doing?</span><div class="inline-add"><input id="shared-task-title" required maxlength="100" placeholder="type it before it leaves your brain"><button type="submit" aria-label="Add">+</button></div></label>
-        <div class="soft-options" id="task-options">
+        <details class="compose-more"><summary>⋯ when / repeat</summary><div class="soft-options" id="task-options">
           <button type="button" class="soft-chip active" data-when="whenever">whenever</button><button type="button" class="soft-chip" data-when="today">today-ish</button><button type="button" class="soft-chip" data-when="tomorrow">tomorrow</button>
         </div>
-        <div class="task-extra-row"><div class="soft-options" id="repeat-options"><button type="button" class="repeat-chip active" data-repeat="once">one time</button><button type="button" class="repeat-chip" data-repeat="daily">daily</button><button type="button" class="repeat-chip" data-repeat="weekly">weekly</button><button type="button" class="repeat-chip" data-repeat="monthly">monthly</button></div><label id="grocery-aisle-wrap" hidden><span>aisle-ish</span><select id="grocery-aisle"><option value="produce">produce</option><option value="fridge">fridge</option><option value="pantry">pantry</option><option value="frozen">frozen</option><option value="home">home stuff</option><option value="other">other</option></select></label></div>
+        <div class="task-extra-row"><div class="soft-options" id="repeat-options"><button type="button" class="repeat-chip active" data-repeat="once">one time</button><button type="button" class="repeat-chip" data-repeat="daily">daily</button><button type="button" class="repeat-chip" data-repeat="weekly">weekly</button><button type="button" class="repeat-chip" data-repeat="monthly">monthly</button></div><label id="grocery-aisle-wrap" hidden><span>aisle-ish</span><select id="grocery-aisle"><option value="produce">produce</option><option value="fridge">fridge</option><option value="pantry">pantry</option><option value="frozen">frozen</option><option value="home">home stuff</option><option value="other">other</option></select></label></div></details>
       </form>
     </section>
 
@@ -50,8 +51,8 @@
           <button type="button" data-emoji="😵" data-title="rescue me from this">😵 rescue me</button>
         </div>
         <form id="help-form">
-          <label class="ask-for-me"><input id="ask-for-me" type="checkbox"><span>for me · remind my own phone</span></label>
           <label class="little-note-field"><span>what do you need?</span><input id="help-title" required maxlength="90" placeholder="ask a thing"></label>
+          <details class="compose-more"><summary>⋯ more</summary><label class="ask-for-me"><input id="ask-for-me" type="checkbox"><span>for me · remind my own phone</span></label>
           <label class="little-note-field"><span>extra detail, maybe</span><input id="help-note" maxlength="140" placeholder="optional"></label>
           <div class="choice-cloud" id="help-urgency">
             <button type="button" class="choice" data-urgency="whenever">whenever</button>
@@ -59,7 +60,7 @@
             <button type="button" class="choice" data-urgency="now">kind of now</button>
             <button type="button" class="choice" data-urgency="timed">⏰ at a time…</button>
           </div>
-          <div class="ask-when" id="ask-when" hidden></div>
+          <div class="ask-when" id="ask-when" hidden></div></details>
           <button class="primary-action roomy-action" id="help-submit" type="submit">ask</button>
         </form>
         <p class="inline-success" id="help-sent" hidden></p>
