@@ -1,4 +1,4 @@
-import { escapeHtml, toast, dateKey, setButtonBusy, showFailure, keepInlineEdits } from './ui-helpers.js';
+import { escapeHtml, toast, dateKey, setButtonBusy, settleQuickly, showFailure, keepInlineEdits } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { initHelpPanel } from './help-panel.js';
@@ -64,7 +64,7 @@ byId('shared-task-form').addEventListener('submit', async event => {
   setButtonBusy(submit,true,'…');
   try{
     if(repeat!=='once'&&!due)due=dateKey(new Date());
-    await addTask(data,{viewer,other,title,type:grocery?'grocery':'task',due,recurrence:repeat,aisle:grocery?byId('grocery-aisle').value:''});
+    await settleQuickly(addTask(data,{viewer,other,title,type:grocery?'grocery':'task',due,recurrence:repeat,aisle:grocery?byId('grocery-aisle').value:''}),`“${title.slice(0,40)}” did not get added.`);
     event.target.reset();toast(tab==='grocery'?'on the grocery list 🛒':'added 🫡');
     byId('task-composer').querySelector('[data-close-sheet]')?.click();
   }catch(_){showFailure('that did not get added.','check the internet, then try again. Your text is still here.');}
@@ -86,7 +86,7 @@ byId('task-list').addEventListener('click', async event => {
   if (button.dataset.action === 'cancel-edit') { editingTaskId = ''; render(); return; }
   if (button.dataset.action === 'delete') { deleteWithUndo(data, 'items', item.id, { label: `deleted “${item.title.slice(0, 28)}”`, onChange: render }); return; }
 
-  button.disabled=true;button.classList.add('is-busy');
+  button.disabled=true;
   try{
     if(button.dataset.action==='toggle'){
       const finishing = !item.done;
@@ -193,11 +193,13 @@ function render() {
   const list = visibleItems();
   byId('item-count').textContent = tab === 'done' ? `${list.length} done` : `${list.length} left`;
   byId('empty-state').hidden = list.length > 0;
+  // "0 left" next to "Nothing here" said the same thing twice.
+  byId('item-count').hidden = list.length === 0;
 
   const labels = {
-    tasks: ['our things', 'To do', '✦', 'Nothing here'],
-    grocery: ['to pick up', 'Groceries', '🛒', 'No groceries'],
-    done: ['finished', 'Done', '✨', 'Nothing done yet']
+    tasks: ['our things', 'To do', '✦', 'Nothing here', 'tap ＋ add below to put something on it'],
+    grocery: ['to pick up', 'Groceries', '🛒', 'No groceries', 'tap ＋ add below when something runs out'],
+    done: ['finished', 'Done', '✨', 'Nothing done yet', '']
   }[tab];
 
   byId('list-kicker').textContent = labels[0];
@@ -205,6 +207,7 @@ function render() {
   const empty = byId('empty-state');
   empty.querySelector('span').textContent = labels[2];
   empty.querySelector('strong').textContent = labels[3];
+  const hint = empty.querySelector('p'); if (hint) { hint.textContent = labels[4]; hint.hidden = !labels[4]; }
   keepInlineEdits(byId('task-list'), () => { byId('task-list').innerHTML = tab==='grocery'?groceryMarkup(list):list.map(taskMarkup).join(''); });
   renderRecentGroceries();
 }

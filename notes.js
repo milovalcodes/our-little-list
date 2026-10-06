@@ -1,4 +1,4 @@
-import { escapeHtml, toast, setButtonBusy, showFailure, keepInlineEdits } from './ui-helpers.js';
+import { escapeHtml, toast, setButtonBusy, settleQuickly, showFailure, keepInlineEdits } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { timeAgo } from './time-format.js';
@@ -23,7 +23,7 @@ $('note-form').addEventListener('submit',async event=>{
   event.preventDefault();const mood=document.querySelector('[name="mood"]:checked').value;const body=$('note-body').value.trim();
   const submit=$('note-submit');setButtonBusy(submit,true,'sending…');
   try{
-    const {delivery}=await sendNote(data,{viewer:sender,other:recipient,body,mood});
+    const sent=await settleQuickly(sendNote(data,{viewer:sender,other:recipient,body,mood}),`the note “${body.slice(0,40)}” did not send.`);const delivery=sent?.delivery||{queued:true};
     event.target.reset();$('note-send-state').hidden=false;$('note-send-state').textContent=delivery.queued?`sent with a ${moods[mood]}`:`saved for ${personName(recipient)}.`;toast('sent 💌');
     document.querySelector('#sheet-note-form [data-close-sheet]')?.click();
   }catch(_){showFailure('the note did not send.','check the internet and try again. The note is still here.');}
@@ -34,7 +34,7 @@ $('note-quick-form').addEventListener('submit', async event => {
   event.preventDefault();
   const input=$('note-quick-text');const body=input.value.trim();if(!body)return;
   const button=$('note-quick-send');setButtonBusy(button,true,'…');
-  try{await sendNote(data,{viewer:sender,other:recipient,body,mood:'heart'});input.value='';toast('sent 💌');}
+  try{await settleQuickly(sendNote(data,{viewer:sender,other:recipient,body,mood:'heart'}),`the note “${body.slice(0,40)}” did not send.`);input.value='';toast('sent 💌');}
   catch(_){showFailure('the note did not send.','check the internet and try again. Your words are still here.');}
   finally{setButtonBusy(button,false);}
 });

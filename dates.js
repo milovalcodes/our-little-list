@@ -1,4 +1,4 @@
-import { escapeHtml, setButtonBusy, showFailure, toast, keepInlineEdits } from './ui-helpers.js';
+import { escapeHtml, setButtonBusy, settleQuickly, showFailure, toast, keepInlineEdits } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { addDateIdea, addTask } from './records.js';
@@ -39,7 +39,7 @@ $('date-plan').addEventListener('submit', async event => {
   const button = event.currentTarget.querySelector('[type="submit"]');
   setButtonBusy(button, true, 'adding…');
   try {
-    await addTask(data, { viewer, other, title:`date: ${chosenDateIdea.title}`, due });
+    await settleQuickly(addTask(data, { viewer, other, title:`date: ${chosenDateIdea.title}`, due }), 'that plan did not save.');
     toast('on the list ✓');
     $('date-plan').hidden = true;
   } catch (_) { showFailure('that plan did not save.', 'check the internet and try again.'); }

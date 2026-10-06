@@ -77,7 +77,7 @@ function events(){
 
 function render(){
   const newCount=newActivityCount(buckets,viewer,other,Number(localStorage.getItem(seenKey)||0));
-  $('new-count').hidden=newCount===0;
+  $('new-count').hidden=newCount===0;if($('mark-seen'))$('mark-seen').hidden=newCount===0;
   $('new-count').textContent=newCount>9?'9+':String(newCount);
   const list=events();$('activity-empty').hidden=list.length>0;
   const more=$('activity-see-all');more.hidden=list.length<=3;more.textContent=expanded?'show less':'see all';

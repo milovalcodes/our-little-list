@@ -1,4 +1,4 @@
-import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
+import { escapeHtml, setButtonBusy, settleQuickly, showFailure, toast } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
 import { openEmojiPicker } from './emoji-picker.js';
@@ -63,7 +63,7 @@ $('status-expiry').addEventListener('change',()=>{expiryTouched=true;});
 
 $('arrival-presets').addEventListener('click',async event=>{const button=event.target.closest('[data-arrival]');if(!button)return;setButtonBusy(button,true,'…');
   if(!await ready()){setButtonBusy(button,false);return;}
-  const current=mine();try{await data.setTo('statuses',viewer,{person:viewer,arrival:button.dataset.arrival,arrivalAt:Date.now(),updateKind:'arrival',updatedAt:Date.now(),...(current?{}:blankStatus())});void data.notify(other,{title:`${personName(viewer)}: ${button.dataset.arrival}`,body:'',url:'status.html#couple-map',kind:'arrival'});toast(button.dataset.arrival);}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
+  const current=mine();try{await settleQuickly(data.setTo('statuses',viewer,{person:viewer,arrival:button.dataset.arrival,arrivalAt:Date.now(),updateKind:'arrival',updatedAt:Date.now(),...(current?{}:blankStatus())}),'that update did not send.');void data.notify(other,{title:`${personName(viewer)}: ${button.dataset.arrival}`,body:'',url:'status.html#couple-map',kind:'arrival'});toast(button.dataset.arrival);}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
 $('status-pair').addEventListener('click',event=>{const picker=event.target.closest('[data-status-picker]');if(picker){const targetId=picker.dataset.statusPicker;const current=findStatusReaction(targetId);openEmojiPicker({current:current?.emoji,onSelect:value=>saveStatusReaction(targetId,value,picker),onRemove:()=>saveStatusReaction(targetId,'',picker)});return;}const button=event.target.closest('[data-react-status]');if(button)void saveStatusReaction(button.dataset.reactStatus,button.dataset.emoji,button);});
 
 function findStatusReaction(targetId){return reactions.find(item=>item.id===`status-${targetId}-${viewer}`||(item.targetType==='status'&&item.targetId===targetId&&item.by===viewer));}

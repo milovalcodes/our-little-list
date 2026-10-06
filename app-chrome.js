@@ -1,7 +1,7 @@
 import { sharedLayer } from './data-hub.js';
 import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
-import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
+import { escapeHtml, setButtonBusy, settleQuickly, showFailure, toast } from './ui-helpers.js';
 import { addTask, sendNote, sendAsk, addDateIdea } from './records.js';
 import { chooseAskUrgency } from './focus-ask.js';
 import { fridgeNote, clearFridge } from './fridge.js';
@@ -184,7 +184,7 @@ function setupQuickAdd(data, viewer, other) {
     const button = event.currentTarget;
     setButtonBusy(button, true, 'sending…');
     try {
-      await sendNote(data, { viewer, other, body: 'thinking of you ♡', mood: 'heart' });
+      await settleQuickly(sendNote(data, { viewer, other, body: 'thinking of you ♡', mood: 'heart' }), 'the “thinking of you” did not send.');
       closeSheets();
       toast(`sent to ${personName(other)} ♡`);
       window.littleHaptic?.('success');
@@ -223,11 +223,12 @@ function setupQuickAdd(data, viewer, other) {
     try {
       // The same builders the pages use, so a quick add is the same record the
       // full form would have made with its defaults.
-      if (kind === 'task') await addTask(data, { viewer, other, title: text });
-      else if (kind === 'grocery') await addTask(data, { viewer, other, title: text, type: 'grocery', aisle: document.getElementById('quick-grocery-aisle').value });
-      else if (kind === 'note') await sendNote(data, { viewer, other, body: text });
-      else if (kind === 'date') await addDateIdea(data, { viewer, other, title: text });
-      else { const urgent=await chooseAskUrgency(data,viewer,other);await sendAsk(data, { viewer, other, title: text, note: document.getElementById('quick-ask-note').value.trim(), urgency, dueAt, urgent }); }
+      const lost = `“${text.slice(0, 40)}” did not save.`;
+      if (kind === 'task') await settleQuickly(addTask(data, { viewer, other, title: text }), lost);
+      else if (kind === 'grocery') await settleQuickly(addTask(data, { viewer, other, title: text, type: 'grocery', aisle: document.getElementById('quick-grocery-aisle').value }), lost);
+      else if (kind === 'note') await settleQuickly(sendNote(data, { viewer, other, body: text }), lost);
+      else if (kind === 'date') await settleQuickly(addDateIdea(data, { viewer, other, title: text }), lost);
+      else { const urgent=await chooseAskUrgency(data,viewer,other);await settleQuickly(sendAsk(data, { viewer, other, title: text, note: document.getElementById('quick-ask-note').value.trim(), urgency, dueAt, urgent }), lost); }
       form.reset();
       urgency = 'soon';
       document.querySelectorAll('[data-quick-urgency]').forEach(item => item.classList.toggle('active', item.dataset.quickUrgency === 'soon'));

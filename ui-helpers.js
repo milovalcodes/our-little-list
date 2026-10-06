@@ -14,12 +14,42 @@ export function setupAuthUI(data,user){
 export function escapeHtml(value){return String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 export function toast(message){document.querySelector('.toast')?.remove();const el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.setAttribute('aria-live','polite');el.textContent=message;document.body.append(el);window.littleHaptic?.('tap');setTimeout(()=>el.remove(),2400);}
 export function dateKey(value){return `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`;}
+// A tap answers at once: the button locks so it cannot be pressed twice, but
+// the "saving…" label and spinner only appear if the work is still going after
+// a beat. Flashing them for a write that took 60ms read as lag, and swapping the
+// label for "…" made the button shrink and jump under the finger.
+const BUSY_SHOW_MS = 160;
 export function setButtonBusy(button,busy,label='thinking…'){
   if(!button)return;
-  if(busy){button.dataset.normalText=button.textContent;button.textContent=label;button.disabled=true;button.classList.add('is-busy');button.setAttribute('aria-busy','true');}
-  else{button.textContent=button.dataset.normalText||button.textContent;button.disabled=false;button.classList.remove('is-busy');button.removeAttribute('aria-busy');delete button.dataset.normalText;}
+  if(busy){
+    if(button.dataset.busy)return;
+    button.dataset.busy='1';
+    button.style.minWidth=`${button.offsetWidth}px`;
+    button.disabled=true;button.setAttribute('aria-busy','true');
+    button._normalHtml=button.innerHTML;
+    button._busyTimer=window.setTimeout(()=>{if(!button.dataset.busy)return;button.textContent=label;button.classList.add('is-busy');},BUSY_SHOW_MS);
+  }else{
+    window.clearTimeout(button._busyTimer);
+    if(button.classList.contains('is-busy')&&button._normalHtml!=null)button.innerHTML=button._normalHtml;
+    button.disabled=false;button.classList.remove('is-busy');button.removeAttribute('aria-busy');
+    button.style.minWidth='';delete button.dataset.busy;button._normalHtml=null;
+  }
 }
 export function showFailure(message,solution){window.showLittleFailure?.(message,solution);}
+
+// Firestore applies a write to this phone's copy the moment it is made - the
+// lists repaint from that straight away - and only settles the promise when
+// the server agrees, a full round trip later. Holding the sheet open for that
+// trip is what made adding and sending feel sticky. So a user action waits a
+// beat for a quick answer and then moves on. If the server turns the write
+// down after that, it is still said out loud, with the words that were lost.
+export const QUICK_SETTLE_MS = 350;
+export function settleQuickly(work, message = 'that change did not save.', solution = 'check the internet and try again.'){
+  let movedOn = false;
+  const beat = new Promise(resolve => window.setTimeout(() => { movedOn = true; resolve({ pending: true }); }, QUICK_SETTLE_MS));
+  Promise.resolve(work).catch(() => { if (movedOn) showFailure(message, solution); });
+  return Promise.race([work, beat]);
+}
 
 
 // Lists re-render from their live listener on every change either phone

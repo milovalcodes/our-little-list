@@ -318,3 +318,31 @@
 .sync-tray { top:auto!important; bottom:calc(205px + env(safe-area-inset-bottom)); }
 @media (max-width:520px) { .settings-names .profile-name-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:340px) { .settings-names .profile-name-grid { grid-template-columns:1fr; } }
+
+
+/* ---- Tap feel (v72) ----
+   Every control answers the finger the instant it lands: a slight press-in and
+   dim, no easing on the way down. Hover lifts above are kept to real pointers,
+   so a tapped button on a phone no longer stays raised after the finger leaves.
+   Long-pressing a row opens its menu, so the row itself must not start a text
+   selection or the iOS callout on the same hold. */
+:where(button,summary,[role="button"],.sky-launch,.sky-person,.dock-item,.dock-add,.setup-nudge a):active:not(:disabled) { filter:brightness(.93); scale:.97; }
+:where(.dock-add):active { scale:.93; }
+:where(.task-row,.note-thread-row,.activity-row) { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+:where(.task-row,.note-thread-row,.activity-row) :is(input,textarea,form) { -webkit-user-select:text; user-select:text; }
+:where(button,summary,.dock-item,.dock-add,.sky-launch,.sky-person) { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+button:disabled:not(.is-busy) { cursor:default; }
+
+/* The "remind me later" × on the pings nudge was a 22px target. */
+.setup-nudge button { min-width:40px; min-height:40px; display:grid; place-items:center; margin:-6px -4px -6px 0; border-radius:12px; }
+
+/* The page icon (☀︎☾) wrapped onto two lines inside its 24px box. */
+.feature-shell > .feature-hero .feature-icon { width:auto!important; min-width:24px; white-space:nowrap; }
+
+/* Right now: the arrival buttons sat in the avatar column and squeezed the
+   status words into half the card. They get the full width under both. */
+.now-status-pair .person-status-card.is-me .arrival-strip { grid-column:1/-1; }
+.now-status-pair .person-status-card.is-me #arrival-presets { display:flex; flex-wrap:wrap; gap:8px; }
+
+/* Zero counts and nothing-to-mark buttons are hidden, not shown as "0". */
+.count-bubble[hidden],#mark-seen[hidden],.empty-state p[hidden] { display:none!important; }

@@ -98,6 +98,10 @@ window.addEventListener('appinstalled', () => {
   if (installHint) installHint.textContent = 'installed 👍';
 });
 
+// iOS Safari skips :active press styles unless the page listens for touches.
+// Without this every button felt dead under the finger on an iPhone.
+document.addEventListener('touchstart', () => {}, { passive: true });
+
 let littleAudioContext = null;
 window.addEventListener('pointerdown', () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext;

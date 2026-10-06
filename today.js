@@ -62,7 +62,7 @@ function renderToday(){const today=dateKey(new Date());const end=new Date();end.
   ];
   const total=due.length;
   const shown=fairShare(due,12);
-  $('today-count').textContent=String(total);$('today-empty').hidden=total>0;$('today-list').innerHTML=shown.map(item=>inlineActionMarkup(item)).join('');}
+  $('today-count').textContent=String(total);$('today-count').hidden=total===0;$('today-empty').hidden=total>0;$('today-list').innerHTML=shown.map(item=>inlineActionMarkup(item)).join('');}
 let lastFocusMarkup='';
 function renderFocus(){if(!$('focus-pair'))return;const now=Date.now();const markup=['her','him'].map(person=>{const item=statusOf(person)||{};const active=focusActive(item,now);const remaining=Math.max(0,Number(item.focusUntil)-now);const ended=Number(item.focusEndedAt)||(Number(item.focusUntil)>0&&!active?Number(item.focusUntil):0);const clock=active?`${Math.ceil(remaining/60000)}m left`:(ended?`ended ${timeAgo(ended)}`:'not focusing');return `<article class="focus-person${active?' active':''}"><img src="${person==='her'?'sun-profile.png':'moon-profile.png'}" alt=""><div><strong>${escapeHtml(personName(person))}</strong><span>${escapeHtml(clock)}</span>${active?`<small>${escapeHtml(item.focusLabel||'doing the thing')}</small>`:''}</div>${active&&person===viewer?`<button type="button" data-stop="${person}">done</button>`:''}</article>`;}).join('');
   if(markup===lastFocusMarkup)return;
