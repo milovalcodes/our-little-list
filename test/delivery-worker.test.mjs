@@ -45,11 +45,26 @@ const deliver = env => realDeliver(env, { scheduleQuestions: false });
   assert.ok(docs.has(`${base}/outbox/question-2026-10-02-answered-him`));
   question.answers.him = { at:morning + 180000 };
   await ensureQuestionOfDay(db, base, morning + 180000);
-  assert.ok(docs.has(`${base}/outbox/question-2026-10-02-reveal-her`));
-  assert.ok(docs.has(`${base}/outbox/question-2026-10-02-reveal-him`));
+  assert.ok(docs.has(`${base}/outbox/question-2026-10-02-reveal-her`), 'the first to answer hears about the reveal');
+  assert.ok(!docs.has(`${base}/outbox/question-2026-10-02-reveal-him`), 'the one who just answered is already in the app');
   const count = docs.size;
   await ensureQuestionOfDay(db, base, morning + 240000);
-  assert.equal(docs.size, count, 'reveal is sent once per person');
+  assert.equal(docs.size, count, 'reveal is sent once');
+}
+
+// Batch commits must name documents by resource path. A full https URL is
+// refused by Firestore, which silently stopped every question ping.
+{
+  const { createClient } = await import('../worker/src/firestore.js');
+  const realFetch = globalThis.fetch;
+  let sent = null;
+  globalThis.fetch = async (url, options) => { sent = { url, body: JSON.parse(options.body) }; return new Response('{}', { status: 200 }); };
+  try {
+    await createClient({ projectId: 'proj', idToken: 't' }).createMany([{ path: 'households/H/outbox/x', fields: { a: 1 } }]);
+  } finally { globalThis.fetch = realFetch; }
+  assert.ok(sent.url.endsWith('/projects/proj/databases/(default)/documents:commit'));
+  assert.equal(sent.body.writes[0].update.name, 'projects/proj/databases/(default)/documents/households/H/outbox/x');
+  console.log(' ok  question pings are written with names Firestore accepts');
 }
 
 function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, questions = {}, pushStatus = 201, lockHeld = false, moveStatus = 200 }) {

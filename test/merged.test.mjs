@@ -4,13 +4,19 @@ import { pickMoment } from '../moment-picker.js';
 import { fridgeNote } from '../fridge.js';
 import { hereLine, statusShows, focusActive } from '../availability.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../notification-policy.js';
-import { QUESTIONS, QUESTION_START_DAY, questionClock, questionForDay, questionPhase } from '../question-prompts.js';
+import { QUESTIONS, LEGACY_QUESTIONS, QUESTION_START_DAY, NEW_BANK_DAY, promptFor, questionClock, questionForDay, questionPhase } from '../question-prompts.js';
 import { newActivityCount } from '../activity-summary.js';
 import { readFileSync } from 'node:fs';
 
 assert.equal(QUESTIONS.length, 150);
 assert.equal(new Set(QUESTIONS.map(question => question.prompt)).size, QUESTIONS.length, 'no duplicate daily prompts');
-const start = Date.parse(`${QUESTION_START_DAY}T00:00:00Z`);
+assert.equal(LEGACY_QUESTIONS.length, 150, 'old days keep the bank they were asked from');
+// Days already asked must keep their words, or old answers would sit under a new question.
+assert.equal(questionForDay('2026-10-02').prompt, LEGACY_QUESTIONS[questionForDay('2026-10-02').promptId].prompt);
+assert.equal(promptFor('2026-10-06', 9), 'Which fictional world would be the funniest place for us to live?');
+assert.equal(promptFor(NEW_BANK_DAY, questionForDay(NEW_BANK_DAY).promptId), questionForDay(NEW_BANK_DAY).prompt);
+assert.ok(QUESTIONS.every(question => question.prompt.length < 200));
+const start = Date.parse(`${NEW_BANK_DAY}T00:00:00Z`);
 const dayAt = index => new Date(start + index * 86400000).toISOString().slice(0, 10);
 const dailyIds = Array.from({ length: QUESTIONS.length }, (_, index) => questionForDay(dayAt(index)).promptId);
 assert.equal(new Set(dailyIds).size, QUESTIONS.length, 'each question appears exactly once');

@@ -228,10 +228,13 @@ export async function ensureQuestionOfDay(db, household, now) {
   const her = Boolean(question.answers?.her?.at);
   const him = Boolean(question.answers?.him?.at);
   if (her !== him) {
-    await queueEvent('answered', [her ? 'him' : 'her'], 'One answer is in', 'Your turn whenever. You both get to peek after.');
+    await queueEvent('answered', [her ? 'him' : 'her'], 'They answered, waiting on you', 'Your turn on today’s question. Answers unlock once you both answer.');
   }
   if (her && him) {
-    await queueEvent('reveal', ['her', 'him'], 'Both answers are in', 'Go see what you both said.');
+    // The second answer is typed in the app, so that person sees the reveal
+    // there. Only the one who answered first is away and needs the ping.
+    const first = Number(question.answers.her.at) <= Number(question.answers.him.at) ? 'her' : 'him';
+    await queueEvent('reveal', [first], 'Both answers are in', 'Your answers are revealed. Go see what you both said.');
   }
   return { open: true, day: clock.day, answered: Number(her) + Number(him) };
 }

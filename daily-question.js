@@ -1,6 +1,6 @@
 import { escapeHtml, setButtonBusy, showFailure, toast } from './ui-helpers.js';
 import { personName } from './profile-store.js';
-import { QUESTIONS, QUESTION_START_DAY, questionClock, questionForDay, questionPhase } from './question-prompts.js';
+import { promptFor, QUESTION_START_DAY, questionClock, questionForDay, questionPhase } from './question-prompts.js';
 
 export function startDailyQuestion({ data, viewer, other }) {
   const $ = id => document.getElementById(id);
@@ -104,7 +104,7 @@ export function startDailyQuestion({ data, viewer, other }) {
   });
 
   function render() {
-    const prompt = QUESTIONS[question?.promptId ?? selected.promptId]?.prompt || selected.prompt;
+    const prompt = promptFor(day, question?.promptId ?? selected.promptId) || selected.prompt;
     $('question-prompt').textContent = prompt;
     if (!question && data.mode !== 'local') {
       $('question-form').hidden = true;

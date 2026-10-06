@@ -20,6 +20,8 @@ export async function signIn({ apiKey, email, password }) {
 
 export function createClient({ projectId, idToken }) {
   const root = `${FIRESTORE}/projects/${projectId}/databases/(default)/documents`;
+  // Batch writes name documents by resource name, without the https host.
+  const resourceRoot = `projects/${projectId}/databases/(default)/documents`;
   const headers = { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' };
 
   async function call(path, options = {}) {
@@ -64,7 +66,9 @@ export function createClient({ projectId, idToken }) {
     // sync. A retry after a successful commit sees the marker and does nothing.
     async createMany(documents) {
       const writes = documents.map(({ path, fields }) => ({
-        update: { name: `${root}/${path}`, fields: writeMap(fields) },
+        // A full URL here is refused as an invalid document name, which is why
+        // the question pings (the only batch writer) never went out.
+        update: { name: `${resourceRoot}/${path}`, fields: writeMap(fields) },
         currentDocument: { exists: false }
       }));
       const response = await fetch(`${root}:commit`, {
