@@ -90,7 +90,7 @@ function addDock(viewer) {
     <a class="dock-item${active('home')}" href="${viewer}.html"><i>⌂</i><span>home</span></a>
     <a class="dock-item${active('tasks')}" href="tasks.html"><i>✓</i><span>list</span></a>
     <button class="dock-add" type="button" data-open-sheet="quick" aria-label="Add something"><i>＋</i><span>add</span></button>
-    <a class="dock-item${active('notes')}" href="notes.html"><i>✉</i><span>notes</span></a>
+    <a class="dock-item${active('today')}" href="today.html"><i>◎</i><span>today</span></a>
     <button class="dock-item" type="button" data-open-sheet="more"><i>•••</i><span>more</span></button>
   </nav>`);
   document.body.classList.add('has-app-dock');
@@ -123,7 +123,7 @@ function addSheets() {
     <section class="app-sheet more-sheet" id="sheet-more" role="dialog" aria-modal="true" aria-labelledby="more-title" hidden>
       <header class="sheet-head"><div><small>the rest of it</small><h2 id="more-title">More</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <nav class="more-grid">
-        <a href="today.html"><i>◎</i><span>today</span></a><a href="status.html"><i>☀︎☾</i><span>right now</span></a>
+        <a href="notes.html"><i>✉</i><span>notes</span></a><a href="status.html"><i>☀︎☾</i><span>right now</span></a>
         <a href="dates.html"><i>✦</i><span>date ideas</span></a><a href="memories.html"><i>◒</i><span>memories</span></a>
         <a href="phone-check.html"><i>⚙︎</i><span>settings</span></a><a href="guide.html#tutorial"><i>✎</i><span>guide</span></a>
       </nav>
