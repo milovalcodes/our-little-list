@@ -20,6 +20,30 @@ let mapWasMoved=false;
 let framingMap=false;
 const markers={};
 
+// Tiles: CARTO's light style on the sun page, its dark style on the moon page,
+// with sharp
+// @2x tiles for phone screens. If that server fails, OpenStreetMap's own tiles
+// take over so the map never just goes blank.
+const TILE_STYLES={
+  light:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+  dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  fallback:'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+};
+const ATTRIBUTION='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const VIEW_KEY='our-little-list-map-view-v1';
+const TOGETHER_PX=46;          // closer than this on screen and the markers would overlap
+const GLIDE_MS=700;
+const FRAME_PAD={top:72,left:44,right:62,bottom:30};
+const GLIDE_MAX_M=5000;        // farther than this is a new place, not a walk: jump
+const accuracyRings={};
+let orbitLineLayer=null;
+let tiles=null;
+let tileFailures=0;
+let usingFallback=false;
+// The moon page is dark navy whatever the phone's own setting is.
+const darkPage=()=>document.body.classList.contains('him-theme');
+const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
+
 const data=await sharedLayer();
 viewer=await awaitViewer();
 if(!viewer)await new Promise(()=>{});
@@ -125,15 +149,54 @@ function renderLastKnown(known,active){
 
 function setProximity(message,detail,label){byId('proximity-message').textContent=message;byId('proximity-detail').textContent=detail;byId('distance-label').textContent=label;}
 
+
+function tileUrl(){return usingFallback?TILE_STYLES.fallback:darkPage()?TILE_STYLES.dark:TILE_STYLES.light;}
+
+function setTiles(){
+  if(!map)return;
+  if(tiles)map.removeLayer(tiles);
+  tileFailures=0;
+  tiles=window.L.tileLayer(tileUrl(),{maxZoom:19,maxNativeZoom:usingFallback?19:20,subdomains:'abcd',keepBuffer:4,updateWhenIdle:true,crossOrigin:true,attribution:usingFallback?'&copy; OpenStreetMap contributors':ATTRIBUTION}).addTo(map);
+  tiles.on('tileload',()=>{tileFailures=0;});
+  tiles.on('tileerror',()=>{
+    // A few misses are normal on a bad signal. A run of them means the tile
+    // server is down, so switch once to the backup instead of a grey map.
+    tileFailures+=1;
+    if(!usingFallback&&tileFailures>=6&&navigator.onLine!==false){usingFallback=true;setTiles();}
+  });
+  byId('couple-map').classList.toggle('is-dark-tiles',!usingFallback&&darkPage());
+  tiles.styleUrl=tileUrl();
+}
+
+// Open where the map was last time (or on this phone's own last spot) rather
+// than on the whole country, which then lurched to the real spot.
+function startingView(){
+  try{const saved=JSON.parse(localStorage.getItem(VIEW_KEY)||'null');if(saved&&Number.isFinite(saved.lat)&&Number.isFinite(saved.lng)&&Number.isFinite(saved.zoom))return saved;}catch(_){}
+  const mine=locationSnapshot();
+  if(Number.isFinite(mine.lat)&&Number.isFinite(mine.lng))return {lat:mine.lat,lng:mine.lng,zoom:15};
+  return {lat:39.5,lng:-98.35,zoom:3};
+}
+function rememberView(){
+  if(!map)return;
+  try{const c=map.getCenter();localStorage.setItem(VIEW_KEY,JSON.stringify({lat:c.lat,lng:c.lng,zoom:map.getZoom()}));}catch(_){}
+}
+
 function initializeMap(){
   if(!window.L){byId('couple-map').innerHTML='<p class="map-fallback">map tiles took the day off. the location text still works.</p>';return;}
   const node=byId('couple-map');
-  map=window.L.map(node,{zoomControl:false,attributionControl:true,dragging:true,touchZoom:true,bounceAtZoomLimits:false}).setView([39.5,-98.35],3);
+  const start=startingView();
+  map=window.L.map(node,{zoomControl:false,attributionControl:true,dragging:true,touchZoom:true,bounceAtZoomLimits:false,zoomSnap:.5,wheelPxPerZoomLevel:90}).setView([start.lat,start.lng],start.zoom);
+  map.attributionControl.setPrefix(false);
   window.L.control.zoom({position:'bottomright'}).addTo(map);
-  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,keepBuffer:4,updateWhenIdle:true,crossOrigin:true,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+  setTiles();
+  // The page theme can be applied after the map starts; follow it when it lands.
+  new MutationObserver(()=>{if(tiles&&tiles.styleUrl!==tileUrl())setTiles();}).observe(document.body,{attributes:true,attributeFilter:['class']});
+  window.addEventListener('online',()=>{if(usingFallback){usingFallback=false;setTiles();}});
   const moved=()=>{if(framingMap)return;mapWasMoved=true;byId('recenter-map').hidden=lastMapLocations.length===0;};
   map.on('dragstart',moved);map.on('zoomstart',moved);
-  const resize=()=>window.requestAnimationFrame(()=>map?.invalidateSize({animate:false,pan:false}));
+  map.on('zoomend',()=>{spreadMarkers();rememberView();});
+  map.on('moveend',rememberView);
+  const resize=()=>window.requestAnimationFrame(()=>{map?.invalidateSize({animate:false,pan:false});spreadMarkers();});
   resize();window.setTimeout(resize,250);window.addEventListener('resize',resize,{passive:true});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)window.setTimeout(resize,100);});
   if('ResizeObserver'in window)new ResizeObserver(resize).observe(node);
@@ -143,28 +206,127 @@ function updateMap(known,now){
   if(!map)return;lastMapLocations=known;
   ['her','him'].forEach(person=>{
     const point=known.find(item=>item.id===person);
-    if(!point){if(markers[person]){map.removeLayer(markers[person]);delete markers[person];}return;}
+    if(!point){
+      if(markers[person]){map.removeLayer(markers[person]);delete markers[person];}
+      if(accuracyRings[person]){map.removeLayer(accuracyRings[person]);delete accuracyRings[person];}
+      return;
+    }
     const live=Number(point.shareUntil)>now;const label=escapeHtml(live?personName(person):`${personName(person)} · last known`);
-    if(!markers[person]){markers[person]=window.L.marker([point.lat,point.lng],{icon:markerIcon(person,live)}).addTo(map).bindTooltip(label,{direction:'top',offset:[0,-42]});markers[person].isLive=live;}
-    else{markers[person].setLatLng([point.lat,point.lng]);if(markers[person].isLive!==live){markers[person].setIcon(markerIcon(person,live));markers[person].isLive=live;}markers[person].setTooltipContent(label);}
+    const target=[point.lat,point.lng];
+    if(!markers[person]){
+      const marker=window.L.marker(target,{icon:markerIcon(person,live),keyboard:true,title:live?personName(person):`${personName(person)}, last known`,zIndexOffset:live?500:0}).addTo(map).bindTooltip(label,{direction:'top',offset:[0,-42]});
+      // Touch screens have no hover, so a tap shows the name instead.
+      marker.on('click',()=>marker.toggleTooltip());
+      marker.isLive=live;marker.spread=0;markers[person]=marker;
+    }else{
+      glideMarker(markers[person],target);
+      if(markers[person].isLive!==live){markers[person].isLive=live;markers[person].setZIndexOffset(live?500:0);setMarkerIcon(person);}
+      markers[person].setTooltipContent(label);
+    }
+    updateAccuracy(person,point,live);
   });
+  updateOrbitLine(known);
+  spreadMarkers();
   const signature=known.map(point=>`${point.id}:${Number(point.lat).toFixed(5)}:${Number(point.lng).toFixed(5)}`).sort().join('|');
-  if(!mapWasMoved&&signature!==lastFrameSignature)frameLocations(known,Boolean(lastFrameSignature));
+  if(!mapWasMoved&&signature!==lastFrameSignature&&needsReframe(known))frameLocations(known,Boolean(lastFrameSignature));
   lastFrameSignature=signature;if(!known.length)byId('recenter-map').hidden=true;
+}
+
+// A soft circle for how sure the phone is about a live spot. Tiny ones are
+// noise; very large ones would swamp the map, so they are capped.
+function updateAccuracy(person,point,live){
+  const radius=Number(point.accuracy)||0;
+  const show=live&&radius>=25;
+  if(!show){if(accuracyRings[person]){map.removeLayer(accuracyRings[person]);delete accuracyRings[person];}return;}
+  const style={radius:Math.min(radius,1500),stroke:true,weight:1,opacity:.45,fillOpacity:.12,className:`accuracy-ring ${person}`,interactive:false};
+  if(!accuracyRings[person])accuracyRings[person]=window.L.circle([point.lat,point.lng],style).addTo(map);
+  else{accuracyRings[person].setLatLng([point.lat,point.lng]);accuracyRings[person].setRadius(style.radius);}
+}
+
+// A dashed line between the two of you, only when you are apart.
+function updateOrbitLine(known){
+  const her=known.find(item=>item.id==='her');const him=known.find(item=>item.id==='him');
+  const apart=her&&him&&distanceMeters(her,him)>150;
+  if(!apart){if(orbitLineLayer){map.removeLayer(orbitLineLayer);orbitLineLayer=null;}return;}
+  const points=[[her.lat,her.lng],[him.lat,him.lng]];
+  if(!orbitLineLayer)orbitLineLayer=window.L.polyline(points,{className:'orbit-line',weight:2.5,opacity:.7,dashArray:'2 9',lineCap:'round',interactive:false}).addTo(map);
+  else orbitLineLayer.setLatLngs(points);
+}
+
+// Side by side, not stacked: when both markers would overlap on screen, nudge
+// them apart in pixels. Their real spots stay exactly where they are.
+function spreadMarkers(){
+  if(!map)return;
+  const her=markers.her;const him=markers.him;
+  let spread=0;
+  if(her&&him){
+    const a=map.latLngToContainerPoint(her.getLatLng());const b=map.latLngToContainerPoint(him.getLatLng());
+    if(a.distanceTo(b)<TOGETHER_PX)spread=1;
+  }
+  ['her','him'].forEach(person=>{const marker=markers[person];if(marker&&marker.spread!==spread){marker.spread=spread;setMarkerIcon(person);}});
+}
+
+function setMarkerIcon(person){
+  const marker=markers[person];if(!marker)return;
+  const shift=marker.spread?(person==='her'?22:-22):0;
+  marker.setIcon(markerIcon(person,marker.isLive,shift));
+}
+
+function glideMarker(marker,target){
+  const from=marker.getLatLng();
+  const to=window.L.latLng(target);
+  if(from.equals(to))return;
+  if(marker.glide)window.cancelAnimationFrame(marker.glide);
+  if(reducedMotion?.matches||document.hidden||from.distanceTo(to)>GLIDE_MAX_M){marker.setLatLng(to);spreadMarkers();return;}
+  const started=performance.now();
+  const step=time=>{
+    const t=Math.min(1,(time-started)/GLIDE_MS);const ease=1-Math.pow(1-t,3);
+    const at=window.L.latLng(from.lat+(to.lat-from.lat)*ease,from.lng+(to.lng-from.lng)*ease);
+    marker.setLatLng(at);
+    if(t<1)marker.glide=window.requestAnimationFrame(step);else{marker.glide=0;spreadMarkers();}
+  };
+  marker.glide=window.requestAnimationFrame(step);
+}
+
+function distanceMeters(a,b){return window.L.latLng(a.lat,a.lng).distanceTo([b.lat,b.lng]);}
+
+function framingFor(known){
+  if(known.length===1)return {center:window.L.latLng(known[0].lat,known[0].lng),zoom:15};
+  // Room in screen pixels, not map distance: a marker stands about 50px tall
+  // above its spot, and the zoom buttons sit bottom right.
+  const bounds=window.L.latLngBounds(known.map(point=>[point.lat,point.lng]));
+  const padding=window.L.point(FRAME_PAD.left+FRAME_PAD.right,FRAME_PAD.top+FRAME_PAD.bottom);
+  return {bounds,zoom:Math.min(16,map.getBoundsZoom(bounds,false,padding))};
+}
+
+// GPS wobbles by a few metres every fix. Re-zooming on each one made the map
+// twitch while you looked at it. Reframe only when someone is out of view, the
+// people on the map changed, or the right zoom moved by a real amount.
+function needsReframe(known){
+  if(!known.length)return false;
+  if(!lastFrameSignature)return true;
+  const people=sig=>sig.split('|').map(part=>part.split(':')[0]).join(',');
+  const current=known.map(point=>point.id).sort().join(',');
+  if(people(lastFrameSignature)!==current)return true;
+  const view=map.getBounds().pad(-.12);
+  if(known.some(point=>!view.contains([point.lat,point.lng])))return true;
+  return Math.abs(framingFor(known).zoom-map.getZoom())>=1.5;
 }
 
 function frameLocations(known,animate=false){
   if(!map||!known.length)return;framingMap=true;map.stop();
-  if(known.length===1)map.setView([known[0].lat,known[0].lng],15,{animate});
-  else map.fitBounds(window.L.latLngBounds(known.map(point=>[point.lat,point.lng])).pad(.35),{maxZoom:17,animate});
-  window.setTimeout(()=>{framingMap=false;},animate?400:50);
+  const target=framingFor(known);
+  const motion=animate&&!reducedMotion?.matches;
+  if(target.bounds)map.fitBounds(target.bounds,{maxZoom:16,animate:motion,paddingTopLeft:[FRAME_PAD.left,FRAME_PAD.top],paddingBottomRight:[FRAME_PAD.right,FRAME_PAD.bottom]});
+  else map.setView(target.center,target.zoom,{animate:motion});
+  window.setTimeout(()=>{framingMap=false;spreadMarkers();},motion?450:50);
 }
 
-function markerIcon(person,live){
+function markerIcon(person,live,shift=0){
   const art=person==='her'
     ?'<svg class="map-character" viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.8"><path d="M24 3v5M24 40v5M3 24h5M40 24h5M9.2 9.2l3.6 3.6M35.2 35.2l3.6 3.6M38.8 9.2l-3.6 3.6M12.8 35.2l-3.6 3.6"/></g><circle cx="24" cy="24" r="13.5" fill="#ffd45e" stroke="currentColor" stroke-width="2"/><path d="M17.2 23c1.3-1.2 3.2-1.2 4.5 0M26.3 23c1.3-1.2 3.2-1.2 4.5 0M20 28.2c2.5 2.2 5.5 2.2 8 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>'
     :'<svg class="map-character" viewBox="0 0 48 48" aria-hidden="true"><path d="M33.8 6.2c-8.7 1.3-15.3 8.8-15.3 17.8 0 9.1 6.7 16.6 15.5 17.8A19 19 0 1 1 33.8 6.2Z" fill="#cbd4ff" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/><path d="M15.3 21.8c1.3-1.1 3.1-1.1 4.4 0M14.7 20l-1.5-1M20.3 20l1.5-1M14.7 27.6c1.8 1.7 3.9 1.7 5.7 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/><circle cx="35.8" cy="13" r="1.25" fill="#fff3bd"/><circle cx="39" cy="19" r=".8" fill="#fff3bd"/></svg>';
-  return window.L.divIcon({className:'couple-marker-wrap',html:`<span class="couple-marker ${person} ${live?'live':'last-known'}">${art}</span>`,iconSize:[52,52],iconAnchor:[26,48]});
+  return window.L.divIcon({className:'couple-marker-wrap',html:`<span class="couple-marker ${person} ${live?'live':'last-known'}">${art}</span>`,iconSize:[52,52],iconAnchor:[26+shift,48],tooltipAnchor:[-shift,0]});
 }
 
 
