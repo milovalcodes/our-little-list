@@ -108,7 +108,7 @@ function addSheets() {
         <label><span id="quick-label">what needs doing?</span><input id="quick-text" maxlength="180" required autocomplete="off" placeholder="the thing"></label>
         <label id="quick-grocery-options" hidden><span>aisle-ish</span><select id="quick-grocery-aisle"><option value="produce">produce</option><option value="fridge">fridge</option><option value="pantry">pantry</option><option value="frozen">frozen</option><option value="home">home stuff</option><option value="other" selected>other</option></select></label>
         <div class="quick-ask-options" id="quick-ask-options" hidden>
-          <div class="choice-cloud" id="quick-urgency"><button class="choice active" type="button" data-quick-urgency="soon">whenever</button><button class="choice" type="button" data-quick-urgency="now">kind of now</button><button class="choice" type="button" data-quick-urgency="timed">⏰ at a time</button></div>
+          <div class="choice-cloud" id="quick-urgency"><button class="choice" type="button" data-quick-urgency="whenever">whenever</button><button class="choice active" type="button" data-quick-urgency="soon">soon-ish</button><button class="choice" type="button" data-quick-urgency="now">kind of now</button><button class="choice" type="button" data-quick-urgency="timed">⏰ remind at a time…</button></div>
           <label><span>extra detail, if any</span><textarea id="quick-ask-note" maxlength="500" placeholder="only if it helps"></textarea></label>
           <div class="ask-when" id="quick-when-wrap" hidden>${momentPickerHtml('quick')}</div>
         </div>
@@ -125,7 +125,7 @@ function addSheets() {
       <nav class="more-grid">
         <a href="today.html"><i>◎</i><span>today</span></a><a href="status.html"><i>☀︎☾</i><span>right now</span></a>
         <a href="dates.html"><i>✦</i><span>date ideas</span></a><a href="memories.html"><i>◒</i><span>memories</span></a>
-        <a href="phone-check.html"><i>⚙︎</i><span>settings</span></a><a href="guide.html#tutorial"><i>✎</i><span>guide &amp; history</span></a>
+        <a href="phone-check.html"><i>⚙︎</i><span>settings</span></a><a href="guide.html#tutorial"><i>✎</i><span>guide</span></a>
       </nav>
       <button class="update-row" id="check-update" type="button"><span><b id="app-version">app version</b><small id="update-copy">tap to check for a fresh one</small></span><i>↻</i></button>
     </section>`);

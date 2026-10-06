@@ -9,6 +9,8 @@ import { newActivityCount } from './activity-summary.js';
 import { questionClock } from './question-prompts.js';
 import { escapeHtml, showFailure, toast } from './ui-helpers.js';
 import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
+import { dueRows, fairShare } from './needs-you.js';
+import { quickStatusButtons, saveQuickStatus } from './status-presets.js';
 
 const badge = document.getElementById('activity-badge');
 const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [] };
@@ -83,21 +85,24 @@ function renderDashboard() {
   renderNextUp();
 }
 
+// Home shows the top of the same list Today shows in full, plus the things only
+// Home points to (unread notes, today's question, what's new), so the two never
+// disagree about what needs you.
 function renderNextUp() {
   const target = document.getElementById('home-next-up');
   if (!target) return;
-  const today = new Intl.DateTimeFormat('sv-SE', { timeZone:'America/New_York', year:'numeric',month:'2-digit',day:'2-digit' }).format(new Date());
-  const due = buckets.items.filter(item => !item.done && item.due && item.due <= today).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
-  const asks = buckets.help.filter(item => item.to === viewer && item.from !== viewer && item.state === 'open').sort((a,b)=>(a.dueAt||0)-(b.dueAt||0));
+  const due = dueRows(buckets, viewer);
   const unread = buckets.notes.filter(note => (note.recipient === viewer || note.to === viewer) && !note.read).length;
   const clock = questionClock();
   const question = buckets.questions.find(item => item.day === clock.day);
   const answerNeeded = clock.open && question && !question.answers?.[viewer]?.at;
+  const fresh = newActivityCount(buckets, viewer, other, Number(localStorage.getItem(seenKey) || 0));
   const rows = [
-    ...due.slice(0,2).map(item=>({kind:'item',id:item.id,title:item.title,meta:item.due<today?'overdue':'today',href:`tasks.html#item-${item.id}`})),
-    ...asks.slice(0,2).map(item=>({kind:'ask',id:item.id,title:item.title,meta:'waiting for you',href:`tasks.html#ask-${item.id}`,icon:item.emoji||'🙋'})),
-    unread && {icon:'✉',title:`${unread} unread note${unread===1?'':'s'}`,href:'notes.html'},
-    answerNeeded && {icon:'◎',title:'today’s question',href:'today.html#question'}
+    ...fairShare(due, 3),
+    due.length > 3 && { icon:'◎', title:`${due.length - 3} more due or waiting`, href:'today.html' },
+    unread && { icon:'✉', title:`${unread} unread note${unread===1?'':'s'}`, href:'notes.html' },
+    answerNeeded && { icon:'◎', title:'today’s question', href:'today.html#question' },
+    fresh && { icon:'✦', title:`${fresh} new thing${fresh===1?'':'s'} since you looked`, href:'today.html#new' }
   ].filter(Boolean);
   target.innerHTML = rows.length ? rows.map(row=>inlineActionMarkup(row,'home-next-row')).join('') : '<p>nothing needs you right now ✦</p>';
 }
@@ -109,26 +114,14 @@ function setupQuickStatus() {
   avatar.setAttribute('aria-label', 'Quick status');
   document.body.insertAdjacentHTML('beforeend', `<section class="app-sheet quick-status-sheet" id="sheet-quick-status" role="dialog" aria-modal="true" aria-labelledby="quick-status-title" hidden>
     <header class="sheet-head"><div><small>your side</small><h2 id="quick-status-title">Quick status</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
-    <div class="quick-status-options"><button type="button" data-quick-status="busy">🫠 busy</button><button type="button" data-quick-status="home-soon">🏠 home soon</button><button type="button" data-quick-status="out">👟 out</button><button type="button" data-quick-status="focus">⏱ focus 30m</button></div>
+    <div class="quick-status-options">${quickStatusButtons()}</div>
     <form id="quick-status-form"><label><span>or your own words</span><input id="quick-status-text" maxlength="90" placeholder="currently doing the thing"></label><button class="primary-action" type="submit">set status</button></form>
+    <a class="quick-status-more" href="status.html">more on Right now →</a>
   </section>`);
   const save = async (choice, custom = '') => {
-    const words = {
-      busy: { text:'busy', state:'dnd', emoji:'🫠' },
-      'home-soon': { text:'home soon', state:'online', emoji:'🏠' },
-      out: { text:'out', state:'away', emoji:'👟' },
-      custom: { text:custom, state:'online', emoji:'✦' }
-    };
-    const now = Date.now();
     try {
-      const existing = await data.readDoc('statuses', viewer);
-      const blank = existing ? {} : { text:'', category:'', emoji:'' };
-      if (choice === 'focus') {
-        await data.setTo('statuses', viewer, { person:viewer, ...blank, focusLabel:'doing the thing', focusMinutes:30, focusStartedAt:now, focusUntil:now + 1800000, focusEndedAt:0, updateKind:'focus', updatedAt:now });
-      } else {
-        await data.setTo('statuses', viewer, { person:viewer, ...blank, ...words[choice], category:'', updateKind:'custom', updatedAt:now });
-      }
-      void data.notify(other, { title:`${personName(viewer)} changed status`, body:choice === 'focus' ? 'focus mode for 30 minutes' : words[choice].text, url:'status.html#partner', kind:'status' });
+      const exists = Boolean(await data.readDoc('statuses', viewer));
+      await saveQuickStatus({ data, viewer, other, exists }, choice, custom);
       document.querySelector('#sheet-quick-status [data-close-sheet]')?.click();
       toast('status set');
     } catch (_) { showFailure('status did not save.', 'check the internet and try again.'); }

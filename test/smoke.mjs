@@ -1,6 +1,9 @@
 import { chromium } from 'playwright';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 const BASE = 'http://127.0.0.1:8777';
 const START = Date.now();
@@ -65,6 +68,11 @@ async function open(path) {
   // same CI run take anywhere from two to ten minutes.
   await page.route('**/*', route => {
     const requestUrl = new URL(route.request().url());
+    // GitHub Pages answers a missing page with 404.html (which forwards old
+    // addresses); the local server does not, so stand in for it here.
+    if (requestUrl.origin === BASE && requestUrl.pathname.endsWith('.html') && !existsSync(join(ROOT, requestUrl.pathname))) {
+      return route.fulfill({ status: 404, contentType: 'text/html', body: readFileSync(join(ROOT, '404.html'), 'utf8') });
+    }
     return requestUrl.origin === BASE || requestUrl.protocol === 'about:'
       ? route.fallback()
       : route.abort();
@@ -89,8 +97,8 @@ async function rowMenu(row, action) {
 
 console.log('--- every page renders, no script errors, no sideways scroll ---');
 const PAGES = ['her.html','him.html','tasks.html?as=her','notes.html?from=her',
-  'location.html?as=her','status.html?as=her','dates.html?as=her','tasks.html?as=her#asks',
-  'phone-check.html?as=her','profiles.html','status.html?as=him#partner','tasks.html?as=him#asks'];
+  'status.html?as=her','dates.html?as=her','tasks.html?as=her#asks',
+  'phone-check.html?as=her','phone-check.html?as=her#names','status.html?as=him#partner','tasks.html?as=him#asks'];
 PAGES.push('today.html?as=her','memories.html?as=her');
 PAGES.push('guide.html?as=her#tutorial','guide.html?as=him#changes');
 
@@ -810,7 +818,7 @@ async function openSlow(path) {
   await page.selectOption('#status-category', 'listening to');
   await page.click('#status-save');
   await page.waitForTimeout(400);
-  await page.click('#arrival-presets [data-arrival="leaving now"]');
+  await page.click('#arrival-presets [data-quick-status="leaving now"]');
   await page.waitForTimeout(500);
   const stillThere = await page.locator('.person-status-card.is-me .status-custom', { hasText: 'the tiny mug album' }).count();
   const arrived = await page.locator('.person-status-card.is-me .status-arrival', { hasText: 'leaving now' }).count();
@@ -919,7 +927,7 @@ async function openSlow(path) {
   await page.fill('#status-text', 'soup would fix me');
   await page.click('#status-save');
   const chosenEmoji = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-statuses-v1')).items.find(item => item.id === 'her')?.emoji);
-  await page.click('[data-arrival="almost there"]');
+  await page.click('[data-quick-status="almost there"]');
   await page.click('[data-status-picker="him"]');
   await page.click('[data-picker-emoji="❤️"]');
   await page.waitForTimeout(300);
@@ -987,7 +995,7 @@ async function openSlow(path) {
   await page.fill('#sun-name', '<img src=x onerror=alert(1)>');
   await page.fill('#moon-name', 'Milo');
   await page.waitForTimeout(1050);
-  await page.goto(`${BASE}/location.html?as=her`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/status.html?as=her`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1100);
   const injected = await page.evaluate(() => document.querySelectorAll('#last-known-row img').length);
   const pillText = await page.evaluate(() => document.getElementById('last-known-row')?.innerText || '');

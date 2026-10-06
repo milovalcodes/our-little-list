@@ -1,15 +1,17 @@
-const CACHE = 'our-little-list-v73';
+const CACHE = 'our-little-list-v74';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
 // meant the activate step below threw them away on every single deploy, which
 // quietly undid the whole point of caching them.
+importScripts('./old-links.js');
+
 const LIBRARY_CACHE = 'our-little-list-libraries';
 
 const PAGES = [
-  // The old addresses (reminders, activity, notifications, help, admire,
-  // location) are one-line redirects now and are not worth keeping offline.
-  './', './index.html', './her.html', './him.html', './profiles.html',
+  // Old addresses (reminders, activity, profiles…) are no longer pages:
+  // old-links.js maps them to where those things live now.
+  './', './index.html', './her.html', './him.html', './old-links.js',
   './status.html', './dates.html', './tasks.html', './notes.html',
   './phone-check.html', './today.html', './memories.html', './guide.html'
 ];
@@ -22,7 +24,7 @@ const ASSETS = [
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
   './push-config.js', './push-client.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',
   './household.js', './viewer.js', './entry.js', './place-presets.js', './location-tags.js',
-  './moment-picker.js', './records.js', './activity-feed.js', './activity-summary.js', './availability.js', './fridge.js', './pings-settings.js', './undo-delete.js', './settings-account.js', './setup-nudge.js', './daily-question.js', './question-prompts.js', './page-boot.js', './device-mode.js', './focus-ask.js', './delivery-policy.js', './inline-actions.js',
+  './moment-picker.js', './records.js', './needs-you.js', './status-presets.js', './activity-feed.js', './activity-summary.js', './availability.js', './fridge.js', './pings-settings.js', './undo-delete.js', './settings-account.js', './setup-nudge.js', './daily-question.js', './question-prompts.js', './page-boot.js', './device-mode.js', './focus-ask.js', './delivery-policy.js', './inline-actions.js',
   './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './icon-192.png',
   './notification-icon.png', './notification-badge.png', './manifest.webmanifest'
 ];
@@ -86,6 +88,8 @@ self.addEventListener('fetch', event => {
   }
 
   if (request.mode === 'navigate') {
+    const moved = self.oldPageTarget(request.url);
+    if (moved) { event.respondWith(Response.redirect(moved, 302)); return; }
     // Store one copy per page, not one copy for every harmless ?as= parameter.
     const pageKey = new Request(`${url.origin}${url.pathname}`);
     const network = fetch(request).then(response => {
@@ -244,7 +248,8 @@ async function pruneLibraries() {
 function safeAppUrl(value) {
   const fallback = new URL('./index.html', self.location.href).href;
   try {
-    const target = new URL(value || fallback, self.location.href);
+    const asked = new URL(value || fallback, self.location.href);
+    const target = new URL(self.oldPageTarget(asked.href) || asked.href);
     return target.origin === self.location.origin && target.href.startsWith(self.registration.scope) ? target.href : fallback;
   } catch (_) {
     return fallback;

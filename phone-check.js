@@ -9,6 +9,13 @@ const isApple=isApplePhone();
 const $=id=>document.getElementById(id);
 let wakeLock=null;
 const health = { sync:false, online:false, install:false, notification:false, location:false };
+// Which checks have answered. The group used to open on a wall of "checking…"
+// rows; now it stays folded until the answers are in, and only opens itself
+// when something actually needs you.
+const checked = new Set();
+// A check that never answers (no notification support, a stalled sync) must
+// not leave the summary saying "checking" forever.
+setTimeout(()=>{['sync','online','notification'].forEach(name=>checked.add(name));renderHealthSummary();},5000);
 let healthCollapsed=false;
 
 // Settings folds into groups; a link like #pings, #names or #account (and the
@@ -28,10 +35,13 @@ document.querySelector('.settings-jump')?.addEventListener('click',event=>{
 });
 function renderHealthSummary(){
   // Home-screen install and location are choices, not unfinished setup.
-  const ready=health.sync&&health.online&&health.notification;
-  $('health-summary').textContent=ready?'this phone is all set ✓':'this phone needs a look';
+  const needed=['sync','online','notification'];
+  const ready=needed.every(name=>health[name]);
+  const settled=needed.every(name=>checked.has(name));
+  const missing={sync:'sync',online:'internet',notification:'pings'};
+  $('health-summary').textContent=ready?'this phone is all set ✓':settled?`this phone needs a look · ${needed.filter(name=>!health[name]).map(name=>missing[name]).join(', ')}`:'checking this phone…';
   if(ready&&!healthCollapsed){$('phone-health').open=false;healthCollapsed=true;}
-  if(!ready){healthCollapsed=false;$('phone-health').open=true;}
+  if(!ready&&settled&&!healthCollapsed){$('phone-health').open=true;}
 }
 const { data, viewer } = await bootPage({onAuth:(user,layer)=>{
   const local=layer.mode==='local';
@@ -43,14 +53,14 @@ startPingSettings({data,viewer,onChange:()=>void renderNotifications()});
 void ensurePushSubscription(data,viewer).then(renderNotifications);
 
 function setStatus(name,okay,text){
-  if(name in health){health[name]=okay;renderHealthSummary();}
+  if(name in health){health[name]=okay;if(text!=='checking')checked.add(name);renderHealthSummary();}
   $(`${name}-symbol`).textContent=okay?'✓':'!';
   $(`${name}-symbol`).classList.toggle('okay',okay);
   $(`${name}-symbol`).classList.toggle('warning',!okay);
   $(`${name}-symbol`).classList.remove('failed');
   $(`${name}-status`).textContent=text;
 }
-function setFailure(name,text){if(name in health){health[name]=false;renderHealthSummary();}const symbol=$(`${name}-symbol`);symbol.textContent='×';symbol.classList.remove('okay','warning');symbol.classList.add('failed');$(`${name}-status`).textContent=text;}
+function setFailure(name,text){if(name in health){health[name]=false;checked.add(name);renderHealthSummary();}const symbol=$(`${name}-symbol`);symbol.textContent='×';symbol.classList.remove('okay','warning');symbol.classList.add('failed');$(`${name}-status`).textContent=text;}
 function help(name,text,tone=''){const el=$(`${name}-help`);el.textContent=tone==='fail'?`try this: ${text}`:text;el.hidden=false;el.classList.toggle('fail',tone==='fail');}
 function clearHelp(name){$(`${name}-help`).hidden=true;}
 const busy=setButtonBusy;
@@ -173,7 +183,7 @@ $('ask-notifications').addEventListener('click',async()=>{
   await renderNotifications();
   // One test button, in little pings below, so the test uses the sound and
   // buzz you actually picked.
-  if(Notification.permission==='granted')help('notification','allowed. send a test from little pings below.');
+  if(Notification.permission==='granted')help('notification','allowed. send a test from Pings above.');
 });
 $('ask-location').addEventListener('click',()=>{
   clearHelp('location');

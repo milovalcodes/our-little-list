@@ -19,7 +19,7 @@ Each thing lives in one place:
 - **Memories** — photos and small things worth keeping.
 - **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
   Quiet hours hold ordinary pings until morning; reminders still ring at their time, and arrivals come through silently. A focus session holds chatter five minutes at a time, so ending it early lets things through soon after.
-- **Guide & history** — under More, an in-app walkthrough and a record of each new release.
+- **Guide** — under More, an in-app walkthrough and a record of each new release.
 
 The bottom **add** button opens the current page's full composer on List,
 Notes, Date ideas, and Memories. Elsewhere it opens the quick chooser.
@@ -27,8 +27,10 @@ Notes, Date ideas, and Memories. Elsewhere it opens the quick chooser.
 Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 
 Old links still work: `reminders.html`, `activity.html`, `notifications.html`,
-`help.html`, `admire.html` and `location.html` redirect to where those things
-live now.
+`help.html`, `admire.html`, `location.html` and `profiles.html` are no longer
+pages. `old-links.js` maps each to where it lives now; GitHub Pages' `404.html`
+and the service worker both use it, so old bookmarks and queued notifications
+still land in the right place.
 
 ## Reminders, and how they reach a closed phone
 

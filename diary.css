@@ -371,3 +371,19 @@ button:disabled:not(.is-busy) { cursor:default; }
 .feature-shell > .settings-group > :is(.status-card,.profile-setup-card) { margin-top:var(--diary-gap); padding:15px; border:1px solid var(--diary-rule); border-radius:var(--diary-radius); background:var(--diary-panel); box-shadow:var(--diary-shadow); }
 :is(.feature-shell > .phone-health, .saved-places, .feature-shell > .settings-names, .feature-shell > .settings-account) { scroll-margin-top:72px; }
 @media (prefers-reduced-motion:reduce) { .settings-group > summary::after { transition:none; } }
+
+/* v74: tidy-ups from the clunky-bits pass */
+.home-next-up .setup-nudge { margin:8px 0 0; box-shadow:none; }
+.fridge-note.is-empty .fridge-paper { min-height:44px; padding:6px 13px; opacity:.88; }
+.fridge-note.is-empty .fridge-paper small { display:none; }
+.empty-state .empty-add { display:block; margin:10px auto 0; min-height:44px; padding:8px 16px; border:0; border-radius:14px; color:var(--accent-deep); background:var(--accent-pale); font:inherit; font-size:.86rem; font-weight:850; cursor:pointer; }
+.him-theme .empty-state .empty-add { color:#ddc8ff; background:#31416c; }
+.date-roulette #pick-random { display:block; width:100%; margin:2px 0 10px; }
+.date-roulette .roulette-chip-group button { min-width:46px; padding:6px 11px; }
+.quick-status-more { display:block; margin:12px 0 0; text-align:center; color:var(--accent-deep); font-weight:800; font-size:.86rem; text-decoration:none; }
+.him-theme .quick-status-more { color:#ddc8ff; }
+.arrival-strip .tiny-kicker { margin:0 0 6px; }
+.arrival-strip .quick-status-options { display:flex; flex-wrap:wrap; gap:6px; }
+.arrival-strip { flex-wrap:wrap; }
+.arrival-strip>.tiny-kicker { flex:1 1 100%; }
+.arrival-strip>div.quick-status-options { flex:1 1 100%; justify-content:flex-start; margin:0; }

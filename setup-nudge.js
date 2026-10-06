@@ -28,7 +28,9 @@ async function show() {
     try { localStorage.setItem(LATER_KEY, String(Date.now())); } catch (_) {}
     card.remove();
   });
-  document.querySelector('.dashboard-shell')?.prepend(card);
+  // It sits in Next up with everything else that wants a moment of yours, not
+  // as a banner above the sky.
+  document.querySelector('.home-next-up')?.append(card);
 }
 
 void show();

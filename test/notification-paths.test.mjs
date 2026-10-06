@@ -61,7 +61,11 @@ async function firePush(payload, { failFirst = false, watching = false } = {}) {
     clients: { matchAll: async () => watching ? [{ visibilityState: 'visible', focused: true, url: 'https://x.test/app/notes.html' }] : [] },
     skipWaiting() {}
   };
-  vm.runInNewContext(serviceWorker, { self, URL, Request: class {}, Response: {}, caches: {}, fetch() {}, setTimeout: fn => setTimeout(fn, 0), console });
+  // The worker loads old-links.js with importScripts; run it in the same sandbox.
+  const sandbox = { self, URL, Request: class {}, Response: {}, caches: {}, fetch() {}, setTimeout: fn => setTimeout(fn, 0), console };
+  sandbox.importScripts = file => vm.runInContext(readFileSync(new URL(`../${file.replace(/^\.\//, '')}`, import.meta.url), 'utf8'), sandbox);
+  vm.createContext(sandbox);
+  vm.runInContext(serviceWorker, sandbox);
   let settled;
   handlers.push({ data: { json: () => payload, text: () => '' }, waitUntil(promise) { settled = promise; } });
   await settled;

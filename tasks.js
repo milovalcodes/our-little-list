@@ -197,8 +197,8 @@ function render() {
   byId('item-count').hidden = list.length === 0;
 
   const labels = {
-    tasks: ['our things', 'To do', '✦', 'Nothing here', 'tap ＋ add below to put something on it'],
-    grocery: ['to pick up', 'Groceries', '🛒', 'No groceries', 'tap ＋ add below when something runs out'],
+    tasks: ['our things', 'To do', '✦', 'Nothing here', 'tap ＋ add to put something on it'],
+    grocery: ['to pick up', 'Groceries', '🛒', 'No groceries', 'tap ＋ add when something runs out'],
     done: ['finished', 'Done', '✨', 'Nothing done yet', '']
   }[tab];
 
