@@ -8,6 +8,7 @@ import { escapeHtml, setButtonBusy, toast } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { timeAgo } from './time-format.js';
 import { orbitLine } from './availability.js';
+import { setupTrip, updateTrip } from './trip.js';
 
 const byId=id=>document.getElementById(id);
 let locations=[];
@@ -49,6 +50,7 @@ viewer=await awaitViewer();
 if(!viewer)await new Promise(()=>{});
 
 initializeMap();
+setupTrip(viewer);
 data.listenTo('locations',items=>{locations=items;render();});
 // auto-location.js boots while this module is still evaluating, so its first
 // emit can land before the listener exists. renderControl reads the live
@@ -106,7 +108,7 @@ function render(){
   const her=active.find(item=>item.id==='her');const him=active.find(item=>item.id==='him');
   const knownHer=known.find(item=>item.id==='her');const knownHim=known.find(item=>item.id==='him');
 
-  updateMap(known,now);renderLastKnown(known,active);
+  updateMap(known,now);renderLastKnown(known,active);updateTrip(known);
   const hideButton=byId('hide-last-location');
   if(hideButton)hideButton.hidden=!known.some(item=>item.id===viewer);
 

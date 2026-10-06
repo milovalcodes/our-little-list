@@ -774,6 +774,17 @@ button.home-link { border:none; background:none; font:inherit; cursor:pointer; c
 .now-location-card .last-known-row { margin-top:8px; }
 .now-location-card .known-pill { padding:7px 9px; border-radius:11px; font-size:.68rem; }
 .now-location-card .known-pill small { display:block; margin-top:2px; opacity:.8; font-size:.63rem; }
+.trip-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; padding:9px 9px 9px 13px; border-radius:16px; background:color-mix(in srgb,var(--accent-pale,#fff3d6) 70%,transparent); }
+.trip-bar p { margin:0; color:var(--page-muted); font-size:.7rem; line-height:1.35; }
+.trip-bar button { flex:none; min-height:40px; border:0; border-radius:999px; padding:8px 14px; background:var(--accent-deep,#7a4b2a); color:#fff; font-weight:900; font-size:.78rem; cursor:pointer; }
+.trip-bar.is-on { background:linear-gradient(120deg,#ffe9a8,#ffd1e0); }
+.trip-bar.is-on p { color:#5a3b26; font-weight:800; }
+.trip-bar.is-on button { background:rgba(90,59,38,.14); color:#5a3b26; }
+.him-theme .trip-bar.is-on { background:linear-gradient(120deg,#2d3f78,#4b3a78); }
+.him-theme .trip-bar.is-on p,.him-theme .trip-bar.is-on button { color:#fff8df; }
+.him-theme .trip-bar.is-on button { background:rgba(255,255,255,.14); }
+@media (prefers-reduced-motion:no-preference){ .trip-bar.is-on { animation:trip-glow 2.4s ease-in-out infinite alternate; } }
+@keyframes trip-glow { from { box-shadow:0 0 0 0 rgba(255,190,80,0); } to { box-shadow:0 0 0 4px rgba(255,190,80,.22); } }
 .now-location-foot { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-top:9px; color:var(--page-muted); font-size:.66rem; }
 .now-location-foot .hide-last-location { width:auto; min-height:36px; margin:0; padding:6px 4px; font-size:.67rem; }
 .status-editor-disclosure { margin-top:10px; padding:0; overflow:hidden; }

@@ -4,6 +4,7 @@ import { personName } from './profile-store.js';
 import { openEmojiPicker } from './emoji-picker.js';
 import { hereLine, STATE_LABELS, focusActive, arrivalActive, statusShows } from './availability.js';
 import { quickStatusButtons, saveQuickStatus } from './status-presets.js';
+import { startTrip, tripActive } from './trip.js';
 
 const $=id=>document.getElementById(id);
 const stateLabels=STATE_LABELS;
@@ -64,6 +65,8 @@ $('status-expiry').addEventListener('change',()=>{expiryTouched=true;});
 
 $('arrival-presets').innerHTML=quickStatusButtons();
 $('arrival-presets').addEventListener('click',async event=>{const button=event.target.closest('[data-quick-status]');if(!button)return;setButtonBusy(button,true,'…');
+  // "leaving now" means a trip: keep the screen awake so the pings can follow.
+  if(button.dataset.quickStatus==='leaving now'&&!tripActive())void startTrip({quiet:true});
   if(!await ready()){setButtonBusy(button,false);return;}
   try{await settleQuickly(saveQuickStatus({data,viewer,other,exists:Boolean(mine())},button.dataset.quickStatus),'that update did not send.');toast(button.textContent.replace(/^\S+\s/,''));}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
 $('status-pair').addEventListener('click',event=>{const picker=event.target.closest('[data-status-picker]');if(picker){const targetId=picker.dataset.statusPicker;const current=findStatusReaction(targetId);openEmojiPicker({current:current?.emoji,onSelect:value=>saveStatusReaction(targetId,value,picker),onRemove:()=>saveStatusReaction(targetId,'',picker)});return;}const button=event.target.closest('[data-react-status]');if(button)void saveStatusReaction(button.dataset.reactStatus,button.dataset.emoji,button);});
