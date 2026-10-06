@@ -220,15 +220,16 @@ async function openSlow(path) {
   // Empty states stay quiet; the page-level add button opens its own sheet.
   const notes = await open('notes.html?from=her');
   const duplicateNoteButton = await notes.page.locator('#note-inbox-empty .empty-action').count();
-  await openSheet(notes.page, 'note-form');
+  // Notes has no sheet: the dock's add button goes straight to its writing bar.
+  await notes.page.locator('.dock-add').click();
   await notes.page.waitForTimeout(400);
   const noteFocus = await notes.page.evaluate(() => document.activeElement?.id || '');
-  const noteSheet = await notes.page.locator('#sheet-note-form').isVisible();
+  const noteSheet = (await notes.page.locator('#sheet-note-form, .note-maker, #note-page-add').count()) === 0;
   // "Nothing new" is news, not a form: it should not offer to add a to-do.
   const today = await open('today.html?as=her');
   await today.page.waitForTimeout(500);
   const feedButtons = await today.page.locator('#activity-empty .empty-action').count();
-  note(memorySheet && noteSheet && focused === 'memory-text' && noteFocus === 'note-body' && !duplicateMemoryButton && !duplicateNoteButton && feedButtons === 0,
+  note(memorySheet && noteSheet && focused === 'memory-text' && noteFocus === 'note-quick-text' && !duplicateMemoryButton && !duplicateNoteButton && feedButtons === 0,
        'empty pages use one add button and the right sheet', JSON.stringify({ memorySheet, focused, noteFocus, noteSheet, duplicateMemoryButton, duplicateNoteButton, feedButtons }));
   await today.context.close();
   await notes.context.close();
@@ -336,6 +337,12 @@ async function openSlow(path) {
 // words. Geofence math itself is covered in the pure unit pass.
 {
   const { context, page, errors } = await open('phone-check.html?as=her');
+  // Settings is grouped: pings and "us" start folded, the jump bar opens them.
+  const foldedAtStart = !(await page.locator('#pings').evaluate(node => node.open)) && !(await page.locator('#us').evaluate(node => node.open));
+  await page.click('.settings-jump a[href="#us"]');
+  await page.waitForTimeout(300);
+  const usOpen = await page.locator('#sun-name').isVisible();
+  note(foldedAtStart && usOpen && errors.length === 0, 'Settings folds into groups and the jump bar opens them', errors[0] || JSON.stringify({ foldedAtStart, usOpen }));
   await page.click('#saved-places > summary');
   await page.click('[data-place-preset="work"]');
   const work = await page.locator('#place-preview').textContent();
@@ -444,9 +451,8 @@ async function openSlow(path) {
 
 {
   const { context, page, errors } = await open('notes.html?from=her');
-  await openSheet(page, 'note-form');
-  await page.fill('#note-body', 'the small moon report');
-  await page.click('#note-submit');
+  await page.fill('#note-quick-text', 'the small moon report');
+  await page.click('#note-quick-send');
   await page.waitForTimeout(300);
   await rowMenu(page.locator('.note-thread-row', { hasText: 'the small moon report' }), 'edit');
   await page.fill('[data-note-edit] textarea', 'the corrected moon report');
@@ -1174,9 +1180,8 @@ async function openSlow(path) {
 }
 {
   const { context, page, errors } = await open('notes.html?from=her');
-  await openSheet(page, 'note-form');
-  await page.fill('#note-body', 'notification target test');
-  await page.click('#note-submit');
+  await page.fill('#note-quick-text', 'notification target test');
+  await page.click('#note-quick-send');
   await page.waitForTimeout(180);
   const id = await page.evaluate(async () => {
     const { sharedLayer } = await import('./data-hub.js');
@@ -1296,6 +1301,18 @@ async function openSlow(path) {
   const sent=await page.locator('.note-thread-row',{hasText:'a small moon dispatch'}).count();
   const pinned=await page.locator('#note-quick-form').evaluate(node=>{const rect=node.getBoundingClientRect();return rect.bottom<innerHeight-65&&rect.bottom>innerHeight-180;});
   note(sent===1&&pinned&&errors.length===0,'Notes sends from its bottom writing bar',errors[0]||JSON.stringify({sent,pinned}));
+  // Quick picks show while the bar is empty; the mood button rides along.
+  await page.focus('#note-quick-text');
+  const picksShown=await page.locator('#note-starters').isVisible();
+  await page.locator('#note-starters button').first().click();
+  const picked=await page.inputValue('#note-quick-text');
+  const picksHidden=!(await page.locator('#note-starters').isVisible());
+  await page.click('#note-mood');
+  await page.click('#note-quick-send');
+  await page.waitForTimeout(300);
+  const mood=await page.evaluate(async body=>{const {sharedLayer}=await import('./data-hub.js');return (await (await sharedLayer()).readOnce('notes')).find(item=>item.body===body)?.mood;},picked);
+  const moodReset=await page.locator('#note-mood').getAttribute('data-mood');
+  note(picksShown&&picked.length>0&&picksHidden&&mood==='sun'&&moodReset==='heart'&&errors.length===0,'Notes bar offers quick picks and sends the chosen mood',errors[0]||JSON.stringify({picksShown,picked,picksHidden,mood,moodReset}));
   await context.close();
 }
 {

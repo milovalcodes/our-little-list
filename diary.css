@@ -255,7 +255,7 @@
 .sky-footer[hidden] { display:none!important; }
 
 .note-shell { padding-bottom:calc(210px + env(safe-area-inset-bottom))!important; }
-.note-quick-compose { position:fixed; z-index:12; left:50%; bottom:calc(84px + env(safe-area-inset-bottom)); translate:-50% 0; width:min(740px,calc(100% - 20px)); display:grid; grid-template-columns:minmax(0,1fr) 46px; gap:8px; padding:9px; border:1px solid var(--diary-rule); border-radius:18px; background:var(--paper); box-shadow:0 8px 30px rgba(15,25,50,.15); }
+.note-quick-compose { position:fixed; z-index:12; left:50%; bottom:calc(84px + env(safe-area-inset-bottom)); translate:-50% 0; width:min(740px,calc(100% - 20px)); display:grid; grid-template-columns:44px minmax(0,1fr) 46px; gap:8px; padding:9px; border:1px solid var(--diary-rule); border-radius:18px; background:var(--paper); box-shadow:0 8px 30px rgba(15,25,50,.15); }
 .note-quick-compose input { min-width:0; min-height:46px; padding:10px 12px; border:1px solid var(--diary-rule); border-radius:12px; color:var(--page-text); background:var(--diary-raised); font:inherit; font-size:16px; }
 .note-quick-compose button { width:46px; height:46px; border:0; border-radius:13px; color:white; background:var(--accent-deep); font:inherit; font-size:1.4rem; font-weight:900; cursor:pointer; }
 
@@ -346,3 +346,28 @@ button:disabled:not(.is-busy) { cursor:default; }
 
 /* Zero counts and nothing-to-mark buttons are hidden, not shown as "0". */
 .count-bubble[hidden],#mark-seen[hidden],.empty-state p[hidden] { display:none!important; }
+
+/* Notes: one writing bar with quick picks and a mood button. */
+.note-quick-compose .note-mood { width:44px; height:46px; padding:0; border:1px solid var(--diary-rule); border-radius:12px; background:var(--diary-raised); color:var(--page-text); font:inherit; font-size:1.15rem; cursor:pointer; }
+.note-quick-compose .note-starters { grid-column:1/-1; display:flex; flex-wrap:nowrap; gap:6px; margin:0 0 2px; overflow-x:auto; scrollbar-width:none; }
+.note-quick-compose .note-starters[hidden] { display:none; }
+.note-quick-compose .note-starters::-webkit-scrollbar { display:none; }
+.note-quick-compose .note-starters button { flex:0 0 auto; width:auto; height:auto; border:0; border-radius:999px; color:var(--accent-deep); background:var(--accent-pale); font-weight:780; min-height:36px; padding:7px 12px; font-size:.8rem; white-space:nowrap; }
+
+/* Settings: four folding groups and a jump bar. */
+.settings-jump { display:flex; gap:6px; margin-top:var(--diary-gap); overflow-x:auto; scrollbar-width:none; }
+.settings-jump::-webkit-scrollbar { display:none; }
+.settings-jump a { flex:0 0 auto; min-height:38px; display:inline-flex; align-items:center; padding:8px 13px; border-radius:999px; color:var(--accent-deep); background:var(--accent-pale); font-size:.8rem; font-weight:800; text-decoration:none; }
+.feature-shell > .settings-group { margin-top:var(--diary-gap); scroll-margin-top:72px; }
+.settings-group > summary { min-height:60px; display:flex; align-items:center; gap:12px; margin:0; padding:11px 15px; border:1px solid var(--diary-rule); border-radius:var(--diary-radius); background:var(--diary-panel); box-shadow:var(--diary-shadow); cursor:pointer; list-style:none; }
+.settings-group > summary::-webkit-details-marker { display:none; }
+.settings-group > summary::marker { content:''; }
+.settings-group > summary::after { content:'›'; margin-left:auto; color:var(--page-muted); font-size:1.4rem; font-weight:700; transition:rotate .16s ease; }
+.settings-group[open] > summary::after { rotate:90deg; }
+.settings-group > summary .tiny-kicker { margin:0 0 2px; }
+.settings-group > summary h2 { margin:0; font-family:var(--font-display); font-size:1.15rem; }
+.settings-group > summary .notification-hero-icon { width:38px; height:38px; }
+.settings-group-icon { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center; border-radius:12px; color:var(--accent-deep); background:var(--accent-pale); font-size:1.1rem; }
+.feature-shell > .settings-group > :is(.status-card,.profile-setup-card) { margin-top:var(--diary-gap); padding:15px; border:1px solid var(--diary-rule); border-radius:var(--diary-radius); background:var(--diary-panel); box-shadow:var(--diary-shadow); }
+:is(.feature-shell > .phone-health, .saved-places, .feature-shell > .settings-names, .feature-shell > .settings-account) { scroll-margin-top:72px; }
+@media (prefers-reduced-motion:reduce) { .settings-group > summary::after { transition:none; } }

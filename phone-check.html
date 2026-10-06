@@ -9,7 +9,7 @@
   <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">settings</span></header>
   <main class="app-shell feature-shell status-shell">
     <section class="feature-hero status-hero"><span class="feature-icon">⚙︎</span><p class="tiny-kicker">this phone & us</p><h1>Settings</h1></section>
-    <p class="tiny-kicker settings-section-label">this phone</p>
+    <nav class="settings-jump" aria-label="Settings sections"><a href="#phone-health">📱 this phone</a><a href="#pings">🔔 pings</a><a href="#saved-places">📍 spots</a><a href="#us">♡ us</a></nav>
     <details class="phone-health" id="phone-health" open><summary id="health-summary">Checking this phone…</summary><section class="status-card" aria-live="polite">
       <div class="status-row"><span class="status-symbol" id="sync-symbol">…</span><div><strong>Shared sync</strong><p id="sync-status">checking</p><button class="small-action" id="check-sync" type="button">test sync</button><p class="permission-help" id="sync-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol" id="online-symbol">…</span><div><strong>Internet</strong><p id="online-status">checking</p><button class="small-action" id="check-online" type="button">recheck</button><p class="permission-help" id="online-help" hidden></p></div></div>
@@ -18,8 +18,8 @@
       <div class="status-row"><span class="status-symbol" id="location-symbol">…</span><div><strong>Location</strong><p id="location-status">checking</p><button class="small-action" id="ask-location" type="button">ask phone</button><p class="permission-help" id="location-help" hidden></p></div></div>
       <div class="status-row"><span class="status-symbol warning" id="background-symbol">◐</span><div><strong>Keep screen on</strong><p id="background-status">the website may pause when the screen locks.</p><button class="small-action" id="ask-background" type="button">keep page awake</button><p class="permission-help" id="background-help" hidden></p></div></div>
     </section></details>
-    <section class="ping-settings" id="pings">
-      <div class="ping-settings-head"><img class="notification-hero-icon" src="notification-icon.png" alt=""><div><p class="tiny-kicker">your phone, your rules</p><h2>Little pings</h2></div></div>
+    <details class="settings-group ping-settings" id="pings">
+      <summary class="ping-settings-head"><img class="notification-hero-icon" src="notification-icon.png" alt=""><div><p class="tiny-kicker">sound, which ones, quiet hours</p><h2>Little pings</h2></div></summary>
     <form id="notification-settings-form">
       <section class="notification-settings-card">
         <div class="settings-heading"><div><p class="tiny-kicker">how it says hey</p><h2>Sound & vibration</h2></div><button class="small-action" id="test-notification" type="button">send a test</button></div>
@@ -58,7 +58,7 @@
 
       <div class="notification-save-row"><span id="save-state" aria-live="polite">changes save by themselves</span><button class="primary-action compact-save" id="save-notifications" type="submit" hidden>save it</button></div>
     </form>
-    </section>
+    </details>
     <details class="composer-card saved-places" id="saved-places">
       <summary><span><strong>Saved spots</strong></span><i>＋</i></summary>
       <div class="saved-place-body">
@@ -75,8 +75,10 @@
         <p class="saved-place-empty" id="saved-place-empty">no saved spots yet</p>
       </div>
     </details>
+    <details class="settings-group" id="us">
+      <summary><span class="settings-group-icon" aria-hidden="true">♡</span><div><p class="tiny-kicker">the two of us</p><h2>Names & sign-in</h2></div></summary>
     <section class="profile-setup-card settings-names" id="names">
-      <p class="tiny-kicker">the two of us</p><h2>Our names</h2>
+      <h2>Our names</h2>
       <form id="profile-form">
         <div class="profile-name-grid">
           <label class="profile-name-person sun-name-person"><img src="sun-profile.png" alt=""><span>Sun name</span><input id="sun-name" required maxlength="24" autocomplete="off" placeholder="her name"></label>
@@ -89,6 +91,7 @@
     <section class="status-card settings-account" id="account">
       <div class="status-row"><span class="status-symbol">☺</span><div><strong>This phone is signed in</strong><p id="account-status">as one of us</p><button class="small-action" id="sign-out" type="button">sign out</button></div></div>
     </section>
+    </details>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="phone-check.js"></script><script type="module" src="profiles.js"></script><script type="module" src="location-tags.js"></script><script type="module" src="settings-account.js"></script>
 </body>

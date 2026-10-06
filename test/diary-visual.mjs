@@ -17,7 +17,7 @@ for (const side of ['her','him']) {
     await page.waitForTimeout(700);
     const state = await page.evaluate(() => {
       const heading = document.querySelector('.feature-hero h1,.sky-heading h1');
-      const surface = document.querySelector('.feature-shell > :is(.list-card,.today-card,.now-location-card,.random-date-card,.status-card,.notification-settings-card),.dashboard-shell > .our-sky');
+      const surface = document.querySelector('.feature-shell > :is(.list-card,.today-card,.now-location-card,.random-date-card,.status-card,.notification-settings-card),.feature-shell > .settings-group > .status-card,.dashboard-shell > .our-sky');
       return {
         theme:document.body.classList.contains('her-theme') ? 'her' : document.body.classList.contains('him-theme') ? 'him' : 'none',
         diary:[...document.styleSheets].some(sheet => sheet.href?.endsWith('/diary.css')),
@@ -31,10 +31,18 @@ for (const side of ['her','him']) {
     const okay = state.theme === side && state.diary && state.overflow <= 2 && !!state.heading && state.surfaceRadius >= 18;
     if (!okay) problems++;
     console.log(`${okay ? 'ok  ' : 'FAIL'} ${side}/${name}: ${JSON.stringify(state)} · ${path}`);
-    if (name === 'notes' || name === 'memories') {
+    if (name === 'notes') {
       await page.locator('.dock-add').click();
       await page.waitForTimeout(260);
-      const sheet = name === 'notes' ? 'note-form' : 'memory-form';
+      const focused = await page.evaluate(() => document.activeElement?.id === 'note-quick-text');
+      if (!focused) problems++;
+      console.log(`${focused ? 'ok  ' : 'FAIL'} ${side}/notes add focuses the writing bar`);
+      await page.evaluate(() => document.activeElement?.blur());
+    }
+    if (name === 'memories') {
+      await page.locator('.dock-add').click();
+      await page.waitForTimeout(260);
+      const sheet = 'memory-form';
       const open = await page.locator(`#sheet-${sheet}`).isVisible();
       if (!open) problems++;
       const sheetPath = join(tmpdir(), `ourlittlelist-diary-${side}-${name}-sheet.png`);

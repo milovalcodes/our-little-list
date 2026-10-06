@@ -33,6 +33,9 @@ async function boot() {
     event.preventDefault();
     // One visible add button. On a feature page it opens that page's full
     // composer; elsewhere it remains the all-purpose quick chooser.
+    // A page with an always-visible writing bar (Notes) just focuses it.
+    const writeHere = opener.matches('.dock-add') ? document.querySelector('[data-dock-focus]') : null;
+    if (writeHere) { writeHere.focus(); writeHere.scrollIntoView?.({ block:'nearest' }); window.littleHaptic?.('tap'); return; }
     const contextual = opener.matches('.dock-add') ? document.querySelector('.page-add[data-open-sheet]:not([hidden])')?.dataset.openSheet : '';
     openSheet(contextual || opener.dataset.openSheet);
   });
@@ -78,7 +81,6 @@ function movePageComposers() {
   }
   if (page === 'dates') move('.date-composer', 'sheet-date-form', 'Add a date idea');
   if (page === 'today') move('.focus-card', 'sheet-focus', 'Focus together');
-  if (page === 'notes') move('.note-maker', 'sheet-note-form', 'Send a note');
   if (page === 'memories') move('.memory-composer', 'sheet-memory-form', 'Add a memory');
 }
 
@@ -139,7 +141,7 @@ function openSheet(name) {
   window.littleHaptic?.('tap');
   requestAnimationFrame(() => sheet.classList.add('is-open'));
   document.dispatchEvent(new CustomEvent('littlelist:sheet-open', { detail: { name } }));
-  const firstField = { search:'global-search', quick:'quick-text', 'task-form':'shared-task-title', 'ask-form':'help-title', 'date-form':'date-title', 'note-form':'note-body', 'memory-form':'memory-text' }[name];
+  const firstField = { search:'global-search', quick:'quick-text', 'task-form':'shared-task-title', 'ask-form':'help-title', 'date-form':'date-title', 'memory-form':'memory-text' }[name];
   if (firstField) window.setTimeout(() => document.getElementById(firstField)?.focus(), 220);
 }
 

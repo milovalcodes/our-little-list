@@ -13,28 +13,28 @@ setNames();
 
 const moods=NOTE_MOODS;
 let notes=[];let reactions=[];let editingNoteId='';const markedRead=new Set();
-document.querySelectorAll('#note-starters button').forEach(button=>button.addEventListener('click',()=>{$('note-body').value=button.textContent;$('note-body').focus();}));
 
 let viewLimit=20;
 data.listenTo('notes',items=>{notes=items.sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0));renderNotes();markIncomingRead();});
 data.listenToQuery('reactions',{orderBy:{field:'createdAt',direction:'desc'},limit:100},items=>{reactions=items;renderNotes();});
 
-$('note-form').addEventListener('submit',async event=>{
-  event.preventDefault();const mood=document.querySelector('[name="mood"]:checked').value;const body=$('note-body').value.trim();
-  const submit=$('note-submit');setButtonBusy(submit,true,'sending…');
-  try{
-    const sent=await settleQuickly(sendNote(data,{viewer:sender,other:recipient,body,mood}),`the note “${body.slice(0,40)}” did not send.`);const delivery=sent?.delivery||{queued:true};
-    event.target.reset();$('note-send-state').hidden=false;$('note-send-state').textContent=delivery.queued?`sent with a ${moods[mood]}`:`saved for ${personName(recipient)}.`;toast('sent 💌');
-    document.querySelector('#sheet-note-form [data-close-sheet]')?.click();
-  }catch(_){showFailure('the note did not send.','check the internet and try again. The note is still here.');}
-  finally{setButtonBusy(submit,false);}
-});
+// One writing bar: quick picks appear while it is empty, and the little
+// button on its left cycles the mood that rides along with the note.
+const quickInput=$('note-quick-text');const starters=$('note-starters');const moodButton=$('note-mood');
+const moodOrder=Object.keys(moods);let quickMood='heart';
+function setQuickMood(mood){quickMood=mood;moodButton.dataset.mood=mood;moodButton.textContent=moods[mood];moodButton.setAttribute('aria-label',`Mood: ${moods[mood]} — tap to change`);}
+function syncStarters(){starters.hidden=!(document.activeElement===quickInput&&!quickInput.value.trim());}
+['focus','input','blur'].forEach(type=>quickInput.addEventListener(type,syncStarters));
+// Keep the keyboard up while tapping a pick or the mood.
+[starters,moodButton].forEach(node=>node.addEventListener('pointerdown',event=>event.preventDefault()));
+starters.addEventListener('click',event=>{const pick=event.target.closest('button');if(!pick)return;quickInput.value=pick.textContent;quickInput.focus();syncStarters();});
+moodButton.addEventListener('click',()=>{setQuickMood(moodOrder[(moodOrder.indexOf(quickMood)+1)%moodOrder.length]);window.littleHaptic?.('tap');});
 
 $('note-quick-form').addEventListener('submit', async event => {
   event.preventDefault();
-  const input=$('note-quick-text');const body=input.value.trim();if(!body)return;
+  const body=quickInput.value.trim();if(!body)return;const mood=quickMood;
   const button=$('note-quick-send');setButtonBusy(button,true,'…');
-  try{await settleQuickly(sendNote(data,{viewer:sender,other:recipient,body,mood:'heart'}),`the note “${body.slice(0,40)}” did not send.`);input.value='';toast('sent 💌');}
+  try{await settleQuickly(sendNote(data,{viewer:sender,other:recipient,body,mood}),`the note “${body.slice(0,40)}” did not send.`);quickInput.value='';setQuickMood('heart');syncStarters();toast(mood==='heart'?'sent 💌':`sent with a ${moods[mood]}`);}
   catch(_){showFailure('the note did not send.','check the internet and try again. Your words are still here.');}
   finally{setButtonBusy(button,false);}
 });
@@ -93,5 +93,5 @@ window.addEventListener('hashchange',()=>{renderNotes();markIncomingRead();});
 $('note-more').addEventListener('click',()=>{viewLimit+=20;renderNotes();markIncomingRead();});
 
 function markIncomingRead(){notes.slice(0,viewLimit).filter(note=>(note.recipient===sender||note.to===sender)&&!note.read&&!markedRead.has(note.id)).forEach(note=>{markedRead.add(note.id);void data.updateIn('notes',note.id,{read:true,readAt:Date.now()}).catch(()=>markedRead.delete(note.id));});}
-function setNames(){document.getElementById('note-page-add').setAttribute('aria-label',`Send ${personName(recipient)} a note`);$('note-quick-text').placeholder=`write ${personName(recipient)} a little note…`;}
+function setNames(){$('note-quick-text').setAttribute('aria-label',`Write ${personName(recipient)} a note`);$('note-quick-text').placeholder=`write ${personName(recipient)} a little note…`;}
 window.addEventListener('littlelist:profile',()=>{setNames();renderNotes();});

@@ -10,6 +10,22 @@ const $=id=>document.getElementById(id);
 let wakeLock=null;
 const health = { sync:false, online:false, install:false, notification:false, location:false };
 let healthCollapsed=false;
+
+// Settings folds into groups; a link like #pings, #names or #account (and the
+// jump bar) opens whatever group holds it before scrolling there.
+function revealSection(hash,smooth){
+  const target=hash&&hash.length>1&&document.getElementById(decodeURIComponent(hash.slice(1)));
+  if(!target)return;
+  for(let node=target;node;node=node.parentElement)if(node.tagName==='DETAILS')node.open=true;
+  if(target.id==='phone-health')healthCollapsed=true;
+  requestAnimationFrame(()=>target.scrollIntoView({block:'start',behavior:smooth?'smooth':'auto'}));
+}
+revealSection(location.hash,false);
+window.addEventListener('hashchange',()=>revealSection(location.hash,true));
+document.querySelector('.settings-jump')?.addEventListener('click',event=>{
+  const link=event.target.closest('a[href^="#"]');if(!link)return;
+  event.preventDefault();history.replaceState(null,'',link.getAttribute('href'));revealSection(link.getAttribute('href'),true);
+});
 function renderHealthSummary(){
   // Home-screen install and location are choices, not unfinished setup.
   const ready=health.sync&&health.online&&health.notification;

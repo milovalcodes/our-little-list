@@ -10,25 +10,11 @@
   <main class="app-shell feature-shell note-shell">
     <section class="feature-hero note-hero"><span class="feature-icon">💌</span><p class="tiny-kicker">just because</p><h1 id="note-heading">Notes</h1></section>
     <section class="list-card note-inbox-card" aria-label="Our notes">
-      <div class="list-heading"><button class="page-add" id="note-page-add" type="button" data-open-sheet="note-form">＋ add</button></div>
       <div class="empty-state" id="note-inbox-empty"><span>◌</span><strong>No notes yet</strong><p>write one at the bottom</p></div>
       <div class="note-inbox-list" id="note-inbox-list"></div>
       <button class="create-space note-more" id="note-more" type="button" hidden>show more</button>
     </section>
-    <form class="note-quick-compose" id="note-quick-form" aria-label="Write a note"><input id="note-quick-text" maxlength="180" required autocomplete="off" placeholder="write her a little note…"><button id="note-quick-send" type="submit" aria-label="Send note">↑</button></form>
-    <section class="note-maker" hidden>
-      <p class="maker-question">pick one</p>
-      <div class="note-starters" id="note-starters">
-        <button type="button">thinking of u ♡</button><button type="button">proud of u</button><button type="button">miss ur face</button><button type="button">drink water pls</button><button type="button">hurry up i miss u</button>
-      </div>
-      <p class="maker-question">or write your own</p>
-      <form id="note-form">
-        <textarea id="note-body" required maxlength="180" placeholder="say a thing"></textarea>
-        <div class="note-mood-row"><span>add</span><label><input type="radio" name="mood" value="heart" checked> 💛</label><label><input type="radio" name="mood" value="sun"> ☀️</label><label><input type="radio" name="mood" value="moon"> 🌙</label><label><input type="radio" name="mood" value="star"> ✦</label></div>
-        <button class="primary-action roomy-action" id="note-submit" type="submit">send it</button>
-      </form>
-      <p class="inline-success" id="note-send-state" hidden></p>
-    </section>
+    <form class="note-quick-compose" id="note-quick-form" aria-label="Write a note"><div class="note-starters" id="note-starters" hidden><button type="button">thinking of u ♡</button><button type="button">proud of u</button><button type="button">miss ur face</button><button type="button">drink water pls</button><button type="button">hurry up i miss u</button></div><button class="note-mood" id="note-mood" type="button" data-mood="heart" aria-label="Mood: 💛 — tap to change">💛</button><input id="note-quick-text" data-dock-focus maxlength="180" required autocomplete="off" placeholder="write her a little note…"><button id="note-quick-send" type="submit" aria-label="Send note">↑</button></form>
   </main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="notes.js"></script><script type="module" src="live-notes.js"></script>
 </body>
