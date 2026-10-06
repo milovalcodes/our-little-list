@@ -28,6 +28,9 @@ async function boot() {
     document.querySelectorAll('[data-place-preset]').forEach(button => button.classList.toggle('active', button.dataset.placePreset === preset));
     const info = PLACE_PRESETS[preset];
     customWrap.hidden = preset !== 'custom';
+    // Leaving work or school is the ping people expect; others stay opt-in.
+    const leave = document.getElementById('place-notify-leave');
+    if (leave) leave.checked = ['work', 'school'].includes(preset);
     if (!label.value.trim() || Object.values(PLACE_PRESETS).some(item => item.label === label.value.trim())) label.value = info.label;
     paintPreview();
   };
@@ -85,7 +88,7 @@ async function boot() {
       await data.setTo('places', id, {
         person:viewer, label:display.label, preset, statusText:display.status, emoji:display.emoji,
         animation:display.animation, lat:point.lat, lng:point.lng,
-        radius,announceLeave:document.getElementById('place-notify-leave').checked,
+        radius,announceLeave:document.getElementById('place-notify-leave').checked,leaveChosen:true,
         announce:document.getElementById('place-notify').checked,
         createdAt:Date.now(), updatedAt:Date.now()
       });
@@ -114,7 +117,7 @@ async function boot() {
       const place = places.find(item => item.id === leaveBell.dataset.toggleLeave);
       if (!place) return;
       leaveBell.disabled = true;
-      try { await data.updateIn('places', place.id, { announceLeave: !announcesLeave(place), updatedAt: Date.now() }); toast(announcesLeave(place) ? 'no more leaving pings here' : 'they will get a ping when you leave'); }
+      try { await data.updateIn('places', place.id, { announceLeave: !announcesLeave(place), leaveChosen: true, updatedAt: Date.now() }); toast(announcesLeave(place) ? 'no more leaving pings here' : 'they will get a ping when you leave'); }
       catch (_) { showFailure('that did not change.', 'check the internet and try again.'); leaveBell.disabled = false; }
       return;
     }

@@ -42,12 +42,36 @@ assert.equal(announcesArrival({ notifyOnArrival:false }), true, 'the old unticke
 assert.equal(announcesArrival({ announce:false }), false);
 assert.equal(announcesLeave({}), false, 'leaving pings are opt-in, including on old saved spots');
 assert.equal(announcesLeave({ announceLeave:true }), true);
-assert.equal(leaveMessage(home,'Sol').title, 'Sol left our place');
+assert.equal(leaveMessage(home,'Sol').title, 'Sol is leaving our place 🏠');
+assert.equal(leaveMessage(home,'Sol',{ late:true }).title, 'Sol left our place', 'a leave noticed later does not say "is leaving"');
+assert.equal(announcesLeave({ preset:'work', announceLeave:false }), true, 'work pings on leaving unless switched off with the bell');
+assert.equal(announcesLeave({ preset:'work', announceLeave:false, leaveChosen:true }), false, 'an explicit off is kept');
+assert.equal(announcesLeave({ preset:'home' }), false, 'home stays opt-in');
+assert.ok(!arrivalMessage(home,'Sol',{ late:true }).title.includes('just'), 'a late arrival does not say "just"');
 assert.equal(overlappingPlace([home],near,100)?.id,'home','overlapping circles cannot both be saved');
 assert.equal(overlappingPlace([home],far,100),null,'a separate spot is fine');
 assert.equal(togetherPlace({ placePreset:'school', placeLabel:'campus' }, { placePreset:'school', placeLabel:'library' }), 'study party');
 assert.equal(togetherPlace({ placePreset:'custom', placeLabel:'Gym' }, { placePreset:'custom', placeLabel:'gym' }), 'together at Gym');
 assert.equal(togetherPlace({ placeLabel:'home' }, { placeLabel:'work' }), '');
 console.log(' ok  arrivals say where, in the spot\'s own words');
+
+// On my way: almost together, then together at last.
+{
+  const { approachStep, approachStage, APPROACH } = await import('../journey.js');
+  const { placeDistance } = await import('../place-presets.js');
+  const now = Date.parse('2026-10-06T21:00:00Z');
+  const partner = { lat:26.1, lng:-80.2, updatedAt:now - 600000, shareUntil:now + 60000 };
+  const at = (km, minutesAgo = 1, stage) => ({ lat:26.1 + km / 111.2, lng:-80.2, at:now - minutesAgo * 60000, stage });
+  const step = (before, after, p = partner) => approachStep({ before, after, partner:p, distance:placeDistance, now });
+  assert.equal(step(null, at(1)).ping, null, 'the first reading is a starting point, not news');
+  assert.equal(step(at(5, 1, 'far'), at(1.2)).ping, 'near', 'driving into 1.5 km says almost together');
+  assert.equal(step(at(1.2, 1, 'near'), at(0.08)).ping, 'together', 'within about 100 m is together');
+  assert.equal(step(at(1.2, 1, 'near'), at(1.0)).ping, null, 'still near is not news again');
+  assert.equal(approachStage(2000, 'near'), 'near', 'wobbling at the edge does not drop back out');
+  assert.equal(step(at(5, 90, 'far'), at(1.2)).ping, null, 'an old reading is no proof of moving closer');
+  assert.equal(step(at(1.25, 1, 'far'), at(1.2, 0, 'far')).ping, null, 'a few metres closer is not driving over');
+  assert.equal(step(at(5, 1, 'far'), at(1.2), { ...partner, updatedAt:now - APPROACH.partnerFresh - 1 }).ping, null, 'a day-old spot is not where they are');
+  console.log(' ok  almost together, then together at last, without wobble repeats');
+}
 
 console.log('LOCATION TAGS CLEAN');

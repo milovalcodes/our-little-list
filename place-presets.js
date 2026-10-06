@@ -6,9 +6,13 @@ const ARRIVAL_LINES = {
   errands: (name) => `${name} is out doing side quests 🛒`
 };
 
-export function arrivalMessage(place = {}, name = 'someone', { together = false } = {}) {
+export function arrivalMessage(place = {}, name = 'someone', { together = false, late = false } = {}) {
   const display = placeDisplay(place);
   const line = ARRIVAL_LINES[place.preset];
+  if (late) {
+    // Noticed when the app was next opened, so "just" would not be true.
+    return { title: `${name} made it to ${display.label} ${display.emoji}`, body: together ? `you're both here now` : 'a little while ago' };
+  }
   return {
     title: line ? line(name) : `${name} just got to ${display.label} ${display.emoji}`,
     body: together ? `you're both here · ${togetherPlace({ placeLabel: display.label, placePreset: place.preset }, { placeLabel: display.label, placePreset: place.preset })}` : display.status
@@ -22,13 +26,18 @@ export function announcesArrival(place = {}) {
   return place.announce !== false;
 }
 
+// Leaving pings were off unless ticked, and the box started unticked, so
+// "left work" never went out. Work and school now ping by default; a choice
+// made with the bell (leaveChosen) is always respected.
 export function announcesLeave(place = {}) {
-  return place.announceLeave === true;
+  if (place.leaveChosen === true) return place.announceLeave === true;
+  return place.announceLeave === true || ['work', 'school'].includes(place.preset);
 }
 
-export function leaveMessage(place = {}, name = 'someone') {
+export function leaveMessage(place = {}, name = 'someone', { late = false } = {}) {
   const display = placeDisplay(place);
-  return { title: `${name} left ${display.label}`, body: '' };
+  if (late) return { title: `${name} left ${display.label}`, body: 'a little while ago' };
+  return { title: `${name} is leaving ${display.label} ${display.emoji}`, body: 'on the move. you will hear when they are close.' };
 }
 
 export function overlappingPlace(places = [], point, radius) {
