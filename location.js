@@ -21,16 +21,12 @@ let mapWasMoved=false;
 let framingMap=false;
 const markers={};
 
-// Tiles: CARTO's light style on the sun page, its dark style on the moon page,
-// with sharp
-// @2x tiles for phone screens. If that server fails, OpenStreetMap's own tiles
-// take over so the map never just goes blank.
-const TILE_STYLES={
-  light:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-  dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  fallback:'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-};
-const ATTRIBUTION='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+// Tiles: OpenStreetMap's own, the source this map always used. On the moon
+// page they are darkened with a CSS filter rather than a second tile service:
+// a free third-party style started answering with an "API key needed" picture,
+// which loads like a normal tile, so no error handler can catch it.
+const TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const ATTRIBUTION='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const VIEW_KEY='our-little-list-map-view-v1';
 const TOGETHER_PX=46;          // closer than this on screen and the markers would overlap
 const GLIDE_MS=700;
@@ -39,8 +35,6 @@ const GLIDE_MAX_M=5000;        // farther than this is a new place, not a walk: 
 const accuracyRings={};
 let orbitLineLayer=null;
 let tiles=null;
-let tileFailures=0;
-let usingFallback=false;
 // The moon page is dark navy whatever the phone's own setting is.
 const darkPage=()=>document.body.classList.contains('him-theme');
 const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -152,22 +146,10 @@ function renderLastKnown(known,active){
 function setProximity(message,detail,label){byId('proximity-message').textContent=message;byId('proximity-detail').textContent=detail;byId('distance-label').textContent=label;}
 
 
-function tileUrl(){return usingFallback?TILE_STYLES.fallback:darkPage()?TILE_STYLES.dark:TILE_STYLES.light;}
-
 function setTiles(){
   if(!map)return;
-  if(tiles)map.removeLayer(tiles);
-  tileFailures=0;
-  tiles=window.L.tileLayer(tileUrl(),{maxZoom:19,maxNativeZoom:usingFallback?19:20,subdomains:'abcd',keepBuffer:4,updateWhenIdle:true,crossOrigin:true,attribution:usingFallback?'&copy; OpenStreetMap contributors':ATTRIBUTION}).addTo(map);
-  tiles.on('tileload',()=>{tileFailures=0;});
-  tiles.on('tileerror',()=>{
-    // A few misses are normal on a bad signal. A run of them means the tile
-    // server is down, so switch once to the backup instead of a grey map.
-    tileFailures+=1;
-    if(!usingFallback&&tileFailures>=6&&navigator.onLine!==false){usingFallback=true;setTiles();}
-  });
-  byId('couple-map').classList.toggle('is-dark-tiles',!usingFallback&&darkPage());
-  tiles.styleUrl=tileUrl();
+  if(!tiles)tiles=window.L.tileLayer(TILE_URL,{maxZoom:19,keepBuffer:4,updateWhenIdle:true,crossOrigin:true,attribution:ATTRIBUTION}).addTo(map);
+  byId('couple-map').classList.toggle('is-dark-tiles',darkPage());
 }
 
 // Open where the map was last time (or on this phone's own last spot) rather
@@ -192,8 +174,7 @@ function initializeMap(){
   window.L.control.zoom({position:'bottomright'}).addTo(map);
   setTiles();
   // The page theme can be applied after the map starts; follow it when it lands.
-  new MutationObserver(()=>{if(tiles&&tiles.styleUrl!==tileUrl())setTiles();}).observe(document.body,{attributes:true,attributeFilter:['class']});
-  window.addEventListener('online',()=>{if(usingFallback){usingFallback=false;setTiles();}});
+  new MutationObserver(setTiles).observe(document.body,{attributes:true,attributeFilter:['class']});
   const moved=()=>{if(framingMap)return;mapWasMoved=true;byId('recenter-map').hidden=lastMapLocations.length===0;};
   map.on('dragstart',moved);map.on('zoomstart',moved);
   map.on('zoomend',()=>{spreadMarkers();rememberView();});

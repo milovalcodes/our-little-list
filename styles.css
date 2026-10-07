@@ -407,6 +407,8 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 #couple-map .accuracy-ring.him { stroke:#334b80; fill:#7387c0; }
 #couple-map .orbit-line { stroke:#8a6fb0; }
 #couple-map.is-dark-tiles { background:#1d2230; }
+/* OpenStreetMap only comes light; turn it into a soft night map on the moon page. */
+#couple-map.is-dark-tiles .leaflet-tile-pane { filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.7); }
 #couple-map.is-dark-tiles .orbit-line { stroke:#e9d8ff; }
 #couple-map.is-dark-tiles .accuracy-ring.him { stroke:#c9d4ff; fill:#9fb0ee; }
 #couple-map .leaflet-control-attribution { font-size:9px; background:rgba(255,255,255,.72); border-radius:8px 0 0 0; }
