@@ -14,8 +14,8 @@ try {
     const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);
     const go=async path=>{await page.goto(`${base}/${path}?as=${side}`);await page.waitForSelector('.app-dock');await page.locator('.thinking-screen').waitFor({state:'hidden'});};
     await go('games.html');
-    assert.deepEqual(await page.locator('.dock-item>span').allTextContents(),['home','list','games','today','more']);
-    assert.equal(await page.locator('.dock-item[aria-current="page"]>span').textContent(),'games');
+    assert.deepEqual(await page.locator('.dock-item>span').allTextContents(),['home','list','activities','today','more']);
+    assert.equal(await page.locator('.dock-item[aria-current="page"]>span').textContent(),'activities');
     assert.equal(await page.locator('.context-add').count(),0);
     await page.waitForSelector('.game-shelf-item');
     for(const [season,date] of [['normal','2026-11-15T12:00:00-05:00'],['spooky','2026-10-15T12:00:00-04:00'],['christmas','2026-12-15T12:00:00-05:00']]) {
@@ -43,7 +43,7 @@ try {
     await go('today.html');assert.equal(await page.locator('#game').count(),0);assert.equal(await page.locator('.context-add').count(),0);
     // A stale bookmark or an old notification opened into an existing Today tab.
     await page.evaluate(()=>{location.hash='game-connect-four';});
-    await page.waitForURL('**/games.html?as='+side+'#game-connect-four');await page.waitForSelector('.four-board');
+    await page.waitForURL('**/activities.html?as='+side+'#game-connect-four');await page.waitForSelector('.four-board');
     for(const name of ['tasks','dates','memories']) {
       await go(name+'.html');await page.waitForSelector('.context-add');
       const rects=await page.evaluate(()=>Object.fromEntries(['h1','.context-add','.topbar-search'].map(s=>{const r=document.querySelector('.feature-hero '+s).getBoundingClientRect();return[s,{x:r.x,right:r.right,width:r.width,height:r.height}];})));

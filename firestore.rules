@@ -252,6 +252,84 @@ service cloud.firestore {
       allow delete: if inHousehold(householdId);
     }
 
+    // Guess rows are private. Only the count and final result are shared.
+    match /households/{householdId}/wordPuzzles/{day} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}(-tie-[0-9]+)?') && request.resource.data.day == day
+        && request.resource.data.keys().hasOnly(['day','word','opensAt','closesAt','week'])
+        && request.resource.data.word.matches('[a-z]{5}')
+        && request.resource.data.opensAt is int && request.resource.data.closesAt is int
+        && ((day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+          && request.resource.data.closesAt - request.resource.data.opensAt >= 82800000
+          && request.resource.data.closesAt - request.resource.data.opensAt <= 90000000)
+          || (request.resource.data.week is string && day.matches(request.resource.data.week + '-tie-[0-9]+') && request.resource.data.closesAt == 4102444800000));
+      allow update, delete: if false;
+    }
+    match /households/{householdId}/wordGames/{id} {
+      function valid(g) {
+        let p = get(/databases/$(database)/documents/households/$(householdId)/wordPuzzles/$(g.day)).data;
+        let n = g.guesses.size();
+        return g.keys().hasOnly(['day','person','guesses','won','done','updatedAt'])
+          && g.person == mySide() && id == g.day + '-' + mySide()
+          && g.guesses is list && n >= 1 && n <= 5 && g.guesses.toSet().size() == n
+          && g.guesses[n-1].matches('[a-z]{5}')
+          && request.time.toMillis() >= p.opensAt && request.time.toMillis() < p.closesAt
+          && (!g.day.matches('.*-tie-.*') || !exists(/databases/$(database)/documents/households/$(householdId)/wordDuelEnds/$(g.day)))
+          && g.won == (g.guesses[n-1] == p.word)
+          && g.done == (g.won || n == 5) && g.updatedAt is int;
+      }
+      function appended(a,b) {
+        let n = a.guesses.size();
+        return !a.done && b.day == a.day && b.person == a.person
+          && b.guesses.size() == n+1
+          && b.guesses[0] == a.guesses[0]
+          && (n<2 || b.guesses[1] == a.guesses[1])
+          && (n<3 || b.guesses[2] == a.guesses[2])
+          && (n<4 || b.guesses[3] == a.guesses[3]);
+      }
+      allow get: if inHousehold(householdId) && id.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}(-tie-[0-9]+)?-' + mySide());
+      allow list: if inHousehold(householdId) && resource.data.person == mySide();
+      allow create: if inHousehold(householdId) && valid(request.resource.data) && request.resource.data.guesses.size() == 1;
+      allow update: if inHousehold(householdId) && valid(request.resource.data) && appended(resource.data,request.resource.data);
+      allow delete: if false;
+    }
+    match /households/{householdId}/wordResults/{id} {
+      function matchesGame(g) {
+        let game = getAfter(/databases/$(database)/documents/households/$(householdId)/wordGames/$(id)).data;
+        return g.keys().hasOnly(['day','person','attempts','done','won','updatedAt'])
+          && g.person == mySide() && id == g.day + '-' + mySide()
+          && g.day == game.day && g.person == game.person && g.attempts == game.guesses.size()
+          && g.done == game.done && g.won == game.won && g.updatedAt == game.updatedAt;
+      }
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId) && matchesGame(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Immutable settlement/event records. Like question opening, the delivery
+    // Worker uses the existing household member credential, not an admin key.
+    match /households/{householdId}/wordWeeks/{week} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId) && request.resource.data.week == week
+        && request.resource.data.scores is map && request.resource.data.winners is list
+        && request.resource.data.winners.hasOnly(['her','him']) && request.resource.data.settledAt is int;
+      allow update, delete: if false;
+    }
+    match /households/{householdId}/wordDuels/{id} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId) && request.resource.data.puzzleId == id
+        && request.resource.data.week is string && request.resource.data.round is int
+        && request.resource.data.scores is map && request.resource.data.createdAt is int;
+      allow update, delete: if false;
+    }
+    match /households/{householdId}/wordDuelEnds/{id} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId) && request.resource.data.outcome in ['her','him','tie']
+        && request.resource.data.closedAt is int && request.resource.data.week is string;
+      allow update, delete: if false;
+    }
+
     match /households/{householdId}/questions/{day} {
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId)
@@ -265,6 +343,7 @@ service cloud.firestore {
       allow update: if inHousehold(householdId)
         && request.resource.data.day == resource.data.day
         && request.resource.data.promptId == resource.data.promptId
+        && (!resource.data.keys().hasAny(['closesAt']) || request.time.toMillis() < resource.data.closesAt)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answers'])
         && request.resource.data.answers.diff(resource.data.answers).affectedKeys().hasOnly([mySide()])
         && request.resource.data.answers[mySide()].keys().hasOnly(['at'])
@@ -288,6 +367,8 @@ service cloud.firestore {
         && answerId == request.resource.data.day + '-' + mySide()
         && request.resource.data.keys().hasOnly(['day', 'person', 'text', 'at'])
         && shortText(request.resource.data.text, 240)
+        && (!get(/databases/$(database)/documents/households/$(householdId)/questions/$(request.resource.data.day)).data.keys().hasAny(['closesAt'])
+          || request.time.toMillis() < get(/databases/$(database)/documents/households/$(householdId)/questions/$(request.resource.data.day)).data.closesAt)
         && request.resource.data.at is int
         && (resource == null || (request.resource.data.person == resource.data.person
           && request.resource.data.day == resource.data.day));

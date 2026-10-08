@@ -1,3 +1,5 @@
+import { nextWordAttempt, wordSummary } from './word-game.js';
+import { wordForDay } from './daily-words.js';
 import { firebaseConfig } from './firebase-config.js';
 import { OUTBOX } from './push-config.js';
 import { HOUSEHOLD_ID, configured as householdConfigured } from './household.js';
@@ -27,7 +29,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
   const [
     { initializeApp, getApps, getApp },
     { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
-    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, getDocsFromServer, writeBatch, runTransaction, query, where, orderBy, limit: limitQuery }
+    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDoc, getDocFromCache, getDocFromServer, getDocs, getDocsFromServer, writeBatch, runTransaction, query, where, orderBy, limit: limitQuery }
   ] = modules;
 
   // Better a plain sentence than a permission-denied nobody can read.
@@ -103,7 +105,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         }
       };
     },
-    listenToQuery(name, options, callback) {
+    listenToQuery(name, options, callback, { onError } = {}) {
       const spec = querySpec(options);
       if (!signedIn()) return () => {};
       const key = `${name}:${JSON.stringify(spec)}`;
@@ -114,18 +116,23 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
           ...(spec.orderBy ? [orderBy(spec.orderBy.field, spec.orderBy.direction)] : []),
           ...(spec.limit ? [limitQuery(spec.limit)] : [])
         ];
-        live = { callbacks: new Set(), latest: null, unsubscribe: null };
+        live = { callbacks: new Set(), failures:new Map(), latest: null, unsubscribe: null };
         live.unsubscribe = onSnapshot(query(named(name), ...constraints), snapshot => {
           live.latest = snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
           live.callbacks.forEach(handler => safelyCall(handler, [...live.latest]));
-        }, problem => announceError(problem, 'listen'));
+        }, problem => {
+          if(liveCollections.get(key)===live)liveCollections.delete(key);
+          if(live.failures.size)live.failures.forEach(handler=>safelyCall(handler,problem));else announceError(problem,'listen');
+        });
         liveCollections.set(key, live);
       }
       live.callbacks.add(callback);
-      if (live.latest) queueMicrotask(() => safelyCall(callback, [...live.latest]));
+      if(onError)live.failures.set(callback,onError);
+      if (live.latest) queueMicrotask(() => {if(live.callbacks.has(callback))safelyCall(callback, [...live.latest]);});
       return () => {
         live.callbacks.delete(callback);
-        if (!live.callbacks.size) { live.unsubscribe?.(); liveCollections.delete(key); }
+        live.failures.delete(callback);
+        if (!live.callbacks.size) { live.unsubscribe?.(); if(liveCollections.get(key)===live)liveCollections.delete(key); }
       };
     },
     // A single read, for the places that need to look at a collection once and
@@ -192,6 +199,29 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         if(gameNeedsPing(next))transaction.set(doc(named(OUTBOX), `game-${id}-${next.round}-${next.ply}-${next.closed?'closed':'open'}`), message);
         return next;
       });
+    },
+    async submitWordGuess(options) {
+      if (!signedIn() || navigator.onLine === false) throw new Error('Reconnect to save a guess. Your letters are still here.');
+      const ref = doc(named('wordGames'), `${options.day}-${options.person}`);
+      try { return await runTransaction(db, async transaction => {
+        const puzzle = await transaction.get(doc(named('wordPuzzles'), options.day));
+        const current = await transaction.get(ref);
+        const next = nextWordAttempt(current.exists() ? current.data() : null, puzzle.exists() ? puzzle.data() : null, options);
+        transaction.set(ref, next);
+        transaction.set(doc(named('wordResults'), `${options.day}-${options.person}`), wordSummary(next));
+        return next;
+      }); } catch(problem) {
+        // Rules can reject a stale concurrent write before the transaction
+        // runner retries it. Distinguish that from a connection failure.
+        if(problem?.code==='permission-denied'){
+          let fresh;try{fresh=await getDocFromCache(ref);}catch(_){}
+          if(!fresh?.exists()||fresh.data().guesses.length===options.expectedCount){
+            let timer;try{fresh=await Promise.race([getDocFromServer(ref),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('read timeout')),4000);})]);}catch(_){}finally{clearTimeout(timer);}
+          }
+          if(fresh?.exists()&&fresh.data().guesses.length!==options.expectedCount)throw new Error('Your other screen made a guess. The board is catching up.');
+        }
+        throw problem;
+      }
     },
     answerQuestion(day, person, text, at) {
       const batch = writeBatch(db);
@@ -330,6 +360,17 @@ function createLocalLayer(onAuth, onReady) {
       else if (current) Object.assign(current, item);
       else items.push({ id, ...item });
       write(name, items);
+    },
+    async submitWordGuess(options) {
+      const play = () => {
+        const id = `${options.day}-${options.person}`;
+        const games = read('wordGames');
+        const next = nextWordAttempt(games.find(item => item.id === id), read('wordPuzzles').find(p=>p.day===options.day)||wordForDay(options.day), options);
+        write('wordGames', [...games.filter(item => item.id !== id), {id,...next}]);
+        write('wordResults', [...read('wordResults').filter(item => item.id !== id), {id,...wordSummary(next)}]);
+        return next;
+      };
+      return navigator.locks ? navigator.locks.request('little-list-daily-word', play) : play();
     },
     async answerQuestion(day, person, text, at) {
       const key = `${day}-${person}`;

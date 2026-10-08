@@ -1,14 +1,15 @@
 // Original prompts written for the two of us, in the spirit of couple
 // board games, “would you rather” rounds, the well-known closeness
 // questionnaires and love-map quizzes. None are copied from a deck or a test.
-// One shared America/New_York day, opening at 08:00. A bank never cycles:
+// One shared America/New_York day, opening at 09:00. A bank never cycles:
 // when it is exhausted, we add new prompts rather than quietly repeating old ones.
 //
 // A question record stores only a promptId, so each bank keeps its order
 // forever. Days before NEW_BANK_DAY read the first (legacy) bank; from then on
 // the couple bank below is used. Each bank holds exactly 150 prompts, which is
 // what firestore.rules allows for promptId and keeps the 37-step shuffle whole.
-export const QUESTION_TIME_ZONE = 'America/New_York';
+import { activityClock, ACTIVITY_TIME_ZONE } from './activity-clock.js';
+export const QUESTION_TIME_ZONE = ACTIVITY_TIME_ZONE;
 export const QUESTION_START_DAY = '2026-10-02';
 export const NEW_BANK_DAY = '2026-10-07';
 
@@ -378,11 +379,4 @@ export function questionPhase(clock) {
   return clock.open ? 'open' : 'waiting';
 }
 
-export function questionClock(now = new Date()) {
-  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
-    timeZone: QUESTION_TIME_ZONE, year:'numeric',month:'2-digit',day:'2-digit',
-    hour:'2-digit',minute:'2-digit',hourCycle:'h23'
-  }).formatToParts(now).filter(part => part.type !== 'literal').map(part => [part.type,part.value]));
-  const day = `${parts.year}-${parts.month}-${parts.day}`;
-  return { day, open: Number(parts.hour) >= 8, hour:Number(parts.hour), minute:Number(parts.minute) };
-}
+export function questionClock(now = new Date()) { return activityClock(now); }

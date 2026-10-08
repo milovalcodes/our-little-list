@@ -33,6 +33,6 @@ assert.deepEqual(await click('https://evil.test/'),[scope+'index.html']);
 assert.deepEqual(await click('../other-project/'),[scope+'index.html']);
 assert.deepEqual(await click('help.html#ask-old'),[scope+'tasks.html#ask-old']);
 for(const hash of ['#game','#game-round-old','#game-connect-four--round-old','#game-dots-boxes']){
-  assert.deepEqual(await click('today.html'+hash),[scope+'games.html'+hash]);
+  assert.deepEqual(await click('today.html'+hash),[scope+'activities.html'+hash]);
 }
 console.log('NOTIFICATION CLICKS: exact items, same-page repeats, old clients, failed navigation and scope checked');

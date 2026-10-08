@@ -71,7 +71,7 @@ try {
   await moon.click('[data-game="start"]');await sun.waitForSelector('.four-board');
   let outbox=await get(sun,'outbox');
   let invite=outbox.find(m=>m.kind==='game');
-  assert.equal(invite.to,'her');assert.match(invite.url,/^games\.html#game-connect-four--/);
+  assert.equal(invite.to,'her');assert.match(invite.url,/^activities\.html#game-connect-four--/);
   // Separate storage contexts: all propagation below must use Firestore.
   await sun.evaluate(()=>localStorage.setItem('phone-isolation','sun'));
   assert.equal(await moon.evaluate(()=>localStorage.getItem('phone-isolation')),null);

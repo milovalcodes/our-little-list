@@ -27,7 +27,7 @@ for (const [when, expected] of [
   assert.equal(root.dataset.season, expected);
 }
 
-for (const page of ['index','her','him','tasks','notes','games','today','status','dates','memories','phone-check','guide','404']) {
+for (const page of ['index','her','him','tasks','notes','activities','today','status','dates','memories','phone-check','guide','404']) {
   const html = readFileSync(new URL(`../${page}.html`, import.meta.url), 'utf8');
   assert.match(html, /src="seasonal-theme\.js"/, `${page} loads seasonal logic`);
   assert.match(html, /href="seasonal\.css"/, `${page} loads seasonal design`);

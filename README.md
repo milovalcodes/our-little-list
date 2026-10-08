@@ -11,21 +11,21 @@ Live: https://milovalcodes.github.io/our-little-list/
 Each thing lives in one place:
 
 - **Home** — both people at a glance, the pinned fridge note, quick add and search.
-- **Today** — due items, one question of the day, a focus timer and the latest activity.
+- **Today** — due items, a focus timer and the latest activity.
 - **The list** — repeatable tasks, groceries by aisle and requests; a timed request is also a reminder, for either person or yourself.
 - **Notes** — short notes, reactions and the option to pin one on both home screens.
 - **Profiles** — either Home avatar opens the same profile layout. Your own profile owns status editing and location controls; your partner's shows their status, recent notes and shared actions. Saved spots stay in Settings.
-- **Games** — its own dock tab and `games.html` page, with Three to Move, Four in a Row and Dots & Boxes. Each keeps a shared live board and its own score. First to three rounds wins a match; match wins persist. Confirmed transactions and rules protect turns and scores, and create the turn ping atomically. Old pings are dropped by the delivery worker.
+- **Activities** — daily question + Little Word, then the anytime games on `activities.html`, with Three to Move, Four in a Row and Dots & Boxes. Each keeps a shared live board and its own score. First to three rounds wins a match; match wins persist. Confirmed transactions and rules protect turns and scores, and create the turn ping atomically. Old pings are dropped by the delivery worker.
 - **Date ideas** — ideas with optional details, filters and a random picker; completed dates can become memories.
 - **Memories** — photos and small things worth keeping.
 - **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
   Quiet hours hold ordinary pings until morning; reminders still ring at their time, and arrivals come through silently. A focus session holds chatter five minutes at a time, so ending it early lets things through soon after.
 - **Guide** — under More, an in-app walkthrough and a record of each new release.
 
-The dock is Home / List / Games / Today / More. Notes is first in More.
+The dock is Home / List / Activities / Today / More. Notes is first in More.
 A small **add** button beside the heading opens the full composer on List,
 Date ideas and Memories. Home has quick add; Notes has its own writing bar.
-Games and Today have no unrelated add controls.
+Activities and Today have no unrelated add controls.
 
 Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 
@@ -34,7 +34,7 @@ Old links still work: `reminders.html`, `activity.html`, `notifications.html`,
 pages. `old-links.js` maps each to where it lives now; GitHub Pages' `404.html`
 and the service worker both use it, so old bookmarks and queued notifications
 still land in the right place. Old `today.html#game…` links forward to
-`games.html` with their game, round and viewer query intact.
+`activities.html` with their game, round and viewer query intact.
 
 ## Reminders, and how they reach a closed phone
 
@@ -61,11 +61,11 @@ Things to know:
   That is an Apple rule, not something the site can route around. The phone
   checker says so and walks through it.
 
-## Question of the day
+## Daily activities
 
-The delivery Worker opens one question at **8 a.m. America/New_York time**
-each day and queues one opening ping per person. After the first answer, it
-pings the person who has not answered; after both answer, it pings both to
+The delivery Worker opens one question at **9 a.m. America/New_York time**
+each day alongside a five-letter word and queues one combined opening ping per person. After the first answer, it
+pings the person who has not answered; after both answer, it pings the first person to answer to
 compare. Those event markers are written atomically with their outbox records,
 so a retry cannot duplicate the pings. Quiet hours and each phone's question
 notification switch still apply. A push needs an active subscription on that
@@ -74,7 +74,7 @@ phone; without one it waits in the outbox until the phone registers again.
 Each answer is stored in its own Firestore document. The shared question has
 only answered-at markers. Security rules let either person read their own words,
 but the other person's words become readable only after **both** markers exist.
-Edits to your answer remain possible. The 150 prompts are selected in a fixed,
+Edits are available during the current day. Past answered questions appear as virtual memories backed by the original protected answer documents; there is no shared plaintext archive. The 150 prompts are selected in a fixed,
 non-repeating order; after all 150 days the app asks for a new batch rather than
 silently repeating an old question. This batch begins October 2, 2026.
 
@@ -82,6 +82,13 @@ The prompts are original wording inspired by [Gottman's Love Maps](https://www.g
 and [relationship-building questions](https://info.gottman.com/blog/20-relationship-building-questions-for-couples?hs_amp=true),
 with intimate prompts framed around [consent](https://www.plannedparenthood.org/learn/relationships/sexual-consent/how-do-i-talk-about-consent)
 and [talking about sex](https://www.plannedparenthood.org/learn/sex-pleasure-and-sexual-dysfunction/sex-and-pleasure/how-do-i-talk-my-partner-about-sex).
+
+### Little Word
+Five guesses, server-confirmed transactions, private per-person guess rows and shared count/result summaries. Daily words run 9 a.m. to 9 a.m. Eastern, including DST. The larger accepted-guess dictionary is [dwyl/english-words](https://github.com/dwyl/english-words), pinned in word-lexicon.js under the Unlicense (WORD-DICTIONARY-LICENSE.txt). The two answer banks are hand-picked separately.
+
+Weekly points: 5/4/3/2/1 for winning on guesses 1–5; otherwise 0. Sunday hard words count double. Once both finish Sunday, or Monday at 9 latest, the Worker settles the week. A tie opens a shared hard-word duel, repeating until one result is mathematically unbeatable. Duel rounds have no timeout and do not change the weekly total. Immutable wordWeeks records drive crown overlays and consecutive weekly streaks. New daily puzzles continue during a tie-break.
+
+The game is friendly, not anti-cheat software: puzzle answers exist in the client-readable puzzle documents. Private guess rows are restricted by side. Like existing question scheduling, the Worker uses a household member credential rather than an admin key; this is not a public competitive ranking service.
 
 ## One-time setup
 

@@ -25,11 +25,11 @@ assert.equal(questionPhase({ day:'2026-10-01', open:true }), 'upcoming', 'before
 assert.equal(questionPhase({ day:'2026-10-02', open:false }), 'waiting');
 assert.equal(questionPhase({ day:'2026-10-02', open:true }), 'open');
 assert.equal(questionPhase({ day:dayAt(QUESTIONS.length), open:true }), 'exhausted');
-assert.equal(questionClock(new Date('2026-10-02T11:59:00Z')).open, false);
-assert.equal(questionClock(new Date('2026-10-02T12:00:00Z')).open, true);
-assert.equal(questionClock(new Date('2026-11-01T12:00:00Z')).open, false, '8 a.m. follows daylight saving time');
-assert.equal(questionClock(new Date('2026-11-01T13:00:00Z')).open, true);
-console.log(' ok  one shared question opens at 8 a.m. Eastern and never repeats');
+assert.equal(questionClock(new Date('2026-10-02T12:59:00Z')).day,'2026-10-01');
+assert.equal(questionClock(new Date('2026-10-02T13:00:00Z')).day,'2026-10-02');
+assert.equal(questionClock(new Date('2026-11-01T13:00:00Z')).day,'2026-10-31','9 a.m. follows daylight saving time');
+assert.equal(questionClock(new Date('2026-11-01T14:00:00Z')).day,'2026-11-01');
+console.log(' ok  one shared question opens at 9 a.m. Eastern and never repeats');
 
 // Asks with a time use the reminder page's old day/time chips.
 const saturdayMorning = new Date(2026, 9, 3, 8, 0);

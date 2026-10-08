@@ -1,3 +1,5 @@
+import { activityClock, activityWindow } from './activity-clock.js';
+import { promptFor } from './question-prompts.js';
 import { escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
@@ -6,6 +8,10 @@ import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
 const $ = id => document.getElementById(id);
 let memories = [];
+let pastQuestions=[];
+const archivedAnswers=new Map();
+const answerReads=new Set();
+let archiveDay=activityClock().day;
 let photo = null;
 let photoPending = Promise.resolve();
 let photoVersion = 0;
@@ -16,6 +22,9 @@ const loadingPhotos = new Set();
 
 const { data, viewer, other } = await bootPage();
 
+data.listenTo('questions',items=>{pastQuestions=items;render();if(featuredId.startsWith('question-'))void loadArchivedAnswers(featuredId);});
+setInterval(()=>{if(activityClock().day!==archiveDay){archiveDay=activityClock().day;render();}},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){archiveDay=activityClock().day;render();if(featuredId.startsWith('question-'))void loadArchivedAnswers(featuredId);}});
 data.listenTo('memories', items => {
   memories = items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   render();
@@ -102,15 +111,21 @@ function feature(id) {
   featuredId = id;
   render();
   document.body.classList.add('memory-open');
-  void loadFullPhoto(id);
+  if(id.startsWith('question-'))void loadArchivedAnswers(id);else void loadFullPhoto(id);
 }
 $('memory-random').addEventListener('click', event => {
+  if(event.target.closest('[data-retry-answers]'))void loadArchivedAnswers(featuredId);
   if (event.target === event.currentTarget || event.target.closest('[data-close-memory]')) closeMemory();
 });
 document.addEventListener('keydown', event => { if (event.key === 'Escape' && featuredId) closeMemory(); });
 function closeMemory() { featuredId=''; document.body.classList.remove('memory-open'); render(); }
 
-function visibleMemories() { return memories.filter(item => !isPendingDelete('memories', item.id)); }
+function visibleMemories() {
+  const questions=pastQuestions.filter(q=>q.day<archiveDay&&(q.answers?.her?.at||q.answers?.him?.at)).map(q=>({
+    ...q,id:'question-'+q.day,question:true,text:promptFor(q.day,q.promptId),createdAt:activityWindow(q.day).closesAt
+  }));
+  return [...memories.filter(item=>!isPendingDelete('memories',item.id)),...questions].sort((a,b)=>b.createdAt-a.createdAt);
+}
 
 function render() {
   const visible = visibleMemories();
@@ -124,6 +139,7 @@ function render() {
 }
 
 function memoryMarkup(item, featured = false) {
+  if(item.question)return questionMemoryMarkup(item,featured);
   const image = safePhoto(featured ? fullPhotos.get(item.id) || item.thumb || item.photo : item.thumb || item.photo);
   return `<article class="memory-card${featured ? ' featured' : ''}${image ? ' has-photo' : ' text-only'}" data-id="${escapeHtml(item.id)}">
     ${featured ? '' : `<button class="memory-open" type="button" data-open="${escapeHtml(item.id)}" aria-label="Open memory">`}
@@ -209,3 +225,35 @@ async function loadPhoto(file) {
 }
 
 window.addEventListener('littlelist:profile', render);
+
+function questionMemoryMarkup(item,featured){
+  const both=Boolean(item.answers?.her?.at&&item.answers?.him?.at);
+  const cached=archivedAnswers.get(item.day)||{};
+  const label=new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(item.day+'T12:00:00Z'));
+  const content=featured?['her','him'].map(person=>{
+    if(!item.answers?.[person]?.at)return '<p class="question-waiting">'+escapeHtml(personName(person))+' didn’t answer this one.</p>';
+    if(person!==viewer&&!both)return '<p class="question-waiting">Their answer is still sealed.</p>';
+    const answer=cached[person];
+    return answer&&Number(answer.at)===Number(item.answers[person].at)?'<div class="question-answer"><small>'+escapeHtml(person===viewer?'you':personName(person))+'</small><p>'+escapeHtml(answer.text)+'</p></div>':'<p role="status">opening the answer…</p>';
+  }).join('')+(cached.failed?'<button type="button" data-retry-answers>couldn’t load · retry</button>':''):'';
+  return '<article class="memory-card question-memory text-only'+(featured?' featured':'')+'" data-id="'+item.id+'">'+(featured?'':'<button class="memory-open" type="button" data-open="'+item.id+'" aria-label="Open question memory">')+'<div><span aria-hidden="true">☀︎ ☾</span><small>our question · '+label+'</small><p>'+escapeHtml(item.text||'Our question')+'</p>'+(featured?content:'<small>'+(both?'two answers, kept here ♡':'an answer, kept safe')+'</small>')+'</div>'+(featured?'':'</button>')+'</article>';
+}
+async function loadArchivedAnswers(id){
+  const item=visibleMemories().find(q=>q.id===id&&q.question);
+  if(!item||answerReads.has(id))return;
+  answerReads.add(id);
+  const next={...(archivedAnswers.get(item.day)||{}),failed:false};
+  const both=Boolean(item.answers?.her?.at&&item.answers?.him?.at);
+  // Never request a partner answer before both markers exist. The database
+  // enforces the same boundary; archiving does not copy it into shared data.
+  for(const person of ['her','him']){
+    if(!item.answers?.[person]?.at||(person!==viewer&&!both))continue;
+    if(Number(next[person]?.at)===Number(item.answers[person].at))continue;
+    try{
+      const answer=await data.readDoc('questionAnswers',item.day+'-'+person);
+      if(answer&&Number(answer.at)===Number(item.answers[person].at))next[person]=answer;else next.failed=true;
+    }catch(_){next.failed=true;}
+  }
+  archivedAnswers.set(item.day,next);answerReads.delete(id);
+  if(featuredId===id)render();
+}

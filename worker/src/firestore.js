@@ -35,9 +35,13 @@ export function createClient({ projectId, idToken }) {
   return {
     root,
     async list(collectionPath) {
-      const payload = await call(`/${collectionPath}?pageSize=300`);
-      if (payload.missing) return [];
-      return (payload.documents || []).map(readDocument);
+      const records=[];let token='';
+      do {
+        const payload=await call(`/${collectionPath}?pageSize=300${token?'&pageToken='+encodeURIComponent(token):''}`);
+        if(payload.missing)break;
+        records.push(...(payload.documents||[]).map(readDocument));token=payload.nextPageToken||'';
+      }while(token);
+      return records;
     },
     async get(documentPath) {
       const payload = await call(`/${documentPath}`);

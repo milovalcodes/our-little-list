@@ -31,10 +31,10 @@ const deliver = env => realDeliver(env, { scheduleQuestions: false });
     }
   };
   const base = 'households/HOUSE';
-  const before = Date.parse('2026-10-02T11:59:00Z');
+  const before = Date.parse('2026-10-02T12:59:00Z');
   assert.equal((await ensureQuestionOfDay(db, base, before)).open, false);
-  assert.equal(docs.size, 0, 'nothing opens before 8 Eastern');
-  const morning = Date.parse('2026-10-02T12:00:00Z');
+  assert.equal(docs.size, 0, 'nothing opens before 9 Eastern');
+  const morning = Date.parse('2026-10-02T13:00:00Z');
   assert.equal((await ensureQuestionOfDay(db, base, morning)).open, true);
   assert.equal([...docs.keys()].filter(key => key.includes('/outbox/')).length, 2);
   await ensureQuestionOfDay(db, base, morning + 60000);

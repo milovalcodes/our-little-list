@@ -103,7 +103,7 @@ function addDock(viewer) {
   document.body.insertAdjacentHTML('beforeend', `<nav class="app-dock" aria-label="Main navigation">
     <a class="dock-item${active('home')}" href="${viewer}.html"><i>⌂</i><span>home</span></a>
     <a class="dock-item${active('tasks')}" href="tasks.html"><i>✓</i><span>list</span></a>
-    <a class="dock-item${active('games')}" href="games.html"><i>⚄</i><span>games</span></a>
+    <a class="dock-item${active('activities')}" href="activities.html"><i>⚄</i><span>activities</span></a>
     <a class="dock-item${active('today')}" href="today.html"><i>◎</i><span>today</span></a>
     <button class="dock-item" type="button" data-open-sheet="more"><i>•••</i><span>more</span></button>
   </nav>`);
@@ -349,7 +349,7 @@ function setupDeepLinkHighlight() {
   const match = /^(item|done|ask|note|date|memory)-([A-Za-z0-9_-]+)$/.exec(fragment);
   if (!match) {
     const id=/^game(?:-[A-Za-z0-9_-]+)?$/.test(fragment)?'game':fragment;
-    if(['game','question','new','fridge-note'].includes(id))requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:'center'}));
+    if(['game','question','daily','wordle','scoreboard','new','fridge-note'].includes(id))requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:'center'}));
     return;
   }
   const [, kind, id] = match;

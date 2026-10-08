@@ -4,7 +4,6 @@ import { personName } from './profile-store.js';
 import { timeAgo } from './time-format.js';
 import { startActivityFeed } from './activity-feed.js';
 import { focusActive } from './availability.js';
-import { startDailyQuestion } from './daily-question.js';
 import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
 import { dueRows, fairShare } from './needs-you.js';
 
@@ -20,7 +19,6 @@ Object.keys(buckets).forEach(name=>{
   else data.listenTo(name,receive);
 });
 startActivityFeed({data,viewer,other});
-startDailyQuestion({data,viewer,other});
 $('today-list').addEventListener('click', event => { void handleInlineAction(event,{data,viewer,other,items:buckets.items,help:buckets.help}); });
 // A focus session is part of your status: while it runs, the status says
 // "⏱ locking in · <what>" everywhere. It lives in its own fields on the status

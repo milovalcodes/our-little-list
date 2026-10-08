@@ -5,11 +5,14 @@
 // hours, which made "remind me at 3pm" mean "sometime this afternoon". Workers
 // cron triggers actually run on the minute.
 
+import { settleWordWeeks } from './word-week.js';
 import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../../notification-policy.js';
 import { focusDelivery } from '../../delivery-policy.js';
 import { questionClock, questionForDay } from '../../question-prompts.js';
+import { wordForDay } from '../../daily-words.js';
+import { activityWindow } from '../../activity-clock.js';
 import { gamePingCurrent, messageGameId } from '../../couple-game.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
@@ -55,6 +58,8 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
     if (scheduleQuestions) {
       try { await ensureQuestionOfDay(db, household, now); }
       catch (problem) { console.error(`daily question skipped: ${problem?.message || problem}`); }
+      try { await settleWordWeeks(db, household, now); }
+      catch (problem) { console.error(`weekly word skipped: ${problem?.message || problem}`); }
     }
 
     const subscriptions = {};
@@ -96,6 +101,13 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
         }
       }
 
+      if (message.kind === 'word-week' && String(message.ref || '').includes('-tie-')
+        && await db.get(`${household}/wordDuelEnds/${String(message.ref).split('/').pop()}`)) {
+        await db.remove(message.path); dropped += 1; continue;
+      }
+      if (message.kind === 'activities-open' && String(message.ref || '').split('/').pop() !== questionClock(now).day) {
+        await db.remove(message.path); dropped += 1; continue;
+      }
       if (String(message.kind || '').startsWith('question-')) {
         const clock = questionClock(now);
         const day = String(message.ref || '').split('/').pop();
@@ -205,14 +217,19 @@ export async function ensureQuestionOfDay(db, household, now) {
   const clock = questionClock(now);
   if (!clock.open) return { open: false };
   const selected = questionForDay(clock.day);
-  if (!selected) return { open: false, exhausted: true };
+  const word = wordForDay(clock.day);
+  if (!selected && !word) return { open: false, exhausted: true };
+  if (word) {
+    const wordPath = `${household}/wordPuzzles/${clock.day}`;
+    if (!await db.get(wordPath)) await db.create(wordPath, word);
+  }
   const path = `${household}/questions/${clock.day}`;
   let question = await db.get(path);
-  if (!question) {
-    await db.create(path, { day: clock.day, promptId: selected.promptId, answers: {}, openedAt: now });
+  if (!question && selected) {
+    await db.create(path, { day: clock.day, promptId: selected.promptId, answers: {}, openedAt: now, closesAt: activityWindow(clock.day).closesAt });
     question = await db.get(path);
   }
-  if (!question) throw new Error(`question ${clock.day} could not be read after opening`);
+  if (!question && selected) throw new Error(`question ${clock.day} could not be read after opening`);
 
   const queueEvent = async (event, people, title, body) => {
     const marker = `${household}/questionEvents/${clock.day}-${event}`;
@@ -222,8 +239,8 @@ export async function ensureQuestionOfDay(db, household, now) {
       documents.push({
         path: `${household}/outbox/question-${clock.day}-${event}-${person}`,
         fields: {
-          to: person, title, body, url: 'today.html#question',
-          kind: `question-${event}`, ref: `questions/${clock.day}`,
+          to: person, title, body, url: event === 'open' ? 'activities.html#daily' : 'activities.html#question',
+          kind: event === 'open' ? 'activities-open' : `question-${event}`, ref: `questions/${clock.day}`,
           sendAt: now, createdAt: now
         }
       });
@@ -231,9 +248,10 @@ export async function ensureQuestionOfDay(db, household, now) {
     return db.createMany(documents);
   };
 
-  await queueEvent('open', ['her', 'him'], 'Question of the day', 'A new one is ready when you are.');
-  const her = Boolean(question.answers?.her?.at);
-  const him = Boolean(question.answers?.him?.at);
+  // Reuse the old opening marker: deploying after the old morning ping must not send a second one.
+  await queueEvent('open', ['her', 'him'], 'Today’s activities are ready', selected && word ? 'A question for two + a five-letter mystery.' : selected ? 'Today’s question is ready.' : 'Your five-letter mystery is ready.');
+  const her = Boolean(question?.answers?.her?.at);
+  const him = Boolean(question?.answers?.him?.at);
   if (her !== him) {
     await queueEvent('answered', [her ? 'him' : 'her'], 'They answered, waiting on you', 'Your turn on today’s question. Answers unlock once you both answer.');
   }

@@ -20,8 +20,8 @@
   scope.oldPageTarget = function (href) {
     const url = new URL(href, scope.location.href);
     const name = url.pathname.split('/').pop();
-    if (name === 'today.html' && /^#game(?:-[A-Za-z0-9_-]+)?$/.test(url.hash)) {
-      const next = new URL('games.html', url);
+    if (name === 'games.html' || (name === 'today.html' && /^(?:#game(?:-[A-Za-z0-9_-]+)?|#question)$/.test(url.hash))) {
+      const next = new URL('activities.html', url);
       next.search = url.search; next.hash = url.hash;
       return next.href;
     }

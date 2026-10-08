@@ -19,10 +19,10 @@ export function startDailyQuestion({ data, viewer, other }) {
   let answersExpanded = false;
   const available = Boolean(selected && (phase === 'open' || data.mode === 'local'));
   const firstDay = new Intl.DateTimeFormat('en-US', { month:'long', day:'numeric', timeZone:'UTC' }).format(new Date(`${QUESTION_START_DAY}T00:00:00Z`));
-  $('question-prompt').textContent = phase === 'upcoming' && data.mode !== 'local' ? 'The first question is on its way' : phase === 'exhausted' ? 'No new question yet' : available ? 'getting today’s question…' : 'Back at 8 a.m.';
+  $('question-prompt').textContent = phase === 'upcoming' && data.mode !== 'local' ? 'The first question is on its way' : phase === 'exhausted' ? 'No new question yet' : available ? 'getting today’s question…' : 'Back at 9 a.m.';
   $('question-form').hidden = !available;
   if (!selected || !available) {
-    $('question-answers').textContent = phase === 'upcoming' ? `The first one opens ${firstDay} at 8 a.m. Eastern. Nothing used up yet.` : phase === 'exhausted' ? 'We’ve used every question in this set. New ones need to be added before they can repeat.' : 'A fresh question opens at 8 a.m. Eastern.';
+    $('question-answers').textContent = phase === 'upcoming' ? `The first one opens ${firstDay} at 9 a.m. Eastern. Nothing used up yet.` : phase === 'exhausted' ? 'We’ve used every question in this set. New ones need to be added before they can repeat.' : 'A fresh question opens at 9 a.m. Eastern.';
     $('question-edit').hidden = true;
     window.setInterval(() => { if (questionClock().day !== clock.day || questionClock().open !== clock.open) location.reload(); }, 30000);
     return;
@@ -79,6 +79,7 @@ export function startDailyQuestion({ data, viewer, other }) {
 
   $('question-form').addEventListener('submit', async event => {
     event.preventDefault();
+    if(questionClock().day!==clock.day){location.reload();return;}
     const text = $('question-answer').value.trim();
     if (!text) return;
     const button = $('question-save');
@@ -120,6 +121,7 @@ export function startDailyQuestion({ data, viewer, other }) {
     }
     const answers = question?.answers || {};
     const both = Boolean(answers.her?.at && answers.him?.at);
+    const summary=$('question-summary');if(summary)summary.textContent=both?'both answered ✓':answers[viewer]?.at?'waiting for '+personName(other):answers[other]?.at?'your turn':'a little check-in';
     $('question').classList.toggle('is-folded',both&&!answersExpanded&&!editing);
     $('question-reveal').hidden=!both;
     $('question-reveal').textContent=answersExpanded?'hide answers':'see answers';

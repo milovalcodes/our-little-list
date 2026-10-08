@@ -525,3 +525,81 @@ button:disabled:not(.is-busy) { cursor:default; }
 .games-shell .game-rules { border-top:1px solid var(--diary-rule); }
 .games-shell .game-actions .primary-action { width:100%; }
 @media(prefers-reduced-motion:no-preference) { .game-shelf-item { transition:transform .16s ease,border-color .16s ease; } .game-shelf-item:active { transform:scale(.98); } }
+
+/* Daily pages use the same paper, ink and seasonal accents as the diary. */
+.daily-activities[hidden] { display:none; }
+.daily-date { margin:0 0 12px; color:var(--page-muted); font-size:.82rem; }
+.daily-entry { margin:10px 0; border:1px solid var(--diary-rule); border-radius:20px; background:var(--diary-panel); overflow:visible; }
+.daily-entry>summary { min-height:72px; display:flex; align-items:center; gap:12px; padding:14px; cursor:pointer; list-style:none; }
+.daily-entry>summary::-webkit-details-marker { display:none; }
+.daily-entry>summary>span:nth-child(2) { display:grid; gap:4px; flex:1; }
+.daily-entry>summary strong { font-size:1rem; }
+.daily-entry small { font-size:.8rem; color:var(--page-muted); }
+.daily-entry>summary>span:last-child { margin-left:auto; }
+.daily-stamp { display:grid; place-items:center; width:42px; height:42px; border-radius:14px; background:var(--accent-pale); color:var(--accent-deep); font-size:1rem; }
+.word-stamp { font-weight:900; letter-spacing:-2px; transform:rotate(-7deg); }
+.daily-entry .question-card { margin:0!important; padding:0 14px 14px!important; border:0!important; box-shadow:none; background:transparent!important; }
+.daily-entry .question-card .tiny-kicker { display:none; }
+.daily-entry #word-game,.tie-board { padding:0 12px 14px; }
+.word-heading { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+.word-heading h2 { margin:0 0 10px; font-size:1rem; }
+.word-heading>span { color:var(--page-muted); font-size:.8rem; }
+.word-grid { display:grid; gap:5px; max-width:265px; margin:8px auto; }
+.word-row { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; }
+.word-tile { display:grid; place-items:center; aspect-ratio:1; border:1px solid var(--diary-rule); border-radius:9px; background:var(--diary-raised); color:var(--page-text); font-size:1.3rem; font-weight:900; text-transform:uppercase; }
+.word-tile.correct,.word-keyboard .correct { background:var(--word-right,#a8d9c5); color:#173b32; border-color:#376758; }
+.word-tile.present,.word-keyboard .present { background:var(--word-present,#f6d491); color:#523813; border-color:#9a7437; }
+.word-tile.absent,.word-keyboard .absent { background:var(--diary-raised); color:var(--page-muted); border-color:var(--diary-rule); }
+.him-theme { --word-right:#c7b3f3; --word-present:#f3cf8c; }
+.him-theme .word-tile.correct,.him-theme .word-keyboard .correct { color:#30204b; border-color:#8870af; }
+[data-season="spooky"] { --word-right:#bdc89b; --word-present:#f3bb85; }
+[data-season="christmas"] { --word-right:#acd6c2; --word-present:#eecb84; }
+.word-message { min-height:2.4em; margin:8px 0; text-align:center; font-size:.85rem; color:var(--page-text); }
+.word-keyboard { display:grid; gap:5px; margin:8px -4px; }
+.word-keyboard>div { display:flex; justify-content:center; gap:3px; }
+.word-keyboard button { min-width:0; min-height:44px; flex:1; max-width:40px; padding:4px 0; border:1px solid var(--diary-rule); border-radius:7px; font-size:.85rem; font-weight:800; text-transform:uppercase; background:var(--diary-raised); color:var(--page-text); touch-action:manipulation; }
+.word-keyboard .wide-key { flex:1.5; max-width:57px; font-size:.65rem; }
+.word-keyboard button:disabled { opacity:.5; }
+.word-legend { display:flex; justify-content:center; flex-wrap:wrap; gap:14px; margin:12px 0; font-size:.76rem; color:var(--page-muted); }
+.word-legend>span { display:flex; align-items:center; gap:5px; }
+.word-legend .word-tile { width:20px; border-radius:4px; font-size:.65rem; font-style:normal; }
+.word-partner { margin:10px 0 0; text-align:center; color:var(--page-muted); font-size:.82rem; }
+#weekly-board { padding:0 14px 14px; }
+#weekly-board>p,.tie-week { font-size:.8rem; color:var(--page-muted); }
+.tie-week { padding:0 14px; }
+.word-score-pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.word-score-pair>div { display:grid; grid-template-columns:34px 1fr; gap:4px 8px; padding:12px; background:var(--diary-raised); border-radius:14px; }
+.word-score-pair img { width:34px; height:34px; border-radius:12px; grid-row:span 2; }
+.word-score-pair strong { font-size:.85rem; overflow-wrap:anywhere; }
+.word-score-pair b { font-size:1.1rem; }
+.word-week-days { display:flex; overflow:auto; gap:8px; }
+.word-week-days>span { display:grid; gap:5px; min-width:48px; padding:8px 0; text-align:center; }
+.word-week-days b { font-size:.75rem; }
+.word-week-days small { white-space:nowrap; font-size:.7rem; }
+.word-crown { position:fixed; translate:-50% -45%; z-index:12; pointer-events:none; color:#f5cc58; filter:drop-shadow(0 1px 1px #563a29); line-height:1; font-family:serif; }
+.word-crown small { position:absolute; top:-7px; right:-6px; min-width:13px; height:13px; border-radius:50%; background:#f8dfa0; color:#473225; font:800 9px/13px sans-serif; text-align:center; }
+.question-memory .memory-open>div>span { display:block; color:var(--accent-deep); font-size:1.8rem; margin:6px 0; }
+.question-memory .question-answer p { white-space:pre-wrap; }
+.question-memory.featured>div>span { display:block; color:var(--accent-deep); font-size:2rem; }
+@media(prefers-reduced-motion:no-preference) { .word-tile.correct,.word-tile.present { animation:word-ink .18s ease-out; } @keyframes word-ink { from { opacity:.5;scale:.94; } to { opacity:1;scale:1; } } }
+
+/* Keep the daily pair and anytime shelf compact without shrinking controls. */
+.daily-entry>summary { min-height:60px; padding:10px 13px; }
+.weekly-entry>summary { min-height:44px; }
+.games-shell .game-room-intro { padding:10px 2px; gap:10px; }
+.games-shell .game-room-intro img { width:34px; height:34px; border-radius:12px; }
+.games-shell .game-room-intro div>span { display:none; }
+.games-shell .game-room-intro h2 { max-width:220px; font-size:.85rem; margin:0; }
+.games-shell .game-card .game-shelf-item { min-height:75px; padding:10px 13px; grid-template-columns:44px minmax(0,1fr) 12px; gap:10px; }
+.games-shell .game-shelf-item .game-cover { width:44px; height:44px; gap:2px; padding:4px; }
+.games-shell .game-shelf-item .game-cover i { font-size:9px; }
+.games-shell .game-shelf-item strong { font-size:.95rem; }
+.games-shell .game-shelf-item small { font-size:.78rem; }
+html[data-season="spooky"] body { --word-right:#bdc89b; --word-present:#f3bb85; }
+html[data-season="christmas"] body { --word-right:#acd6c2; --word-present:#eecb84; }
+
+.app-dock .dock-item { padding-left:2px; padding-right:2px; }
+.app-dock .dock-item span { white-space:nowrap; overflow-wrap:normal; font-size:clamp(.61rem,2.6vw,.69rem); }
+
+.word-crown.is-anchored { position:absolute; }
+.tie-result { padding:14px; border:1px solid var(--diary-rule); border-radius:16px; color:var(--page-text); background:var(--diary-panel); }

@@ -1,3 +1,4 @@
+import { startWordCrowns } from './word-crowns.js';
 import { sharedLayer, whenReady } from './data-hub.js';
 import { applyProfileNames, cachedProfile, saveCachedProfile } from './profile-store.js';
 import { viewerSide, awaitViewer } from './viewer.js';
@@ -16,6 +17,7 @@ if (data.mode === 'local') {
 }
 
 function listenForNames() {
+  startWordCrowns(data);
   data.listenTo('profiles', items => {
     const profile = items.find(item => item.id === 'couple');
     if (profile) saveCachedProfile(profile);

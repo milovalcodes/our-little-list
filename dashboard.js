@@ -15,7 +15,7 @@ import { gameResult, gameHref, GAME_CATALOG } from './couple-game.js';
 import { watchGames } from './game-sync.js';
 
 const badge = document.getElementById('activity-badge');
-const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [], games: [] };
+const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [], wordResults: [], games: [] };
 let dashboardFrame = 0;
 
 const data = await sharedLayer();
@@ -44,6 +44,7 @@ data.listenToQuery('items', { where: { field: 'doneAt', op: '>=', value: doneSin
 for (const name of Object.keys(buckets).filter(name => name !== 'items')) {
   const receive = items => { buckets[name] = items; scheduleDashboardRender(); };
   if (name === 'games') { watchGames(data, receive); continue; }
+  if(name === 'wordResults'){data.listenToQuery('wordResults',{where:{field:'day',value:questionClock().day}},receive);continue;}
   if (name === 'questions') { data.listenToQuery('questions', { where:{field:'day', value:questionClock().day} }, receive); continue; }
   if (['notes', 'memories', 'reactions'].includes(name)) data.listenToQuery(name, recent, receive);
   else data.listenTo(name, receive);
@@ -102,6 +103,8 @@ function renderNextUp() {
   const clock = questionClock();
   const question = buckets.questions.find(item => item.day === clock.day);
   const answerNeeded = clock.open && question && !question.answers?.[viewer]?.at;
+  const wordNeeded=clock.day>='2026-10-08'&&!buckets.wordResults.some(r=>r.person===viewer&&r.done);
+  const dailyLeft=Number(Boolean(answerNeeded))+Number(wordNeeded);
   const fresh = newActivityCount(buckets, viewer, other, Number(localStorage.getItem(seenKey) || 0));
   const games=buckets.games.filter(item=>Object.hasOwn(GAME_CATALOG,item.id)&&!gameResult(item).over)
     .sort((a,b)=>Number(b.turn===viewer)-Number(a.turn===viewer)||a.updatedAt-b.updatedAt);
@@ -109,7 +112,7 @@ function renderNextUp() {
     ...fairShare(due, 3),
     due.length > 3 && { icon:'◎', title:`${due.length - 3} more due or waiting`, href:'today.html' },
     unread && { icon:'✉', title:`${unread} unread note${unread===1?'':'s'}`, href:'notes.html' },
-    answerNeeded && { icon:'◎', title:'today’s question', href:'today.html#question' },
+    dailyLeft>0 && { icon:'◎', title:`daily activities · ${dailyLeft} left`, href:'activities.html#daily' },
     ...games.map(game=>({icon:GAME_CATALOG[game.id].icon,title:`${game.turn===viewer?'your turn':`waiting for ${personName(other)}`} · ${GAME_CATALOG[game.id].name}`,href:gameHref(game)})),
     fresh && { icon:'✦', title:`${fresh} new thing${fresh===1?'':'s'} since you looked`, href:'today.html#new' }
   ].filter(Boolean);

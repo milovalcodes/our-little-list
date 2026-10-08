@@ -8,7 +8,7 @@ export function selectedGameId(id=GAME_ID) {
   return id;
 }
 export function gameHref(game, id=game?.mode||GAME_ID) {
-  return `games.html#game-${id===GAME_ID?'':`${selectedGameId(id)}--`}${game.round}`;
+  return `activities.html#game-${id===GAME_ID?'':`${selectedGameId(id)}--`}${game.round}`;
 }
 export function gameRoute(hash) {
   for(const id of Object.keys(ARCADE_MODES)) {

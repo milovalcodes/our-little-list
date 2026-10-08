@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 
 const base = 'http://127.0.0.1:8777';
 const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath:process.env.CHROME_PATH } : {});
-const pages = ['home','tasks','notes','today','games','status','dates','memories','phone-check','guide'];
+const pages = ['home','tasks','notes','today','activities','status','dates','memories','phone-check','guide'];
 const seasons = [
   ['normal','2026-11-15T12:00:00-05:00'],
   ['spooky','2026-10-15T12:00:00-04:00'],

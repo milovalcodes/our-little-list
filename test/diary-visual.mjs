@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 const base = 'http://127.0.0.1:8777';
 const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
-const pages = ['home','tasks','notes','today','games','status','dates','memories','phone-check','guide'];
+const pages = ['home','tasks','notes','today','activities','status','dates','memories','phone-check','guide'];
 let problems = 0;
 
 for (const side of ['her','him']) {
@@ -15,6 +15,7 @@ for (const side of ['her','him']) {
     await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.fallback() : route.abort());
     await page.goto(`${base}/${name === 'home' ? side : name}.html?as=${side}`, { waitUntil:'domcontentloaded' });
     await page.waitForSelector('.app-dock');
+    await page.waitForFunction(side=>document.body.classList.contains(side+'-theme'),side);
     await page.locator('.thinking-screen').waitFor({state:'hidden'});
     const state = await page.evaluate(() => {
       const heading = document.querySelector('.feature-hero h1,.sky-heading h1');

@@ -635,7 +635,7 @@ async function openSlow(path) {
 // The Worker, not either browser, sends the three question pings. Editing an
 // answer must not create an extra client-side notification.
 {
-  const { context, page, errors } = await open('today.html?as=her');
+  const { context, page, errors } = await open('activities.html?as=her#question');
   await page.evaluate(async () => {
     const { sharedLayer } = await import('./data-hub.js');
     const data = await sharedLayer();
@@ -651,7 +651,7 @@ async function openSlow(path) {
     const { sharedLayer } = await import('./data-hub.js');
     return JSON.stringify(await (await sharedLayer()).readOnce('questions')).includes('sun answer only');
   });
-  await page.goto(`${BASE}/today.html?as=him`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/activities.html?as=him#question`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(900);
   const himBefore = await page.locator('#question-answers').innerText();
   await page.evaluate(async () => {
@@ -1037,6 +1037,7 @@ async function openSlow(path) {
   // What's new lives at the bottom of Today now.
   const { context, page, errors } = await open('today.html?as=her');
   await page.setViewportSize({ width: 390, height: 320 });
+  await page.addInitScript(()=>{document.addEventListener('DOMContentLoaded',()=>{const section=document.getElementById('new');if(section)section.style.marginTop='500px';});});
   await page.evaluate(() => localStorage.setItem('our-little-list-notes-v1', JSON.stringify({ items: [
     { id: 'n1', sender: 'him', recipient: 'her', body: 'a note to delete', mood: 'heart', createdAt: Date.now() }
   ] })));
@@ -1047,7 +1048,9 @@ async function openSlow(path) {
   const readNow = () => page.evaluate(() => {
     try { return !!JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items[0].read; } catch (_) { return false; }
   });
-  // Opening Today is not reading the feed at its bottom; scrolling to it is.
+  // Keep the row genuinely below the viewport: Today no longer has the
+  // old question card pushing the feed down.
+  // Opening Today is not reading an off-screen feed; scrolling to it is.
   const readBeforeScrolling = await readNow();
   await page.locator('#new').scrollIntoViewIfNeeded();
   await page.waitForTimeout(1300);
