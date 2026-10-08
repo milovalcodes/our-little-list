@@ -180,7 +180,7 @@ whether permission was granted.
 
 ## Checking your work
 
-The Games shelf shares one delivery/transaction layer. The original
+The Activities shelf shares one delivery/transaction layer. The original
 `games/sun-moon` board and scores are retained; `games/connect-four` and
 `games/dots-boxes` are independent. `arcade-game.js` contains original classic
 game implementations, not extracted APK code or assets. The supplied JindoBlu
@@ -227,3 +227,9 @@ query strings, and `household.js` and `firestore.rules` list the same accounts.
   updates while the page is open; a native app would be needed for Life360-style
   tracking. The Android build is paused — the website is the shared source of
   truth on both phones.
+
+### Daily-word regression checks
+
+`test/word-colors-browser.mjs` covers both profiles and all three seasonal palettes, including dark absent letters, repeated-letter precedence and no animation replay when typing. `test/activities-browser.mjs` covers late confirmations and partial historic score records. `test/word-rules.test.mjs` validates private guesses, atomic results and immutable bounded weekly scores against the demo emulator.
+
+The optional `GAME_BROWSER=webkit` word real-time test forwards unary demo-emulator HTTP calls through Playwright's transport because Windows WebKit can fail to rewind a POST after a localhost connection reset. It retains the real Firebase SDK, responses, permissions and live Listen channels; no production traffic or app settings are changed. This is not a physical iPhone push test.

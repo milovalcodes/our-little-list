@@ -68,3 +68,8 @@ docs.set(base+'/wordResults/2026-10-12-him',result('him','2026-10-12',4));
 await settleWordWeeks(db,base,Date.parse('2026-10-19T13:00Z'));
 assert.deepEqual(docs.get(base+'/wordWeeks/2026-10-12').winners,['him']);
 console.log('DAILY WORD: clocks, banks, repeated letters, attempts, points, Sunday settlement, repeating ties, early clinch, crowns and idempotent pings pass');
+
+const {normalizeWeekRecord}=await import('../word-scores.js');
+assert.deepEqual(normalizeWeekRecord({week:'2026-10-05',winners:['him']}).scores,{her:0,him:0});
+assert.deepEqual(normalizeWeekRecord({scores:{her:'<img>',him:99},winners:null},{scores:{her:3,him:4}}).scores,{her:3,him:4});
+assert.deepEqual(normalizeWeekRecord({winners:['him','him','bad']}).winners,['him']);

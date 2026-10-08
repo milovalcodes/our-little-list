@@ -41,6 +41,13 @@ await write('him','wordPuzzles/'+tie.day,tie);
 await commit('him',nextWordAttempt(null,tie,{day:tie.day,person:'him',guess:'table',expectedCount:0}));
 await write('him','wordDuelEnds/'+tie.day,{week:tie.week,outcome:'her',closedAt:now});
 await commit('him',{day:tie.day,person:'him',guesses:['table','apple'],won:true,done:true,updatedAt:now},false);
+// Settlement records accept real scores, not malformed values or two crowns.
+const final={week:'2026-10-05',scores:{her:12,him:8},winners:['her'],settledAt:now};
+await write('him','wordWeeks/'+final.week,{...final,scores:{her:'12',him:8}},false);
+await write('him','wordWeeks/'+final.week,{...final,scores:{her:41,him:8}},false);
+await write('him','wordWeeks/'+final.week,{...final,winners:['her','him']},false);
+await write('him','wordWeeks/'+final.week,final);
+await write('him','wordWeeks/'+final.week,{...final,winners:['him']},false);
 // Archived question answers keep the same no-peeking rule.
 await write('him','questions/2026-10-06',{day:'2026-10-06',promptId:1,answers:{},openedAt:1});
 await write('her','questionAnswers/2026-10-06-her',{day:'2026-10-06',person:'her',text:'private',at:2});

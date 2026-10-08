@@ -17,8 +17,13 @@ export function scoreWeek(day,results){
   const high=Math.max(scores.her,scores.him);
   return {week:week.start,end:week.end,scores,winners:high>0?['her','him'].filter(p=>scores[p]===high):[]};
 }
+// Older or partial records must not crash the whole Activities page.
+export function normalizeWeekRecord(record,fallback={}){
+  const points=p=>Number.isInteger(record?.scores?.[p])&&record.scores[p]>=0&&record.scores[p]<=40?record.scores[p]:(fallback.scores?.[p]||0);
+  return {...fallback,...record,scores:{her:points('her'),him:points('him')},winners:Array.isArray(record?.winners)?[...new Set(record.winners.filter(p=>p==='her'||p==='him'))]:[]};
+}
 export function reigningCrowns(weeks){
-  const sorted=[...weeks].sort((a,b)=>b.week.localeCompare(a.week)),latest=sorted[0];
+  const sorted=weeks.filter(w=>/^\d{4}-\d{2}-\d{2}$/.test(w?.week)).map(w=>normalizeWeekRecord(w)).sort((a,b)=>b.week.localeCompare(a.week)),latest=sorted[0];
   if(!latest)return {week:'',her:0,him:0};
   const result={week:latest.week,her:0,him:0};
   for(const person of ['her','him']){

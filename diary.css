@@ -549,7 +549,10 @@ button:disabled:not(.is-busy) { cursor:default; }
 .word-tile { display:grid; place-items:center; aspect-ratio:1; border:1px solid var(--diary-rule); border-radius:9px; background:var(--diary-raised); color:var(--page-text); font-size:1.3rem; font-weight:900; text-transform:uppercase; }
 .word-tile.correct,.word-keyboard .correct { background:var(--word-right,#a8d9c5); color:#173b32; border-color:#376758; }
 .word-tile.present,.word-keyboard .present { background:var(--word-present,#f6d491); color:#523813; border-color:#9a7437; }
-.word-tile.absent,.word-keyboard .absent { background:var(--diary-raised); color:var(--page-muted); border-color:var(--diary-rule); }
+.word-tile.absent,.word-keyboard button.absent { background:var(--word-absent,#2b2831); color:#ddd9e3; border-color:#625b6d; }
+.him-theme { --word-absent:#0a1020; }
+html[data-season="spooky"] body { --word-absent:#1b1423; }
+html[data-season="christmas"] body { --word-absent:#102321; }
 .him-theme { --word-right:#c7b3f3; --word-present:#f3cf8c; }
 .him-theme .word-tile.correct,.him-theme .word-keyboard .correct { color:#30204b; border-color:#8870af; }
 [data-season="spooky"] { --word-right:#bdc89b; --word-present:#f3bb85; }
@@ -581,7 +584,6 @@ button:disabled:not(.is-busy) { cursor:default; }
 .question-memory .memory-open>div>span { display:block; color:var(--accent-deep); font-size:1.8rem; margin:6px 0; }
 .question-memory .question-answer p { white-space:pre-wrap; }
 .question-memory.featured>div>span { display:block; color:var(--accent-deep); font-size:2rem; }
-@media(prefers-reduced-motion:no-preference) { .word-tile.correct,.word-tile.present { animation:word-ink .18s ease-out; } @keyframes word-ink { from { opacity:.5;scale:.94; } to { opacity:1;scale:1; } } }
 
 /* Keep the daily pair and anytime shelf compact without shrinking controls. */
 .daily-entry>summary { min-height:60px; padding:10px 13px; }

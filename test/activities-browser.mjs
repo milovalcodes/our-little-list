@@ -16,7 +16,19 @@ try{
  for(let i=0;i<5;i++)await page.click('#word-game [data-key="⌫"]');
  const solution=await page.evaluate(async()=>{const {wordForDay}=await import('./daily-words.js');return wordForDay('2026-10-08').word;});
  const wrong=solution==='grape'?'table':'grape';
- await guess(wrong);await page.waitForFunction(()=>document.querySelectorAll('.word-grid .correct,.word-grid .present,.word-grid .absent').length===5);
+ // A late confirmation must clear the retry message without spending a second attempt.
+ await page.evaluate(async()=>{
+  const {sharedLayer}=await import('./data-hub.js'),d=await sharedLayer();
+  window.originalGuess=d.submitWordGuess;window.originalTimer=window.setTimeout;
+  window.setTimeout=(fn,ms,...args)=>window.originalTimer(fn,ms===20000?30:ms,...args);
+  d.submitWordGuess=async options=>{await new Promise(r=>window.originalTimer(r,500));return window.originalGuess(options);};
+ });
+ await guess(wrong);
+ await page.waitForFunction(()=>document.querySelector('.word-message').textContent.includes('waiting for confirmation'));
+ await page.waitForFunction(()=>document.querySelectorAll('.word-grid .correct,.word-grid .present,.word-grid .absent').length===5);
+ await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');(await sharedLayer()).submitWordGuess=window.originalGuess;window.setTimeout=window.originalTimer;});
+ assert.equal((await page.locator('.word-message').textContent()).trim(),'');
+ assert.equal(await page.locator('.word-row').nth(1).textContent(),'');
  await guess(wrong);assert.match(await page.locator('.word-message').textContent(),/Already/);
  for(let i=0;i<5;i++)await page.click('#word-game [data-key="⌫"]');
  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const d=await sharedLayer();window.saveGuess=d.submitWordGuess;d.submitWordGuess=async()=>{throw Error('network');};});

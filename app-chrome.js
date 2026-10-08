@@ -1,3 +1,4 @@
+import './old-links.js';
 import { sharedLayer } from './data-hub.js';
 import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
@@ -53,7 +54,8 @@ async function boot() {
   navigator.serviceWorker?.addEventListener('message', event => {
     if(event.data?.type!=='OPEN_NOTIFICATION')return;
     try {
-      const target=new URL(event.data.url,location.href);
+      const asked=new URL(event.data.url,location.href);
+      const target=new URL(window.oldPageTarget(asked.href)||asked.href);
       if(target.origin!==location.origin||target.pathname!==location.pathname||target.search!==location.search)return;
       closeSheets(false);
       if(location.hash!==target.hash)location.hash=target.hash;
@@ -349,7 +351,7 @@ function setupDeepLinkHighlight() {
   const match = /^(item|done|ask|note|date|memory)-([A-Za-z0-9_-]+)$/.exec(fragment);
   if (!match) {
     const id=/^game(?:-[A-Za-z0-9_-]+)?$/.test(fragment)?'game':fragment;
-    if(['game','question','daily','wordle','scoreboard','new','fridge-note'].includes(id))requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:'center'}));
+    if(['game','question','daily','wordle','scoreboard','tiebreaker','new','fridge-note'].includes(id))requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:'center'}));
     return;
   }
   const [, kind, id] = match;

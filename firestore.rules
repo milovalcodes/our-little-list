@@ -309,10 +309,17 @@ service cloud.firestore {
 
     // Immutable settlement/event records. Like question opening, the delivery
     // Worker uses the existing household member credential, not an admin key.
+    function validWordScores(scores) {
+      return scores is map && scores.keys().hasOnly(['her','him'])
+        && scores.her is int && scores.him is int
+        && scores.her >= 0 && scores.her <= 40 && scores.him >= 0 && scores.him <= 40;
+    }
     match /households/{householdId}/wordWeeks/{week} {
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId) && request.resource.data.week == week
-        && request.resource.data.scores is map && request.resource.data.winners is list
+        && week.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && validWordScores(request.resource.data.scores) && request.resource.data.winners is list
+        && request.resource.data.winners.size() <= 1
         && request.resource.data.winners.hasOnly(['her','him']) && request.resource.data.settledAt is int;
       allow update, delete: if false;
     }
@@ -320,7 +327,8 @@ service cloud.firestore {
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId) && request.resource.data.puzzleId == id
         && request.resource.data.week is string && request.resource.data.round is int
-        && request.resource.data.scores is map && request.resource.data.createdAt is int;
+        && request.resource.data.round > 0 && validWordScores(request.resource.data.scores)
+        && request.resource.data.createdAt is int;
       allow update, delete: if false;
     }
     match /households/{householdId}/wordDuelEnds/{id} {

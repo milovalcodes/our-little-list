@@ -49,7 +49,19 @@ async function phone(side) {
       return stop;
     }
   `}));
+  // Windows Playwright WebKit sometimes cannot rewind a POST body when the
+  // local emulator resets a connection. Forward only unary emulator requests
+  // through Playwright's HTTP transport; keep the real SDK, payload, response,
+  // rules and live Listen channels unchanged. Never proxy production traffic.
+  if(isWebKit)await context.route('http://'+host+'/v1/**',async route=>{
+    const response=await route.fetch({timeout:20000,maxRetries:0});
+    await route.fulfill({response});
+  });
   const page=await context.newPage();page.setDefaultTimeout(35000);
+  if(isWebKit){
+    page.on('requestfailed',r=>{if(r.url().includes(':8089/'))console.log('WebKit emulator transport:',new URL(r.url()).pathname,r.failure()?.errorText);});
+    page.on('response',r=>{if(r.url().includes(':8089/')&&r.status()>=400)console.log('WebKit emulator response:',r.status(),new URL(r.url()).pathname,r.headers()['access-control-allow-origin']||'no CORS header');});
+  }
   page.on('pageerror',e=>{
     // WebKit reports cancelled cross-origin emulator channels as page errors
     // during navigation/offline tests. Keep those separate, not arbitrary JS
@@ -86,10 +98,12 @@ try {
  assert.equal(race.filter(r=>r.ok).length,1,'two screens cannot spend the same attempt');
  assert.match(race.find(r=>!r.ok).error,/other screen/);
  await sun.waitForFunction(()=>document.querySelector('.word-partner').textContent.includes('2 / 5'));
- const win=await submit(moon,puzzle.word,2);assert.ok(win.ok);
+ console.log('word: both screens received the second guess');
+ const win=await submit(moon,puzzle.word,2);assert.ok(win.ok,JSON.stringify(win));
+ console.log('word: winning guess saved');
  await sun.waitForFunction(points=>document.querySelector('.word-partner').textContent.includes(points+' points'),3*multiplier);
  await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),3*multiplier);
- await secondMoon.reload();await secondMoon.waitForFunction(()=>document.querySelector('#word-summary').textContent.includes('3 points'));
+ await secondMoon.reload();await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),3*multiplier);
  const herWin=await sun.evaluate(async({day,word})=>{const {sharedLayer}=await import('./data-hub.js');return(await sharedLayer()).submitWordGuess({day,person:'her',guess:word,expectedCount:0});},puzzle);
  assert.equal(herWin.won,true);
  await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),5*multiplier);
