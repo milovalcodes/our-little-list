@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v84';
+const CACHE = 'our-little-list-v85';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -18,7 +18,7 @@ const PAGES = [
 
 const ASSETS = [
   ...PAGES,
-  './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './guide.js', './profile-store.js', './profile-route.js', './couple-game.js', './game-panel.js', './profile-names.js',
+  './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './guide.js', './profile-store.js', './profile-route.js', './couple-game.js', './arcade-game.js', './game-panel.js', './profile-names.js',
   './profiles.js', './status.js', './dates.js', './dashboard.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
   './notification-policy.js', './notification-preferences.js',
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',

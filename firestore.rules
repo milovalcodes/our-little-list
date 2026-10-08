@@ -406,6 +406,103 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // The arcade boards are independent of the original three-piece game.
+    // Winner/box ownership is derived again here, not trusted from the client.
+    match /households/{householdId}/games/{gameId} {
+      function arcadeValid(g) {
+        return gameId in ['connect-four','dots-boxes'] && g.mode == gameId
+          && g.keys().hasOnly(['mode','round','board','boxes','winner','turn','startedBy','lastBy','lastCell','ply','score','wins','createdAt','updatedAt','closed'])
+          && g.round is string && g.round.matches('[A-Za-z0-9_-]{1,80}')
+          && g.board is map && g.boxes is map
+          && g.boxes.keys().hasOnly(['0','1','2','3','4','5','6','7','8'])
+          && g.boxes.values().hasOnly(['her','him'])
+          && g.winner in ['','her','him'] && g.turn in ['her','him'] && g.startedBy in ['her','him'] && g.lastBy == mySide()
+          && g.lastCell is int && g.ply is int && g.ply >= 0 && g.ply <= (gameId == 'connect-four' ? 42 : 24)
+          && g.score is map && g.score.keys().hasOnly(['her','him'])
+          && g.score.her is int && g.score.him is int && g.score.her >= 0 && g.score.her <= 3 && g.score.him >= 0 && g.score.him <= 3
+          && g.wins is map && g.wins.keys().hasOnly(['her','him'])
+          && g.wins.her is int && g.wins.him is int && g.wins.her >= 0 && g.wins.him >= 0
+          && g.createdAt is int && g.updatedAt is int && g.closed is bool;
+      }
+      function arcadeOver(g) { return g.closed || g.winner != '' || g.ply >= (g.mode == 'connect-four' ? 42 : 24); }
+      function arcadeStart(g) {
+        return g.board.size() == 0 && g.boxes.size() == 0 && g.winner == '' && g.ply == 0 && g.lastCell == -1
+          && !g.closed && g.startedBy == mySide() && g.turn == otherSide();
+      }
+      function fourThrough(b, cell, step, back, forward, side) {
+        let b1 = back >= 1 && b.get(string(cell-step),'') == side;
+        let b2 = b1 && back >= 2 && b.get(string(cell-step*2),'') == side;
+        let b3 = b2 && back >= 3 && b.get(string(cell-step*3),'') == side;
+        let f1 = forward >= 1 && b.get(string(cell+step),'') == side;
+        let f2 = f1 && forward >= 2 && b.get(string(cell+step*2),'') == side;
+        let f3 = f2 && forward >= 3 && b.get(string(cell+step*3),'') == side;
+        return b3 || (b2 && f1) || (b1 && f2) || f3;
+      }
+      function fourWon(g) {
+        let r = int(g.lastCell / 7);
+        let c = g.lastCell%7;
+        let side = mySide();
+        return fourThrough(g.board,g.lastCell,1,c,6-c,side)
+          || fourThrough(g.board,g.lastCell,7,r,5-r,side)
+          || fourThrough(g.board,g.lastCell,8,r<c?r:c,5-r<6-c?5-r:6-c,side)
+          || fourThrough(g.board,g.lastCell,6,r<6-c?r:6-c,5-r<c?5-r:c,side);
+      }
+      function fourMove(before, after) {
+        return after.lastCell >= 0 && after.lastCell < 42 && after.boxes.size() == 0 && after.turn == otherSide()
+          && (after.lastCell >= 35 || before.board.get(string(after.lastCell+7),'') != '')
+          && after.winner == (after.ply >= 7 && fourWon(after) ? mySide() : '');
+      }
+      function boxValid(before, after, index) {
+        let key = string(index);
+        let left = 12 + int(index / 3)*4 + index%3;
+        let was = before.boxes.get(key,'');
+        let complete = after.board.keys().hasAll([key,string(index+3),string(left),string(left+1)]);
+        return index == -1 || after.boxes.get(key,'') == (was != '' ? was : complete ? mySide() : '');
+      }
+      function boxesMove(before, after) {
+        let edge = after.lastCell;
+        let row = int((edge-12) / 4);
+        let col = (edge-12)%4;
+        let first = edge < 12 ? (edge >= 3 ? edge-3 : -1) : (col > 0 ? row*3+col-1 : -1);
+        let second = edge < 12 ? (edge < 9 ? edge : -1) : (col < 3 ? row*3+col : -1);
+        let her = after.boxes.values().removeAll(['him']).size();
+        let winner = after.ply == 24 ? (her >= 5 ? 'her' : 'him') : '';
+        return after.lastCell >= 0 && after.lastCell < 24 && after.winner == winner
+          && after.boxes.keys().hasOnly(['0','1','2','3','4','5','6','7','8']) && after.boxes.values().hasOnly(['her','him'])
+          && after.turn == (after.boxes.size() > before.boxes.size() ? mySide() : otherSide())
+          && after.boxes.diff(before.boxes).affectedKeys().hasOnly([string(first),string(second)])
+          && boxValid(before,after,first) && boxValid(before,after,second);
+      }
+      function arcadeScores(before, after) {
+        let sun = after.winner == 'her' ? 1 : 0;
+        let moon = after.winner == 'him' ? 1 : 0;
+        return after.score.keys().hasOnly(['her','him']) && after.wins.keys().hasOnly(['her','him'])
+          && after.score.her == before.score.her + sun && after.score.him == before.score.him + moon
+          && after.wins.her == before.wins.her + (sun == 1 && after.score.her == 3 ? 1 : 0)
+          && after.wins.him == before.wins.him + (moon == 1 && after.score.him == 3 ? 1 : 0);
+      }
+      function arcadeMove(before, after) {
+        let key = string(after.lastCell);
+        return !arcadeOver(before) && before.turn == mySide() && after.lastCell is int
+          && after.diff(before).affectedKeys().hasOnly(['board','boxes','winner','turn','lastBy','lastCell','ply','score','wins','updatedAt'])
+          && after.ply == before.ply+1 && !before.board.keys().hasAny([key])
+          && after.board.diff(before.board).affectedKeys().hasOnly([key])
+          && after.board.size() == before.board.size()+1 && after.board[key] == mySide()
+          && (gameId == 'connect-four' ? fourMove(before,after) : boxesMove(before,after))
+          && arcadeScores(before,after);
+      }
+      allow create: if inHousehold(householdId) && arcadeValid(request.resource.data) && arcadeStart(request.resource.data)
+        && request.resource.data.score == {'her':0,'him':0} && request.resource.data.wins == {'her':0,'him':0};
+      allow update: if inHousehold(householdId) && gameId in ['connect-four','dots-boxes']
+        && request.resource.data.lastBy == mySide() && request.resource.data.updatedAt is int
+        && (arcadeMove(resource.data,request.resource.data)
+          || (!arcadeOver(resource.data) && request.resource.data.closed
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['closed','lastBy','updatedAt']))
+          || (arcadeOver(resource.data) && arcadeValid(request.resource.data) && request.resource.data.round != resource.data.round && arcadeStart(request.resource.data)
+            && request.resource.data.wins == resource.data.wins
+            && request.resource.data.score == (resource.data.score.her == 3 || resource.data.score.him == 3 ? {'her':0,'him':0} : resource.data.score)));
+    }
+
     match /households/{householdId}/outbox/{messageId} {
       allow read, delete: if inHousehold(householdId);
       allow create: if inHousehold(householdId)

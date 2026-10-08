@@ -1,10 +1,27 @@
 // One shared, asynchronous board. This module has no browser dependencies:
 // the UI, transaction, delivery worker and tests use the same turn logic.
+import { ARCADE_MODES, arcadeResult, nextArcade } from './arcade-game.js';
 export const GAME_ID = 'sun-moon';
+export const GAME_CATALOG = { [GAME_ID]:{name:'Three to Move',icon:'☀︎☾',hint:'place three · then move them'}, ...ARCADE_MODES };
+export function selectedGameId(id=GAME_ID) {
+  if(!Object.hasOwn(GAME_CATALOG,id))throw new Error('Choose a game first.');
+  return id;
+}
+export function gameHref(game, id=game?.mode||GAME_ID) {
+  return `today.html#game-${id===GAME_ID?'':`${selectedGameId(id)}--`}${game.round}`;
+}
+export function gameRoute(hash) {
+  for(const id of Object.keys(ARCADE_MODES)) {
+    if(hash===`#game-${id}`)return {id,round:''};
+    if(hash.startsWith(`#game-${id}--`))return {id,round:hash.slice(`#game-${id}--`.length)};
+  }
+  return {id:GAME_ID,round:/^#game-(.+)$/.exec(hash)?.[1]||''};
+}
 export const WIN_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 const partner = person => person === 'her' ? 'him' : 'her';
 
 export function gameResult(game) {
+  if(game?.mode)return arcadeResult(game);
   const board = game?.board || {};
   const line = WIN_LINES.find(cells => board[cells[0]] && cells.every(cell => board[cell] === board[cells[0]]));
   if (line) return { over:true, winner:board[line[0]], line };
@@ -12,7 +29,10 @@ export function gameResult(game) {
   return { over:!game || game.closed === true, line:[] };
 }
 
-export function nextGame(current, { action, person, cell, fromCell = '', expectedRound, expectedPly, round, now = Date.now() }) {
+export function nextGame(current, options) {
+  const id=selectedGameId(options.gameId||current?.mode||GAME_ID);
+  if(id!==GAME_ID)return nextArcade(current,{...options,gameId:id});
+  const { action, person, cell, fromCell = '', expectedRound, expectedPly, round, now = Date.now() }=options;
   if (!['her','him'].includes(person)) throw new Error('Sign in to play.');
   if ((current?.round || '') !== (expectedRound || '')) throw new Error('The board changed. Take another look.');
   if (action === 'start') {
@@ -44,10 +64,20 @@ export function gameMessage(game, name) {
   const count=game.ply;
   const result=gameResult(game);
   const matchWon=result.winner&&game.score[result.winner]===3;
-  const title=game.closed?'Round put away':matchWon?`${name} won the match 🏆`:result.winner?`${name} took the round`:result.draw?'A very diplomatic draw':count?`Your turn ☀︎☾`:`${name} invited you to play`;
-  return { to:partner(game.lastBy), title, body:game.closed?'Another time.':result.over?`Sun ${game.score.her} · Moon ${game.score.him}. ${matchWon?'Rematch?':'Next round?'}`:count?`${name} made a move.`:'Sun vs Moon · you get the first move.', url:`today.html#game-${game.round}`, kind:'game', ref:`${game.round}/${count}/${game.closed?'closed':'open'}`, sendAt:game.updatedAt, createdAt:game.updatedAt };
+  const id=game.mode||GAME_ID,label=GAME_CATALOG[id].name;
+  const wonByLast=result.winner===game.lastBy;
+  const title=game.closed?'Round put away':matchWon?(wonByLast?`${name} won the match 🏆`:'You won the match 🏆'):result.winner?(wonByLast?`${name} took the round`:'You took the round ✦'):result.draw?'A very diplomatic draw':count?(game.turn===game.lastBy?`${name} claimed a box`:'Your turn ☀︎☾'):`${name} invited you to play`;
+  return { to:partner(game.lastBy), title, body:game.closed?'Another time.':result.over?`${label} · Sun ${game.score.her} · Moon ${game.score.him}. ${matchWon?'Rematch?':'Next round?'}`:count?`${label} · ${game.turn===game.lastBy?'they get another turn.':`${name} made a move.`}`:`${label} · you get the first move.`, url:gameHref(game), kind:'game', ref:`${id===GAME_ID?'':`${id}/`}${game.round}/${count}/${game.closed?'closed':'open'}`, sendAt:game.updatedAt, createdAt:game.updatedAt };
 }
 
+export function messageGameId(message) {
+  const parts=String(message.ref||'').split('/');
+  return parts.length===3?GAME_ID:parts.length===4&&Object.hasOwn(ARCADE_MODES,parts[0])?parts[0]:null;
+}
+export function gameNeedsPing(game) {
+  return game.turn !== game.lastBy || gameResult(game).over;
+}
 export function gamePingCurrent(message, game) {
-  return Boolean(game && message.ref === `${game.round}/${game.ply}/${game.closed?'closed':'open'}`);
+  const id=messageGameId(message);
+  return Boolean(game && id && id===(game.mode||GAME_ID) && message.ref === `${id===GAME_ID?'':`${id}/`}${game.round}/${game.ply}/${game.closed?'closed':'open'}`);
 }

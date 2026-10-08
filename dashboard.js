@@ -11,7 +11,7 @@ import { escapeHtml, showFailure, toast } from './ui-helpers.js';
 import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
 import { dueRows, fairShare } from './needs-you.js';
 import { profileUrl } from './profile-route.js';
-import { gameResult } from './couple-game.js';
+import { gameResult, gameHref, GAME_CATALOG } from './couple-game.js';
 
 const badge = document.getElementById('activity-badge');
 const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [], games: [] };
@@ -101,13 +101,13 @@ function renderNextUp() {
   const question = buckets.questions.find(item => item.day === clock.day);
   const answerNeeded = clock.open && question && !question.answers?.[viewer]?.at;
   const fresh = newActivityCount(buckets, viewer, other, Number(localStorage.getItem(seenKey) || 0));
-  const game=buckets.games.find(item=>item.id==='sun-moon');
+  const game=buckets.games.filter(item=>Object.hasOwn(GAME_CATALOG,item.id)&&!gameResult(item).over&&item.turn===viewer).sort((a,b)=>a.updatedAt-b.updatedAt)[0];
   const rows = [
     ...fairShare(due, 3),
     due.length > 3 && { icon:'◎', title:`${due.length - 3} more due or waiting`, href:'today.html' },
     unread && { icon:'✉', title:`${unread} unread note${unread===1?'':'s'}`, href:'notes.html' },
     answerNeeded && { icon:'◎', title:'today’s question', href:'today.html#question' },
-    game&&!gameResult(game).over&&game.turn===viewer&&{icon:'☀︎☾',title:'your turn · Sun vs Moon',href:`today.html#game-${game.round}`},
+    game&&{icon:'☀︎☾',title:`your turn · ${GAME_CATALOG[game.id].name}`,href:gameHref(game)},
     fresh && { icon:'✦', title:`${fresh} new thing${fresh===1?'':'s'} since you looked`, href:'today.html#new' }
   ].filter(Boolean);
   target.innerHTML = rows.length ? rows.map(row=>inlineActionMarkup(row,'home-next-row')).join('') : '<p>nothing needs you right now ✦</p>';

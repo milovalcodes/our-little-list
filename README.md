@@ -170,6 +170,15 @@ whether permission was granted.
 
 ## Checking your work
 
+The Sun vs Moon game picker shares one delivery/transaction layer. The original
+`games/sun-moon` board and scores are retained; `games/connect-four` and
+`games/dots-boxes` are independent. `arcade-game.js` contains original classic
+game implementations, not extracted APK code or assets. The supplied JindoBlu
+app was used only to identify suitable games. Separate-phone play is turn-based;
+no frame-by-frame Firestore writes or real-time arcade physics are involved.
+Game pings include the board ID, and bonus box turns don't notify the opponent
+until control passes (or the round ends). The rules recheck each move and score.
+
 ```
 pnpm test                             # syntax, data, push, dedupe and delivery
 pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/game-rules.test.mjs"  # Java 21, no live data

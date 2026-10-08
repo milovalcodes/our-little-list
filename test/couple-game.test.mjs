@@ -32,3 +32,4 @@ assert.equal(profileRoute('#profile-her','him').person,'her');
 assert.equal(profileRoute('#partner','her').person,'him');
 assert.equal(profileUrl('him','map'),'status.html#profile-him-map');
 console.log('GAME: turns, shifts, match scoring, stale moves and stale pings checked');
+await import('./arcade-game.test.mjs');

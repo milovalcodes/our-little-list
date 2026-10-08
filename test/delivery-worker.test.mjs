@@ -115,8 +115,8 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
       const ask = asks[url.split('/help/')[1]];
       return ask ? Response.json({ name: url, fields: { state: { stringValue: ask.state } } }) : new Response('', { status: 404 });
     }
-    if (url.includes('/games/sun-moon') && options.method !== 'DELETE') {
-      return game ? Response.json({name:url,fields:{round:{stringValue:game.round},ply:{integerValue:String(game.ply)},closed:{booleanValue:game.closed}}}) : new Response('',{status:404});
+    if (url.includes('/games/') && options.method !== 'DELETE') {
+      return game && url.endsWith(`/games/${game.mode||'sun-moon'}`) ? Response.json({name:url,fields:{...(game.mode?{mode:{stringValue:game.mode}}:{}),round:{stringValue:game.round},ply:{integerValue:String(game.ply)},closed:{booleanValue:game.closed}}}) : new Response('',{status:404});
     }
     if (url.includes('/questions/') && options.method !== 'DELETE') {
       const record = questions[url.split('/questions/')[1]];
@@ -407,5 +407,12 @@ console.log(' ok  an urgent ask is not quieted by focus');
   harness({outbox:[messages[1]],game,statuses:{her:{focusUntil:now+60000}}});
   assert.equal((await deliver(ENV)).held,1);
   console.log(' ok  game turns drop stale pings, respect the game switch and wait during focus');
+}
+for(const mode of ['connect-four','dots-boxes']){
+  const game={mode,round:'new-round',ply:7,closed:false};
+  const message={id:'ARCADE',to:'her',title:'your turn',body:mode,kind:'game',ref:`${mode}/new-round/7/open`,url:`today.html#game-${mode}--new-round`,sendAt:now-1000,createdAt:now-1000};
+  const h=harness({game,outbox:[message,{...message,id:'STALE',ref:`${mode}/new-round/6/open`},{...message,id:'OTHER',ref:'sun-moon/new-round/7/open'}]});
+  const result=await deliver(ENV);assert.equal(result.sent,1);assert.equal(result.dropped,2);assert.equal(h.pushes.length,1);
+  console.log(` ok  ${mode} pings read their own board and reject old or invalid game refs`);
 }
 console.log('\nDELIVERY WORKER CLEAN');

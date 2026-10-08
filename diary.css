@@ -53,6 +53,43 @@
 .profile-note-link:last-child { border:0; padding-bottom:0; }
 .profile-note-link small { display:block; margin-top:5px; color:var(--page-muted); }
 .game-card { scroll-margin-block:80px; }
+.game-picker { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:14px 0; }
+.game-card .game-picker button { display:flex; flex-direction:column; gap:5px; padding:10px 5px; min-width:0; text-align:center; line-height:1.25; }
+.game-picker strong { font-size:.8rem; }
+.game-picker small { font-size:.71rem; color:var(--page-muted); font-weight:600; }
+.game-card .game-picker button[aria-pressed="true"] { border-color:var(--accent); background:var(--accent-pale); box-shadow:inset 0 0 0 1px var(--accent); }
+.game-preview { text-align:center; font-size:3rem; color:var(--accent); padding:12px; }
+.game-turn-hint { min-height:1.4em; }
+.game-turn-hint:empty { display:none; }
+.four-board { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:3px; padding:7px; border:1px solid var(--diary-rule); border-radius:18px; background:var(--diary-raised); }
+.game-card .four-board .four-column { display:flex; flex-direction:column; min-width:0; gap:4px; padding:0; border:0; border-radius:8px; background:transparent; opacity:1; }
+.four-column:not(:disabled):hover,.four-column:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.four-drop { height:20px; color:var(--accent-deep); font-size:1rem; }
+.four-column:disabled .four-drop { opacity:.25; }
+.four-slot { display:grid; place-items:center; width:100%; aspect-ratio:1; min-width:0; border-radius:50%; border:1px solid var(--diary-rule); background:var(--diary-panel); }
+.four-slot .game-token { font-size:clamp(1.15rem,5.7vw,2.2rem); }
+.four-slot.winning-cell { box-shadow:inset 0 0 0 2px var(--accent); background:var(--accent-pale); }
+.four-slot.last-move:not(.winning-cell) { outline:1px dashed var(--accent-deep); outline-offset:1px; }
+.boxes-board { display:grid; grid-template-columns:repeat(3,16px minmax(0,1fr)) 16px; grid-template-rows:repeat(3,16px minmax(44px,1fr)) 16px; aspect-ratio:1; padding:12px; margin:0 auto; max-width:370px; }
+.box-dot { align-self:center; justify-self:center; width:9px; height:9px; border-radius:50%; background:var(--page-text); z-index:1; pointer-events:none; }
+.game-card .boxes-board .box-edge { position:relative; display:flex; min-height:0; min-width:0; padding:0; border:0; border-radius:5px; background:transparent; opacity:1; touch-action:manipulation; }
+.box-edge::before { content:''; position:absolute; inset:-14px 0; }
+.box-edge.vertical::before { inset:0 -14px; }
+.box-edge>span { display:block; width:100%; height:5px; background:var(--page-muted); opacity:.3; border-radius:5px; pointer-events:none; }
+.box-edge.vertical>span { width:5px; height:100%; }
+.box-edge:not(:disabled):hover>span,.box-edge:focus-visible>span { opacity:1; background:var(--accent-deep); }
+.box-edge.her>span { background:#b76b13; opacity:1; }
+.box-edge.him>span { background:#665799; opacity:1; }
+.him-theme .box-edge.her>span { background:#ffce71; }
+.him-theme .box-edge.him>span { background:#d7c4ff; }
+.box-edge.last-move>span { box-shadow:0 0 0 2px var(--diary-panel),0 0 0 3px var(--accent); }
+.box-owned { display:grid; place-items:center; margin:5px; border-radius:12px; }
+.box-owned:is(.her,.him) { background:var(--diary-raised); }
+.box-owned .game-token { font-size:clamp(1.4rem,7vw,2.4rem); }
+.boxes-tally { display:flex; justify-content:center; align-items:center; gap:16px; font-weight:850; margin:12px 0 0; }
+.boxes-tally>span { font-size:.8rem; color:var(--page-muted); font-weight:600; }
+.four-board .sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+@media (prefers-reduced-motion:no-preference) { .four-slot.last-move .game-token { animation:game-drop .22s ease-out; } @keyframes game-drop { from { transform:translateY(-18px); opacity:.4; } to { transform:translateY(0); opacity:1; } } }
 .game-card h2 { font-size:1.25rem; }
 .game-status { margin:5px 0 0; font-size:.9rem; color:var(--page-muted); }
 .game-content { max-width:360px; margin:0 auto; }

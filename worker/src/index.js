@@ -10,7 +10,7 @@ import { sendNotification } from './webpush.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../../notification-policy.js';
 import { focusDelivery } from '../../delivery-policy.js';
 import { questionClock, questionForDay } from '../../question-prompts.js';
-import { gamePingCurrent } from '../../couple-game.js';
+import { gamePingCurrent, messageGameId } from '../../couple-game.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
 const STALE_MS = 3 * 60 * 60_000;    // older than 3h: still send, but say it is late
@@ -112,7 +112,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
         }
       }
 
-      if (message.kind === 'game' && !gamePingCurrent(message, await db.get(`${household}/games/sun-moon`))) {
+      if (message.kind === 'game' && (!messageGameId(message) || !gamePingCurrent(message, await db.get(`${household}/games/${messageGameId(message)}`)))) {
         await db.remove(message.path);
         dropped += 1;
         continue;

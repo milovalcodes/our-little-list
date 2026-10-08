@@ -1,7 +1,7 @@
 import { firebaseConfig } from './firebase-config.js';
 import { OUTBOX } from './push-config.js';
 import { HOUSEHOLD_ID, configured as householdConfigured } from './household.js';
-import { GAME_ID, nextGame, gameMessage } from './couple-game.js';
+import { GAME_ID, nextGame, gameMessage, selectedGameId, gameNeedsPing } from './couple-game.js';
 
 const configured = firebaseConfig?.apiKey && !firebaseConfig.apiKey.startsWith('REPLACE_');
 
@@ -148,12 +148,15 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       // Moves must be confirmed online. A queued move against an old board
       // could otherwise overwrite a partner's move after reconnecting.
       return runTransaction(db, async transaction => {
-        const ref = doc(named('games'), GAME_ID);
+        const id = selectedGameId(options.gameId || GAME_ID);
+        const ref = doc(named('games'), id);
         const snapshot = await transaction.get(ref);
         const next = nextGame(snapshot.exists() ? snapshot.data() : null, options);
         const message = gameMessage(next, displayName);
         transaction.set(ref, next);
-        transaction.set(doc(named(OUTBOX), `game-${next.round}-${next.ply}-${next.closed?'closed':'open'}`), message);
+        // Capturing a box grants another turn. Don't ping "your turn" until it
+        // really changes sides; the shared board still updates immediately.
+        if(gameNeedsPing(next))transaction.set(doc(named(OUTBOX), `game-${id}-${next.round}-${next.ply}-${next.closed?'closed':'open'}`), message);
         return next;
       });
     },
@@ -308,10 +311,11 @@ function createLocalLayer(onAuth, onReady) {
     },
     async playGame(options) {
       const play = () => {
+        const id = selectedGameId(options.gameId || GAME_ID);
         const games = read('games');
-        const current = games.find(item => item.id === GAME_ID);
+        const current = games.find(item => item.id === id);
         const next = nextGame(current ? Object.fromEntries(Object.entries(current).filter(([key]) => key !== 'id')) : null, options);
-        write('games', [...games.filter(item => item.id !== GAME_ID), {id:GAME_ID,...next}]);
+        write('games', [...games.filter(item => item.id !== id), {id,...next}]);
         return next;
       };
       return navigator.locks ? navigator.locks.request('little-list-game', play) : play();
