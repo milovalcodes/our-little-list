@@ -11,19 +11,21 @@ Live: https://milovalcodes.github.io/our-little-list/
 Each thing lives in one place:
 
 - **Home** — both people at a glance, the pinned fridge note, quick add and search.
-- **Today** — due items, one question of the day, a focus timer, Sun vs Moon and the latest activity.
+- **Today** — due items, one question of the day, a focus timer and the latest activity.
 - **The list** — repeatable tasks, groceries by aisle and requests; a timed request is also a reminder, for either person or yourself.
 - **Notes** — short notes, reactions and the option to pin one on both home screens.
 - **Profiles** — either Home avatar opens the same profile layout. Your own profile owns status editing and location controls; your partner's shows their status, recent notes and shared actions. Saved spots stay in Settings.
-- **Sun vs Moon** — one shared asynchronous board in Today. Place three pieces each, then shift a piece to an empty square to make three in a row. First to three rounds wins a match; match wins persist. Confirmed transactions and rules protect turns and scores, and create the turn ping atomically. Old pings are dropped by the delivery worker.
+- **Games** — its own dock tab and `games.html` page, with Three to Move, Four in a Row and Dots & Boxes. Each keeps a shared live board and its own score. First to three rounds wins a match; match wins persist. Confirmed transactions and rules protect turns and scores, and create the turn ping atomically. Old pings are dropped by the delivery worker.
 - **Date ideas** — ideas with optional details, filters and a random picker; completed dates can become memories.
 - **Memories** — photos and small things worth keeping.
 - **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
   Quiet hours hold ordinary pings until morning; reminders still ring at their time, and arrivals come through silently. A focus session holds chatter five minutes at a time, so ending it early lets things through soon after.
 - **Guide** — under More, an in-app walkthrough and a record of each new release.
 
-The bottom **add** button opens the current page's full composer on List,
-Notes, Date ideas, and Memories. Elsewhere it opens the quick chooser.
+The dock is Home / List / Games / Today / More. Notes is first in More.
+A small **add** button beside the heading opens the full composer on List,
+Date ideas and Memories. Home has quick add; Notes has its own writing bar.
+Games and Today have no unrelated add controls.
 
 Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 
@@ -31,7 +33,8 @@ Old links still work: `reminders.html`, `activity.html`, `notifications.html`,
 `help.html`, `admire.html`, `location.html` and `profiles.html` are no longer
 pages. `old-links.js` maps each to where it lives now; GitHub Pages' `404.html`
 and the service worker both use it, so old bookmarks and queued notifications
-still land in the right place.
+still land in the right place. Old `today.html#game…` links forward to
+`games.html` with their game, round and viewer query intact.
 
 ## Reminders, and how they reach a closed phone
 
@@ -147,7 +150,7 @@ their next visit.
 ### 3. Both phones
 
 Open the site, sign in with **your own** account, add it to the Home Screen, then
-open **Settings** (⚙︎ top-left on home) and allow notifications and location. The front door sends
+open **More → Settings** and allow notifications and location. The front door sends
 you to your side automatically. That page reports
 whether the phone is actually registered for background nudges, rather than just
 whether permission was granted.
@@ -170,7 +173,7 @@ whether permission was granted.
 
 ## Checking your work
 
-The Sun vs Moon game picker shares one delivery/transaction layer. The original
+The Games shelf shares one delivery/transaction layer. The original
 `games/sun-moon` board and scores are retained; `games/connect-four` and
 `games/dots-boxes` are independent. `arcade-game.js` contains original classic
 game implementations, not extracted APK code or assets. The supplied JindoBlu

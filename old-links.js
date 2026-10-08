@@ -20,6 +20,11 @@
   scope.oldPageTarget = function (href) {
     const url = new URL(href, scope.location.href);
     const name = url.pathname.split('/').pop();
+    if (name === 'today.html' && /^#game(?:-[A-Za-z0-9_-]+)?$/.test(url.hash)) {
+      const next = new URL('games.html', url);
+      next.search = url.search; next.hash = url.hash;
+      return next.href;
+    }
     const target = OLD_PAGES[name];
     if (!target) return '';
     const [page, hash] = target.split('#');

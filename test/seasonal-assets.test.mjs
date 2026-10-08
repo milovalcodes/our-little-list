@@ -46,7 +46,7 @@ for (const [season, date] of [
   const offline = await (await response).json();
   assert.deepEqual(offline, manifest);
 }
-for (const page of ['index','her','him','tasks','notes','today','status','dates','memories','phone-check','guide','404']) {
+for (const page of ['index','her','him','tasks','notes','today','games','status','dates','memories','phone-check','guide','404']) {
   const html = read(page + '.html');
   assert.ok(html.indexOf('seasonal-assets.js') >= 0 && html.indexOf('seasonal-assets.js') < html.indexOf('seasonal-theme.js'));
   if (page !== '404') assert.match(html, /rel="manifest" href="manifest.webmanifest"/);

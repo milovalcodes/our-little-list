@@ -33,7 +33,7 @@ try {
           apple:document.querySelector('link[rel="apple-touch-icon"]').getAttribute('href'),
           favicon:document.querySelector('link[rel="icon"]').getAttribute('href'),
           manifest:document.querySelector('link[rel="manifest"]').getAttribute('href'),
-          mask:getComputedStyle(document.querySelector('.dock-add i'), '::after').maskImage,
+          mask:getComputedStyle(document.querySelector('.context-add i'), '::after').maskImage,
           overflow:document.documentElement.scrollWidth - innerWidth, assets
         };
         late.remove();

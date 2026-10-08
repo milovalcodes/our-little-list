@@ -53,8 +53,8 @@ html[data-season="spooky"] .him-theme .random-date-card.date-roulette .roulette-
 html[data-season="christmas"] .him-theme :is(.primary-action,.random-date-card button#pick-random),
 html[data-season="christmas"] .him-theme :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active),
 html[data-season="christmas"] .him-theme .random-date-card.date-roulette .roulette-chip-group button.active { color:#173b39; background:#bce3ce; border-color:#bce3ce; }
-html[data-season="spooky"] .him-theme .dock-add span { color:#2c203f; }
-html[data-season="christmas"] .him-theme .dock-add span { color:#173b39; }
+html[data-season="spooky"] .him-theme .context-add span { color:#2c203f; }
+html[data-season="christmas"] .him-theme .context-add span { color:#173b39; }
 html[data-season="spooky"] .her-theme :is(.primary-action,.random-date-card button#pick-random,.tab.active,.soft-chip.active,.choice.active) { background:#824224; }
 html[data-season="christmas"] .her-theme :is(.primary-action,.random-date-card button#pick-random,.tab.active,.soft-chip.active,.choice.active) { background:#873d46; }
 html[data-season="spooky"] .him-theme .app-dock { background:rgba(31,25,48,.94); border-color:var(--diary-rule); }
@@ -135,10 +135,10 @@ html[data-season="spooky"] .sky-avatar { border-color:#ffcf9a; }
 html[data-season="christmas"] .sky-avatar { border-color:#e8f7dc; }
 html[data-season="spooky"] .profile-page .app-dock { border-color:var(--season-trim); box-shadow:0 0 0 3px var(--season-glow),0 13px 38px rgba(31,27,43,.18); }
 html[data-season="christmas"] .profile-page .app-dock { border-color:var(--season-trim); box-shadow:0 0 0 3px var(--season-glow),0 13px 38px rgba(31,27,43,.18); }
-html[data-season="spooky"] .profile-page .dock-add { color:#342339; background:#f2aa66; }
-html[data-season="spooky"] .profile-page .dock-add span { color:#342339; }
-html[data-season="christmas"] .profile-page .dock-add { color:#fff9ef; background:#ae4b55; }
-html[data-season="christmas"] .profile-page .dock-add span { color:#fff9ef; }
+html[data-season="spooky"] .profile-page .context-add { color:#342339; background:#f2aa66; }
+html[data-season="spooky"] .profile-page .context-add span { color:#342339; }
+html[data-season="christmas"] .profile-page .context-add { color:#fff9ef; background:#ae4b55; }
+html[data-season="christmas"] .profile-page .context-add span { color:#fff9ef; }
 @keyframes seasonalBreathe { to { translate:0 2px; opacity:.86; } }
 @media (prefers-reduced-motion:reduce) { .seasonal-sky-art { animation:none; } }
 @media (max-width:520px) { html[data-season="spooky"] .seasonal-whisper,html[data-season="christmas"] .seasonal-whisper { font-size:.84rem; } }
@@ -150,7 +150,7 @@ html[data-season="christmas"] { --season-mark:url("season-mark-christmas.svg"); 
 html[data-season]:not([data-season="normal"]) .profile-page :where(button,a[role="button"]) {
   border-color:var(--diary-rule); -webkit-tap-highlight-color:var(--season-glow);
 }
-html[data-season]:not([data-season="normal"]) .profile-page :is(.primary-action,.page-add,.dock-add,.thinking-ping) {
+html[data-season]:not([data-season="normal"]) .profile-page :is(.primary-action,.page-add,.context-add,.thinking-ping) {
   background-image:repeating-linear-gradient(135deg,transparent 0 12px,var(--season-thread) 12px 14px,transparent 14px 24px);
 }
 html[data-season]:not([data-season="normal"]) .profile-page :is(.soft-chip,.status-choice,.energy-choice,.repeat-chip,.reaction-pick,.more-grid a) { border-color:var(--diary-rule); }
@@ -162,8 +162,8 @@ html[data-season]:not([data-season="normal"]) .profile-page :is(.incoming-note,.
 html[data-season]:not([data-season="normal"]) .incoming-note :is(p,.incoming-note-close) { color:var(--page-text); }
 html[data-season]:not([data-season="normal"]) .incoming-note small { color:var(--page-muted); }
 html[data-season]:not([data-season="normal"]) .profile-page .toast { background:var(--accent-deep); color:var(--diary-pressed-ink); }
-html[data-season]:not([data-season="normal"]) :is(.dock-item i,.dock-add i,.more-grid i) { position:relative; }
-html[data-season]:not([data-season="normal"]) :is(.dock-item i,.dock-add i,.more-grid i)::after {
+html[data-season]:not([data-season="normal"]) :is(.dock-item i,.context-add i,.more-grid i) { position:relative; }
+html[data-season]:not([data-season="normal"]) :is(.dock-item i,.context-add i,.more-grid i)::after {
   content:""; position:absolute; width:10px; height:10px; right:-8px; top:-3px;
   background:currentColor; opacity:.8; mask:var(--season-mark) center/contain no-repeat;
   -webkit-mask:var(--season-mark) center/contain no-repeat; pointer-events:none;

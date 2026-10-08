@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 
 const base = 'http://127.0.0.1:8777';
 const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath:process.env.CHROME_PATH } : {});
-const pages = ['home','tasks','notes','today','status','dates','memories','phone-check','guide'];
+const pages = ['home','tasks','notes','today','games','status','dates','memories','phone-check','guide'];
 const seasons = [
   ['normal','2026-11-15T12:00:00-05:00'],
   ['spooky','2026-10-15T12:00:00-04:00'],
@@ -31,9 +31,9 @@ try {
             body:document.body.className,
             background:getComputedStyle(document.body).backgroundImage,
             card:card ? getComputedStyle(card).backgroundColor : '',
-            dockAdd:document.querySelector('.dock-add') ? getComputedStyle(document.querySelector('.dock-add')).backgroundColor : '',
+            dockAdd:document.querySelector('.context-add') ? getComputedStyle(document.querySelector('.context-add')).backgroundColor : '',
             overflow:document.documentElement.scrollWidth - innerWidth,
-            whisper:!!document.querySelector('.seasonal-whisper'),
+            whisper:!!document.querySelector('.seasonal-whisper') || !![...document.querySelectorAll('.game-room-intro h2')].find(node=>node.textContent!==node.dataset.seasonOriginalText),
             art:document.querySelector('.seasonal-sky-art')?.getAttribute('src') || ''
           };
         });
@@ -47,7 +47,7 @@ try {
           assert.ok(await page.locator('.seasonal-sky-art').evaluate(async img => { await img.decode(); return img.naturalWidth > 0; }), `${side}/${pageName}/${season}: art renders`);
         }
         colors.set(season, `${state.background}|${state.card}`);
-        if (side === 'him') {
+        if (side === 'him' && state.dockAdd) {
           if (season === 'spooky') assert.equal(state.dockAdd, 'rgb(242, 170, 102)', `${pageName}: October add button`);
           if (season === 'christmas') assert.equal(state.dockAdd, 'rgb(174, 75, 85)', `${pageName}: December add button`);
         }

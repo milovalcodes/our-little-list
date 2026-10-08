@@ -85,9 +85,12 @@ async function open(path) {
 }
 
 async function openSheet(page, name) {
+  // A deliberately seeded partner event may show a real incoming banner.
+  const incoming=page.locator('.incoming-note-close');
+  if(await incoming.isVisible())await incoming.click();
   const visible = page.locator(`[data-open-sheet="${name}"]:visible`).first();
   if (await visible.count()) await visible.click();
-  else await page.locator('.dock-add').click();
+  else await page.locator('.context-add').click();
   await page.waitForTimeout(220);
 }
 async function rowMenu(row, action) {
@@ -99,7 +102,7 @@ console.log('--- every page renders, no script errors, no sideways scroll ---');
 const PAGES = ['her.html','him.html','tasks.html?as=her','notes.html?from=her',
   'status.html?as=her','dates.html?as=her','tasks.html?as=her#asks',
   'phone-check.html?as=her','phone-check.html?as=her#names','status.html?as=him#partner','tasks.html?as=him#asks'];
-PAGES.push('today.html?as=her','memories.html?as=her');
+PAGES.push('today.html?as=her','games.html?as=him','memories.html?as=her');
 PAGES.push('guide.html?as=her#tutorial','guide.html?as=him#changes');
 
 for (const path of PAGES) {
@@ -163,7 +166,7 @@ async function openSlow(path) {
 }
 
 {
-  const { context, page, errors } = await openSlow('today.html?as=him');
+  const { context, page, errors } = await openSlow('him.html?as=him');
   await page.click('[data-open-sheet="quick"]');
   await page.fill('#quick-text', 'water the desk plant');
   await page.click('#quick-submit');
@@ -183,7 +186,7 @@ async function openSlow(path) {
   await page.waitForTimeout(300);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(250);
-  await page.goto(`${BASE}/today.html?as=him`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/him.html?as=him`, { waitUntil: 'domcontentloaded' });
   await page.click('[data-open-sheet="quick"]');
   await page.fill('#quick-text', 'repot the other plant');
   await page.click('#quick-submit');
@@ -228,8 +231,8 @@ async function openSlow(path) {
   // Empty states stay quiet; the page-level add button opens its own sheet.
   const notes = await open('notes.html?from=her');
   const duplicateNoteButton = await notes.page.locator('#note-inbox-empty .empty-action').count();
-  // Notes has no sheet: the dock's add button goes straight to its writing bar.
-  await notes.page.locator('.dock-add').click();
+  // Notes has no sheet: the writing bar is its only composer.
+  await notes.page.locator('#note-quick-text').click();
   await notes.page.waitForTimeout(400);
   const noteFocus = await notes.page.evaluate(() => document.activeElement?.id || '');
   const noteSheet = (await notes.page.locator('#sheet-note-form, .note-maker, #note-page-add').count()) === 0;
@@ -279,8 +282,8 @@ async function openSlow(path) {
 
 // One tap sends "thinking of you" from quick add.
 {
-  const { context, page, errors } = await open('today.html?as=him');
-  await page.click('.dock-add');
+  const { context, page, errors } = await open('him.html?as=him');
+  await page.click('.context-add');
   await page.waitForTimeout(300);
   await page.click('#quick-thinking');
   await page.waitForTimeout(400);
@@ -294,7 +297,7 @@ async function openSlow(path) {
 {
   const { context, page, errors } = await open('tasks.html?as=him');
   const home = await page.locator('.app-dock a').first().getAttribute('href');
-  await page.click('.dock-add');
+  await page.click('.context-add');
   await page.fill('#shared-task-title', 'charge the tiny fan');
   await page.click('#shared-task-form [type="submit"]');
   await page.waitForTimeout(250);
@@ -304,7 +307,7 @@ async function openSlow(path) {
   await page.waitForTimeout(150);
   const found = await page.locator('.search-hit', { hasText:'charge the tiny fan' }).count();
   note(home === 'him.html' && added === 1 && found === 1 && errors.length === 0,
-       'dock add and search stay on the right side', errors[0] || JSON.stringify({ home, added, found }));
+       'contextual add and search stay on the right side', errors[0] || JSON.stringify({ home, added, found }));
   await context.close();
 }
 
@@ -616,7 +619,7 @@ async function openSlow(path) {
        && avocados.every(item => item.recurrence === 'once' && !item.due)
        && avocados.every(item => item.aisle === 'produce') && await page.locator('#recent-grocery-chips button', { hasText: 'avocados' }).count() === 0
        && errors.length === 0, 'recent grocery comes back with its aisle, without duplicating an active one', errors[0] || JSON.stringify(avocados));
-  await page.click('.dock-add');
+  await page.click('.context-add');
   await page.fill('#shared-task-title', 'paper towels');
   await page.selectOption('#grocery-aisle', 'home');
   await page.click('#shared-task-form [type="submit"]');
@@ -741,7 +744,7 @@ async function openSlow(path) {
 
 // Quick add makes the same asks the Asks tab does, time and all.
 {
-  const { context, page, errors } = await open('today.html?as=her');
+  const { context, page, errors } = await open('her.html?as=her');
   await page.click('[data-open-sheet="quick"]');
   await page.click('[data-quick-kind="ask"]');
   await page.fill('#quick-text', 'call the vet');
@@ -1173,7 +1176,7 @@ async function openSlow(path) {
 }
 {
   const { context, page, errors } = await open('dates.html?as=her');
-  await page.locator('.dock-add').click();
+  await page.locator('.context-add').click();
   await page.fill('#date-title', 'tiny museum afternoon');
   await page.click('#date-submit');
   await page.waitForTimeout(180);

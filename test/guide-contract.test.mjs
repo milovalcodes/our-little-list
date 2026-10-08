@@ -14,7 +14,7 @@ assert.match(guide, /data-guide-tab="tutorial"/);
 assert.match(guide, /data-guide-tab="changes"/);
 assert.match(chrome, /guide\.html#tutorial/);
 assert.doesNotMatch(chrome, /guide\.html#changes/, 'More should have one guide entry, with the patch notes inside it');
-for (const topic of ['home','add','today','list','notes','status','dates','memories','settings']) {
+for (const topic of ['home','add','today','games','list','notes','status','dates','memories','settings']) {
   assert.match(guide, new RegExp(`id="guide-${topic}"`), `the ${topic} tutorial needs a section`);
 }
 const latest = guide.match(new RegExp(`<article class="release-entry" data-release="${current}">([\\s\\S]*?)<\\/article>`))?.[1];

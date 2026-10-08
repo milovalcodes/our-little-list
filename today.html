@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+  <script src="old-links.js"></script><script>
+    function forwardOldGame(){const target=oldPageTarget(location.href);if(target)location.replace(target);}
+    forwardOldGame();addEventListener('hashchange',forwardOldGame);
+  </script>
   <title>Today · Our Little List</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="diary.css">
   <script src="seasonal-assets.js"></script>
@@ -36,8 +40,6 @@
       </form>
     </section>
 
-    <section class="today-card game-card" id="game" aria-label="Sun vs Moon game"><p role="status">connecting the board…</p></section>
-
     <section class="today-new" id="new">
       <section class="activity-card">
         <div class="activity-heading"><div><p class="tiny-kicker">since you were here</p><h2>What’s new <span class="count-bubble" id="new-count" hidden>0</span></h2></div><button id="mark-seen" type="button">mark all seen</button></div>
@@ -47,6 +49,6 @@
       </section>
     </section>
   </main>
-  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="today.js"></script><script type="module" src="live-notes.js"></script><script type="module" src="game-panel.js"></script>
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="today.js"></script><script type="module" src="live-notes.js"></script>
 </body>
 </html>

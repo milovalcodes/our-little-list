@@ -53,11 +53,6 @@
 .profile-note-link:last-child { border:0; padding-bottom:0; }
 .profile-note-link small { display:block; margin-top:5px; color:var(--page-muted); }
 .game-card { scroll-margin-block:80px; }
-.game-picker { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:14px 0; }
-.game-card .game-picker button { display:flex; flex-direction:column; gap:5px; padding:10px 5px; min-width:0; text-align:center; line-height:1.25; }
-.game-picker strong { font-size:.8rem; }
-.game-picker small { font-size:.71rem; color:var(--page-muted); font-weight:600; }
-.game-card .game-picker button[aria-pressed="true"] { border-color:var(--accent); background:var(--accent-pale); box-shadow:inset 0 0 0 1px var(--accent); }
 .game-preview { text-align:center; font-size:3rem; color:var(--accent); padding:12px; }
 .game-turn-hint { min-height:1.4em; }
 .game-turn-hint:empty { display:none; }
@@ -128,7 +123,7 @@
 
 /* The dock owns Home; the feature heading owns search. No second masthead. */
 .profile-page[data-app] .app-topbar { display:none; }
-.profile-page .dock-item span,.profile-page .dock-add span { font-size:.69rem; }
+.profile-page .dock-item span { font-size:.69rem; }
 .feature-shell { width:min(740px,calc(100% - 24px)); }
 .feature-shell > .feature-hero,
 .feature-shell > .feature-hero:not(.now-hero) {
@@ -287,8 +282,8 @@
 @media (max-width:390px) { .guide-panel { padding:15px; } .guide-topic>div { padding-left:4px; } }
 
 /* A little movement is enough; the OS reduced-motion setting still wins. */
-.profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.dock-add,.primary-action) { transition:transform .16s ease,background-color .16s ease; }
-.profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.dock-add,.primary-action):active { transform:scale(.97); }
+.profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.primary-action) { transition:transform .16s ease,background-color .16s ease; }
+.profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.primary-action):active { transform:scale(.97); }
 @media (max-width:520px) {
   .feature-shell { width:calc(100% - 20px); }
   .feature-shell > .feature-hero,.feature-shell > .feature-hero:not(.now-hero) { min-height:62px; padding:9px 2px; }
@@ -297,7 +292,7 @@
   .feature-shell .note-thread-row { margin-left:0; }
 }
 @media (prefers-reduced-motion:reduce) {
-  .profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.dock-add,.primary-action) { transition:none; }
+  .profile-page :is(.page-add,.tiny-button,.tab,.soft-chip,.choice,.dock-item,.primary-action) { transition:none; }
 }
 
 /* Review fixes (v70) */
@@ -426,11 +421,10 @@
    so a tapped button on a phone no longer stays raised after the finger leaves.
    Long-pressing a row opens its menu, so the row itself must not start a text
    selection or the iOS callout on the same hold. */
-:where(button,summary,[role="button"],.sky-launch,.sky-person,.dock-item,.dock-add,.setup-nudge a):active:not(:disabled) { filter:brightness(.93); scale:.97; }
-:where(.dock-add):active { scale:.93; }
+:where(button,summary,[role="button"],.sky-launch,.sky-person,.dock-item,.setup-nudge a):active:not(:disabled) { filter:brightness(.93); scale:.97; }
 :where(.task-row,.note-thread-row,.activity-row) { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
 :where(.task-row,.note-thread-row,.activity-row) :is(input,textarea,form) { -webkit-user-select:text; user-select:text; }
-:where(button,summary,.dock-item,.dock-add,.sky-launch,.sky-person) { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+:where(button,summary,.dock-item,.sky-launch,.sky-person) { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
 button:disabled:not(.is-busy) { cursor:default; }
 
 /* The "remind me later" × on the pings nudge was a 22px target. */
@@ -476,8 +470,6 @@ button:disabled:not(.is-busy) { cursor:default; }
 .home-next-up .setup-nudge { margin:8px 0 0; box-shadow:none; }
 .fridge-note.is-empty .fridge-paper { min-height:44px; padding:6px 13px; opacity:.88; }
 .fridge-note.is-empty .fridge-paper small { display:none; }
-.empty-state .empty-add { display:block; margin:10px auto 0; min-height:44px; padding:8px 16px; border:0; border-radius:14px; color:var(--accent-deep); background:var(--accent-pale); font:inherit; font-size:.86rem; font-weight:850; cursor:pointer; }
-.him-theme .empty-state .empty-add { color:#ddc8ff; background:#31416c; }
 .date-roulette #pick-random { display:block; width:100%; margin:2px 0 10px; }
 .date-roulette .roulette-chip-group button { min-width:46px; padding:6px 11px; }
 .quick-status-more { display:block; margin:12px 0 0; text-align:center; color:var(--accent-deep); font-weight:800; font-size:.86rem; text-decoration:none; }
@@ -487,3 +479,49 @@ button:disabled:not(.is-busy) { cursor:default; }
 .arrival-strip { flex-wrap:wrap; }
 .arrival-strip>.tiny-kicker { flex:1 1 100%; }
 .arrival-strip>div.quick-status-options { flex:1 1 100%; justify-content:flex-start; margin:0; }
+
+/* The title already identifies the page; decorative icon tiles are not controls. */
+.feature-shell>.feature-hero .feature-icon { display:none!important; }
+
+/* v90: destinations in the dock, one relevant action in each page heading. */
+.context-add { display:inline-flex; align-items:center; justify-content:center; gap:5px; min-height:44px; padding:8px 13px; border:1px solid var(--diary-rule); border-radius:14px; background:var(--accent-pale); color:var(--accent-deep); font:inherit; font-weight:800; cursor:pointer; white-space:nowrap; }
+.context-add i { font-style:normal; }
+.context-add[hidden] { display:none!important; }
+.feature-shell>.feature-hero.has-context-action { padding-right:148px!important; }
+.feature-hero .context-add { position:absolute; top:50%; right:51px; translate:0 -50%; }
+.app-topbar.has-context-action { gap:8px; }
+.app-topbar.has-context-action .home-wordmark { flex:1; font-size:.85rem; }
+.app-topbar.has-context-action .context-add { order:1; }
+.app-topbar.has-context-action .topbar-search { order:2; }
+.context-add:focus-visible,.game-shelf-item:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.games-shell { max-width:540px; }
+.game-room-intro { display:flex; align-items:center; justify-content:center; gap:14px; padding:18px 2px; text-align:center; }
+.game-room-intro[hidden] { display:none; }
+.game-room-intro img { width:64px; height:64px; border:1px solid var(--diary-rule); border-radius:22px; transform:rotate(-8deg); }
+.game-room-intro img:last-child { transform:rotate(8deg); }
+.game-room-intro h2 { max-width:150px; margin:4px 0 0; font-size:1rem; color:var(--page-text); }
+.game-room-intro div>span { color:var(--accent-deep); }
+.games-shell #game.is-game-shelf { padding:0; background:none; border:0; box-shadow:none; }
+.game-shelf { display:grid; gap:10px; }
+.games-shell .game-card .game-shelf-item { width:100%; display:grid; grid-template-columns:60px minmax(0,1fr) 14px; gap:13px; padding:15px; min-height:100px; text-align:left; background:var(--diary-panel); border:1px solid var(--diary-rule); border-radius:22px; box-shadow:var(--diary-shadow); }
+.game-shelf-item>span:not(.game-cover) { display:grid; gap:6px; min-width:0; }
+.game-shelf-item strong { font-size:1.08rem; }
+.game-shelf-item small { font-size:.85rem; color:var(--page-muted); line-height:1.35; overflow-wrap:anywhere; }
+.game-shelf-item>i { color:var(--accent-deep); font-size:1.35rem; font-style:normal; }
+.games-shell .game-card .game-shelf-item.needs-move { border-color:var(--accent-deep); }
+.game-shelf-item.needs-move small { color:var(--accent-deep); font-weight:800; }
+.game-cover { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; width:60px; height:60px; padding:6px; border-radius:15px; background:var(--diary-raised); color:var(--accent-deep); transform:rotate(-5deg); }
+.game-cover i { display:grid; place-items:center; min-width:0; font-size:12px; font-style:normal; line-height:1; border:1px solid var(--diary-rule); border-radius:4px; }
+.cover-connect-four { transform:rotate(5deg); }
+.cover-connect-four i { border-radius:50%; background:var(--diary-panel); }
+.cover-dots-boxes i { border:1px dashed var(--accent-deep); border-radius:1px; }
+.game-preview .game-cover { width:100px; height:100px; margin:auto; }
+.game-preview .game-cover i { font-size:22px; }
+.games-shell .game-card .game-back { border:0; background:none; padding:0 5px; min-height:44px; margin:-8px 0 4px; color:var(--accent-deep); font-size:.85rem; }
+.games-shell .game-player { grid-template-columns:32px minmax(0,1fr); gap:7px; padding:10px; align-items:center; text-align:left; }
+.game-player>img { width:32px; height:32px; border-radius:12px; grid-row:1/3; }
+.games-shell .game-player strong { font-size:.85rem; }
+.games-shell .game-player .game-score { justify-content:flex-start; }
+.games-shell .game-rules { border-top:1px solid var(--diary-rule); }
+.games-shell .game-actions .primary-action { width:100%; }
+@media(prefers-reduced-motion:no-preference) { .game-shelf-item { transition:transform .16s ease,border-color .16s ease; } .game-shelf-item:active { transform:scale(.98); } }

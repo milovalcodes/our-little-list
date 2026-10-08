@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 const base = 'http://127.0.0.1:8777';
 const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
-const pages = ['home','tasks','notes','today','status','dates','memories','phone-check','guide'];
+const pages = ['home','tasks','notes','today','games','status','dates','memories','phone-check','guide'];
 let problems = 0;
 
 for (const side of ['her','him']) {
@@ -33,7 +33,7 @@ for (const side of ['her','him']) {
     if (!okay) problems++;
     console.log(`${okay ? 'ok  ' : 'FAIL'} ${side}/${name}: ${JSON.stringify(state)} · ${path}`);
     if (name === 'notes') {
-      await page.locator('.dock-add').click();
+      await page.locator('#note-quick-text').click();
       await page.waitForTimeout(260);
       const focused = await page.evaluate(() => document.activeElement?.id === 'note-quick-text');
       if (!focused) problems++;
@@ -41,7 +41,7 @@ for (const side of ['her','him']) {
       await page.evaluate(() => document.activeElement?.blur());
     }
     if (name === 'memories') {
-      await page.locator('.dock-add').click();
+      await page.locator('.context-add').click();
       await page.waitForTimeout(260);
       const sheet = 'memory-form';
       const open = await page.locator(`#sheet-${sheet}`).isVisible();

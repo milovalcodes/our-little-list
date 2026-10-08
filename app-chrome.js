@@ -31,12 +31,9 @@ async function boot() {
     const opener = event.target.closest('[data-open-sheet]');
     if (!opener) return;
     event.preventDefault();
-    // One visible add button. On a feature page it opens that page's full
-    // composer; elsewhere it remains the all-purpose quick chooser.
-    // A page with an always-visible writing bar (Notes) just focuses it.
-    const writeHere = opener.matches('.dock-add') ? document.querySelector('[data-dock-focus]') : null;
-    if (writeHere) { writeHere.focus(); writeHere.scrollIntoView?.({ block:'nearest' }); window.littleHaptic?.('tap'); return; }
-    const contextual = opener.matches('.dock-add') ? document.querySelector('.page-add[data-open-sheet]:not([hidden])')?.dataset.openSheet : '';
+    // One relevant add button: feature pages open their full composer,
+    // while Home keeps the all-purpose quick chooser.
+    const contextual = opener.matches('.context-add') ? document.querySelector('.page-add[data-open-sheet]:not([hidden])')?.dataset.openSheet : '';
     openSheet(contextual || opener.dataset.openSheet);
   });
   document.addEventListener('click', event => {
@@ -74,6 +71,7 @@ async function boot() {
   if (searchHost && !searchHost.querySelector('[data-open-sheet="search"]')) {
     searchHost.insertAdjacentHTML('beforeend', '<button class="topbar-search" type="button" data-open-sheet="search" aria-label="Search">⌕</button>');
   }
+  addContextAction(searchHost);
   setupUpdateCheck();
 }
 
@@ -105,17 +103,32 @@ function addDock(viewer) {
   document.body.insertAdjacentHTML('beforeend', `<nav class="app-dock" aria-label="Main navigation">
     <a class="dock-item${active('home')}" href="${viewer}.html"><i>⌂</i><span>home</span></a>
     <a class="dock-item${active('tasks')}" href="tasks.html"><i>✓</i><span>list</span></a>
-    <button class="dock-add" type="button" data-open-sheet="quick" aria-label="Add something"><i>＋</i><span>add</span></button>
+    <a class="dock-item${active('games')}" href="games.html"><i>⚄</i><span>games</span></a>
     <a class="dock-item${active('today')}" href="today.html"><i>◎</i><span>today</span></a>
     <button class="dock-item" type="button" data-open-sheet="more"><i>•••</i><span>more</span></button>
   </nav>`);
   document.body.classList.add('has-app-dock');
+  document.querySelector('.app-dock .is-active')?.setAttribute('aria-current','page');
+}
+
+function addContextAction(host) {
+  if (!host || !['home','tasks','dates','memories'].includes(page)) return;
+  const button=document.createElement('button');
+  button.type='button';button.className='context-add';button.dataset.openSheet='quick';
+  button.innerHTML='<i aria-hidden="true">＋</i><span>add</span>';
+  button.setAttribute('aria-label',page==='home'?'Quick add':'Add here');
+  host.classList.add('has-context-action');host.append(button);
+  const source=document.querySelector('.page-add');
+  if(source){
+    const sync=()=>{button.hidden=source.hidden;button.querySelector('span').textContent=source.textContent.replace('＋','').trim();};
+    sync();new MutationObserver(sync).observe(source,{attributes:true,childList:true,characterData:true,subtree:true});
+  }
 }
 
 function addSheets() {
   document.body.insertAdjacentHTML('beforeend', `<div class="sheet-scrim" data-close-sheet hidden></div>
     <section class="app-sheet" id="sheet-quick" role="dialog" aria-modal="true" aria-labelledby="quick-title" hidden>
-      <header class="sheet-head"><div><small>put it in the app</small><h2 id="quick-title">Quick add</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
+      <header class="sheet-head"><div><h2 id="quick-title">Quick add</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <button class="thinking-ping" id="quick-thinking" type="button"><span>♡</span> send “thinking of you”</button>
       <div class="quick-kind" role="tablist">
         <button class="active" type="button" data-quick-kind="task">to-do</button><button type="button" data-quick-kind="grocery">grocery</button><button type="button" data-quick-kind="note">note</button><button type="button" data-quick-kind="ask">ask</button><button type="button" data-quick-kind="date">date idea</button>
@@ -132,12 +145,12 @@ function addSheets() {
       </form>
     </section>
     <section class="app-sheet search-sheet" id="sheet-search" role="dialog" aria-modal="true" aria-labelledby="search-title" hidden>
-      <header class="sheet-head"><div><small>across our stuff</small><h2 id="search-title">Find anything</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
+      <header class="sheet-head"><div><h2 id="search-title">Search</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <label class="search-box"><span>⌕</span><input id="global-search" type="search" autocomplete="off" placeholder="milk, reminder, that one note…"></label>
       <div class="search-results" id="search-results"><div class="search-start"><span>✦</span><p>type literally anything</p></div></div>
     </section>
     <section class="app-sheet more-sheet" id="sheet-more" role="dialog" aria-modal="true" aria-labelledby="more-title" hidden>
-      <header class="sheet-head"><div><small>the rest of it</small><h2 id="more-title">More</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
+      <header class="sheet-head"><div><h2 id="more-title">More</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <nav class="more-grid">
         <a href="notes.html"><i>✉</i><span>notes</span></a><a href="status.html"><i>☀︎☾</i><span>profiles</span></a>
         <a href="dates.html"><i>✦</i><span>date ideas</span></a><a href="memories.html"><i>◒</i><span>memories</span></a>

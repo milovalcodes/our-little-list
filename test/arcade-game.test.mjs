@@ -7,7 +7,7 @@ assert.throws(()=>selectedGameId('constructor'));assert.throws(()=>selectedGameI
 for(const id of ['connect-four','dots-boxes']){
   let game=startArcade(id);
   const ping=gameMessage(game,'Moon');assert.equal(messageGameId(ping),id);assert.equal(gamePingCurrent(ping,game),true);
-  assert.deepEqual(gameRoute(gameHref(game).split('today.html')[1]),{id,round:game.round});
+  assert.deepEqual(gameRoute(gameHref(game).split('games.html')[1]),{id,round:game.round});
   assert.equal(gameRoute(`#game-${id}`).id,id);
   assert.throws(()=>nextGame(game,{gameId:id,action:'start',person:'him',expectedRound:game.round,round:'new'}),/already/);
   assert.throws(()=>nextGame(game,{gameId:id,action:'move',person:'him',cell:0,expectedRound:game.round,expectedPly:0}),/turn/);

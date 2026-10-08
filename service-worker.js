@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v89';
+const CACHE = 'our-little-list-v90';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -14,13 +14,13 @@ const PAGES = [
   // old-links.js maps them to where those things live now.
   './', './index.html', './her.html', './him.html', './old-links.js',
   './status.html', './dates.html', './tasks.html', './notes.html',
-  './phone-check.html', './today.html', './memories.html', './guide.html'
+  './phone-check.html', './games.html', './today.html', './memories.html', './guide.html'
 ];
 
 const ASSETS = [
   ...PAGES,
   './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './guide.js', './profile-store.js', './profile-route.js', './couple-game.js', './arcade-game.js', './game-panel.js', './profile-names.js',
-  './profiles.js', './status.js', './dates.js', './dashboard.js', './game-sync.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
+  './profiles.js', './status.js', './dates.js', './dashboard.js', './game-sync.js', './games.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
   './notification-policy.js', './notification-preferences.js',
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
   './push-config.js', './push-client.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',

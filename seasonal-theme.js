@@ -7,6 +7,7 @@
       mark: '🎃',
       art: 'seasonal-spooky.svg',
       home: '🎃 our sky · spooky season',
+      gameLine: 'a little spooky rivalry',
       landingKicker: 'our little list · spooky season ☀︎☾',
       landingLine: 'same two weirdos, now with bats ♡',
       pages: {
@@ -37,6 +38,7 @@
       mark: '🎄',
       art: 'seasonal-christmas.svg',
       home: '🎄 our sky · december edition',
+      gameLine: 'a little snow-day rivalry',
       landingKicker: 'our little list · december edition ☀︎☾',
       landingLine: 'same two weirdos, now with lights ♡',
       pages: {
@@ -138,6 +140,7 @@
     if (!document.body) return;
     const copy = seasonalCopy[root.dataset.season];
     setCopy(document.querySelector('.sky-heading .tiny-kicker'), copy?.home);
+    setCopy(document.querySelector('.game-room-intro h2'), copy?.gameLine);
     setCopy(document.querySelector('.landing-copy .tiny-kicker'), copy?.landingKicker);
     setCopy(document.querySelector('.landing-copy > p:last-child'), copy?.landingLine);
     for (const id of ['today-empty', 'activity-empty', 'note-inbox-empty', 'date-empty', 'memory-empty']) {

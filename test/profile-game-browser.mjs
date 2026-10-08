@@ -24,7 +24,7 @@ try{
   await moon.click('#sky-person-him');
   await moon.waitForSelector('[data-profile-owner="true"]');
   assert.equal(await moon.locator('#sheet-quick-status').count(),0);
-  await moon.click('[data-edit-profile-status]');
+  await moon.click('.person-status-card.is-me');
   await moon.fill('#status-text','making tea');await moon.click('#status-save');
   await moon.click('#profile-tabs a[href$="profile-her"]');
   await moon.waitForSelector('[data-profile-owner="false"]');
@@ -70,7 +70,7 @@ try{
   await context.setOffline(true);
   assert.equal(await moon.locator('.couple-board button:not(:disabled)').count(),0);
   await context.setOffline(false);
-  await moon.click('[data-game="close"]');await moon.click('[data-game="close"]');
+  await moon.locator('.game-rules summary').click();await moon.click('[data-game="close"]');await moon.click('[data-game="close"]');
   await sun.waitForFunction(()=>document.querySelector('.game-status')?.textContent==='put away for now');
   assert.equal((await readGame()).score.her,0);
   console.log('ok two-tab play: turns, 3-round match, rematch, moving pieces, reload, offline and ending');

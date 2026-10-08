@@ -39,7 +39,6 @@ $('profile-editor-slot').append(editor);
 function openStatusEditor(){if(selected!==viewer)return;if(!editorDirty){delete $('status-form').dataset.hydrated;hydrateEditor();}editor.open=true;editor.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}
 $('status-form').addEventListener('input',()=>{editorDirty=true;});
 $('status-form').addEventListener('change',()=>{editorDirty=true;});
-$('profile-actions').addEventListener('click', event => { if(event.target.closest('[data-edit-profile-status]'))openStatusEditor(); });
 $('status-pair').addEventListener('click',event=>{if(event.target.closest('.is-me')&&!event.target.closest('button'))openStatusEditor();});
 $('status-pair').addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.classList.contains('is-me')){event.preventDefault();openStatusEditor();}});
 document.getElementById('expand-map')?.addEventListener('click', event => {
@@ -151,8 +150,8 @@ function render(){
   $('status-pair').innerHTML=statusCard(selected,statuses.find(item=>item.id===selected||item.person===selected));
   document.querySelectorAll('[data-owner-control]').forEach(node=>{node.hidden=!own;});
   $('profile-actions').innerHTML=own
-    ? '<button type="button" data-edit-profile-status>edit status</button><a href="today.html#focus">focus together</a><a href="phone-check.html#names">name & settings</a>'
-    : '<button type="button" data-open-quick="note">leave a note</button><button type="button" data-open-quick="ask">ask for a hand</button><a href="today.html#game">play a round ☀︎☾</a>';
+    ? '<a href="phone-check.html#names">name & settings</a>'
+    : '<button type="button" data-open-quick="note">leave a note</button><button type="button" data-open-quick="ask">ask for a hand</button>';
   renderProfileNotes();
 }
 function renderProfileNotes(){

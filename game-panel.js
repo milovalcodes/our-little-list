@@ -12,26 +12,20 @@ async function start(){
   const data=await sharedLayer(), viewer=await awaitViewer();
   if(!viewer)return;
   const other=partnerOf(viewer);
-  const rememberedKey=`littlelist-game-${viewer}`;
-  let remembered='';try{remembered=sessionStorage.getItem(rememberedKey)||'';}catch(_){}
-  let games=[], snapshotRevision=0, id=gameRoute(location.hash).id, loaded=false, busy=false, expanded=false, folded=false, error='', confirmClose=false, selected='', connection='connecting', chosen=false;
+  let games=[], snapshotRevision=0, id=gameRoute(location.hash).id, loaded=false, busy=false, error='', confirmClose=false, selected='', connection='connecting', rulesOpen=false;
   let loadingTimer;
   const current=()=>games.find(item=>item.id===id)||null;
   const wantsGame=()=>/^#game(?:-[A-Za-z0-9_-]+)?$/.test(location.hash);
   watchGames(data, items=>{
     snapshotRevision++;
-    if(!chosen&&!wantsGame()){
-      const active=items.filter(game=>!gameResult(game).over);
-      const preferred=active.find(game=>game.id===remembered)||active.find(game=>game.turn===viewer)||active[0];
-      if(preferred){id=preferred.id;chosen=true;expanded=true;}
-    }
     const before=current(),next=items.find(item=>item.id===id)||null;
-    if(next?.round!==before?.round||next?.ply!==before?.ply){selected='';folded=false;confirmClose=false;}
+    if(next?.round!==before?.round||next?.ply!==before?.ply){selected='';confirmClose=false;}
     games=items;loaded=true;
     if(error.startsWith('Still connecting'))error='';
     render();
   },state=>{connection=state;render();});
-  window.addEventListener('hashchange',()=>{if(wantsGame())id=gameRoute(location.hash).id;expanded=wantsGame();folded=false;selected='';error='';confirmClose=false;render();if(expanded)host.scrollIntoView({block:'center'});});
+  window.addEventListener('hashchange',()=>{if(wantsGame())id=gameRoute(location.hash).id;selected='';error='';confirmClose=false;rulesOpen=false;render();});
+  host.addEventListener('toggle',event=>{if(event.target.matches('.game-rules')&&event.target.isConnected)rulesOpen=event.target.open;},true);
   window.addEventListener('littlelist:profile',render);
   window.addEventListener('offline',render);
   window.addEventListener('online',render);
@@ -53,43 +47,54 @@ async function start(){
     }
     return `<div class="couple-board" role="group" aria-label="Sun vs Moon board">${Array.from({length:9},(_,cell)=>{const person=game.board[cell];return `<button type="button" data-cell="${cell}" ${disabled||(person&&!(person===viewer&&shifting))?'disabled':''} aria-pressed="${selected===String(cell)}" class="${result.line.includes(cell)?'winning-cell':''} ${selected===String(cell)?'selected-piece':''}" aria-label="Row ${Math.floor(cell/3)+1}, column ${cell%3+1}: ${person?escapeHtml(personName(person)):'empty'}">${token(person)}</button>`;}).join('')}</div>`;
   }
+  function miniBoard(key){
+    return '<span class="game-cover cover-'+key+'" aria-hidden="true">'+Array.from({length:9},(_,i)=>'<i>'+((i===0||i===4)?'☀':i===2?'☾':'')+'</i>').join('')+'</span>';
+  }
   function render(){
     if(loaded)clearTimeout(loadingTimer);
-    const game=current(),spec=GAME_CATALOG[id],result=gameResult(game),active=game&&!result.over;
+    const show=wantsGame(), game=current(), spec=GAME_CATALOG[id], result=gameResult(game), active=game&&!result.over;
+    const yourTurn=active&&game.turn===viewer;
     const shifting=id===GAME_ID&&Object.values(game?.board||{}).filter(person=>person===viewer).length===3;
     const matchWon=result.winner&&game.score[result.winner]===3;
-    const show=!folded&&(expanded||wantsGame()||active);
-    const yourTurn=active&&game.turn===viewer,pending=games.filter(g=>!gameResult(g).over&&g.turn===viewer).length;
-    const label=!loaded?'connecting…':connection!=='connected'&&navigator.onLine?'syncing board…':!game?'pick a little rivalry':game.closed?'put away for now':result.winner?`${result.winner===viewer?'you':personName(result.winner)} ${matchWon?'won the match 🏆':'took the round ✦'}`:result.draw?'a draw. suspiciously diplomatic.':yourTurn?'your turn':`waiting for ${personName(other)}`;
-    const stale=wantsGame()?gameRoute(location.hash).round:'';
-    const hint=id==='connect-four'?'tap a column to drop your piece':id==='dots-boxes'?(game?.turn===game?.lastBy&&game?.ply?'box claimed. go again!':'tap a line · finish a box, go again'):shifting?(selected?'now tap an empty square':'pick one of your pieces to move'):'tap an empty square';
-    const rules=id==='connect-four'?'Tap a column to drop a piece into its lowest empty space. Connect 4 across, down or diagonally. A full board without a line is a draw.':id==='dots-boxes'?'Take turns adding a line between two dots. Finish the fourth side of a box to claim it and take another turn. When all 9 boxes are claimed, whoever owns more wins. Watch out for long chains near the end.':'Take turns placing 3 pieces each. After that, tap one of yours and move it to any empty square. Get 3 in a row, across, down or diagonally. A round draws after 30 turns.';
-    host.innerHTML=`<div class="today-card-head"><div><h2>Sun vs Moon</h2><p class="game-status" role="status">${escapeHtml(show?label:pending?`${pending} ${pending===1?'game needs':'games need'} your move`:label)}</p></div><button type="button" data-game="expand" aria-expanded="${show}">${show?'fold':'play'}</button></div>
-      ${show?`<div class="game-content"><div class="game-picker" role="group" aria-label="Choose a game">${Object.entries(GAME_CATALOG).map(([key,item])=>{const board=games.find(g=>g.id===key),turn=board&&!gameResult(board).over&&board.turn===viewer;return `<button type="button" data-pick-game="${key}" aria-pressed="${id===key}" ${busy?'disabled':''}><strong>${item.name}</strong><small>${turn?'your turn':board&&!gameResult(board).over?'in play':'pick & play'}</small></button>`;}).join('')}</div>
+    const label=!loaded?'connecting…':connection!=='connected'&&navigator.onLine?'syncing board…':!game?'ready when you are':game.closed?'put away for now':result.winner?`${result.winner===viewer?'you':personName(result.winner)} ${matchWon?'won the match 🏆':'took the round ✦'}`:result.draw?'a draw. rematch?':yourTurn?'your turn':`waiting for ${personName(other)}`;
+    document.querySelector('.game-room-intro')?.toggleAttribute('hidden',show);
+    const stale=show?gameRoute(location.hash).round:'';
+    const hint=id==='connect-four'?'tap a column':id==='dots-boxes'?(game?.turn===game?.lastBy&&game?.ply?'box claimed. go again!':'finish a box, take another turn'):shifting?(selected?'now tap an empty square':'pick a piece to move'):'tap an empty square';
+    const rules=id==='connect-four'?'Drop a piece into a column. Connect 4 across, down or diagonally. A full board without a line is a draw.':id==='dots-boxes'?'Add a line between two dots. Finish the fourth side of a box to claim it and take another turn. Most boxes wins.':'Place 3 pieces each, then move one of yours to an empty square. Get 3 in a row. A round draws after 30 moves.';
+    const notice=`${!navigator.onLine?'<p class="game-hint">Offline — your games are saved. Reconnect to play.</p>':''}${navigator.onLine&&connection!=='connected'?'<p class="game-hint game-connection" role="status">Reconnecting…</p>':''}${busy?'<p class="game-hint" role="status">sending your move…</p>':''}${error?`<p class="game-error" role="alert">${escapeHtml(error)}</p>`:''}`;
+    if(!show){
+      host.classList.add('is-game-shelf');
+      host.innerHTML=`<div class="game-shelf" aria-label="Choose a game">${Object.entries(GAME_CATALOG).map(([key,item])=>{
+        const board=games.find(g=>g.id===key),playing=board&&!gameResult(board).over;
+        const turn=playing&&board.turn===viewer;
+        const copy=!loaded?'loading…':playing?(turn?'your turn':`waiting for ${personName(other)}`):board&&!board.closed?'see result · play again':item.hint;
+        return `<button type="button" class="game-shelf-item ${turn?'needs-move':''}" data-pick-game="${key}">${miniBoard(key)}<span><strong>${item.name}</strong><small>${escapeHtml(copy)}</small></span><i aria-hidden="true">›</i></button>`;
+      }).join('')}</div>${notice}`;
+      return;
+    }
+    host.classList.remove('is-game-shelf');
+    host.innerHTML=`<button class="game-back" type="button" data-game="lobby">← all games</button>
+      <div class="today-card-head"><div><h2>${spec.name}</h2><p class="game-status" role="status">${escapeHtml(label)}</p></div></div>
+      <div class="game-content">
       ${stale&&stale!==game?.round&&loaded?'<p class="game-hint">That ping was for an older round. This is the latest board.</p>':''}
-      <p class="game-hint">First to 3 rounds. ${game?'':'Invite them to start.'}</p>
-      <div class="game-players">${['her','him'].map(person=>`<div class="game-player ${game?.turn===person&&active?'is-turn':''}"><strong>${person==='her'?'☀︎':'☾'} ${escapeHtml(personName(person))}</strong><span class="game-score" aria-label="${game?.score[person]||0} rounds won">${[0,1,2].map(i=>`<i class="${i<(game?.score[person]||0)?'scored':''}"></i>`).join('')}</span><small>${game?.wins[person]||0} ${game?.wins[person]===1?'match':'matches'}</small></div>`).join('')}</div>
-      <p class="game-hint game-turn-hint" role="status">${yourTurn?hint:active?`${escapeHtml(personName(other))} is up. Their move will appear here.`:''}</p>
-      ${game?boardMarkup(game,result,yourTurn,shifting):`<div class="game-preview" aria-hidden="true">${spec.icon}</div>`}
-      <div class="game-actions">${!active?`<button class="primary-action" type="button" data-game="start" ${!loaded||busy||connection!=='connected'||!navigator.onLine?'disabled':''}>${busy?'connecting…':matchWon?'invite to a rematch':game?'next round':`invite ${escapeHtml(personName(other))}`}</button>`:`<button type="button" data-game="close" ${busy||connection!=='connected'||!navigator.onLine?'disabled':''}>${confirmClose?'yes, end this round':'put this round away'}</button>${confirmClose?'<button type="button" data-game="cancel">keep playing</button>':''}`}</div>
-      <details class="game-rules"><summary>how to play</summary><p>${rules}</p><p>First to 3 rounds wins the match; match wins are saved separately for each game. The invited person starts. Either of you can put a round away without awarding a point. There’s no timer.</p></details></div>`:''}
-      ${!navigator.onLine?'<p class="game-hint">Offline — your board is saved. Reconnect to take a turn.</p>':''}
-      ${navigator.onLine&&connection!=='connected'?'<p class="game-hint game-connection" role="status">Reconnecting the board… no need to refresh.</p>':''}
-      ${busy?'<p class="game-hint" role="status">sending your move…</p>':''}
-      ${error?`<p class="game-error" role="alert">${escapeHtml(error)}</p>`:''}`;
+      <div class="game-players">${['her','him'].map(person=>`<div class="game-player ${game?.turn===person&&active?'is-turn':''}"><img src="${person==='her'?'sun':'moon'}-profile.png" alt=""><strong>${escapeHtml(personName(person))}</strong><span class="game-score" aria-label="${game?.score[person]||0} of 3 rounds won">${[0,1,2].map(i=>`<i class="${i<(game?.score[person]||0)?'scored':''}"></i>`).join('')}</span></div>`).join('')}</div>
+      <p class="game-hint game-turn-hint" role="status">${yourTurn?hint:active?'their move will appear here':''}</p>
+      ${game?boardMarkup(game,result,yourTurn,shifting):`<div class="game-preview">${miniBoard(id)}</div><p class="game-hint">${rules}</p>`}
+      ${!active?`<div class="game-actions"><button class="primary-action" type="button" data-game="start" ${!loaded||busy||connection!=='connected'||!navigator.onLine?'disabled':''}>${busy?'connecting…':matchWon?'rematch':game?'next round':`invite ${escapeHtml(personName(other))}`}</button></div>`:''}
+      <details class="game-rules" ${rulesOpen?'open':''}><summary>rules & round options</summary><p>${rules}</p><p>First to 3 rounds wins. The invited person starts. No timer.</p>
+      <p>Matches won: ${escapeHtml(personName('her'))} ${game?.wins.her||0} · ${escapeHtml(personName('him'))} ${game?.wins.him||0}</p>
+      ${active?`<div class="game-actions"><button type="button" data-game="close" ${busy||connection!=='connected'||!navigator.onLine?'disabled':''}>${confirmClose?'yes, end this round':'end this round'}</button>${confirmClose?'<button type="button" data-game="cancel">keep playing</button>':''}</div>`:''}</details></div>${notice}`;
   }
   host.addEventListener('click',async event=>{
     const button=event.target.closest('button');if(!button||button.disabled||busy)return;
     const action=button.dataset.game;
     if(button.dataset.pickGame){
-      id=button.dataset.pickGame;selected='';confirmClose=false;error='';expanded=true;folded=false;
-      chosen=true;try{sessionStorage.setItem(rememberedKey,id);}catch(_){}
-      history.replaceState(null,'',id===GAME_ID?'#game':`#game-${id}`);render();return;
+      id=button.dataset.pickGame;selected='';confirmClose=false;error='';
+      rulesOpen=false;
+      history.pushState(null,'',id===GAME_ID?'#game':`#game-${id}`);render();return;
     }
-    if(action==='expand'){
-      const showing=button.getAttribute('aria-expanded')==='true';expanded=!showing;folded=showing;
-      if(showing)history.replaceState(null,'',location.pathname+location.search);
-      render();return;
+    if(action==='lobby'){
+      history.pushState(null,'',location.pathname+location.search);selected='';confirmClose=false;error='';rulesOpen=false;render();return;
     }
     if(action==='cancel'){confirmClose=false;render();return;}
     if(action==='close'&&!confirmClose){confirmClose=true;render();return;}
@@ -99,7 +104,7 @@ async function start(){
     if(id===GAME_ID&&cell!==undefined&&game?.board[cell]===viewer){selected=selected===cell?'':cell;error='';render();host.querySelector(`[data-cell="${cell}"]`)?.focus();return;}
     if(id===GAME_ID&&cell!==undefined&&Object.values(game?.board||{}).filter(person=>person===viewer).length===3&&!selected){error='Pick one of your pieces first, then an empty square.';render();return;}
     const actingId=id,options={gameId:id,action:action||'move',person:viewer,cell,fromCell:selected,expectedRound:game?.round||'',expectedPly:game?.ply,round:crypto.randomUUID(),now:Date.now()};
-    busy=true;error='';confirmClose=false;expanded=true;render();
+    busy=true;error='';confirmClose=false;render();
     const beforeSave=snapshotRevision;
     try{
       const next=await data.playGame(options,personName(viewer));
@@ -107,7 +112,7 @@ async function start(){
       // The listener owns the board once it has delivered a fresh snapshot.
       if(snapshotRevision===beforeSave)games=[...games.filter(g=>g.id!==actingId),{id:actingId,...next}];
       selected='';
-      if(id===actingId)history.replaceState(null,'',gameHref(current()||next).replace('today.html',''));
+      if(id===actingId)history.replaceState(null,'',gameHref(current()||next).replace('games.html',''));
     }catch(problem){error=problem?.code?'Couldn’t sync that move. Check your connection, then try again.':problem?.message||'Couldn’t sync that move. Try again.';}
     finally{busy=false;render();}
   });
