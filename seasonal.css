@@ -1,0 +1,91 @@
+/* A small seasonal layer over the shared diary layout. No controls move. */
+html[data-season="spooky"] body.landing {
+  background:radial-gradient(circle at 13% 18%,#f8c36e 0 3rem,transparent 19rem),radial-gradient(circle at 86% 18%,#c9aad9 0 3rem,transparent 20rem),linear-gradient(125deg,#fff0d1 0%,#e9ad86 42%,#745377 70%,#211936 100%);
+}
+html[data-season="christmas"] body.landing {
+  background:radial-gradient(circle at 13% 18%,#ffe5ab 0 3rem,transparent 19rem),radial-gradient(circle at 86% 18%,#e7fbeb 0 3rem,transparent 20rem),linear-gradient(125deg,#fff7e8 0%,#e2e9d3 40%,#8cafa0 68%,#163d42 100%);
+}
+html[data-season="spooky"] .landing-copy h1 { color:#48263f; }
+html[data-season="christmas"] .landing-copy h1 { color:#194842; }
+html[data-season="spooky"] .landing-copy>p:last-child { color:#54354b; }
+html[data-season="christmas"] .landing-copy>p:last-child { color:#315449; }
+html[data-season="spooky"] .install-corner button { background:#43263c; }
+html[data-season="christmas"] .install-corner button { background:#205148; }
+html[data-season="spooky"] .landing-foot,
+html[data-season="spooky"] .install-corner p,
+html[data-season="christmas"] .landing-foot,
+html[data-season="christmas"] .install-corner p { color:#fff8e9; }
+
+html[data-season="spooky"] .her-theme {
+  --accent:#db8437; --accent-deep:#824224; --accent-pale:#fff0d7; --accent-soft:#e7b77f;
+  --page-text:#4f332c; --page-muted:#76594f; --paper:rgba(255,248,231,.94);
+  --diary-panel:rgba(255,248,231,.97); --diary-raised:#fff0d9; --diary-rule:rgba(112,65,43,.22); --diary-pressed-ink:#fff9ed;
+  background:radial-gradient(circle at 86% 2%,#ffd178 0 4rem,rgba(245,162,76,.22) 4rem 23rem,transparent 34rem),radial-gradient(circle at 0 54%,#eed1be 0,transparent 27rem),linear-gradient(160deg,#fff8e8,#f8e2ce 58%,#e8c0b7);
+}
+html[data-season="spooky"] .him-theme {
+  --accent:#e1b16e; --accent-deep:#f3c784; --accent-pale:#352a50; --accent-soft:#8d719c;
+  --page-text:#fff3df; --page-muted:#dfc9d8; --paper:rgba(32,25,53,.92);
+  --diary-panel:rgba(35,27,56,.97); --diary-raised:#392d58; --diary-rule:rgba(234,187,151,.24); --diary-pressed-ink:#2c203f;
+  background:radial-gradient(circle at 86% 2%,rgba(255,211,140,.77) 0 3.5rem,rgba(189,116,95,.10) 4rem 22rem,transparent 33rem),radial-gradient(circle at 4% 45%,rgba(125,62,118,.39) 0,transparent 29rem),linear-gradient(155deg,#302444,#1f1b35 58%,#141427);
+}
+html[data-season="christmas"] .her-theme {
+  --accent:#bb5957; --accent-deep:#873d46; --accent-pale:#fff0e7; --accent-soft:#e1aba3;
+  --page-text:#4f3338; --page-muted:#775c5d; --paper:rgba(255,250,239,.95);
+  --diary-panel:rgba(255,250,239,.97); --diary-raised:#f8eee3; --diary-rule:rgba(128,72,68,.20); --diary-pressed-ink:#fff9ef;
+  background:radial-gradient(circle at 86% 2%,#fff0bd 0 4rem,rgba(237,193,137,.18) 4rem 23rem,transparent 34rem),radial-gradient(circle at 0 54%,#e5eadd 0,transparent 28rem),linear-gradient(160deg,#fffaf0,#f5e8df 57%,#e5d1ca);
+}
+html[data-season="christmas"] .him-theme {
+  --accent:#9dcfc0; --accent-deep:#bee8ce; --accent-pale:#254744; --accent-soft:#678e84;
+  --page-text:#f4fae9; --page-muted:#cadfda; --paper:rgba(19,47,49,.94);
+  --diary-panel:rgba(22,51,52,.97); --diary-raised:#2a5956; --diary-rule:rgba(202,231,212,.25); --diary-pressed-ink:#173b39;
+  background:radial-gradient(circle at 86% 2%,rgba(247,247,222,.80) 0 3.5rem,rgba(161,216,194,.10) 4rem 22rem,transparent 33rem),radial-gradient(circle at 4% 45%,rgba(71,131,123,.37) 0,transparent 29rem),linear-gradient(155deg,#1d4a4b,#17383e 58%,#102b36);
+}
+
+/* Theme the shared surfaces, not just the home screen. */
+html[data-season] .profile-page :is(.feature-shell>section,.dashboard-shell>.our-sky,.dashboard-shell>.home-next-up,.settings-group>summary) { border-color:var(--diary-rule); }
+html[data-season="spooky"] .her-theme .fridge-paper { color:#55372e; border-color:#ecc6a4; background:linear-gradient(145deg,#fff0c5,#f8d19d); }
+html[data-season="christmas"] .her-theme .fridge-paper { color:#493737; border-color:#d7b7a4; background:linear-gradient(145deg,#fff5dc,#f5dfc9); }
+html[data-season="spooky"] .him-theme .fridge-paper { color:#fff4e2; border-color:#9b7592; background:linear-gradient(145deg,#4b355e,#3c315a); }
+html[data-season="christmas"] .him-theme .fridge-paper { color:#f4fae9; border-color:#76a695; background:linear-gradient(145deg,#33615d,#254e51); }
+html[data-season="spooky"] .him-theme :is(.primary-action,.random-date-card button#pick-random,.dock-add),
+html[data-season="spooky"] .him-theme :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active),
+html[data-season="spooky"] .him-theme .random-date-card.date-roulette .roulette-chip-group button.active { color:#2c203f; background:#f0bf81; border-color:#f0bf81; }
+html[data-season="christmas"] .him-theme :is(.primary-action,.random-date-card button#pick-random,.dock-add),
+html[data-season="christmas"] .him-theme :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active),
+html[data-season="christmas"] .him-theme .random-date-card.date-roulette .roulette-chip-group button.active { color:#173b39; background:#bce3ce; border-color:#bce3ce; }
+html[data-season="spooky"] .him-theme .dock-add span { color:#2c203f; }
+html[data-season="christmas"] .him-theme .dock-add span { color:#173b39; }
+html[data-season="spooky"] .her-theme :is(.primary-action,.random-date-card button#pick-random,.tab.active,.soft-chip.active,.choice.active) { background:#824224; }
+html[data-season="christmas"] .her-theme :is(.primary-action,.random-date-card button#pick-random,.tab.active,.soft-chip.active,.choice.active) { background:#873d46; }
+html[data-season="spooky"] .him-theme .app-dock { background:rgba(31,25,48,.94); border-color:var(--diary-rule); }
+html[data-season="christmas"] .him-theme .app-dock { background:rgba(19,47,49,.95); border-color:var(--diary-rule); }
+html[data-season="spooky"] .her-theme .auth-gate { background:rgba(91,50,66,.37); }
+html[data-season="christmas"] .her-theme .auth-gate { background:rgba(41,86,75,.34); }
+html[data-season="spooky"] .him-theme .auth-gate { background:rgba(31,22,47,.73); }
+html[data-season="christmas"] .him-theme .auth-gate { background:rgba(13,43,45,.74); }
+html[data-season="spooky"] .her-theme .auth-card,
+html[data-season="christmas"] .her-theme .auth-card { background:var(--diary-panel); border:1px solid var(--diary-rule); }
+html[data-season="spooky"] .him-theme :is(.app-sheet,.auth-card,.emoji-picker-card) { background:#28203f; border-color:var(--diary-rule); }
+html[data-season="christmas"] .him-theme :is(.app-sheet,.auth-card,.emoji-picker-card) { background:#1a4143; border-color:var(--diary-rule); }
+html[data-season="spooky"] .him-theme .setup-nudge { color:#fff3df; background:#493458; border-color:var(--diary-rule); }
+html[data-season="christmas"] .him-theme .setup-nudge { color:#f4fae9; background:#2b5a55; border-color:var(--diary-rule); }
+html[data-season="spooky"] .him-theme .setup-nudge small,
+html[data-season="christmas"] .him-theme .setup-nudge small { color:var(--page-muted); }
+html[data-season="spooky"] .him-theme .setup-nudge a { color:#2c203f; background:#f0bf81; }
+html[data-season="christmas"] .him-theme .setup-nudge a { color:#173b39; background:#bce3ce; }
+html[data-season="spooky"] .him-theme :is(input,select,textarea) { background:#382c53; border-color:var(--diary-rule); color:var(--page-text); }
+html[data-season="christmas"] .him-theme :is(input,select,textarea) { background:#2c5754; border-color:var(--diary-rule); color:var(--page-text); }
+html[data-season="spooky"] .him-theme :is(input,textarea)::placeholder { color:#d5bbce; }
+html[data-season="christmas"] .him-theme :is(input,textarea)::placeholder { color:#c0d9d3; }
+html[data-season="spooky"] .him-theme :is(.date-roulette,.memory-card.featured) { background:#302746; border-color:var(--diary-rule); }
+html[data-season="christmas"] .him-theme :is(.date-roulette,.memory-card.featured) { background:#214b4b; border-color:var(--diary-rule); }
+
+html[data-season="spooky"] .sky-stage[data-phase] { background:radial-gradient(circle at 48% 14%,rgba(255,208,132,.20),transparent 35%),linear-gradient(155deg,#493254,#57365e 50%,#ad684f); }
+html[data-season="christmas"] .sky-stage[data-phase] { background:radial-gradient(circle at 52% 12%,rgba(235,255,228,.22),transparent 35%),linear-gradient(155deg,#254e59,#2d6260 50%,#648574); }
+html[data-season="spooky"] .him-theme .sky-stage[data-phase] { background:radial-gradient(circle at 52% 12%,rgba(255,209,148,.13),transparent 35%),linear-gradient(155deg,#221d3a,#38264c 56%,#774456); }
+html[data-season="christmas"] .him-theme .sky-stage[data-phase] { background:radial-gradient(circle at 52% 12%,rgba(220,255,229,.16),transparent 35%),linear-gradient(155deg,#143840,#1e4b4a 56%,#3e6960); }
+.seasonal-whisper { width:fit-content; max-width:100%; margin:5px 0 8px; padding:5px 11px; border:1px solid var(--diary-rule); border-radius:999px; color:var(--page-muted); background:var(--diary-panel); font-size:.72rem; font-weight:800; line-height:1.35; }
+.seasonal-sky-mark { position:absolute; top:9px; right:12px; z-index:2; pointer-events:none; color:#fff5df; font-size:.75rem; font-weight:850; letter-spacing:.025em; text-shadow:0 1px 9px rgba(14,15,32,.5); opacity:.9; }
+html[data-season="spooky"] .redirect-page { background:#302444; color:#fff3df; }
+html[data-season="christmas"] .redirect-page { background:#1d4a4b; color:#f4fae9; }
+@media (max-width:520px) { .seasonal-whisper { font-size:.69rem; } .seasonal-sky-mark { top:7px; right:9px; } }

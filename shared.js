@@ -17,14 +17,16 @@ const syncBackedPage=Boolean(document.getElementById('auth-root'));
 let thinkingTimeout=null;
 
 window.littleLoading={
-  show(message='getting our stuff…'){
+  show(message){
+    const season=window.LittleSeason?.current;
+    const defaultMessage=season==='spooky'?'checking the cobwebs…':season==='christmas'?'getting cozy…':'getting our stuff…';
     let screen=document.querySelector('.thinking-screen');
     if(!screen){
       screen=document.createElement('aside');screen.className='thinking-screen';screen.setAttribute('role','status');screen.setAttribute('aria-live','polite');
       screen.innerHTML='<div class="celestial-loader" aria-hidden="true"><span>☀</span><i>✦</i><span>☾</span></div><strong></strong><p>one tiny second.</p>';
       document.body.append(screen);
     }
-    screen.querySelector('strong').textContent=message;screen.classList.remove('is-leaving');
+    screen.querySelector('strong').textContent=message??defaultMessage;screen.classList.remove('is-leaving');
   },
   hide(){
     const screen=document.querySelector('.thinking-screen');if(!screen)return;
