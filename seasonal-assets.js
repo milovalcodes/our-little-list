@@ -23,7 +23,10 @@
   }
   function manifest(base, date = new Date()) {
     const assets = forSeason(seasonForDate(date));
-    return { ...base, id: './index.html', theme_color: assets.theme,
+    // An explicit relative id resolves against the origin, NOT the manifest
+    // directory. Keep the original implicit start_url identity on GitHub Pages.
+    const { id: _explicitId, ...stableBase } = base;
+    return { ...stableBase, theme_color: assets.theme,
       background_color: assets.background, icons: [
         { src: assets.icon, sizes: '192x192', type: 'image/png', purpose: 'any' },
         { src: assets.pair, sizes: '512x512', type: 'image/png', purpose: 'any' },

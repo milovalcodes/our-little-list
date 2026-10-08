@@ -19,7 +19,10 @@ for (const [season, date] of [
     assert.ok(sw.includes("'" + './' + art[key] + "'"), art[key] + ' works offline');
   }
   const manifest = api.manifest(base, new Date(date));
-  assert.equal(manifest.id, './index.html');
+  assert.ok(!('id' in manifest), 'keep the original implicit start_url identity');
+  const installUrl = 'https://milovalcodes.github.io/our-little-list/manifest.webmanifest';
+  assert.equal(new URL(manifest.start_url, installUrl).href, 'https://milovalcodes.github.io/our-little-list/index.html');
+  assert.ok(!('id' in api.manifest({ ...base, id:'./index.html' }, new Date(date))), 'repair an older cached manifest too');
   assert.equal(manifest.start_url, base.start_url);
   assert.equal(manifest.scope, base.scope);
   assert.equal(manifest.icons[0].src, art.icon);
