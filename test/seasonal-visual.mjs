@@ -33,18 +33,22 @@ try {
             dockAdd:document.querySelector('.dock-add') ? getComputedStyle(document.querySelector('.dock-add')).backgroundColor : '',
             overflow:document.documentElement.scrollWidth - innerWidth,
             whisper:!!document.querySelector('.seasonal-whisper'),
-            mark:!!document.querySelector('.seasonal-sky-mark')
+            art:document.querySelector('.seasonal-sky-art')?.getAttribute('src') || ''
           };
         });
         assert.equal(state.got, season, `${side}/${pageName}: ${season} selected`);
         assert.ok(state.body.includes(`${side}-theme`), `${side}/${pageName}: right side remains active`);
         assert.ok(state.overflow <= 2, `${side}/${pageName}/${season}: no horizontal overflow (${state.overflow}px)`);
         assert.equal(state.whisper, season !== 'normal' && pageName !== 'home', `${side}/${pageName}/${season}: seasonal phrase`);
-        assert.equal(state.mark, season !== 'normal' && pageName === 'home', `${side}/${pageName}/${season}: seasonal sky mark`);
+        assert.equal(Boolean(state.art), season !== 'normal' && pageName === 'home', `${side}/${pageName}/${season}: seasonal sky art`);
+        if (state.art) {
+          assert.equal(state.art, season === 'spooky' ? 'seasonal-spooky.svg' : 'seasonal-christmas.svg');
+          assert.ok(await page.locator('.seasonal-sky-art').evaluate(async img => { await img.decode(); return img.naturalWidth > 0; }), `${side}/${pageName}/${season}: art renders`);
+        }
         colors.set(season, `${state.background}|${state.card}`);
         if (side === 'him') {
-          if (season === 'spooky') assert.equal(state.dockAdd, 'rgb(240, 191, 129)', `${pageName}: October add button`);
-          if (season === 'christmas') assert.equal(state.dockAdd, 'rgb(188, 227, 206)', `${pageName}: December add button`);
+          if (season === 'spooky') assert.equal(state.dockAdd, 'rgb(242, 170, 102)', `${pageName}: October add button`);
+          if (season === 'christmas') assert.equal(state.dockAdd, 'rgb(174, 75, 85)', `${pageName}: December add button`);
         }
         checked++;
         if (['home','today'].includes(pageName) && season !== 'normal') {
@@ -70,8 +74,12 @@ try {
     assert.equal(state.season, season);
     assert.ok(state.line);
     assert.ok(state.overflow <= 2, `landing/${season}: no horizontal overflow`);
-    if (season === 'spooky') assert.match(state.line, /haunted/);
-    if (season === 'christmas') assert.match(state.line, /cozy/);
+    if (season !== 'normal') {
+      assert.match(state.line, /weirdos/);
+      assert.ok(await landing.locator('.seasonal-landing-art').evaluate(async img => { await img.decode(); return img.naturalWidth > 0; }), `landing/${season}: artwork renders`);
+      await landing.evaluate(() => { document.querySelector('.thinking-screen')?.remove(); document.querySelector('.global-failure')?.remove(); });
+      await landing.screenshot({ path:join(tmpdir(), `ourlittlelist-landing-${season}.png`) });
+    } else assert.equal(await landing.locator('.seasonal-landing-art').count(), 0);
     checked++;
   }
   await landingContext.close();

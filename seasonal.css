@@ -47,10 +47,10 @@ html[data-season="spooky"] .her-theme .fridge-paper { color:#55372e; border-colo
 html[data-season="christmas"] .her-theme .fridge-paper { color:#493737; border-color:#d7b7a4; background:linear-gradient(145deg,#fff5dc,#f5dfc9); }
 html[data-season="spooky"] .him-theme .fridge-paper { color:#fff4e2; border-color:#9b7592; background:linear-gradient(145deg,#4b355e,#3c315a); }
 html[data-season="christmas"] .him-theme .fridge-paper { color:#f4fae9; border-color:#76a695; background:linear-gradient(145deg,#33615d,#254e51); }
-html[data-season="spooky"] .him-theme :is(.primary-action,.random-date-card button#pick-random,.dock-add),
+html[data-season="spooky"] .him-theme :is(.primary-action,.random-date-card button#pick-random),
 html[data-season="spooky"] .him-theme :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active),
 html[data-season="spooky"] .him-theme .random-date-card.date-roulette .roulette-chip-group button.active { color:#2c203f; background:#f0bf81; border-color:#f0bf81; }
-html[data-season="christmas"] .him-theme :is(.primary-action,.random-date-card button#pick-random,.dock-add),
+html[data-season="christmas"] .him-theme :is(.primary-action,.random-date-card button#pick-random),
 html[data-season="christmas"] .him-theme :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active),
 html[data-season="christmas"] .him-theme .random-date-card.date-roulette .roulette-chip-group button.active { color:#173b39; background:#bce3ce; border-color:#bce3ce; }
 html[data-season="spooky"] .him-theme .dock-add span { color:#2c203f; }
@@ -85,7 +85,60 @@ html[data-season="christmas"] .sky-stage[data-phase] { background:radial-gradien
 html[data-season="spooky"] .him-theme .sky-stage[data-phase] { background:radial-gradient(circle at 52% 12%,rgba(255,209,148,.13),transparent 35%),linear-gradient(155deg,#221d3a,#38264c 56%,#774456); }
 html[data-season="christmas"] .him-theme .sky-stage[data-phase] { background:radial-gradient(circle at 52% 12%,rgba(220,255,229,.16),transparent 35%),linear-gradient(155deg,#143840,#1e4b4a 56%,#3e6960); }
 .seasonal-whisper { width:fit-content; max-width:100%; margin:5px 0 8px; padding:5px 11px; border:1px solid var(--diary-rule); border-radius:999px; color:var(--page-muted); background:var(--diary-panel); font-size:.72rem; font-weight:800; line-height:1.35; }
-.seasonal-sky-mark { position:absolute; top:9px; right:12px; z-index:2; pointer-events:none; color:#fff5df; font-size:.75rem; font-weight:850; letter-spacing:.025em; text-shadow:0 1px 9px rgba(14,15,32,.5); opacity:.9; }
 html[data-season="spooky"] .redirect-page { background:#302444; color:#fff3df; }
 html[data-season="christmas"] .redirect-page { background:#1d4a4b; color:#f4fae9; }
-@media (max-width:520px) { .seasonal-whisper { font-size:.69rem; } .seasonal-sky-mark { top:7px; right:9px; } }
+
+/* Festive details: the sky gets illustrated; every other page gets the same
+   little ribbon and paper trim. Decoration never receives taps. */
+html[data-season="spooky"] .profile-page { --season-trim:#e99857; --season-glow:rgba(246,157,86,.22); }
+html[data-season="christmas"] .profile-page { --season-trim:#c85e66; --season-glow:rgba(227,144,121,.22); }
+html[data-season="spooky"] .him-theme { --season-trim:#e4ae78; --season-glow:rgba(239,174,128,.18); }
+html[data-season="christmas"] .him-theme { --season-trim:#a9dcc4; --season-glow:rgba(169,220,196,.17); }
+
+html[data-season="spooky"] .profile-page :is(.our-sky,.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary),
+html[data-season="christmas"] .profile-page :is(.our-sky,.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary) {
+  box-shadow:inset 0 3px 0 var(--season-trim),var(--diary-shadow);
+  border-color:color-mix(in srgb,var(--season-trim) 42%,var(--diary-rule));
+}
+html[data-season="spooky"] .profile-page :is(.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary) {
+  background-image:radial-gradient(circle at 8px 8px,rgba(195,105,65,.11) 1px,transparent 1.5px);
+  background-size:28px 28px;
+}
+html[data-season="christmas"] .profile-page :is(.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary) {
+  background-image:radial-gradient(circle at 8px 8px,rgba(122,166,147,.15) 1.2px,transparent 1.7px);
+  background-size:27px 27px;
+}
+html[data-season="spooky"] .him-theme :is(.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary) { background-image:radial-gradient(circle at 8px 8px,rgba(248,203,164,.10) 1px,transparent 1.5px); }
+html[data-season="christmas"] .him-theme :is(.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary) { background-image:radial-gradient(circle at 8px 8px,rgba(210,243,223,.11) 1.2px,transparent 1.7px); }
+
+html[data-season="spooky"] .seasonal-whisper,
+html[data-season="christmas"] .seasonal-whisper {
+  display:block; width:100%; min-height:42px; margin:6px 0 10px; padding:10px 14px;
+  border:1px solid var(--diary-rule); border-radius:12px 12px 18px 18px;
+  color:#fff9eb; font-family:var(--font-display); font-size:.89rem; font-weight:600;
+  line-height:1.25; letter-spacing:.005em; box-shadow:0 5px 15px var(--season-glow);
+}
+html[data-season="spooky"] .seasonal-whisper { background:linear-gradient(105deg,#854863,#a65449 65%,#c67449); }
+html[data-season="christmas"] .seasonal-whisper { background:linear-gradient(105deg,#285d52,#39735d 57%,#9b4957); }
+html[data-season="spooky"] .seasonal-whisper::after { content:'✦  ✧'; float:right; margin-left:8px; opacity:.76; }
+html[data-season="christmas"] .seasonal-whisper::after { content:'❄  ✧'; float:right; margin-left:8px; opacity:.86; }
+
+.seasonal-sky-art { position:absolute; inset:0; z-index:1; width:100%; height:100%; pointer-events:none; object-fit:fill; animation:seasonalBreathe 7s ease-in-out infinite alternate; }
+.landing-copy { position:relative; isolation:isolate; }
+.seasonal-landing-art { position:absolute; z-index:-1; left:50%; top:-33px; translate:-50% 0; width:min(390px,100vw); height:205px; pointer-events:none; }
+.landing-pair { position:relative; z-index:1; }
+html[data-season="spooky"] .landing-pair { box-shadow:0 0 0 7px rgba(255,218,157,.64),0 18px 44px rgba(53,25,53,.28); }
+html[data-season="christmas"] .landing-pair { box-shadow:0 0 0 7px rgba(215,240,216,.72),0 18px 44px rgba(26,69,64,.25); }
+html[data-season="spooky"] .sky-stage { box-shadow:inset 0 0 0 2px rgba(255,204,147,.36),inset 0 -38px 70px rgba(24,15,36,.24),0 8px 22px rgba(113,50,71,.14); }
+html[data-season="christmas"] .sky-stage { box-shadow:inset 0 0 0 2px rgba(228,255,226,.36),inset 0 -38px 70px rgba(13,48,48,.24),0 8px 22px rgba(43,103,88,.13); }
+html[data-season="spooky"] .sky-avatar { border-color:#ffcf9a; }
+html[data-season="christmas"] .sky-avatar { border-color:#e8f7dc; }
+html[data-season="spooky"] .profile-page .app-dock { border-color:var(--season-trim); box-shadow:0 0 0 3px var(--season-glow),0 13px 38px rgba(31,27,43,.18); }
+html[data-season="christmas"] .profile-page .app-dock { border-color:var(--season-trim); box-shadow:0 0 0 3px var(--season-glow),0 13px 38px rgba(31,27,43,.18); }
+html[data-season="spooky"] .profile-page .dock-add { color:#342339; background:#f2aa66; }
+html[data-season="spooky"] .profile-page .dock-add span { color:#342339; }
+html[data-season="christmas"] .profile-page .dock-add { color:#fff9ef; background:#ae4b55; }
+html[data-season="christmas"] .profile-page .dock-add span { color:#fff9ef; }
+@keyframes seasonalBreathe { to { translate:0 2px; opacity:.86; } }
+@media (prefers-reduced-motion:reduce) { .seasonal-sky-art { animation:none; } }
+@media (max-width:520px) { html[data-season="spooky"] .seasonal-whisper,html[data-season="christmas"] .seasonal-whisper { font-size:.84rem; } }

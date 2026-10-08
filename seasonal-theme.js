@@ -4,10 +4,11 @@
   const root = document.documentElement;
   const seasonalCopy = {
     spooky: {
-      mark: '🦇',
-      home: 'our sky · minor haunting',
-      landingKicker: 'our little list · october edition ☀︎☾',
-      landingLine: 'slightly haunted, still ours ♡',
+      mark: '🎃',
+      art: 'seasonal-spooky.svg',
+      home: '🎃 our sky · spooky season',
+      landingKicker: 'our little list · spooky season ☀︎☾',
+      landingLine: 'same two weirdos, now with bats ♡',
       pages: {
         tasks: 'spooky little errands',
         notes: 'mail from this plane of existence',
@@ -33,10 +34,11 @@
       }
     },
     christmas: {
-      mark: '❄',
-      home: 'our sky · snow globe mode',
+      mark: '🎄',
+      art: 'seasonal-christmas.svg',
+      home: '🎄 our sky · december edition',
       landingKicker: 'our little list · december edition ☀︎☾',
-      landingLine: 'extra cozy, still ours ♡',
+      landingLine: 'same two weirdos, now with lights ♡',
       pages: {
         tasks: 'winter errands and tiny plans',
         notes: 'warm little notes',
@@ -77,6 +79,22 @@
     node[property] = text ?? node.dataset[originalKey];
   }
 
+  function setArt(parent, className, art, before = null) {
+    if (!parent) return;
+    let image = parent.querySelector(`.${className}`);
+    if (!art) { image?.remove(); return; }
+    if (!image) {
+      image = document.createElement('img');
+      image.className = className;
+      image.alt = '';
+      image.setAttribute('aria-hidden', 'true');
+      image.draggable = false;
+      if (before) parent.insertBefore(image, before);
+      else parent.append(image);
+    }
+    if (image.getAttribute('src') !== art) image.src = art;
+  }
+
   function paintCopy() {
     if (!document.body) return;
     const copy = seasonalCopy[root.dataset.season];
@@ -98,12 +116,9 @@
       whisper.textContent = `${copy.mark} ${line}`;
     } else whisper?.remove();
 
-    const stage = document.getElementById('sky-stage');
-    let mark = document.querySelector('.seasonal-sky-mark');
-    if (stage && copy) {
-      if (!mark) { mark = document.createElement('span'); mark.className = 'seasonal-sky-mark'; mark.setAttribute('aria-hidden', 'true'); stage.append(mark); }
-      mark.textContent = copy.mark;
-    } else mark?.remove();
+    setArt(document.getElementById('sky-stage'), 'seasonal-sky-art', copy?.art);
+    const landing = document.querySelector('.landing-copy');
+    setArt(landing, 'seasonal-landing-art', copy?.art, landing?.querySelector('.landing-pair'));
   }
 
   function refresh(now = new Date()) {

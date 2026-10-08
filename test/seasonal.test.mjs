@@ -33,4 +33,6 @@ for (const page of ['index','her','him','tasks','notes','today','status','dates'
 const worker = readFileSync(new URL('../service-worker.js', import.meta.url), 'utf8');
 assert.match(worker, /'\.\/seasonal-theme\.js'/);
 assert.match(worker, /'\.\/seasonal\.css'/);
+assert.match(worker, /'\.\/seasonal-spooky\.svg'/);
+assert.match(worker, /'\.\/seasonal-christmas\.svg'/);
 console.log('SEASONAL CALENDAR, PAGE COVERAGE, AND OFFLINE CACHE OK');

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 205" fill="none" aria-hidden="true">
+  <path d="M0 8Q92 34 195 14T390 8" stroke="#B5D8BC" stroke-width="2" opacity=".9"/>
+  <path d="M22 14v16m53-8v18m55-18v18m63-25v17m61-14v17m56-17v18m55-19v15" stroke="#B5D8BC" stroke-width="1.5"/>
+  <g stroke="#F9EBC8" stroke-width="2"><path d="M22 30v9m-4-4h8m-7-3 6 6m0-6-6 6M75 40v9m-4-4h8m-7-3 6 6m0-6-6 6M130 40v9m-4-4h8m-7-3 6 6m0-6-6 6M193 32v9m-4-4h8m-7-3 6 6m0-6-6 6M254 35v9m-4-4h8m-7-3 6 6m0-6-6 6M310 36v9m-4-4h8m-7-3 6 6m0-6-6 6M365 30v9m-4-4h8m-7-3 6 6m0-6-6 6"/></g>
+  <g fill="#F5C675"><circle cx="22" cy="35" r="4"/><circle cx="130" cy="45" r="4"/><circle cx="254" cy="40" r="4"/><circle cx="365" cy="35" r="4"/></g>
+  <g fill="#E98782"><circle cx="75" cy="45" r="4"/><circle cx="193" cy="37" r="4"/><circle cx="310" cy="41" r="4"/></g>
+  <path d="M0 0q23 8 43 5L20 17 49 13 30 26 61 21M390 0q-23 8-43 5l23 12-29-4 19 13-31-5" stroke="#A9D2AE" stroke-width="5" stroke-linecap="round" opacity=".85"/>
+  <path d="M350 16v35m-308-35v27" stroke="#D5E4C9" stroke-width="1.5"/>
+  <circle cx="350" cy="62" r="17" fill="#CF6F72" stroke="#F9EBC8" stroke-width="2"/>
+  <path d="M350 50v25m-9-12h18" stroke="#F5AF9F" stroke-width="2" opacity=".8"/>
+  <circle cx="42" cy="54" r="11" fill="#F4CE82" stroke="#F9EBC8" stroke-width="2"/>
+  <path d="m37 54 5-5 5 5-5 5-5-5Z" fill="#FFF4D7"/>
+  <g stroke="#D9F3EA" stroke-width="2" stroke-linecap="round" opacity=".9">
+    <path d="M95 76v23m-12-11h24m-21-9 18 18m0-18-18 18M284 70v20m-10-10h20m-17-7 14 14m0-14-14 14M187 63v16m-8-8h16m-13-5 10 10m0-10-10 10"/>
+  </g>
+  <g fill="#ECFAF2" opacity=".85"><circle cx="125" cy="82" r="2"/><circle cx="227" cy="91" r="2"/><circle cx="329" cy="107" r="2"/><circle cx="67" cy="108" r="2"/><circle cx="160" cy="102" r="1.5"/><circle cx="366" cy="113" r="1.5"/></g>
+  <path d="M0 186q40-14 81 0t83-1q42-17 82 0t77-1q34-13 67 3v18H0Z" fill="#E7F7EF" opacity=".18"/>
+  <path d="m10 189 8-19 8 19m16 2 6-15 6 15m284-4 8-19 8 19m14 2 6-16 6 16" stroke="#D7F0DE" stroke-width="2" opacity=".65"/>
+</svg>
