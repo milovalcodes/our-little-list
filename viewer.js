@@ -24,7 +24,11 @@ const data = await sharedLayer();
 if (data.mode === 'local') {
   // No accounts to read when sync is off, so fall back to the URL hint. This
   // path is for local preview only.
-  side = params.get('as') === 'him' || params.get('from') === 'him' ? 'him' : 'her';
+  let previewSide;
+  try { previewSide=sessionStorage.getItem('little-preview-side'); } catch (_) {}
+  const hint=params.get('as')||params.get('from')||previewSide;
+  side = hint === 'him' ? 'him' : 'her';
+  try { sessionStorage.setItem('little-preview-side',side); } catch (_) {}
   settled = true;
   settle(side);
 } else {

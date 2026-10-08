@@ -10,10 +10,11 @@ import { questionClock } from './question-prompts.js';
 import { escapeHtml, showFailure, toast } from './ui-helpers.js';
 import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
 import { dueRows, fairShare } from './needs-you.js';
-import { quickStatusButtons, saveQuickStatus } from './status-presets.js';
+import { profileUrl } from './profile-route.js';
+import { gameResult } from './couple-game.js';
 
 const badge = document.getElementById('activity-badge');
-const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [] };
+const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [], games: [] };
 let dashboardFrame = 0;
 
 const data = await sharedLayer();
@@ -53,7 +54,10 @@ void ensurePushSubscription(data, viewer);
 window.addEventListener('littlelist:profile', renderSky);
 const homeDay = questionClock().day;
 window.setInterval(() => { if (questionClock().day !== homeDay) location.reload(); else renderSky(); }, 30000);
-setupQuickStatus();
+['her', 'him'].forEach(person => {
+  const avatar = document.getElementById(`sky-person-${person}`);
+  if (avatar) { avatar.href = profileUrl(person); avatar.setAttribute('aria-label', `${personName(person)}’s profile`); }
+});
 document.getElementById('home-next-up')?.addEventListener('click', event => { void handleInlineAction(event,{data,viewer,other,items:buckets.items,help:buckets.help}); });
 
 function renderBadge() {
@@ -97,44 +101,16 @@ function renderNextUp() {
   const question = buckets.questions.find(item => item.day === clock.day);
   const answerNeeded = clock.open && question && !question.answers?.[viewer]?.at;
   const fresh = newActivityCount(buckets, viewer, other, Number(localStorage.getItem(seenKey) || 0));
+  const game=buckets.games.find(item=>item.id==='sun-moon');
   const rows = [
     ...fairShare(due, 3),
     due.length > 3 && { icon:'◎', title:`${due.length - 3} more due or waiting`, href:'today.html' },
     unread && { icon:'✉', title:`${unread} unread note${unread===1?'':'s'}`, href:'notes.html' },
     answerNeeded && { icon:'◎', title:'today’s question', href:'today.html#question' },
+    game&&!gameResult(game).over&&game.turn===viewer&&{icon:'☀︎☾',title:'your turn · Sun vs Moon',href:`today.html#game-${game.round}`},
     fresh && { icon:'✦', title:`${fresh} new thing${fresh===1?'':'s'} since you looked`, href:'today.html#new' }
   ].filter(Boolean);
   target.innerHTML = rows.length ? rows.map(row=>inlineActionMarkup(row,'home-next-row')).join('') : '<p>nothing needs you right now ✦</p>';
-}
-
-function setupQuickStatus() {
-  const avatar = document.getElementById(`sky-person-${viewer}`);
-  if (!avatar) return;
-  avatar.dataset.openSheet = 'quick-status';
-  avatar.setAttribute('aria-label', 'Quick status');
-  document.body.insertAdjacentHTML('beforeend', `<section class="app-sheet quick-status-sheet" id="sheet-quick-status" role="dialog" aria-modal="true" aria-labelledby="quick-status-title" hidden>
-    <header class="sheet-head"><div><small>your side</small><h2 id="quick-status-title">Quick status</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
-    <div class="quick-status-options">${quickStatusButtons()}</div>
-    <form id="quick-status-form"><label><span>or your own words</span><input id="quick-status-text" maxlength="90" placeholder="currently doing the thing"></label><button class="primary-action" type="submit">set status</button></form>
-    <a class="quick-status-more" href="status.html">more on Right now →</a>
-  </section>`);
-  const save = async (choice, custom = '') => {
-    try {
-      const exists = Boolean(await data.readDoc('statuses', viewer));
-      await saveQuickStatus({ data, viewer, other, exists }, choice, custom);
-      document.querySelector('#sheet-quick-status [data-close-sheet]')?.click();
-      toast('status set');
-    } catch (_) { showFailure('status did not save.', 'check the internet and try again.'); }
-  };
-  document.getElementById('sheet-quick-status').addEventListener('click', event => {
-    const button = event.target.closest('[data-quick-status]');
-    if (button) void save(button.dataset.quickStatus);
-  });
-  document.getElementById('quick-status-form').addEventListener('submit', event => {
-    event.preventDefault();
-    const text = document.getElementById('quick-status-text').value.trim();
-    if (text) void save('custom', text);
-  });
 }
 
 function scheduleDashboardRender() {

@@ -139,8 +139,10 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
 
   function render() {
     const live = requests.filter(item => !isPendingDelete('help', item.id));
-    const forMe = live.filter(item => item.to === viewer && item.from !== viewer && item.state !== 'done');
-    const mine = live.filter(item => item.from === viewer && item.state !== 'done');
+    const linked=/^#ask-([A-Za-z0-9_-]+)$/.exec(location.hash)?.[1];
+    const visible=item=>item.state!=='done'||item.id===linked;
+    const forMe = live.filter(item => item.to === viewer && item.from !== viewer && visible(item));
+    const mine = live.filter(item => item.from === viewer && visible(item));
     $('help-inbox').hidden = forMe.length === 0;
     const partner=personName(other);
     $('inbox-title').textContent = partner===other?'A little ask from them':`${partner} needs something`;
@@ -151,6 +153,7 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
   }
 
   function inboxCard(request) {
+    if(request.state==='done')return closedCard(request);
     const answered = request.state !== 'open';
     const buttons = Object.entries(ANSWERS).map(([key, value]) => `<button type="button" class="help-answer tone-${value.tone}${request.state === key ? ' is-chosen' : ''}" data-answer="${key}">${value.label}</button>`).join('');
     return `<article class="help-card urgency-${escapeHtml(request.urgency || 'soon')}" data-id="${escapeHtml(request.id)}">
@@ -160,6 +163,7 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
   }
 
   function mineCard(request) {
+    if(request.state==='done')return closedCard(request);
     const answer = ANSWERS[request.state];
     const self=request.to===viewer;
     return `<article class="help-card mine urgency-${escapeHtml(request.urgency || 'soon')}" data-id="${escapeHtml(request.id)}">
@@ -168,6 +172,8 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
     </article>`;
   }
 
+  function closedCard(request){return `<article class="help-card" data-id="${escapeHtml(request.id)}"><strong>${escapeHtml(request.title)}</strong><p>already sorted ✓</p></article>`;}
+  window.addEventListener('hashchange',render);
   // A timed ask says when it is for; the rest say when they were asked.
   function whenLine(request, prefix = '') {
     return Number(request.dueAt) > 0 ? `⏰ ${friendlyWhen(Number(request.dueAt))}` : `${prefix}${timeAgo(request.createdAt)}`;

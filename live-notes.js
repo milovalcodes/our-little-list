@@ -90,7 +90,7 @@ async function boot(viewer) {
     }
     if (updatedAt > knownStatusAt && item.updateKind === 'focus') {
       // Focus sessions are statuses with a timer now.
-      announce({ icon: '⏱', label: `${personName(other)} is locking in`, body: `${item.focusLabel || 'doing the thing'}${Number(item.focusMinutes) ? ` · ${item.focusMinutes} min` : ''}`, url: 'today.html', kind: 'focus' });
+      announce({ icon: '⏱', label: `${personName(other)} is locking in`, body: `${item.focusLabel || 'doing the thing'}${Number(item.focusMinutes) ? ` · ${item.focusMinutes} min` : ''}`, url: `status.html#profile-${other}-focus`, kind: 'focus' });
     } else if (updatedAt > knownStatusAt && item.updateKind === 'focus-end') {
       // Quiet: finishing is not news worth a popup.
     } else if (updatedAt > knownStatusAt && item.updateKind === 'location') {
@@ -101,7 +101,7 @@ async function boot(viewer) {
         icon: item.locationEmoji || '📍',
         label: `${personName(other)} changed locations`,
         body: item.locationText,
-        url: `status.html#couple-map`,
+        url: `status.html#profile-${other}-map`,
         kind: 'status'
       });
     } else if (updatedAt > knownStatusAt && item.updateKind === 'arrival') {
@@ -113,7 +113,7 @@ async function boot(viewer) {
         icon: item.emoji || '●',
         label: `${personName(other)} updated their status`,
         body: item.text ? `${item.category || 'currently'} ${item.text}` : (item.state || 'updated'),
-        url: `status.html#partner`,
+        url: `status.html#profile-${other}`,
         kind: 'status'
       });
     }

@@ -330,6 +330,82 @@ service cloud.firestore {
       allow delete: if inHousehold(householdId);
     }
 
+    // One board, one confirmed move per turn. A transaction writes the move
+    // and its ping together; stale clients cannot replace a partner's square.
+    match /households/{householdId}/games/{gameId} {
+      function won(board, side) {
+        let a = board.get('0','') == side;
+        let b = board.get('1','') == side;
+        let c = board.get('2','') == side;
+        let d = board.get('3','') == side;
+        let e = board.get('4','') == side;
+        let f = board.get('5','') == side;
+        let g = board.get('6','') == side;
+        let h = board.get('7','') == side;
+        let i = board.get('8','') == side;
+        return (a && b && c) || (d && e && f) || (g && h && i)
+          || (a && d && g) || (b && e && h) || (c && f && i)
+          || (a && e && i) || (c && e && g);
+      }
+      function over(game) {
+        return game.closed || game.ply >= 30 || won(game.board, game.lastBy);
+      }
+      function valid(game) {
+        return game.keys().hasOnly(['round','board','turn','startedBy','lastBy','lastCell','fromCell','ply','score','wins','createdAt','updatedAt','closed'])
+          && game.round is string && game.round.matches('[A-Za-z0-9_-]{1,80}')
+          && game.board is map && game.board.keys().hasOnly(['0','1','2','3','4','5','6','7','8'])
+          && game.turn in ['her','him'] && game.startedBy in ['her','him']
+          && game.lastBy == mySide() && game.lastCell is string && game.fromCell is string
+          && game.ply is int && game.ply >= 0 && game.ply <= 30
+          && game.score is map && game.score.keys().hasOnly(['her','him'])
+          && game.score.her is int && game.score.him is int
+          && game.score.her >= 0 && game.score.her <= 3 && game.score.him >= 0 && game.score.him <= 3
+          && game.wins is map && game.wins.keys().hasOnly(['her','him'])
+          && game.wins.her is int && game.wins.him is int && game.wins.her >= 0 && game.wins.him >= 0
+          && game.createdAt is int && game.updatedAt is int && game.closed is bool;
+      }
+      function newRound(game) {
+        return game.board.size() == 0 && !game.closed && game.startedBy == mySide()
+          && game.lastCell == '' && game.fromCell == '' && game.ply == 0 && game.turn == otherSide();
+      }
+      function scores(before, after) {
+        let me = mySide();
+        let other = otherSide();
+        let point = won(after.board, me) ? 1 : 0;
+        return after.score[me] == before.score[me] + point
+          && after.score[other] == before.score[other]
+          && after.wins[me] == before.wins[me] + (point == 1 && after.score[me] == 3 ? 1 : 0)
+          && after.wins[other] == before.wins[other];
+      }
+      function move(before, after) {
+        let shifting = before.board.values().removeAll([otherSide()]).size() == 3;
+        return !over(before) && before.turn == mySide() && after.turn == otherSide()
+          && after.diff(before).affectedKeys().hasOnly(['board','turn','lastBy','lastCell','fromCell','ply','score','wins','updatedAt'])
+          && after.ply == before.ply + 1 && scores(before, after)
+          && after.lastCell.matches('[0-8]') && !before.board.keys().hasAny([after.lastCell])
+          && (shifting
+            ? (after.fromCell.matches('[0-8]') && before.board.get(after.fromCell, '') == mySide()
+              && !after.board.keys().hasAny([after.fromCell])
+              && after.board.diff(before.board).affectedKeys().hasOnly([after.lastCell,after.fromCell])
+              && after.board.size() == before.board.size())
+            : (after.fromCell == '' && after.board.diff(before.board).affectedKeys().hasOnly([after.lastCell])
+              && after.board.size() == before.board.size() + 1))
+          && after.board[after.lastCell] == mySide();
+      }
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId) && gameId == 'sun-moon'
+        && valid(request.resource.data) && newRound(request.resource.data)
+        && request.resource.data.score == {'her':0,'him':0} && request.resource.data.wins == {'her':0,'him':0};
+      allow update: if inHousehold(householdId) && gameId == 'sun-moon' && valid(request.resource.data)
+        && (move(resource.data, request.resource.data)
+          || (!over(resource.data) && request.resource.data.closed
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['closed','lastBy','updatedAt']))
+          || (over(resource.data) && request.resource.data.round != resource.data.round && newRound(request.resource.data)
+            && request.resource.data.wins == resource.data.wins
+            && request.resource.data.score == (resource.data.score.her == 3 || resource.data.score.him == 3 ? {'her':0,'him':0} : resource.data.score)));
+      allow delete: if false;
+    }
+
     match /households/{householdId}/outbox/{messageId} {
       allow read, delete: if inHousehold(householdId);
       allow create: if inHousehold(householdId)

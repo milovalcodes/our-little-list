@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {nextGame,gameResult,gameMessage,gamePingCurrent} from '../couple-game.js';
+import {profileRoute,profileUrl} from '../profile-route.js';
+let round=0;
+const start=(game=null)=>nextGame(game,{action:'start',person:'him',expectedRound:game?.round||'',round:`round-${++round}`});
+const move=(game,cell,fromCell='')=>nextGame(game,{action:'move',person:game.turn,cell,fromCell,expectedRound:game.round,expectedPly:game.ply});
+let game=start();
+assert.equal(game.turn,'her');
+assert.throws(()=>nextGame(game,{action:'move',person:'him',cell:'0',expectedRound:game.round,expectedPly:0}),/turn/);
+assert.throws(()=>nextGame(game,{action:'start',person:'him',expectedRound:game.round,round:'another'}),/already/);
+for(let matchRound=1;matchRound<=3;matchRound++){
+  for(const cell of [0,3,1,4,2])game=move(game,cell);
+  assert.equal(gameResult(game).winner,'her');
+  assert.equal(game.score.her,matchRound);
+  assert.equal(game.wins.her,matchRound===3?1:0);
+  assert.throws(()=>move(game,8),/ended/);
+  if(matchRound<3)game=start(game);
+}
+game=start(game);assert.deepEqual(game.score,{her:0,him:0});assert.equal(game.wins.her,1);
+for(const cell of [0,1,5,2,7,6])game=move(game,cell);
+assert.throws(()=>move(game,4),/Pick one/);
+assert.throws(()=>move(game,4,'1'),/Pick one/);
+const stale={action:'move',person:game.turn,cell:'4',fromCell:'5',expectedRound:game.round,expectedPly:game.ply};
+for(let loop=0;loop<6;loop++)for(const [from,to]of [['5','4'],['1','3'],['4','5'],['3','1']])game=move(game,to,from);
+assert.equal(game.ply,30);assert.equal(gameResult(game).draw,true);
+assert.equal(Object.keys(game.board).length,6);
+assert.throws(()=>nextGame(game,stale),/ended/);
+const message=gameMessage(game,'Moon');assert.ok(gamePingCurrent(message,game));
+const next=start(game);assert.ok(!gamePingCurrent(message,next));
+assert.throws(()=>nextGame(next,stale),/changed/);
+assert.equal(profileRoute('#profile-her','him').person,'her');
+assert.equal(profileRoute('#partner','her').person,'him');
+assert.equal(profileUrl('him','map'),'status.html#profile-him-map');
+console.log('GAME: turns, shifts, match scoring, stale moves and stale pings checked');

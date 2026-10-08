@@ -20,6 +20,7 @@ try {
       await page.route('**/firebase-config.js', route => route.fulfill({ contentType:'text/javascript', body:'export const firebaseConfig = {};' }));
       await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.fallback() : route.abort());
       await page.goto(`${base}/${pageName === 'home' ? side : pageName}.html?as=${side}`, { waitUntil:'domcontentloaded' });
+      await page.waitForSelector('.app-dock');
       const colors = new Map();
       for (const [season, date] of seasons) {
         await page.evaluate(when => window.LittleSeason.refresh(new Date(when)), date);

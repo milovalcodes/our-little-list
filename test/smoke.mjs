@@ -431,7 +431,7 @@ async function openSlow(path) {
   const reaction=await page.locator('#sky-reaction-her:not([hidden])').count();
   const oldDashboard=await page.locator('.compact-hello,.home-group').count();
   const routes=await page.evaluate(()=>({self:document.querySelector('#sky-person-her')?.getAttribute('href'),partner:document.querySelector('#sky-person-him')?.getAttribute('href')}));
-  note(orbit==='together'&&title?.includes('together')&&liveStatus===1&&noteStar===1&&wins===1&&reaction===1&&oldDashboard===0&&routes.self==='status.html'&&routes.partner==='status.html#partner'&&errors.length===0,
+  note(orbit==='together'&&title?.includes('together')&&liveStatus===1&&noteStar===1&&wins===1&&reaction===1&&oldDashboard===0&&routes.self==='status.html#profile-her'&&routes.partner==='status.html#profile-him'&&errors.length===0,
        'our sky reflects live data without the old dashboard',errors[0]||JSON.stringify({orbit,title,liveStatus,noteStar,wins,reaction,oldDashboard,routes}));
   await context.close();
 }
@@ -928,13 +928,15 @@ async function openSlow(path) {
   await page.click('#status-save');
   const chosenEmoji = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-statuses-v1')).items.find(item => item.id === 'her')?.emoji);
   await page.click('[data-quick-status="almost there"]');
+  const ready = await page.locator('.person-status-card.is-me').filter({hasText:'soup would fix me'}).filter({hasText:'almost there'}).count();
+  await page.locator('#profile-tabs a[href$="profile-him"]').click();
   await page.click('[data-status-picker="him"]');
   await page.click('[data-picker-emoji="❤️"]');
   await page.waitForTimeout(300);
   const card = page.locator('.person-status-card.is-me');
   // The chip now fills the ordinary words field; typing over it intentionally
   // replaces that draft instead of leaving a second energy label on the card.
-  const ready = await card.filter({ hasText: 'soup would fix me' }).filter({ hasText: 'almost there' }).count();
+  // The saved own profile was checked before visiting the partner.
   const visibleReaction=await page.locator('[data-react-status="him"][data-emoji="❤️"]').count();
   await page.click('[data-react-status="him"][data-emoji="❤️"]');
   await page.waitForTimeout(200);
@@ -1166,7 +1168,7 @@ async function openSlow(path) {
     const { sharedLayer } = await import('./data-hub.js');
     return (await (await sharedLayer()).readDoc('statuses', 'her'))?.text;
   });
-  note(status === 'busy' && errors.length === 0, 'home avatar changes status', errors[0] || status);
+  note(status === 'busy' && errors.length === 0, 'home avatar opens own profile to change status', errors[0] || status);
   await context.close();
 }
 {

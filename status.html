@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#192950"><title>Right Now · Our Little List</title>
+  <meta name="theme-color" content="#192950"><title>Profiles · Our Little List</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3ynhHdq2x5pIuMZbZq3Y/Y0QvM7xQ=" crossorigin="anonymous">
   <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png"><link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="diary.css">
@@ -10,16 +10,18 @@
   <link rel="stylesheet" href="seasonal.css">
 </head>
 <body class="profile-page" data-app="status">
-  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">right now ☀︎☾</span></header>
+  <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">our people ☀︎☾</span></header>
   <main class="app-shell feature-shell now-shell">
     <section class="feature-hero now-hero">
       <span class="feature-icon">☀︎☾</span>
-      <div><p class="tiny-kicker">live-ish</p><h1>Right now</h1></div>
+      <div><h1 id="profile-title">Profiles</h1></div>
     </section>
-
+    <nav class="profile-tabs" id="profile-tabs" aria-label="Whose profile"></nav>
     <section class="status-pair now-status-pair" id="status-pair" aria-live="polite"></section>
-
-    <section class="arrival-strip"><p class="tiny-kicker">quick status</p><div id="arrival-presets" class="quick-status-options"></div></section>
+    <nav class="profile-actions" id="profile-actions" aria-label="Profile actions"></nav>
+    <section class="arrival-strip" data-owner-control><div id="arrival-presets" class="quick-status-options"></div></section>
+    <div id="profile-editor-slot"></div>
+    <section class="profile-note-preview today-card" id="profile-notes" hidden><div class="today-card-head"><h2 id="profile-notes-title">Little notes</h2><a href="notes.html">all notes →</a></div><div id="profile-note-list"></div></section>
 
     <section class="now-location-card" aria-labelledby="location-state">
       <div class="now-location-head">
@@ -36,7 +38,7 @@
       <div class="now-location-foot"><span>updates only while the app is open on each phone</span><button class="hide-last-location" id="hide-last-location" type="button" hidden>delete my last spot</button></div>
     </section>
 
-    <details class="composer-card status-editor status-editor-disclosure">
+    <details class="composer-card status-editor status-editor-disclosure" data-owner-control>
       <summary><span><strong>Edit status</strong></span><i>＋</i></summary>
       <form id="status-form">
         <fieldset class="status-fieldset"><legend>availability</legend>

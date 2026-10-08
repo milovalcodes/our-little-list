@@ -22,7 +22,7 @@ data.listenTo('items', nextItems => {
   items = nextItems;
   // A grocery uses the same #item-id link as a to-do. Once its record lands,
   // choose the right tab so search and notification links can reveal it.
-  if (location.hash.startsWith('#item-')) selectTab(tabFromHash());
+  if (/^#(?:item|done)-/.test(location.hash)) selectTab(tabFromHash());
   else render();
 });
 
@@ -292,9 +292,11 @@ window.addEventListener('littlelist:profile',render);
 function tabFromHash() {
   if (location.hash === '#asks' || location.hash.startsWith('#ask-')) return 'asks';
   if (location.hash === '#grocery') return 'grocery';
-  if (location.hash.startsWith('#done-')) return 'done';
-  const id = /^#item-([A-Za-z0-9_-]+)$/.exec(location.hash)?.[1];
-  return id && items.find(item => item.id === id)?.type === 'grocery' ? 'grocery' : 'tasks';
+  const id = /^#(?:item|done)-([A-Za-z0-9_-]+)$/.exec(location.hash)?.[1];
+  const item=items.find(item=>item.id===id);
+  if(item?.done)return 'done';
+  if(!item&&location.hash.startsWith('#done-'))return 'done';
+  return item?.type === 'grocery' ? 'grocery' : 'tasks';
 }
 window.addEventListener('hashchange', () => selectTab(tabFromHash()));
 selectTab(tabFromHash());

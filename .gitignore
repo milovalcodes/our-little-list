@@ -1,3 +1,4 @@
 node_modules/
 # wrangler writes build output and local state here
 .wrangler/
+*-debug.log

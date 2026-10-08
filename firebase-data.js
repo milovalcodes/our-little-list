@@ -1,6 +1,7 @@
 import { firebaseConfig } from './firebase-config.js';
 import { OUTBOX } from './push-config.js';
 import { HOUSEHOLD_ID, configured as householdConfigured } from './household.js';
+import { GAME_ID, nextGame, gameMessage } from './couple-game.js';
 
 const configured = firebaseConfig?.apiKey && !firebaseConfig.apiKey.startsWith('REPLACE_');
 
@@ -26,7 +27,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
   const [
     { initializeApp, getApps, getApp },
     { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
-    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, getDocsFromServer, writeBatch, query, where, orderBy, limit: limitQuery }
+    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, getDocsFromServer, writeBatch, runTransaction, query, where, orderBy, limit: limitQuery }
   ] = modules;
 
   // Better a plain sentence than a permission-denied nobody can read.
@@ -142,6 +143,20 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       return { id: entry.id };
     },
     setTo: (name, id, item) => applied(setDoc(doc(named(name), id), item, { merge: true }), name),
+    async playGame(options, displayName) {
+      if (!signedIn()) throw new Error('Sign in to play.');
+      // Moves must be confirmed online. A queued move against an old board
+      // could otherwise overwrite a partner's move after reconnecting.
+      return runTransaction(db, async transaction => {
+        const ref = doc(named('games'), GAME_ID);
+        const snapshot = await transaction.get(ref);
+        const next = nextGame(snapshot.exists() ? snapshot.data() : null, options);
+        const message = gameMessage(next, displayName);
+        transaction.set(ref, next);
+        transaction.set(doc(named(OUTBOX), `game-${next.round}-${next.ply}-${next.closed?'closed':'open'}`), message);
+        return next;
+      });
+    },
     answerQuestion(day, person, text, at) {
       const batch = writeBatch(db);
       batch.set(doc(named('questionAnswers'), `${day}-${person}`), { day, person, text, at });
@@ -290,6 +305,16 @@ function createLocalLayer(onAuth, onReady) {
       const questions = read('questions');
       const question = questions.find(entry => entry.id === day);
       if (question) { question.answers = { ...(question.answers || {}), [person]:{ at } }; write('questions', questions); }
+    },
+    async playGame(options) {
+      const play = () => {
+        const games = read('games');
+        const current = games.find(item => item.id === GAME_ID);
+        const next = nextGame(current ? Object.fromEntries(Object.entries(current).filter(([key]) => key !== 'id')) : null, options);
+        write('games', [...games.filter(item => item.id !== GAME_ID), {id:GAME_ID,...next}]);
+        return next;
+      };
+      return navigator.locks ? navigator.locks.request('little-list-game', play) : play();
     },
     async updateIn(name, id, changes) {
       const items = read(name);

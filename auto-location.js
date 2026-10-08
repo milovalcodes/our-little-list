@@ -179,7 +179,7 @@ function tellPartnerSharingIsBack() {
   void data.notify(partnerOf(viewer), {
     title: `${personName(viewer)} is sharing location again`,
     body: 'back on the map',
-    url: 'status.html#couple-map',
+    url: `status.html#profile-${viewer}-map`,
     kind: 'arrival'
   });
 }
@@ -384,7 +384,7 @@ async function announcePlaceChange(place,change,{ late = false } = {}) {
   } catch (_) { /* the plain message is fine */ }
   if(change==='arrived')lastArrivalPingAt=Date.now();
   const message = change==='left'?leaveMessage(place,personName(viewer),{ late }):arrivalMessage(place, personName(viewer), { together, late });
-  const result=await data.notify(partner, { ...message, url: 'status.html#couple-map', kind: 'arrival', ref: `place-${place.id}-${change}` });
+  const result=await data.notify(partner, { ...message, url: `status.html#profile-${viewer}-map`, kind: 'arrival', ref: `place-${place.id}-${change}` });
   if(!result?.queued)try { if(localStorage.getItem(key)===String(claimedAt))localStorage.removeItem(key); } catch (_) {}
 }
 
@@ -420,7 +420,7 @@ async function checkApproach(point) {
   try { if (now - Number(localStorage.getItem(key) || 0) < APPROACH.cooldown) return; localStorage.setItem(key, String(now)); } catch (_) {}
   const partner = partnerOf(viewer);
   const message = approachMessage(step.ping, personName(viewer), { meters: step.meters, partnerLive: Number(partnerPoint.shareUntil) > now });
-  const result = await data.notify(partner, { ...message, url: 'status.html#couple-map', kind: 'arrival', ref: `approach-${step.ping}` });
+  const result = await data.notify(partner, { ...message, url: `status.html#profile-${viewer}-map`, kind: 'arrival', ref: `approach-${step.ping}` });
   if (!result?.queued) try { localStorage.removeItem(key); } catch (_) {}
 }
 

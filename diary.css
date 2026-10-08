@@ -26,6 +26,69 @@
   --page-shadow: var(--diary-shadow);
 }
 
+/* Profiles use the viewer's paper and ink; the person is identified by their
+   avatar, never by silently switching accounts or exposing their controls. */
+.profile-tabs { display:flex; gap:8px; margin:4px 0 12px; }
+.profile-tabs a { flex:1; min-width:0; min-height:52px; display:flex; align-items:center; gap:9px; padding:7px 12px; border:1px solid var(--diary-rule); border-radius:18px; background:var(--diary-panel); color:var(--page-text); text-decoration:none; }
+.profile-tabs a[aria-current] { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+.profile-tabs img { width:34px; height:34px; border-radius:50%; }
+.profile-tabs span { overflow-wrap:anywhere; font-weight:800; }
+.profile-tabs small { font-weight:500; color:var(--page-muted); }
+.profile-actions { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
+.profile-actions :is(a,button), .game-card button:not(.couple-board button) { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 14px; border:1px solid var(--diary-rule); border-radius:14px; background:var(--diary-raised); color:var(--page-text); font:inherit; font-weight:750; text-decoration:none; }
+.now-shell #status-pair { display:block; }
+.now-shell #status-pair .person-status-card { width:100%; margin:0; }
+.now-shell .arrival-strip { padding:0; background:none; border:0; margin:0 0 12px; }
+.now-shell .status-editor { margin:0 0 12px; }
+.now-shell [data-owner-control][hidden] { display:none!important; }
+[data-profile-owner="false"] .now-location-head,
+[data-profile-owner="false"] .trip-bar,
+[data-profile-owner="false"] .pause-choices,
+[data-profile-owner="false"] .hide-last-location { display:none!important; }
+[data-profile-owner="false"] .now-location-card:not(.has-map) { display:none; }
+.profile-note-preview { margin:12px 0; }
+.profile-note-preview h2 { font-size:1.15rem; }
+.profile-note-preview .today-card-head a { color:var(--accent); font-size:.85rem; }
+.profile-note-link { display:block; padding:12px 0; border-bottom:1px solid var(--diary-rule); text-decoration:none; color:var(--page-text); overflow-wrap:anywhere; }
+.profile-note-link:last-child { border:0; padding-bottom:0; }
+.profile-note-link small { display:block; margin-top:5px; color:var(--page-muted); }
+.game-card { scroll-margin-block:80px; }
+.game-card h2 { font-size:1.25rem; }
+.game-status { margin:5px 0 0; font-size:.9rem; color:var(--page-muted); }
+.game-content { max-width:360px; margin:0 auto; }
+.game-hint { font-size:.85rem; color:var(--page-muted); margin:10px 0; line-height:1.45; }
+.game-players { display:flex; justify-content:space-between; gap:8px; font-size:.9rem; margin:12px 0; }
+.game-players span { padding:7px 10px; border:1px solid transparent; border-radius:12px; overflow-wrap:anywhere; }
+.game-players .is-turn { border-color:var(--accent); background:var(--diary-raised); }
+.couple-board { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+.couple-board button { aspect-ratio:1; min-height:64px; display:grid; place-items:center; border:1px solid var(--diary-rule); border-radius:17px; background:var(--diary-raised); color:var(--page-text); padding:8px; font:inherit; }
+.couple-board button:disabled { opacity:1; cursor:default; }
+.couple-board button:not(:disabled):hover { border-color:var(--accent); }
+.game-token { font-size:clamp(2.2rem,11vw,3.2rem); line-height:1; text-shadow:0 1px 2px #0003; }
+.game-token.her { color:#b76b13; }
+.game-token.him { color:#665799; }
+.him-theme .game-token.her { color:#ffce71; }
+.him-theme .game-token.him { color:#d7c4ff; }
+.couple-board .winning-cell { border:2px solid var(--accent); background:var(--page-card); }
+.game-actions { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 6px; }
+.game-card .game-actions .primary-action { background:var(--accent); color:var(--diary-pressed-ink); }
+.game-error { padding:10px 12px; border:1px solid currentColor; border-radius:12px; font-size:.9rem; color:var(--page-text); }
+.game-player { display:grid; gap:7px; flex:1; min-width:0; padding:12px; border:1px solid var(--diary-rule); border-radius:16px; text-align:center; overflow-wrap:anywhere; }
+.game-player small { color:var(--page-muted); font-size:.8rem; }
+.game-player .game-score { display:flex; padding:0; gap:6px; justify-content:center; }
+.game-score i { width:12px; height:12px; border:1px solid var(--accent); border-radius:50%; }
+.game-score i.scored { background:var(--accent); box-shadow:0 0 10px color-mix(in srgb,var(--accent),transparent 65%); }
+.couple-board .selected-piece { outline:3px solid var(--accent); outline-offset:-4px; }
+.game-rules { margin-top:14px; color:var(--page-muted); font-size:.85rem; }
+.game-rules summary { min-height:44px; display:flex; align-items:center; cursor:pointer; }
+.game-rules p { margin:8px 0; line-height:1.5; }
+@media (prefers-reduced-motion:no-preference) {
+  .game-token { animation:game-arrive .18s ease-out; }
+  .winning-cell .game-token { animation:game-win .65s ease-out; }
+  @keyframes game-arrive { from { transform:scale(.85); opacity:.4; } to { transform:scale(1); opacity:1; } }
+  @keyframes game-win { 0%,100% { transform:scale(1); } 45% { transform:scale(1.2) rotate(-8deg); } }
+}
+
 /* The dock owns Home; the feature heading owns search. No second masthead. */
 .profile-page[data-app] .app-topbar { display:none; }
 .profile-page .dock-item span,.profile-page .dock-add span { font-size:.69rem; }

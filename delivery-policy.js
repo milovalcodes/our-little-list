@@ -1,5 +1,5 @@
 // Shared by the scheduled worker and its manual backstop.
-const FOCUS_HELD_KINDS = new Set(['status', 'item', 'item-finished', 'date', 'memory', 'reaction', 'keepsake']);
+const FOCUS_HELD_KINDS = new Set(['status', 'item', 'item-finished', 'date', 'memory', 'reaction', 'keepsake', 'game']);
 
 export function focusDelivery(message, status, now = Date.now()) {
   const until = Number(status?.focusUntil) || 0;

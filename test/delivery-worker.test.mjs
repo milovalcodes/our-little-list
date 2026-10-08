@@ -67,7 +67,7 @@ const deliver = env => realDeliver(env, { scheduleQuestions: false });
   console.log(' ok  question pings are written with names Firestore accepts');
 }
 
-function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, questions = {}, pushStatus = 201, lockHeld = false, moveStatus = 200 }) {
+function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, questions = {}, game = null, pushStatus = 201, lockHeld = false, moveStatus = 200 }) {
   const deleted = [];
   const pushes = [];
   const moved = [];
@@ -114,6 +114,9 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
     if (url.includes('/help/') && options.method !== 'DELETE') {
       const ask = asks[url.split('/help/')[1]];
       return ask ? Response.json({ name: url, fields: { state: { stringValue: ask.state } } }) : new Response('', { status: 404 });
+    }
+    if (url.includes('/games/sun-moon') && options.method !== 'DELETE') {
+      return game ? Response.json({name:url,fields:{round:{stringValue:game.round},ply:{integerValue:String(game.ply)},closed:{booleanValue:game.closed}}}) : new Response('',{status:404});
     }
     if (url.includes('/questions/') && options.method !== 'DELETE') {
       const record = questions[url.split('/questions/')[1]];
@@ -390,4 +393,19 @@ console.log(' ok  an urgent ask is not quieted by focus');
   } finally { Date.now = originalNow; }
 }
 
+{
+  const messages=[
+    {id:'OLDTURN',to:'her',title:'old turn',body:'x',kind:'game',ref:'round-1/2/open',sendAt:now-1000,createdAt:now-1000},
+    {id:'TURN',to:'her',title:'your turn',body:'x',kind:'game',ref:'round-1/4/open',sendAt:now-1000,createdAt:now-1000}
+  ];
+  const game={round:'round-1',ply:4,closed:false};
+  const h=harness({outbox:messages,game});
+  const result=await deliver(ENV);
+  assert.equal(result.dropped,1);assert.equal(result.sent,1);assert.equal(h.pushes.length,1);
+  harness({outbox:[messages[1]],game,subs:{her:{subscription:SUB,preferences:{categories:{games:false}}}}});
+  assert.equal((await deliver(ENV)).muted,1);
+  harness({outbox:[messages[1]],game,statuses:{her:{focusUntil:now+60000}}});
+  assert.equal((await deliver(ENV)).held,1);
+  console.log(' ok  game turns drop stale pings, respect the game switch and wait during focus');
+}
 console.log('\nDELIVERY WORKER CLEAN');

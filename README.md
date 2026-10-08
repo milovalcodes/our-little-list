@@ -11,10 +11,11 @@ Live: https://milovalcodes.github.io/our-little-list/
 Each thing lives in one place:
 
 - **Home** — both people at a glance, the pinned fridge note, quick add and search.
-- **Today** — due items, one question of the day, a focus timer and the latest activity.
+- **Today** — due items, one question of the day, a focus timer, Sun vs Moon and the latest activity.
 - **The list** — repeatable tasks, groceries by aisle and requests; a timed request is also a reminder, for either person or yourself.
 - **Notes** — short notes, reactions and the option to pin one on both home screens.
-- **Right now** — statuses, availability, opt-in map and saved spots that can change a status when someone arrives.
+- **Profiles** — either Home avatar opens the same profile layout. Your own profile owns status editing and location controls; your partner's shows their status, recent notes and shared actions. Saved spots stay in Settings.
+- **Sun vs Moon** — one shared asynchronous board in Today. Place three pieces each, then shift a piece to an empty square to make three in a row. First to three rounds wins a match; match wins persist. Confirmed transactions and rules protect turns and scores, and create the turn ping atomically. Old pings are dropped by the delivery worker.
 - **Date ideas** — ideas with optional details, filters and a random picker; completed dates can become memories.
 - **Memories** — photos and small things worth keeping.
 - **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
@@ -171,6 +172,7 @@ whether permission was granted.
 
 ```
 pnpm test                             # syntax, data, push, dedupe and delivery
+pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/game-rules.test.mjs"  # Java 21, no live data
 ```
 
 And the browser pass, which loads every page at phone size, clicks through the
@@ -178,7 +180,7 @@ real flows and fails on any script error or sideways scroll:
 
 ```
 pnpm exec playwright install chromium
-python3 -m http.server 8777     # from a copy with apiKey set to REPLACE_ME
+python3 -m http.server 8777     # browser tests intercept Firebase; leave the production config alone
 pnpm run test:browser
 pnpm run test:visual     # screenshots both sides in your temp folder, checks 390px and 320px
 ```

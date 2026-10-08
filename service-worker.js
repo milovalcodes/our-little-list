@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v82';
+const CACHE = 'our-little-list-v83';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -18,7 +18,7 @@ const PAGES = [
 
 const ASSETS = [
   ...PAGES,
-  './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './guide.js', './profile-store.js', './profile-names.js',
+  './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './guide.js', './profile-store.js', './profile-route.js', './couple-game.js', './game-panel.js', './profile-names.js',
   './profiles.js', './status.js', './dates.js', './dashboard.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
   './notification-policy.js', './notification-preferences.js',
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
@@ -222,18 +222,37 @@ self.addEventListener('push', event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const target = safeAppUrl(event.notification.data?.url);
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windows => {
-      // Reuse a window that is already open instead of piling up new ones.
-      for (const client of windows) {
-        if (client.url === target && 'focus' in client) return client.focus();
+  event.waitUntil((async () => {
+    const windows = (await self.clients.matchAll({type:'window',includeUncontrolled:true}))
+      .filter(client => client.url.startsWith(self.registration.scope));
+    // Don't reload a form or draft when the right page is already open.
+    // A message also reopens the exact item when its hash has not changed.
+    const pageOf = value => { const url=new URL(value);return url.origin+url.pathname+url.search; };
+    const same = windows.find(client => pageOf(client.url) === pageOf(target));
+    if (same) {
+      try {
+        await same.focus();
+        const handled=await new Promise(resolve=>{
+          const channel=new MessageChannel();
+          const finish=value=>{clearTimeout(timer);channel.port1.close();resolve(value);};
+          const timer=setTimeout(()=>finish(false),1200);
+          channel.port1.onmessage=()=>finish(true);
+          same.postMessage({type:'OPEN_NOTIFICATION',url:target},[channel.port2]);
+        });
+        if(handled)return;
+        // Older cached pages, or a page still signing in, have no listener yet.
+        const navigated=await same.navigate(target);
+        if(navigated){await navigated.focus();return;}
       }
-      for (const client of windows) {
-        if ('navigate' in client && 'focus' in client) return client.navigate(target).then(() => client.focus());
-      }
-      return self.clients.openWindow(target);
-    })
-  );
+      catch (_) { /* closed between lookup and focus; try another window */ }
+    }
+    for (const client of windows) {
+      if(client===same)continue;
+      try { const navigated=await client.navigate(target);if(navigated){await navigated.focus();return;} }
+      catch (_) { /* a failed navigation must not eat the notification tap */ }
+    }
+    await self.clients.openWindow(target);
+  })());
 });
 
 // A bumped library version leaves its predecessor behind forever otherwise.

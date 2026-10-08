@@ -53,6 +53,22 @@ async function boot() {
   setupSearch(data, viewer, openQuick);
   setupDeepLinkHighlight();
   window.addEventListener('hashchange', setupDeepLinkHighlight);
+  navigator.serviceWorker?.addEventListener('message', event => {
+    if(event.data?.type!=='OPEN_NOTIFICATION')return;
+    try {
+      const target=new URL(event.data.url,location.href);
+      if(target.origin!==location.origin||target.pathname!==location.pathname||target.search!==location.search)return;
+      closeSheets(false);
+      if(location.hash!==target.hash)location.hash=target.hash;
+      else window.dispatchEvent(new HashChangeEvent('hashchange'));
+      event.ports?.[0]?.postMessage({handled:true});
+    } catch (_) { /* ignore malformed messages */ }
+  });
+  const openSection = () => {
+    if(page==='today'&&location.hash==='#focus')openSheet('focus');
+  };
+  window.addEventListener('hashchange',openSection);
+  openSection();
   setupRowMenus();
   const searchHost = document.querySelector('.feature-shell > .feature-hero') || document.querySelector('.app-topbar');
   if (searchHost && !searchHost.querySelector('[data-open-sheet="search"]')) {
@@ -123,7 +139,7 @@ function addSheets() {
     <section class="app-sheet more-sheet" id="sheet-more" role="dialog" aria-modal="true" aria-labelledby="more-title" hidden>
       <header class="sheet-head"><div><small>the rest of it</small><h2 id="more-title">More</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <nav class="more-grid">
-        <a href="notes.html"><i>✉</i><span>notes</span></a><a href="status.html"><i>☀︎☾</i><span>right now</span></a>
+        <a href="notes.html"><i>✉</i><span>notes</span></a><a href="status.html"><i>☀︎☾</i><span>profiles</span></a>
         <a href="dates.html"><i>✦</i><span>date ideas</span></a><a href="memories.html"><i>◒</i><span>memories</span></a>
         <a href="phone-check.html"><i>⚙︎</i><span>settings</span></a><a href="guide.html#tutorial"><i>✎</i><span>guide</span></a>
       </nav>
@@ -312,10 +328,17 @@ function searchable(collection, item, viewer) {
   return { ...value, title: String(value.title || 'untitled'), haystack: normalize(`${value.title} ${value.meta} ${item.note || ''}`) };
 }
 
+let cancelDeepLink=()=>{};
 function setupDeepLinkHighlight() {
-  const fragment = decodeURIComponent(location.hash.slice(1));
+  cancelDeepLink();
+  let fragment;
+  try { fragment=decodeURIComponent(location.hash.slice(1)); } catch (_) { return; }
   const match = /^(item|done|ask|note|date|memory)-([A-Za-z0-9_-]+)$/.exec(fragment);
-  if (!match) return;
+  if (!match) {
+    const id=/^game(?:-[A-Za-z0-9_-]+)?$/.test(fragment)?'game':fragment;
+    if(['game','question','new','fridge-note'].includes(id))requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:'center'}));
+    return;
+  }
   const [, kind, id] = match;
   const selectors = {
     item: '.task-row', done: '.task-row', ask: '.help-card',
@@ -341,7 +364,11 @@ function setupDeepLinkHighlight() {
   };
   observer.observe(document.body, { childList:true, subtree:true });
   show();
-  window.setTimeout(() => observer.disconnect(), 15000);
+  const deadline=window.setTimeout(() => {
+    observer.disconnect();
+    if(!highlighted&&navigator.onLine)toast('That item is no longer here, or hasn’t synced yet.');
+  },15000);
+  cancelDeepLink=()=>{observer.disconnect();clearTimeout(clearTimer);clearTimeout(deadline);highlighted?.classList.remove('is-deep-linked');};
 }
 
 function setupRowMenus() {

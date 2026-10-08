@@ -25,7 +25,10 @@
     const [page, hash] = target.split('#');
     const next = new URL(page, url);
     if (KEEPS_QUERY.includes(name)) next.search = url.search;
-    next.hash = hash ? `#${hash}` : url.hash;
+    // Queued notifications may still name a record on a retired page.
+    // Keep that record, rather than replacing it with a generic tab.
+    const itemHash = /^(?:#(?:ask|item|done|note|date|memory)-[A-Za-z0-9_-]+)$/.test(url.hash);
+    next.hash = itemHash ? url.hash : hash ? `#${hash}` : url.hash;
     return next.href;
   };
 })(self);
