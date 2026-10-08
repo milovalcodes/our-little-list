@@ -106,7 +106,7 @@ try {
  await secondMoon.reload();await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),3*multiplier);
  const herWin=await sun.evaluate(async({day,word})=>{const {sharedLayer}=await import('./data-hub.js');return(await sharedLayer()).submitWordGuess({day,person:'her',guess:word,expectedCount:0});},puzzle);
  assert.equal(herWin.won,true);
- await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),5*multiplier);
+ await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),10*multiplier);
  // Confirm the explicit query used for a private board is accepted by rules.
  assert.deepEqual(errors,[]);
  console.log('REAL FIREBASE WORD: two private boards, live partner scores, simultaneous-screen conflict, saved progress after reload and ownership verified');

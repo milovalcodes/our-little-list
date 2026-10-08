@@ -86,7 +86,7 @@ and [talking about sex](https://www.plannedparenthood.org/learn/sex-pleasure-and
 ### Little Word
 Five guesses, server-confirmed transactions, private per-person guess rows and shared count/result summaries. Daily words run 9 a.m. to 9 a.m. Eastern, including DST. The larger accepted-guess dictionary is [dwyl/english-words](https://github.com/dwyl/english-words), pinned in word-lexicon.js under the Unlicense (WORD-DICTIONARY-LICENSE.txt). The two answer banks are hand-picked separately.
 
-Weekly points: 5/4/3/2/1 for winning on guesses 1–5; otherwise 0. Sunday hard words count double. Once both finish Sunday, or Monday at 9 latest, the Worker settles the week. A tie opens a shared hard-word duel, repeating until one result is mathematically unbeatable. Duel rounds have no timeout and do not change the weekly total. Immutable wordWeeks records drive crown overlays and consecutive weekly streaks. New daily puzzles continue during a tie-break.
+Weekly points: 10/4/3/2/1 for winning on guesses 1–5; otherwise 0. Sunday hard words count double. Once both finish Sunday, or Monday at 9 latest, the Worker settles the week. A tie opens a shared hard-word duel, repeating until one result is mathematically unbeatable. Duel rounds have no timeout and do not change the weekly total. Immutable wordWeeks records drive crown overlays and consecutive weekly streaks. New daily puzzles continue during a tie-break.
 
 The game is friendly, not anti-cheat software: puzzle answers exist in the client-readable puzzle documents. Private guess rows are restricted by side. Like existing question scheduling, the Worker uses a household member credential rather than an admin key; this is not a public competitive ranking service.
 

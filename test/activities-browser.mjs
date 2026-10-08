@@ -75,7 +75,7 @@ try{
  });
  await page.goto(base+'/activities.html?as=him#tiebreaker');await page.waitForSelector('.tie-board .word-keyboard button:not([disabled])');
  for(const letter of 'jazzy')await page.click('.tie-board [data-key="'+letter+'"]');await page.click('.tie-board [data-key="↵"]');
- await page.waitForFunction(()=>document.querySelector('.tie-summary').textContent.includes('10 points'));
+ await page.waitForFunction(()=>document.querySelector('.tie-summary').textContent.includes('20 points'));
  assert.match(await page.locator('#word-summary').textContent(),/4 points/);
  await page.goto(base+'/today.html?as=him');assert.equal(await page.locator('#question,#game').count(),0);
  await page.goto(base+'/today.html?as=him#question');await page.waitForURL('**/activities.html?as=him#question');assert.ok(await page.locator('#question-answer').isVisible());

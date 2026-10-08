@@ -44,8 +44,9 @@ await commit('him',{day:tie.day,person:'him',guesses:['table','apple'],won:true,
 // Settlement records accept real scores, not malformed values or two crowns.
 const final={week:'2026-10-05',scores:{her:12,him:8},winners:['her'],settledAt:now};
 await write('him','wordWeeks/'+final.week,{...final,scores:{her:'12',him:8}},false);
-await write('him','wordWeeks/'+final.week,{...final,scores:{her:41,him:8}},false);
+await write('him','wordWeeks/'+final.week,{...final,scores:{her:81,him:8}},false);
 await write('him','wordWeeks/'+final.week,{...final,winners:['her','him']},false);
+await write('him','wordWeeks/2026-09-28',{...final,week:'2026-09-28',scores:{her:80,him:0}});
 await write('him','wordWeeks/'+final.week,final);
 await write('him','wordWeeks/'+final.week,{...final,winners:['him']},false);
 // Archived question answers keep the same no-peeking rule.

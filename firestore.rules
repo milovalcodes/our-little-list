@@ -312,7 +312,7 @@ service cloud.firestore {
     function validWordScores(scores) {
       return scores is map && scores.keys().hasOnly(['her','him'])
         && scores.her is int && scores.him is int
-        && scores.her >= 0 && scores.her <= 40 && scores.him >= 0 && scores.him <= 40;
+        && scores.her >= 0 && scores.her <= 80 && scores.him >= 0 && scores.him <= 80;
     }
     match /households/{householdId}/wordWeeks/{week} {
       allow read: if inHousehold(householdId);
