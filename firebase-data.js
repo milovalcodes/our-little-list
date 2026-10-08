@@ -66,28 +66,40 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
   const layer = {
     mode: 'firebase',
     signedIn,
-    listenTo(name, callback) {
+    listenTo(name, callback, { onError } = {}) {
       if (!signedIn()) return () => {};
       let live = liveCollections.get(name);
       if (!live) {
-        live = { callbacks: new Set(), latest: null, unsubscribe: null };
+        live = { callbacks: new Set(), failures: new Map(), latest: null, metadata: null, unsubscribe: null };
         live.unsubscribe = onSnapshot(
           named(name),
+          { includeMetadataChanges: name === 'games' },
           snapshot => {
             live.latest = snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
-            live.callbacks.forEach(handler => safelyCall(handler, [...live.latest]));
+            live.metadata = { fromCache: snapshot.metadata.fromCache };
+            live.callbacks.forEach(handler => safelyCall(handler, [...live.latest], live.metadata));
           },
-          problem => announceError(problem, 'listen')
+          problem => {
+            // A failed Firestore listener is terminal. Do not leave it cached
+            // where reconnecting consumers would reuse a dead subscription.
+            if (liveCollections.get(name) === live) liveCollections.delete(name);
+            if (live.failures.size) live.failures.forEach(handler => safelyCall(handler, problem));
+            else announceError(problem, 'listen');
+          }
         );
         liveCollections.set(name, live);
       }
       live.callbacks.add(callback);
-      if (live.latest) queueMicrotask(() => safelyCall(callback, [...live.latest]));
+      if (onError) live.failures.set(callback, onError);
+      if (live.latest) queueMicrotask(() => {
+        if (live.callbacks.has(callback)) safelyCall(callback, [...live.latest], live.metadata);
+      });
       return () => {
         live.callbacks.delete(callback);
+        live.failures.delete(callback);
         if (live.callbacks.size === 0) {
           live.unsubscribe?.();
-          liveCollections.delete(name);
+          if (liveCollections.get(name) === live) liveCollections.delete(name);
         }
       };
     },
@@ -472,8 +484,8 @@ function announceSync(phase, id = ++syncSerial) {
   return id;
 }
 
-function safelyCall(callback, value) {
-  try { callback(value); } catch (problem) { console.error('collection listener failed', problem); }
+function safelyCall(callback, ...values) {
+  try { callback(...values); } catch (problem) { console.error('collection listener failed', problem); }
 }
 
 function notificationUrl(value) {
