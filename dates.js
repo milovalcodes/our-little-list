@@ -50,14 +50,8 @@ $('date-more').addEventListener('click',()=>{viewLimit+=8;render();});
 // things you did together instead of a done pile here and a jar over there.
 // Undoing it takes that memory back out.
 async function toggleDone(idea){
-  if(idea.done){
-    await data.updateIn('dates',idea.id,{done:false,doneAt:0,memoryId:''});
-    if(idea.memoryId)await data.removeFrom('memories',idea.memoryId).catch(()=>{});
-    toast('back in the pile');return;
-  }
-  const memory=await data.addTo('memories',{text:`✦ we did: ${idea.title}`,thumb:'',hasPhoto:false,addedBy:viewer,dateId:idea.id,createdAt:Date.now()});
-  await data.updateIn('dates',idea.id,{done:true,doneAt:Date.now(),memoryId:memory?.id||''});
-  toast('date completed. it is in the memory jar ◒');
+  await data.setDateDone(idea.id,!idea.done,viewer);
+  toast(idea.done?'back in the pile':'date completed. it is in the memory jar ◒');
 }
 $('date-list').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const idea=ideas.find(item=>item.id===button.closest('[data-id]')?.dataset.id);if(!idea)return;
   if(button.dataset.action==='edit'){editingDateId=idea.id;render();$('date-list').querySelector('[data-edit-date] [name="title"]')?.focus();return;}

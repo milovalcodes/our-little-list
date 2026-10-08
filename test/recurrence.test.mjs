@@ -4,13 +4,10 @@
 // a task due the 31st of January to the 3rd of March.
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-
-const source = readFileSync(new URL('../tasks.js', import.meta.url), 'utf8');
+import { nextDue, repeatCompletion, groceryListFinished } from '../recurrence.js';
 function dateKey(value) {
   return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
 }
-const nextDue = new Function('dateKey', `${source.slice(source.indexOf('function nextDue'))}; return nextDue;`)(dateKey);
 
 const today = new Date();
 today.setHours(12, 0, 0, 0);
@@ -48,3 +45,17 @@ assert.equal(nextDue(key(0), 'once'), key(0), 'a one-off is never rolled');
 console.log(' ok  a missing, broken or non-repeating date is handled');
 
 console.log('\nRECURRENCE CLEAN');
+
+for (const year of [2027, 2028]) {
+  let task = { due:`${year}-01-31`, recurrence:'monthly' };
+  task = { ...task, ...repeatCompletion(task,'her',new Date(year,0,31,12)) };
+  assert.equal(task.due, `${year}-02-${year === 2028 ? 29 : 28}`);
+  task = { ...task, ...repeatCompletion(task,'him',new Date(year,1,28,12)) };
+  assert.equal(task.due, `${year}-03-31`, 'a separate completion after February remembers the 31st');
+}
+const grocery = { id:'milk',type:'grocery',done:false };
+const repeating = { id:'eggs',type:'grocery',done:false,recurrence:'weekly' };
+assert.equal(groceryListFinished([grocery,repeating],grocery),false);
+assert.equal(groceryListFinished([repeating],repeating),false);
+assert.equal(groceryListFinished([grocery,{...repeating,done:true}],grocery),true);
+console.log(' ok  month-end dates survive separate completions; unfinished repeats never mean an empty grocery list');

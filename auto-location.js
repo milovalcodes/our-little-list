@@ -18,6 +18,8 @@ const RETRY_LIMIT = 5;
 let data;
 let viewer;
 let watchId = null;
+let watcherEpoch = 0;
+let resumePingPending = false;
 let heartbeat = null;
 let retryTimer = null;
 let errors = 0;
@@ -68,7 +70,8 @@ export const LOCATION_ASKED_KEY = 'our-little-list-location-asked';
 
 restoreThrottle();
 
-const ready = boot();
+let booted = false;
+const ready = boot().finally(() => { booted = true; });
 
 export function locationSnapshot() {
   return { phase, detail, viewer, pausedUntil: pausedUntil(), updatedAt: lastPoint?.updatedAt || 0, accuracy: lastPoint?.accuracy || 0, lat:lastPoint?.lat, lng:lastPoint?.lng, placeId:lastPoint?.placeId || '', placeLabel:lastPoint?.placeLabel || '', placePreset:lastPoint?.placePreset || '' };
@@ -82,7 +85,7 @@ export async function resumeAutoLocation() {
   try { localStorage.removeItem(pauseKey()); localStorage.setItem(LOCATION_ASKED_KEY, 'yes'); } catch (_) {}
   window.clearTimeout(resumeTimer);
   startWatcher();
-  if (wasPaused) tellPartnerSharingIsBack();
+  if (wasPaused) resumePingPending = true;
   return locationSnapshot();
 }
 
@@ -92,6 +95,10 @@ export async function pauseAutoLocation({ removeSpot = false, minutes = 0 } = {}
   await ready;
   stopWatcher();
   phase = 'paused';
+  resumePingPending = false;
+  if (removeSpot) lastPoint = null;
+  lastSavedAt = 0; lastAttemptAt = 0; lastSavedPoint = null;
+  rememberThrottle();
   const until = minutes > 0 ? Date.now() + minutes * 60000 : 0;
   detail = until ? `back on at ${new Date(until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : removeSpot ? 'last spot hidden' : 'last spot kept';
   try { localStorage.setItem(pauseKey(), until ? String(until) : 'yes'); } catch (_) {}
@@ -148,7 +155,7 @@ async function boot() {
     return;
   }
   // A timed pause that ran out while the app was closed.
-  if (expiredPause) { expiredPause = false; tellPartnerSharingIsBack(); }
+  if (expiredPause) { expiredPause = false; resumePingPending = true; }
   startWatcher();
 }
 
@@ -157,8 +164,9 @@ export async function locationPermissionState() {
 }
 
 async function waitingForFirstAsk() {
-  try { if (localStorage.getItem(LOCATION_ASKED_KEY)) return false; } catch (_) { return false; }
-  return (await locationPermissionState()) === 'prompt';
+  try { if (localStorage.getItem(LOCATION_ASKED_KEY)) return false; } catch (_) { /* no remembered consent */ }
+  const permission = await locationPermissionState();
+  return permission === 'prompt' || permission === 'unknown';
 }
 
 let resumeTimer = null;
@@ -197,6 +205,12 @@ function wantsHighAccuracy() {
 
 function startWatcher() {
   stopWatcher();
+  if (document.hidden) {
+    phase = 'sleeping';
+    detail = 'updates when the app is on screen';
+    emit();
+    return;
+  }
   if (!navigator.geolocation) {
     phase = 'unavailable';
     detail = 'this browser has no location support';
@@ -224,7 +238,10 @@ function startWatcher() {
 function armWatch() {
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
   highAccuracyOn = wantsHighAccuracy();
-  watchId = navigator.geolocation.watchPosition(savePosition, handleError, {
+  const epoch = watcherEpoch;
+  watchId = navigator.geolocation.watchPosition(position => {
+    if (watcherCurrent(epoch)) void savePosition(position, epoch);
+  }, problem => { if (watcherCurrent(epoch)) handleError(problem); }, {
     enableHighAccuracy: highAccuracyOn,
     maximumAge: highAccuracyOn ? 15000 : 45000,
     timeout: 20000
@@ -232,6 +249,8 @@ function armWatch() {
 }
 
 function stopWatcher() {
+  watcherEpoch++;
+  placeRecheck = null;
   if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
   watchId = null;
   window.clearInterval(heartbeat);
@@ -240,7 +259,12 @@ function stopWatcher() {
   retryTimer = null;
 }
 
-async function savePosition(position) {
+function watcherCurrent(epoch) {
+  return epoch === watcherEpoch && !document.hidden && !isPaused();
+}
+
+async function savePosition(position, epoch = watcherEpoch) {
+  if (!watcherCurrent(epoch)) return;
   errors = 0;
   const now = Date.now();
   const next = {
@@ -270,22 +294,27 @@ async function savePosition(position) {
   emit();
   // Checked before this fix is marked as seen: the gap since the last one is
   // what tells a fresh move from one that happened while the app was away.
-  await applyPlaceMatch(next, matched);
+  await applyPlaceMatch(next, matched, { epoch });
+  if (!watcherCurrent(epoch)) return;
   markSeen();
   void checkApproach(next);
   // Walked near a saved spot (or away from all of them): switch GPS mode.
   if (watchId !== null && highAccuracyOn !== null && wantsHighAccuracy() !== highAccuracyOn) armWatch();
   // A GPS watcher can chatter several times a second. The map does not need
   // that many cloud writes: save meaningful movement, or refresh once a minute.
-  await persistPoint(next);
+  const saved = await persistPoint(next, false, epoch);
+  if (saved && watcherCurrent(epoch) && resumePingPending) {
+    resumePingPending = false;
+    tellPartnerSharingIsBack();
+  }
 }
 
 function closestPlace(point) {
   return matchSavedPlace(places, point, activePlaceId);
 }
 
-async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } = {}) {
-  if (!viewer || !data || !placesLoaded) return;
+async function applyPlaceMatch(point, knownMatch = undefined, { moved = true, epoch = watcherEpoch } = {}) {
+  if (!viewer || !data || !placesLoaded || watchId === null || !watcherCurrent(epoch)) return;
   if (placeStatusInFlight) {
     // Anything that was not movement keeps the whole re-check from counting as
     // an arrival.
@@ -318,6 +347,7 @@ async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } =
   placeStatusInFlight = true;
   try {
     const statuses = await data.readOnce('statuses');
+    if (!watcherCurrent(epoch)) return;
     const existing = statuses.find(item => item.id === viewer || item.person === viewer);
     const display = place ? placeDisplay(place) : null;
     const locationText = display?.status || '';
@@ -345,17 +375,19 @@ async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } =
       ...(existing ? {} : { state:'online', text:'', category:'', emoji:'', energy:'functioning', expiresAt:0 })
     };
     await data.setTo('statuses', viewer, payload);
+    if (!watcherCurrent(epoch)) return;
     if (shouldNotifyLeave) void announcePlaceChange(previousPlace,'left',{ late });
     if (shouldNotify) void announcePlaceChange(place,'arrived',{ late });
   } catch (_) {
     // The location itself can still be useful even when its cosmetic status
     // update has to wait. Forget that this one was applied, so the next fix
     // tries again instead of believing it already happened.
+    if (!watcherCurrent(epoch)) return;
     rememberPlace(previousId);
     if (firstCheck) placeMatchStarted = false;
   } finally {
     placeStatusInFlight = false;
-    if (placeRecheck && lastPoint) {
+    if (placeRecheck && lastPoint && watcherCurrent(epoch)) {
       const next = placeRecheck;
       placeRecheck = null;
       void applyPlaceMatch(lastPoint, undefined, next);
@@ -367,6 +399,8 @@ async function applyPlaceMatch(point, knownMatch = undefined, { moved = true } =
 // can step out and back in; one ping per spot per half hour is plenty.
 const ARRIVAL_QUIET_MS = 30 * 60 * 1000;
 async function announcePlaceChange(place,change,{ late = false } = {}) {
+  const epoch = watcherEpoch;
+  if (!watcherCurrent(epoch)) return;
   const key = `our-little-list-${change}-${viewer}-${place.id}`;
   try { if (Date.now() - Number(localStorage.getItem(key) || 0) < ARRIVAL_QUIET_MS) return; } catch (_) {}
   // Claim the cooldown before the async read/outbox write. Another tab can
@@ -382,6 +416,10 @@ async function announcePlaceChange(place,change,{ late = false } = {}) {
     const radius = Math.max(50, Math.min(1000, Number(place.radius) || 150)) + 60;
     together = Boolean(theirs && Number(theirs.shareUntil) > Date.now() && Number.isFinite(theirs.lat) && metersBetween(place, theirs) <= radius);
   } catch (_) { /* the plain message is fine */ }
+  if (!watcherCurrent(epoch)) {
+    try { if(localStorage.getItem(key)===String(claimedAt))localStorage.removeItem(key); } catch (_) {}
+    return;
+  }
   if(change==='arrived')lastArrivalPingAt=Date.now();
   const message = change==='left'?leaveMessage(place,personName(viewer),{ late }):arrivalMessage(place, personName(viewer), { together, late });
   const result=await data.notify(partner, { ...message, url: `status.html#profile-${viewer}-map`, kind: 'arrival', ref: `place-${place.id}-${change}` });
@@ -424,7 +462,8 @@ async function checkApproach(point) {
   if (!result?.queued) try { localStorage.removeItem(key); } catch (_) {}
 }
 
-async function persistPoint(next, renewLease = false) {
+async function persistPoint(next, renewLease = false, epoch = watcherEpoch) {
+  if (!watcherCurrent(epoch)) return false;
   const now = Date.now();
   const previous = lastSavedPoint;
   const sinceSave = now - lastSavedAt;
@@ -438,10 +477,13 @@ async function persistPoint(next, renewLease = false) {
   rememberThrottle();
   try {
     await data.setTo('locations', viewer, next);
+    if (!watcherCurrent(epoch)) return false;
     lastSavedAt = now;
     lastSavedPoint = next;
     rememberThrottle();
+    return true;
   } catch (_) {
+    if (!watcherCurrent(epoch)) return false;
     phase = 'offline';
     detail = 'could not sync yet; trying again';
     emit();
@@ -516,7 +558,7 @@ function emit() {
 }
 
 function resumeIfSensible() {
-  if (!viewer || data?.mode === 'local') return;
+  if (!booted || !viewer || data?.mode === 'local') return;
   if (isPaused()) {
     // Another page in the app paused this. Honour it rather than quietly
     // resuming and republishing a live badge the user thought they turned off.
@@ -525,7 +567,7 @@ function resumeIfSensible() {
   }
   if (phase === 'paused') {
     // Turned back on from another page, or a timed pause ran out.
-    if (expiredPause) { expiredPause = false; tellPartnerSharingIsBack(); }
+    if (expiredPause) { expiredPause = false; resumePingPending = true; }
     restoreThrottle();
     startWatcher();
     return;

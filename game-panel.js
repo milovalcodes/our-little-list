@@ -11,10 +11,11 @@ async function start(){
   const data=await sharedLayer(), viewer=await awaitViewer();
   if(!viewer)return;
   const other=partnerOf(viewer);
-  let games=[], id=gameRoute(location.hash).id, loaded=false, busy=false, expanded=false, folded=false, error='', confirmClose=false, selected='';
+  let games=[], snapshotRevision=0, id=gameRoute(location.hash).id, loaded=false, busy=false, expanded=false, folded=false, error='', confirmClose=false, selected='';
   const current=()=>games.find(item=>item.id===id)||null;
   const wantsGame=()=>/^#game(?:-[A-Za-z0-9_-]+)?$/.test(location.hash);
   data.listenTo('games', items=>{
+    snapshotRevision++;
     const before=current(),next=items.find(item=>item.id===id)||null;
     if(next?.round!==before?.round||next?.ply!==before?.ply){selected='';folded=false;confirmClose=false;}
     games=items;loaded=true;
@@ -87,10 +88,14 @@ async function start(){
     if(id===GAME_ID&&cell!==undefined&&Object.values(game?.board||{}).filter(person=>person===viewer).length===3&&!selected){error='Pick one of your pieces first, then an empty square.';render();return;}
     const actingId=id,options={gameId:id,action:action||'move',person:viewer,cell,fromCell:selected,expectedRound:game?.round||'',expectedPly:game?.ply,round:crypto.randomUUID(),now:Date.now()};
     busy=true;error='';confirmClose=false;expanded=true;render();
+    const beforeSave=snapshotRevision;
     try{
       const next=await data.playGame(options,personName(viewer));
-      games=[...games.filter(g=>g.id!==actingId),{id:actingId,...next}];selected='';
-      if(id===actingId)history.replaceState(null,'',gameHref(next).replace('today.html',''));
+      // A newer partner move can reach the listener before this acknowledgement.
+      // The listener owns the board once it has delivered a fresh snapshot.
+      if(snapshotRevision===beforeSave)games=[...games.filter(g=>g.id!==actingId),{id:actingId,...next}];
+      selected='';
+      if(id===actingId)history.replaceState(null,'',gameHref(current()||next).replace('today.html',''));
     }catch(problem){error=problem?.code?'Couldn’t sync that move. Check your connection, then try again.':problem?.message||'Couldn’t sync that move. Try again.';}
     finally{busy=false;render();}
   });

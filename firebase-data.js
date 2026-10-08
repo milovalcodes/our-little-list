@@ -143,6 +143,27 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       return { id: entry.id };
     },
     setTo: (name, id, item) => applied(setDoc(doc(named(name), id), item, { merge: true }), name),
+    async setDateDone(id, done, viewer) {
+      if (!signedIn() || navigator.onLine === false) throw new Error('Connect to finish this date.');
+      // The date and its memory are one action. Transactions also prevent two
+      // phones finishing the same date from creating two memories.
+      return runTransaction(db, async transaction => {
+        const ref = doc(named('dates'), id);
+        const snapshot = await transaction.get(ref);
+        if (!snapshot.exists()) throw new Error('This date was removed.');
+        const idea = snapshot.data();
+        if (Boolean(idea.done) === done) return;
+        const now = Date.now();
+        if (done) {
+          const memoryId = `date-${id}`;
+          transaction.set(doc(named('memories'), memoryId), { text:`✦ we did: ${idea.title}`, thumb:'', hasPhoto:false, addedBy:viewer, dateId:id, createdAt:now });
+          transaction.update(ref, { done:true, doneAt:now, memoryId });
+        } else {
+          transaction.update(ref, { done:false, doneAt:0, memoryId:'' });
+          if (idea.memoryId) transaction.delete(doc(named('memories'), idea.memoryId));
+        }
+      });
+    },
     async playGame(options, displayName) {
       if (!signedIn()) throw new Error('Sign in to play.');
       // Moves must be confirmed online. A queued move against an old board
@@ -319,6 +340,23 @@ function createLocalLayer(onAuth, onReady) {
         return next;
       };
       return navigator.locks ? navigator.locks.request('little-list-game', play) : play();
+    },
+    async setDateDone(id, done, viewer) {
+      const change = () => {
+        const dates = read('dates'), idea = dates.find(item => item.id === id);
+        if (!idea) throw new Error('This date was removed.');
+        if (Boolean(idea.done) === done) return;
+        const now = Date.now(), memoryId = `date-${id}`;
+        if (done) {
+          write('memories', [...read('memories').filter(item => item.id !== memoryId), { id:memoryId, text:`✦ we did: ${idea.title}`, thumb:'', hasPhoto:false, addedBy:viewer, dateId:id, createdAt:now }]);
+          Object.assign(idea,{done:true,doneAt:now,memoryId});
+        } else {
+          if (idea.memoryId) write('memories',read('memories').filter(item => item.id !== idea.memoryId));
+          Object.assign(idea,{done:false,doneAt:0,memoryId:''});
+        }
+        write('dates',dates);
+      };
+      return navigator.locks ? navigator.locks.request('little-list-date', change) : change();
     },
     async updateIn(name, id, changes) {
       const items = read(name);

@@ -179,6 +179,13 @@ no frame-by-frame Firestore writes or real-time arcade physics are involved.
 Game pings include the board ID, and bonus box turns don't notify the opponent
 until control passes (or the round ends). The rules recheck each move and score.
 
+The app-wide regression pass also covers edited daily answers, delayed game
+acknowledgements, read receipts in background tabs, location pause/consent races,
+photo-selection races, and completing one date from both phones. Date completion
+and its memory use one online transaction; no partially saved pair or duplicate
+memory. Monthly repeats keep `recurrenceDay` through short months using the same
+helper on List, Home and Today. Changing the due day resets that anchor.
+
 ```
 pnpm test                             # syntax, data, push, dedupe and delivery
 pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/game-rules.test.mjs"  # Java 21, no live data

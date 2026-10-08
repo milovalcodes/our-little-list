@@ -8,6 +8,7 @@ const $ = id => document.getElementById(id);
 let memories = [];
 let photo = null;
 let photoPending = Promise.resolve();
+let photoVersion = 0;
 let featuredId = '';
 let migrating = false;
 const fullPhotos = new Map();
@@ -22,15 +23,18 @@ data.listenTo('memories', items => {
 });
 
 $('memory-photo').addEventListener('change', event => {
+  const version = ++photoVersion;
   const file = event.target.files?.[0];
   photo = null;
   $('photo-name').textContent = '';
-  if (!file) return;
+  if (!file) { photoPending=Promise.resolve(); return; }
   $('photo-name').textContent = 'shrinking…';
   photoPending = makePhotoPair(file).then(result => {
+    if (version !== photoVersion) return;
     photo = result;
     $('photo-name').textContent = file.name;
   }).catch(() => {
+    if (version !== photoVersion) return;
     photo = null;
     event.target.value = '';
     $('photo-name').textContent = '';
@@ -42,7 +46,9 @@ $('memory-form').addEventListener('submit', async event => {
   event.preventDefault();
   const text = $('memory-text').value.trim();
   const button = $('memory-save');
+  if (button.disabled) return;
   setButtonBusy(button, true, 'jarring…');
+  $('memory-photo').disabled = true;
   await photoPending;
   try {
     const createdAt = Date.now();
@@ -61,13 +67,14 @@ $('memory-form').addEventListener('submit', async event => {
     void data.notify(other, { title: `${personName(viewer)} added to the memory jar`, body: text.slice(0, 120), url: `memories.html#memory-${saved.id}`, kind: 'memory' });
     event.target.reset();
     photo = null;
+    photoVersion++;
     photoPending = Promise.resolve();
     $('photo-name').textContent = '';
     toast('secured for the historians');
     document.querySelector('#sheet-memory-form [data-close-sheet]')?.click();
   } catch (_) {
     showFailure('the jar did not take it.', 'check the internet and try again.');
-  } finally { setButtonBusy(button, false); }
+  } finally { setButtonBusy(button, false); $('memory-photo').disabled=false; }
 });
 
 $('memory-list').addEventListener('click', event => {
@@ -113,7 +120,7 @@ function render() {
   const featured = featuredId && visible.find(item => item.id === featuredId);
   $('memory-random').hidden = !featured;
   $('memory-random').innerHTML = featured ? `<div class="memory-full"><button type="button" data-close-memory aria-label="Close memory">×</button>${memoryMarkup(featured, true)}</div>` : '';
-  if (featuredId && !featured) featuredId = '';
+  if (featuredId && !featured) { featuredId = ''; document.body.classList.remove('memory-open'); }
 }
 
 function memoryMarkup(item, featured = false) {

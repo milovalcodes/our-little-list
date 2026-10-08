@@ -13,9 +13,18 @@ setNames();
 
 const moods=NOTE_MOODS;
 let notes=[];let reactions=[];let editingNoteId='';const markedRead=new Set();
+let readFrame=0;
 
 let viewLimit=20;
-data.listenTo('notes',items=>{notes=items.sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0));renderNotes();markIncomingRead();});
+let renderedNotes='';
+data.listenTo('notes',items=>{
+  notes=items.sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0));
+  // Read receipts do not change these cards. Replacing the entire thread for
+  // each receipt can disturb scroll anchoring while someone is reading it.
+  const visibleContent=JSON.stringify(notes.map(({read,readAt,...note})=>note));
+  if(visibleContent!==renderedNotes){renderedNotes=visibleContent;renderNotes();}
+  markIncomingRead();
+});
 data.listenToQuery('reactions',{orderBy:{field:'createdAt',direction:'desc'},limit:100},items=>{reactions=items;renderNotes();});
 
 // One writing bar: quick picks appear while it is empty, and the little
@@ -88,10 +97,31 @@ function renderNotes() {
       : `<p>${escapeHtml(note.body || note.message || '')}</p>`;
     return `<article class="note-thread-row${mine ? ' mine' : ''}" data-id="${escapeHtml(note.id)}"><span>${moods[note.mood] || '💌'}</span><div><small>${mine ? 'you' : escapeHtml(personName(from))} · ${timeAgo(note.createdAt)}${note.editedAt ? ' · edited' : ''}</small>${body}<div class="reaction-controls">${myReaction ? `<button class="reaction-display" type="button" data-note-picker="${escapeHtml(note.id)}"><b>${escapeHtml(myReaction.emoji)}</b><span>yours · tap to change</span></button>` : ''}${partnerReaction ? `<span class="reaction-display passive"><b>${escapeHtml(partnerReaction.emoji)}</b><span>${escapeHtml(personName(recipient))}</span></span>` : ''}${!mine ? `<button class="reaction-trigger" type="button" data-note-picker="${escapeHtml(note.id)}">react</button>` : ''}<button class="reaction-trigger note-tool" type="button" data-pin-note="${escapeHtml(note.id)}">${note.pinned ? '📌 unpin' : '📌 pin'}</button>${canEdit && !editing ? `<button class="reaction-trigger note-tool" type="button" data-edit-note="${escapeHtml(note.id)}">edit</button>` : ''}${mine ? `<button class="reaction-trigger note-tool" type="button" data-delete-note="${escapeHtml(note.id)}">delete</button>` : ''}</div></div></article>`;
   }).join(''); });
+  markIncomingRead();
 }
 window.addEventListener('hashchange',()=>{renderNotes();markIncomingRead();});
 $('note-more').addEventListener('click',()=>{viewLimit+=20;renderNotes();markIncomingRead();});
 
-function markIncomingRead(){notes.slice(0,viewLimit).filter(note=>(note.recipient===sender||note.to===sender)&&!note.read&&!markedRead.has(note.id)).forEach(note=>{markedRead.add(note.id);void data.updateIn('notes',note.id,{read:true,readAt:Date.now()}).catch(()=>markedRead.delete(note.id));});}
+function markIncomingRead(){
+  if(document.hidden||readFrame)return;
+  readFrame=requestAnimationFrame(()=>{
+    readFrame=0;
+    if(document.hidden)return;
+    for(const row of $('note-inbox-list').querySelectorAll('[data-id]')){
+      const bounds=row.getBoundingClientRect();
+      // A mounted row is not necessarily being read: leave offscreen notes
+      // unread, including rows below the fold and a background browser tab.
+      const visible=Math.min(bounds.bottom,window.innerHeight)-Math.max(bounds.top,0);
+      if(!row.getClientRects().length||visible<Math.min(40,bounds.height/2))continue;
+      const note=notes.find(item=>item.id===row.dataset.id);
+      if(!note||(note.recipient!==sender&&note.to!==sender)||note.read||markedRead.has(note.id))continue;
+      markedRead.add(note.id);
+      void data.updateIn('notes',note.id,{read:true,readAt:Date.now()}).catch(()=>markedRead.delete(note.id));
+    }
+  });
+}
+document.addEventListener('visibilitychange',markIncomingRead);
+window.addEventListener('scroll',markIncomingRead,{passive:true,capture:true});
+window.addEventListener('resize',markIncomingRead,{passive:true});
 function setNames(){$('note-quick-text').setAttribute('aria-label',`Write ${personName(recipient)} a note`);$('note-quick-text').placeholder=`write ${personName(recipient)} a little note…`;}
 window.addEventListener('littlelist:profile',()=>{setNames();renderNotes();});

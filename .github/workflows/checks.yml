@@ -55,6 +55,9 @@ jobs:
       - name: Repeating tasks roll to a date in the future
         run: node test/recurrence.test.mjs
 
+      - name: Location and status timing regressions
+        run: node test/audit-regressions.test.mjs
+
       - name: Saved spots match where you are, and let go when you leave
         run: node test/places.test.mjs
 
@@ -121,5 +124,5 @@ jobs:
         run: |
           pnpm exec playwright install --with-deps chromium
           node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
-          python3 -m http.server 8777 >/tmp/our-little-list-http.log 2>&1 &
+          python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
           pnpm run test:browser

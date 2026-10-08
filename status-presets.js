@@ -33,7 +33,7 @@ export async function saveQuickStatus({ data, viewer, other, exists }, id, custo
     void data.notify(other, { title: `${personName(viewer)}: ${preset.arrival}`, body: '', url: `status.html#profile-${viewer}-map`, kind: 'arrival' });
   } else {
     // A plain status replaces an old "leaving now", the same as the full editor.
-    await data.setTo('statuses', viewer, { person: viewer, ...blank, ...preset.status, category: '', arrival: '', arrivalAt: 0, updateKind: 'custom', updatedAt: now });
+    await data.setTo('statuses', viewer, { person: viewer, ...blank, ...preset.status, category: '', arrival: '', arrivalAt: 0, expiresAt: 0, updateKind: 'custom', updatedAt: now });
     void data.notify(other, { title: `${personName(viewer)} changed status`, body: preset.status.text, url: `status.html#profile-${viewer}`, kind: 'status' });
   }
 }

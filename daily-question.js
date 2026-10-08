@@ -46,22 +46,24 @@ export function startDailyQuestion({ data, viewer, other }) {
     if (!question) return;
     window.clearTimeout(retryTimer);
     const revision = ++answerRead;
-    const iAnswered = Boolean(question.answers?.[viewer]?.at);
-    const both = iAnswered && Boolean(question.answers?.[other]?.at);
+    const markers = question.answers || {};
+    const iAnswered = Boolean(markers[viewer]?.at);
+    const both = iAnswered && Boolean(markers[other]?.at);
+    const fresh = (answer, person) => Boolean(answer?.text && Number(answer.at) === Number(markers[person]?.at));
     let mine = mineAnswer;
     let theirs = partnerAnswer;
     let missed = false;
-    if (iAnswered && !(mine?.text && Number(mine.at) >= Number(question.answers[viewer].at))) {
+    if (iAnswered && !fresh(mine, viewer)) {
       try { mine = await data.readDoc('questionAnswers', `${day}-${viewer}`) || mine; } catch (_) { missed = true; }
     }
-    if (both && !theirs?.text) {
+    if (both && !fresh(theirs, other)) {
       try { theirs = await data.readDoc('questionAnswers', `${day}-${other}`); } catch (_) { missed = true; }
     }
     if (revision !== answerRead) return;
     mineAnswer = iAnswered ? mine : null;
     partnerAnswer = both ? theirs : null;
     render();
-    if ((missed || (both && !partnerAnswer?.text)) && attempt < 6) {
+    if ((missed || (iAnswered && !fresh(mineAnswer, viewer)) || (both && !fresh(partnerAnswer, other))) && attempt < 6) {
       retryTimer = window.setTimeout(() => void loadAnswers(attempt + 1), Math.min(30000, 2000 * 2 ** attempt));
     }
   }
@@ -92,8 +94,13 @@ export function startDailyQuestion({ data, viewer, other }) {
       const hadAnswered = Boolean(mineAnswer?.text);
       const at = Date.now();
       await data.answerQuestion(day, viewer, text, at);
-      mineAnswer = { day, person:viewer, text, at };
-      question = { ...(existing || { id:day, day, promptId:selected.promptId }), answers:{ ...(existing?.answers || {}), [viewer]:{ at } } };
+      // A partner snapshot may have arrived while this write was in flight.
+      // Never restore the older pre-submit markers over that newer state.
+      const latest = question || existing || { id:day, day, promptId:selected.promptId };
+      if (Number(latest.answers?.[viewer]?.at || 0) <= at) {
+        mineAnswer = { day, person:viewer, text, at };
+        question = { ...latest, answers:{ ...(latest.answers || {}), [viewer]:{ at } } };
+      }
       editing = false;
       render();
       void loadAnswers();
@@ -128,6 +135,10 @@ export function startDailyQuestion({ data, viewer, other }) {
   }
 
   window.addEventListener('littlelist:profile', render);
+  // A phone can reconnect after the bounded retries have finished. The question
+  // markers may be unchanged, so there need not be another snapshot to wake us.
+  window.addEventListener('online', () => void loadAnswers());
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) void loadAnswers(); });
   window.setInterval(() => { if (questionClock().day !== clock.day || questionClock().open !== clock.open) location.reload(); }, 30000);
   render();
 }

@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "check:syntax": "node test/check-syntax.mjs",
-    "test:unit": "node test/home-parity.test.mjs && node test/guide-contract.test.mjs && node test/seasonal.test.mjs && node test/couple-game.test.mjs && node test/notification-click.test.mjs && node test/delivery.test.mjs && node test/push-client.test.mjs && node test/notification-paths.test.mjs && node test/recurrence.test.mjs && node test/places.test.mjs && node test/merged.test.mjs && node test/precache.test.mjs && node test/offline.test.mjs && node test/webpush.test.mjs && node test/delivery-worker.test.mjs",
-    "test:browser": "node test/smoke.mjs && node test/profile-game-browser.mjs && node test/arcade-browser.mjs",
+    "test:unit": "node test/home-parity.test.mjs && node test/guide-contract.test.mjs && node test/seasonal.test.mjs && node test/couple-game.test.mjs && node test/notification-click.test.mjs && node test/delivery.test.mjs && node test/push-client.test.mjs && node test/notification-paths.test.mjs && node test/recurrence.test.mjs && node test/audit-regressions.test.mjs && node test/places.test.mjs && node test/merged.test.mjs && node test/precache.test.mjs && node test/offline.test.mjs && node test/webpush.test.mjs && node test/delivery-worker.test.mjs",
+    "test:browser": "node test/smoke.mjs && node test/profile-game-browser.mjs && node test/arcade-browser.mjs && node test/audit-browser.mjs",
     "test:visual": "node test/diary-visual.mjs && node test/seasonal-visual.mjs",
     "test": "pnpm run check:syntax && pnpm run test:unit"
   },

@@ -1,5 +1,6 @@
 import { escapeHtml, toast, dateKey, setButtonBusy, settleQuickly, showFailure, keepInlineEdits } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
+import { recurrenceAnchor, repeatCompletion, groceryListFinished } from './recurrence.js';
 import { personName } from './profile-store.js';
 import { initHelpPanel } from './help-panel.js';
 import { addTask } from './records.js';
@@ -91,16 +92,15 @@ byId('task-list').addEventListener('click', async event => {
     if(button.dataset.action==='toggle'){
       const finishing = !item.done;
       if(finishing&&item.recurrence&&item.recurrence!=='once'){
-        const rolled=nextDue(item.due,item.recurrence);
-        await data.updateIn('items',item.id,{done:false,due:rolled,previousDue:item.due||'',lastDoneBy:viewer,lastDoneAt:Date.now()});
-        toast(`done · back on ${prettyDue(rolled)}`);
+        const update=repeatCompletion(item,viewer);
+        await data.updateIn('items',item.id,update);
+        toast(`done · back on ${prettyDue(update.due)}`);
       }
       else await data.updateIn('items',item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
       // Ticking off a whole shop used to send one ping per item. Groceries say
       // something once, when the list is empty; tasks still ping each time.
-      const groceriesLeft = item.type === 'grocery' ? items.filter(entry => entry.type === 'grocery' && !entry.done && entry.id !== item.id && (!entry.recurrence || entry.recurrence === 'once')).length : 0;
       if (finishing && item.type !== 'grocery') void data.notify(other, { title:`${personName(viewer)} finished something ✓`, body:item.title, url:`tasks.html#done-${item.id}`, kind:'item-finished' });
-      else if (finishing && groceriesLeft === 0) void data.notify(other, { title:`${personName(viewer)} got all the groceries 🛒`, body:'the grocery list is empty', url:'tasks.html#grocery', kind:'item-finished' });
+      else if (finishing && groceryListFinished(items,item)) void data.notify(other, { title:`${personName(viewer)} got all the groceries 🛒`, body:'the grocery list is empty', url:'tasks.html#grocery', kind:'item-finished' });
     }
     // A repeat has no Done tab to undo from, so "undo" puts the old date back.
     if(button.dataset.action==='undo-roll')await data.updateIn('items',item.id,{due:item.previousDue||'',previousDue:'',lastDoneBy:'',lastDoneAt:0});
@@ -159,12 +159,15 @@ byId('task-list').addEventListener('submit', async event => {
   const save = form.querySelector('[type="submit"]');
   setButtonBusy(save, true, 'saving…');
   try {
+    const due = item.type === 'grocery' ? (item.due || '') : form.querySelector('[name="due"]').value;
+    const repeat = form.querySelector('[name="recurrence"]').value;
     await data.updateIn('items', item.id, {
       title,
       // A grocery has no day field in the form: keep the day its repeat runs on.
-      due: item.type === 'grocery' ? (item.due || '') : form.querySelector('[name="due"]').value,
+      due,
+      recurrenceDay: recurrenceAnchor(due === (item.due || '') && repeat === item.recurrence ? item : { due }),
       aisle: item.type === 'grocery' ? form.querySelector('[name="aisle"]').value : '',
-      recurrence: form.querySelector('[name="recurrence"]').value
+      recurrence: repeat
     });
     editingTaskId = '';
     render();
@@ -300,33 +303,3 @@ function tabFromHash() {
 }
 window.addEventListener('hashchange', () => selectTab(tabFromHash()));
 selectTab(tabFromHash());
-
-function nextDue(value,repeat){
-  const today=new Date();today.setHours(12,0,0,0);
-  let next=value?new Date(`${value}T12:00:00`):new Date(today);
-  if(Number.isNaN(next.getTime()))next=new Date(today);
-  // A daily chore last ticked three days ago should come back tomorrow, not
-  // three days ago plus one. Step until it is genuinely in the future.
-  // Monthly keeps the day the user originally picked. Without an anchor, one
-  // pass through February would permanently drag a "31st" chore to the 28th.
-  const anchorDay=next.getDate();
-  const step=()=>{
-    if(repeat==='daily')next.setDate(next.getDate()+1);
-    else if(repeat==='weekly')next.setDate(next.getDate()+7);
-    else if(repeat==='monthly')addMonth(next,anchorDay);
-  };
-  if(repeat!=='daily'&&repeat!=='weekly'&&repeat!=='monthly')return dateKey(next);
-  let guard=0;
-  do{ step(); guard+=1; }while(next<=today&&guard<4000);
-  // Years of neglect should still produce a usable date rather than today's.
-  if(next<=today){ next=new Date(today); step(); }
-  return dateKey(next);
-}
-// setMonth overflows: the 31st of January becomes the 3rd of March. Clamp to the
-// last day of the month the user actually meant.
-function addMonth(date,anchorDay){
-  date.setDate(1);
-  date.setMonth(date.getMonth()+1);
-  const lastDay=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();
-  date.setDate(Math.min(anchorDay,lastDay));
-}
