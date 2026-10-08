@@ -30,6 +30,11 @@ jobs:
       - name: Tutorial and patch notes match this release
         run: node test/guide-contract.test.mjs
 
+      - name: Seasonal artwork, install identity and offline rollover
+        run: |
+          node test/seasonal.test.mjs
+          node test/seasonal-assets.test.mjs
+
       - name: Profiles, competitive game logic and notification taps
         run: |
           node test/couple-game.test.mjs

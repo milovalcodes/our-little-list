@@ -1,0 +1,35 @@
+{
+  "method": "Built-in image generation/editing tool; dimension normalization only after generation. Originals retained unchanged. Notification silhouettes are code-native SVG, rasterized with transparency.",
+  "assets": [
+    {
+      "output": "sun-profile-spooky.png",
+      "input": "sun-profile.png",
+      "prompt": "Use case: precise-object-edit. Edit target: the supplied watercolor sun profile icon. Create one square Halloween version of this exact icon. Preserve her exact smiling golden sun face, rays, clear pale glasses, gold septum/nose/lip piercings, eyelashes, angle and watercolor brushwork. Add a cute small plum-purple witches hat perched above her face, a tiny warm-orange pumpkin tucked at a lower corner, and a richer apricot/plum background with two tiny bat silhouettes. Keep her face and spectacles unobstructed. Cozy and playful, not scary. Same centered framing; suitable for small round avatar crop, keep main features within central 75 percent. No text, no additional faces, no collar, no human hair, no borders. Save the result as a usable image asset."
+    },
+    {
+      "output": "moon-profile-spooky.png",
+      "input": "moon-profile.png",
+      "prompt": "Use case: precise-object-edit. Edit the supplied watercolor profile picture into one square seasonal avatar. Halloween: add a small plum witch hat perched naturally on the upper tip, with an orange hatband; two tiny distant bats in the purple night background. Preserve the exact pure crescent silhouette, left-facing angle, large dark navy glasses fitting the eye, eyelashes and bushy eyebrow, closed eye, warm smile, golden stars and watercolor brushwork. No nose bulge, no human features, no hair, no beard, no collar. Keep the face unobstructed, instantly recognizable and cute, with the existing face size and composition. Designed for a small circular profile crop. No text, no extra characters, no photorealism, no frame. The original is the edit target, not a loose reference."
+    },
+    {
+      "output": "sun-profile-christmas.png",
+      "input": "sun-profile.png",
+      "prompt": "Use case: precise-object-edit. Edit the supplied watercolor profile picture into one square seasonal avatar. Christmas: add a small cranberry Santa hat with soft ivory trim perched naturally above her forehead and a tiny holly sprig. Warm peach watercolor background with a few subtle snowflakes. Preserve the smiling golden sun, rays, clear pale glasses, gold nose dot, gold septum and lip piercings, eyelashes and original angle. No hair or collar. Keep the face unobstructed, instantly recognizable and cute, with the existing face size and composition. Designed for a small circular profile crop. No text, no extra characters, no photorealism, no frame. The original is the edit target, not a loose reference."
+    },
+    {
+      "output": "moon-profile-christmas.png",
+      "input": "moon-profile.png",
+      "prompt": "Use case: precise-object-edit. Edit the supplied watercolor profile picture into one square seasonal avatar. Christmas: add a small cranberry Santa hat with ivory trim perched naturally on his upper crescent tip. A deep teal/purple winter night watercolor background, a few small snowflakes and golden stars. Preserve the pure crescent silhouette, left-facing angle, large dark navy glasses fitting the eye, eyelashes and bushy eyebrow, closed eye and warm smile. No nose bulge, no human hair, beard or collar. Keep the face unobstructed, instantly recognizable and cute, with the existing face size and composition. Designed for a small circular profile crop. No text, no extra characters, no photorealism, no frame. The original is the edit target, not a loose reference."
+    },
+    {
+      "output": "sun-moon-spooky.png",
+      "input": "sun-moon-personalized.png",
+      "prompt": "Use case: precise-object-edit. Edit target: supplied watercolor sun-and-moon illustration. Make a square Halloween icon: both characters wear small plum witch hats with orange bands, apricot/plum night background, tiny distant bats and warm gold stars. Preserve the recognizable smiling golden sun on the left with clear glasses and golden piercings, and the pure crescent moon on the right facing left with navy glasses, thick eyebrow and long eyelashes. Preserve original watercolor art style, angles and little heart between them. No human hair, no beard, no collar, no moon nose bulge, no text or border. App icon framing: both characters together occupy central 75 percent of square, leave full-bleed painted background around them so important features fit inside a circular crop. Cute and cozy."
+    },
+    {
+      "output": "sun-moon-christmas.png",
+      "input": "sun-moon-personalized.png",
+      "prompt": "Use case: precise-object-edit. Edit target: supplied watercolor sun-and-moon illustration. Make a square Christmas icon: both characters wear small cranberry Santa hats with ivory trim, deep teal and warm peach background, tiny snowflakes and gold stars. Preserve the recognizable smiling golden sun on the left with clear glasses and golden piercings, and the pure crescent moon on the right facing left with navy glasses, thick eyebrow and long eyelashes. Preserve original watercolor art style, angles and little heart between them. No human hair, no beard, no collar, no moon nose bulge, no text or border. App icon framing: both characters together occupy central 75 percent of square, leave full-bleed painted background around them so important features fit inside a circular crop. Cute and cozy."
+    }
+  ]
+}

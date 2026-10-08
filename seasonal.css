@@ -142,3 +142,75 @@ html[data-season="christmas"] .profile-page .dock-add span { color:#fff9ef; }
 @keyframes seasonalBreathe { to { translate:0 2px; opacity:.86; } }
 @media (prefers-reduced-motion:reduce) { .seasonal-sky-art { animation:none; } }
 @media (max-width:520px) { html[data-season="spooky"] .seasonal-whisper,html[data-season="christmas"] .seasonal-whisper { font-size:.84rem; } }
+
+/* One control wardrobe, including sheets mounted after page load. Action
+   symbols, personal emoji, and error/success meanings stay unchanged. */
+html[data-season="spooky"] { --season-mark:url("season-mark-spooky.svg"); --season-thread:rgba(91,42,62,.12); }
+html[data-season="christmas"] { --season-mark:url("season-mark-christmas.svg"); --season-thread:rgba(255,244,224,.19); }
+html[data-season]:not([data-season="normal"]) .profile-page :where(button,a[role="button"]) {
+  border-color:var(--diary-rule); -webkit-tap-highlight-color:var(--season-glow);
+}
+html[data-season]:not([data-season="normal"]) .profile-page :is(.primary-action,.page-add,.dock-add,.thinking-ping) {
+  background-image:repeating-linear-gradient(135deg,transparent 0 12px,var(--season-thread) 12px 14px,transparent 14px 24px);
+}
+html[data-season]:not([data-season="normal"]) .profile-page :is(.soft-chip,.status-choice,.energy-choice,.repeat-chip,.reaction-pick,.more-grid a) { border-color:var(--diary-rule); }
+html[data-season]:not([data-season="normal"]) .profile-page :is(button,a,input,select,textarea):focus-visible { outline-color:var(--accent-deep); }
+html[data-season]:not([data-season="normal"]) .profile-page :is(input[type="checkbox"],input[type="radio"]) { accent-color:var(--accent-deep); }
+html[data-season]:not([data-season="normal"]) .profile-page :is(.incoming-note,.sync-tray,.note-composer) {
+  color:var(--page-text); background:var(--diary-panel); border-color:var(--season-trim);
+}
+html[data-season]:not([data-season="normal"]) .incoming-note :is(p,.incoming-note-close) { color:var(--page-text); }
+html[data-season]:not([data-season="normal"]) .incoming-note small { color:var(--page-muted); }
+html[data-season]:not([data-season="normal"]) .profile-page .toast { background:var(--accent-deep); color:var(--diary-pressed-ink); }
+html[data-season]:not([data-season="normal"]) :is(.dock-item i,.dock-add i,.more-grid i) { position:relative; }
+html[data-season]:not([data-season="normal"]) :is(.dock-item i,.dock-add i,.more-grid i)::after {
+  content:""; position:absolute; width:10px; height:10px; right:-8px; top:-3px;
+  background:currentColor; opacity:.8; mask:var(--season-mark) center/contain no-repeat;
+  -webkit-mask:var(--season-mark) center/contain no-repeat; pointer-events:none;
+}
+html[data-season="spooky"] .couple-marker.her { background:#ffc078; border-color:#ffecd2; }
+html[data-season="spooky"] .couple-marker.him { background:#4e345f; border-color:#e7c5de; }
+html[data-season="christmas"] .couple-marker.her { background:#f6d59d; border-color:#f9efda; }
+html[data-season="christmas"] .couple-marker.him { background:#285d56; border-color:#d1eedf; }
+html[data-season]:not([data-season="normal"]) .couple-marker { position:relative; }
+html[data-season]:not([data-season="normal"]) .couple-marker::after {
+  content:""; position:absolute; top:-7px; right:-4px; width:15px; height:15px;
+  transform:rotate(45deg); background:var(--accent-deep); pointer-events:none;
+  mask:var(--season-mark) center/contain no-repeat; -webkit-mask:var(--season-mark) center/contain no-repeat;
+}
+html[data-season="spooky"] .profile-page .game-token.her { color:#bd661d; }
+html[data-season="spooky"] .profile-page .game-token.him { color:#77518e; }
+html[data-season="spooky"] .him-theme .game-token.her { color:#ffd293; }
+html[data-season="spooky"] .him-theme .game-token.him { color:#dfbcf5; }
+html[data-season="christmas"] .profile-page .game-token.her { color:#a3414a; }
+html[data-season="christmas"] .profile-page .game-token.him { color:#29776a; }
+html[data-season="christmas"] .him-theme .game-token.her { color:#ffb3a5; }
+html[data-season="christmas"] .him-theme .game-token.him { color:#bcebdc; }
+
+/* Older components used fixed navy/lavender colors. Pull those into the same
+   palette too, including disabled/selected states and the tiny menus. */
+html[data-season]:not([data-season="normal"]) .profile-page .feature-shell > .feature-hero :is(.topbar-search,.today-focus-open),
+html[data-season]:not([data-season="normal"]) .profile-page :is(.task-check,.empty-add,.reaction-trigger,.reaction-display,.emoji-picker-input-row,.emoji-picker-close),
+html[data-season]:not([data-season="normal"]) .profile-page .random-date-card.date-roulette .roulette-chip-group button:not(.active),
+html[data-season]:not([data-season="normal"]) .profile-page .emoji-picker-actions .quiet-action {
+  background:var(--diary-raised); color:var(--page-text); border-color:var(--diary-rule);
+}
+html[data-season]:not([data-season="normal"]) .profile-page .thinking-ping { color:var(--accent-deep); }
+html[data-season]:not([data-season="normal"]) .profile-page .random-date-card.date-roulette .roulette-chip-group>span { color:var(--page-muted); }
+html[data-season]:not([data-season="normal"]) .profile-page :is(.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active),
+html[data-season]:not([data-season="normal"]) .profile-page .random-date-card.date-roulette .roulette-chip-group button.active {
+  color:var(--diary-pressed-ink); background:var(--accent-deep); border-color:var(--accent-deep);
+}
+html[data-season]:not([data-season="normal"]) .profile-page .trip-bar.is-on { background:var(--diary-raised); border-color:var(--season-trim); }
+html[data-season]:not([data-season="normal"]) .profile-page .trip-bar.is-on :is(p,button) { color:var(--page-text); }
+html[data-season]:not([data-season="normal"]) .profile-page .note-thread-row.mine { background:color-mix(in srgb,var(--accent) 12%,var(--diary-panel)); }
+html[data-season]:not([data-season="normal"]) .profile-page :is(.proximity-orbit,.now-orbit) i::after { background:var(--diary-panel); }
+html[data-season="spooky"] .profile-page { --season-sun-ink:#bd661d; --season-moon-ink:#77518e; }
+html[data-season="spooky"] .him-theme { --season-sun-ink:#ffd293; --season-moon-ink:#dfbcf5; }
+html[data-season="christmas"] .profile-page { --season-sun-ink:#a3414a; --season-moon-ink:#29776a; }
+html[data-season="christmas"] .him-theme { --season-sun-ink:#ffb3a5; --season-moon-ink:#bcebdc; }
+html[data-season]:not([data-season="normal"]) .profile-page .box-edge.her>span { background:var(--season-sun-ink); }
+html[data-season]:not([data-season="normal"]) .profile-page .box-edge.him>span { background:var(--season-moon-ink); }
+html[data-season]:not([data-season="normal"]) .profile-page .task-row.done .task-check {
+  background:var(--accent-deep); color:var(--diary-pressed-ink); border-color:var(--accent-deep);
+}

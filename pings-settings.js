@@ -118,10 +118,11 @@ $('test-notification').addEventListener('click', async event => {
     window.playLittleSound?.(preferences.inAppSound);
     const registration = await navigator.serviceWorker.ready;
     const silent = preferences.backgroundSound === 'silent';
+    const artwork = globalThis.LittleSeasonAssets.forSeason(globalThis.LittleSeasonAssets.seasonForDate());
     const options = {
       body: silent ? 'quiet mode. very sneaky.' : 'the sun and moon have entered the notification bar.',
-      icon: './notification-icon.png',
-      badge: './notification-badge.png',
+      icon: './' + artwork.notification,
+      badge: './' + artwork.badge,
       silent,
       tag: 'our-little-list-settings-test',
       renotify: true,

@@ -6,7 +6,10 @@ const source = readFileSync(new URL('../seasonal-theme.js', import.meta.url), 'u
 const root = { dataset:{} };
 const document = { documentElement:root, readyState:'loading', addEventListener() {} };
 const window = { setInterval() {} };
-vm.runInNewContext(source, { document, window, Date, Intl }, { filename:'seasonal-theme.js' });
+const sandbox = { document, window, Date, Intl };
+vm.createContext(sandbox);
+vm.runInContext(readFileSync(new URL('../seasonal-assets.js', import.meta.url), 'utf8'), sandbox);
+vm.runInContext(source, sandbox, { filename:'seasonal-theme.js' });
 const { seasonForDate, refresh } = window.LittleSeason;
 
 for (const [when, expected] of [

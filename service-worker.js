@@ -1,10 +1,11 @@
-const CACHE = 'our-little-list-v86';
+const CACHE = 'our-little-list-v87';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
 // meant the activate step below threw them away on every single deploy, which
 // quietly undid the whole point of caching them.
 importScripts('./old-links.js');
+importScripts('./seasonal-assets.js');
 
 const LIBRARY_CACHE = 'our-little-list-libraries';
 
@@ -26,7 +27,12 @@ const ASSETS = [
   './household.js', './viewer.js', './entry.js', './place-presets.js', './location-tags.js',
   './moment-picker.js', './records.js', './recurrence.js', './needs-you.js', './journey.js', './trip.js', './status-presets.js', './activity-feed.js', './activity-summary.js', './availability.js', './fridge.js', './pings-settings.js', './undo-delete.js', './settings-account.js', './setup-nudge.js', './daily-question.js', './question-prompts.js', './page-boot.js', './device-mode.js', './focus-ask.js', './delivery-policy.js', './inline-actions.js',
   './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './seasonal-spooky.svg', './seasonal-christmas.svg', './icon-192.png',
-  './notification-icon.png', './notification-badge.png', './manifest.webmanifest'
+  './notification-icon.png', './notification-badge.png', './manifest.webmanifest',
+  './seasonal-assets.js', './season-mark-spooky.svg', './season-mark-christmas.svg',
+  './sun-profile-spooky.png', './moon-profile-spooky.png', './sun-moon-spooky.png',
+  './sun-profile-christmas.png', './moon-profile-christmas.png', './sun-moon-christmas.png',
+  './icon-spooky-192.png', './icon-spooky-180.png', './notification-badge-spooky.png',
+  './icon-christmas-192.png', './icon-christmas-180.png', './notification-badge-christmas.png'
 ];
 
 self.addEventListener('install', event => {
@@ -68,6 +74,19 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+  if (url.href === new URL('./manifest.webmanifest', self.location.href).href) {
+    // Same URL and app identity in every season; never make duplicate installs.
+    // Recompute even offline, when the stored manifest belongs to last month.
+    event.respondWith((async () => {
+      const cached = await caches.match(request);
+      const response = cached || await fetch(request);
+      const manifest = globalThis.LittleSeasonAssets.manifest(await response.json());
+      return new Response(JSON.stringify(manifest), {
+        headers: { 'Content-Type':'application/manifest+json', 'Cache-Control':'no-cache' }
+      });
+    })());
+    return;
+  }
   if (url.origin !== self.location.origin) {
     if (PINNED_LIBRARIES.some(prefix => request.url.startsWith(prefix))) {
       event.respondWith(
@@ -166,10 +185,11 @@ self.addEventListener('push', event => {
   // promise, and the browser posts its own "site updated in the background"
   // notice instead. The tag already replaces a duplicate in place, which is the
   // de-duplication this was reaching for.
+  const artwork = globalThis.LittleSeasonAssets.forSeason(globalThis.LittleSeasonAssets.seasonForDate());
   const options = {
     body,
-    icon: './notification-icon.png',
-    badge: './notification-badge.png',
+    icon: './' + (artwork.notification || 'notification-icon.png'),
+    badge: './' + (artwork.badge || 'notification-badge.png'),
     silent,
     // Chrome refuses a silent notification that carries a vibration pattern
     // at all — an empty one included: "Silent notifications must not specify

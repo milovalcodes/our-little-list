@@ -38,7 +38,7 @@ console.log(' ok  every push shows something, and a repeat replaces it quietly')
 // rule: a silent notification may not name a vibration pattern at all, not even
 // an empty one. Quiet mode used to pass `vibrate: []`, so every push threw, showed
 // nothing, and Chrome posted its own "updated in the background" line instead.
-async function firePush(payload, { failFirst = false, watching = false } = {}) {
+async function firePush(payload, { failFirst = false, watching = false, when = null } = {}) {
   const handlers = {};
   const shown = [];
   let calls = 0;
@@ -63,6 +63,7 @@ async function firePush(payload, { failFirst = false, watching = false } = {}) {
   };
   // The worker loads old-links.js with importScripts; run it in the same sandbox.
   const sandbox = { self, URL, Request: class {}, Response: {}, caches: {}, fetch() {}, setTimeout: fn => setTimeout(fn, 0), console };
+  if (when) sandbox.Date = class extends Date { constructor(...args) { super(...(args.length ? args : [when])); } };
   sandbox.importScripts = file => vm.runInContext(readFileSync(new URL(`../${file.replace(/^\.\//, '')}`, import.meta.url), 'utf8'), sandbox);
   vm.createContext(sandbox);
   vm.runInContext(serviceWorker, sandbox);
@@ -96,6 +97,17 @@ async function firePush(payload, { failFirst = false, watching = false } = {}) {
   assert.ok(!arrival[0].options.silent && !arrival[0].closed, 'an arrival is not swallowed while the app is open');
 }
 console.log(' ok  quiet mode is quiet instead of broken, and a push always shows something');
+for (const [when, icon, badge] of [
+  ['2026-10-01T00:00:00-04:00','icon-spooky-192.png','notification-badge-spooky.png'],
+  ['2026-12-01T00:00:00-05:00','icon-christmas-192.png','notification-badge-christmas.png'],
+  ['2027-01-01T00:00:00-05:00','notification-icon.png','notification-badge.png']
+]) {
+  const [shown] = await firePush({ title:'hi', body:'hello', url:'notes.html#note-season', kind:'note' }, { when });
+  assert.equal(shown.options.icon, './' + icon);
+  assert.equal(shown.options.badge, './' + badge);
+  assert.equal(shown.options.data.url, 'https://x.test/app/notes.html#note-season');
+}
+console.log(' ok  closed-app notifications change artwork at seasonal boundaries without changing their destination');
 
 assert.match(worker, /notificationKindEnabled\(message\.kind, preferences\)/,
   'muted categories must be filtered before Web Push, not hidden after arrival');

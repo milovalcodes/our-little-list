@@ -66,10 +66,49 @@
   };
 
   function seasonForDate(date) {
-    let month;
-    try { month = Number(new Intl.DateTimeFormat('en-US', { month: 'numeric', timeZone: 'America/New_York' }).format(date)); }
-    catch (_) { month = date.getMonth() + 1; }
-    return month === 10 ? 'spooky' : month === 12 ? 'christmas' : 'normal';
+    return globalThis.LittleSeasonAssets.seasonForDate(date);
+  }
+
+  function dressImage(image) {
+    const source = image.getAttribute('src') || '';
+    const assets = globalThis.LittleSeasonAssets.forSeason(root.dataset.season);
+    // Only our own character art, never photos or an emoji chosen by either person.
+    const match = source.match(/^(?:\.\/)?(sun-profile|moon-profile|sun-moon)(?:-personalized|-spooky|-christmas)?\.png$/);
+    if (!match) return;
+    const target = match[1] === 'sun-profile' ? assets.sun : match[1] === 'moon-profile' ? assets.moon : assets.pair;
+    if (source !== target) image.setAttribute('src', target);
+  }
+
+  function paintAssets() {
+    if (!document.head) return;
+    const assets = globalThis.LittleSeasonAssets.forSeason(root.dataset.season);
+    for (const image of document.querySelectorAll('img')) dressImage(image);
+    for (const [selector, target] of [
+      ['link[rel="icon"]', assets.icon], ['link[rel="apple-touch-icon"]', assets.apple]
+    ]) for (const link of document.querySelectorAll(selector)) {
+      if (link.getAttribute('href') !== target) link.setAttribute('href', target);
+    }
+    for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
+      if (!meta.dataset.seasonOriginalColor) meta.dataset.seasonOriginalColor = meta.content;
+      meta.content = root.dataset.season === 'normal' ? meta.dataset.seasonOriginalColor : assets.theme;
+    }
+  }
+
+  function startArtwork() {
+    paintAssets();
+    // Profiles, focus sheets and settings render after the first page paint.
+    // Visit only new images rather than rescanning the page on every status tick.
+    const observer = new MutationObserver(records => {
+      for (const record of records) {
+        if (record.type === 'attributes') dressImage(record.target);
+        else for (const node of record.addedNodes) {
+          if (node.nodeType !== 1) continue;
+          if (node.matches('img')) dressImage(node);
+          for (const image of node.querySelectorAll('img')) dressImage(image);
+        }
+      }
+    });
+    observer.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['src'] });
   }
 
   function setCopy(node, text, property = 'textContent') {
@@ -125,13 +164,16 @@
     const season = seasonForDate(now);
     if (root.dataset.season !== season) root.dataset.season = season;
     paintCopy();
+    paintAssets();
     return season;
   }
 
   root.dataset.season = seasonForDate(new Date());
   window.LittleSeason = { seasonForDate, refresh, get current() { return root.dataset.season; } };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paintCopy, { once: true });
-  else paintCopy();
+  paintAssets();
+  function start() { paintCopy(); startArtwork(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+  else start();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
   window.setInterval(refresh, 60_000);
 })();

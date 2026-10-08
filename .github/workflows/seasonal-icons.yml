@@ -1,0 +1,41 @@
+name: Seasonal install icon
+on:
+  schedule:
+    # Two Eastern-midnight offsets; the calendar decides whether anything changed.
+    - cron: '7 4,5 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: seasonal-install-icon
+  cancel-in-progress: false
+jobs:
+  icon:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Refresh the stable install manifest
+        run: node tools/update-season.mjs
+      - name: Publish a changed icon
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! git diff --quiet -- manifest.webmanifest; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add manifest.webmanifest
+            git commit -m 'Refresh seasonal Home Screen artwork'
+            git push
+          fi
+          # Token commits don't trigger Pages automatically. Also retry a prior
+          # failed build on a later run, without creating another empty commit.
+          head=$(git rev-parse HEAD)
+          built=$(gh api "repos/$GITHUB_REPOSITORY/pages/builds/latest" --jq '.commit' || true)
+          status=$(gh api "repos/$GITHUB_REPOSITORY/pages/builds/latest" --jq '.status' || true)
+          if [ "$built" != "$head" ] || [ "$status" = errored ]; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
+          fi
