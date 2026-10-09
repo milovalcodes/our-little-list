@@ -57,8 +57,11 @@ async function start(){
     const shifting=id===GAME_ID&&Object.values(game?.board||{}).filter(person=>person===viewer).length===3;
     const matchWon=result.winner&&game.score[result.winner]===3;
     const label=!loaded?'connecting…':connection!=='connected'&&navigator.onLine?'syncing board…':!game?'ready when you are':game.closed?'put away for now':result.winner?`${result.winner===viewer?'you':personName(result.winner)} ${matchWon?'won the match 🏆':'took the round ✦'}`:result.draw?'a draw. rematch?':yourTurn?'your turn':`waiting for ${personName(other)}`;
-    document.querySelector('.game-room-intro')?.toggleAttribute('hidden',show);
-    document.getElementById('daily')?.toggleAttribute('hidden',show);
+    const shelf=location.hash==='#shelf';
+    document.querySelector('.game-room-intro')?.toggleAttribute('hidden',!shelf);
+    document.getElementById('daily')?.toggleAttribute('hidden',show||shelf);
+    host.hidden=!show&&!shelf;
+    document.querySelectorAll('[data-activity-view]').forEach(button=>{const active=button.dataset.activityView===((show||shelf)?'shelf':'daily');button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});
     const stale=show?gameRoute(location.hash).round:'';
     const hint=id==='connect-four'?'tap a column':id==='dots-boxes'?(game?.turn===game?.lastBy&&game?.ply?'box claimed. go again!':'finish a box, take another turn'):shifting?(selected?'now tap an empty square':'pick a piece to move'):'tap an empty square';
     const rules=id==='connect-four'?'Drop a piece into a column. Connect 4 across, down or diagonally. A full board without a line is a draw.':id==='dots-boxes'?'Add a line between two dots. Finish the fourth side of a box to claim it and take another turn. Most boxes wins.':'Place 3 pieces each, then move one of yours to an empty square. Get 3 in a row. A round draws after 30 moves.';
@@ -74,7 +77,7 @@ async function start(){
       return;
     }
     host.classList.remove('is-game-shelf');
-    host.innerHTML=`<button class="game-back" type="button" data-game="lobby">← activities</button>
+    host.innerHTML=`<button class="game-back" type="button" data-game="lobby">← play together</button>
       <div class="today-card-head"><div><h2>${spec.name}</h2><p class="game-status" role="status">${escapeHtml(label)}</p></div></div>
       <div class="game-content">
       ${stale&&stale!==game?.round&&loaded?'<p class="game-hint">That ping was for an older round. This is the latest board.</p>':''}
@@ -95,7 +98,7 @@ async function start(){
       history.pushState(null,'',id===GAME_ID?'#game':`#game-${id}`);render();return;
     }
     if(action==='lobby'){
-      history.pushState(null,'',location.pathname+location.search);selected='';confirmClose=false;error='';rulesOpen=false;render();return;
+      history.pushState(null,'','#shelf');selected='';confirmClose=false;error='';rulesOpen=false;render();return;
     }
     if(action==='cancel'){confirmClose=false;render();return;}
     if(action==='close'&&!confirmClose){confirmClose=true;render();return;}

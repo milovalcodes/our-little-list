@@ -110,6 +110,12 @@ export function createClient({ projectId, idToken }) {
         .filter(row => row.document)
         .map(row => readDocument(row.document));
     },
+    async dayRange(collectionPath,first,last=first) {
+      const parent=collectionPath.split('/').slice(0,-1).join('/'),collectionId=collectionPath.split('/').pop();
+      const filter=(op,day)=>({fieldFilter:{field:{fieldPath:'day'},op,value:{stringValue:day}}});
+      const payload=await call(`/${parent}:runQuery`,{method:'POST',body:JSON.stringify({structuredQuery:{from:[{collectionId}],where:first===last?filter('EQUAL',first):{compositeFilter:{op:'AND',filters:[filter('GREATER_THAN_OR_EQUAL',first),filter('LESS_THAN_OR_EQUAL',last)]}}}})});
+      return(Array.isArray(payload)?payload:[]).filter(row=>row.document).map(row=>readDocument(row.document));
+    },
     async remove(documentPath) {
       await call(`/${documentPath}`, { method: 'DELETE' });
     },

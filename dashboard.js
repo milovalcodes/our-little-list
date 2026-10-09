@@ -13,9 +13,11 @@ import { dueRows, fairShare } from './needs-you.js';
 import { profileUrl } from './profile-route.js';
 import { gameResult, gameHref, GAME_CATALOG } from './couple-game.js';
 import { watchGames } from './game-sync.js';
+import {timedOver} from './timed-game.js';
+import {LEAGUE_START_DAY} from './daily-puzzles.js';
 
 const badge = document.getElementById('activity-badge');
-const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [], wordResults: [], games: [] };
+const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [], wordResults: [], timedResults: [], wordDuels: [], wordDuelEnds: [], wordWeeks: [], games: [] };
 let dashboardFrame = 0;
 
 const data = await sharedLayer();
@@ -44,7 +46,7 @@ data.listenToQuery('items', { where: { field: 'doneAt', op: '>=', value: doneSin
 for (const name of Object.keys(buckets).filter(name => name !== 'items')) {
   const receive = items => { buckets[name] = items; scheduleDashboardRender(); };
   if (name === 'games') { watchGames(data, receive); continue; }
-  if(name === 'wordResults'){data.listenToQuery('wordResults',{where:{field:'day',value:questionClock().day}},receive);continue;}
+  if(['wordResults','timedResults'].includes(name)){data.listenToQuery(name,{where:{field:'day',value:questionClock().day}},receive);continue;}
   if (name === 'questions') { data.listenToQuery('questions', { where:{field:'day', value:questionClock().day} }, receive); continue; }
   if (['notes', 'memories', 'reactions'].includes(name)) data.listenToQuery(name, recent, receive);
   else data.listenTo(name, receive);
@@ -56,7 +58,7 @@ void ensurePushSubscription(data, viewer);
 
 window.addEventListener('littlelist:profile', renderSky);
 const homeDay = questionClock().day;
-window.setInterval(() => { if (questionClock().day !== homeDay) location.reload(); else renderSky(); }, 30000);
+window.setInterval(() => { if (questionClock().day !== homeDay) location.reload(); else {renderSky();renderNextUp();} }, 30000);
 ['her', 'him'].forEach(person => {
   const avatar = document.getElementById(`sky-person-${person}`);
   if (avatar) { avatar.href = profileUrl(person); avatar.setAttribute('aria-label', `${personName(person)}’s profile`); }
@@ -104,7 +106,9 @@ function renderNextUp() {
   const question = buckets.questions.find(item => item.day === clock.day);
   const answerNeeded = clock.open && question && !question.answers?.[viewer]?.at;
   const wordNeeded=clock.day>='2026-10-08'&&!buckets.wordResults.some(r=>r.person===viewer&&r.done);
-  const dailyLeft=Number(Boolean(answerNeeded))+Number(wordNeeded);
+  const timedLeft=clock.day>=LEAGUE_START_DAY?['search','crossword'].filter(type=>!buckets.timedResults.some(r=>r.person===viewer&&r.type===type&&timedOver(r))).length:0;
+  const dailyLeft=Number(Boolean(answerNeeded))+Number(wordNeeded)+timedLeft;
+  const tie=buckets.wordDuels.some(d=>!buckets.wordDuelEnds.some(e=>e.id===d.puzzleId)&&!buckets.wordWeeks.some(w=>w.week===d.week));
   const fresh = newActivityCount(buckets, viewer, other, Number(localStorage.getItem(seenKey) || 0));
   const games=buckets.games.filter(item=>Object.hasOwn(GAME_CATALOG,item.id)&&!gameResult(item).over)
     .sort((a,b)=>Number(b.turn===viewer)-Number(a.turn===viewer)||a.updatedAt-b.updatedAt);
@@ -113,6 +117,7 @@ function renderNextUp() {
     due.length > 3 && { icon:'◎', title:`${due.length - 3} more due or waiting`, href:'today.html' },
     unread && { icon:'✉', title:`${unread} unread note${unread===1?'':'s'}`, href:'notes.html' },
     dailyLeft>0 && { icon:'◎', title:`daily activities · ${dailyLeft} left`, href:'activities.html#daily' },
+    tie && {icon:'♛',title:'the crown is still up for grabs',href:'activities.html#tiebreaker'},
     ...games.map(game=>({icon:GAME_CATALOG[game.id].icon,title:`${game.turn===viewer?'your turn':`waiting for ${personName(other)}`} · ${GAME_CATALOG[game.id].name}`,href:gameHref(game)})),
     fresh && { icon:'✦', title:`${fresh} new thing${fresh===1?'':'s'} since you looked`, href:'today.html#new' }
   ].filter(Boolean);

@@ -25,10 +25,10 @@ assert.throws(()=>nextWordAttempt(game,puzzle,{day:puzzle.day,person:'her',guess
 assert.throws(()=>nextWordAttempt(game,puzzle,{day:puzzle.day,person:'her',guess:'apple',expectedCount:0,now:20}),/other screen/);
 assert.throws(()=>nextWordAttempt(game,puzzle,{day:puzzle.day,person:'him',guess:'apple',expectedCount:1,now:20}),/not your/);
 game=nextWordAttempt(game,puzzle,{day:puzzle.day,person:'her',guess:'apple',expectedCount:1,now:20});
-assert.equal(wordPoints(wordSummary(game)),4);
+assert.equal(wordPoints(wordSummary(game)),40);
 assert.throws(()=>nextWordAttempt(game,puzzle,{day:puzzle.day,person:'her',guess:'table',expectedCount:2,now:20}),/finished/);
 assert.throws(()=>nextWordAttempt(null,puzzle,{day:puzzle.day,person:'her',guess:'apple',expectedCount:0,now:10000}),/closed/);
-assert.equal(wordPoints({day:'2026-10-11',done:true,won:true,attempts:1}),20);
+assert.equal(wordPoints({day:'2026-10-11',done:true,won:true,attempts:1}),200);
 assert.equal(wordPoints({day:'2026-10-11',done:true,won:false,attempts:5}),0);
 assert.deepEqual(weekForDay('2026-10-11').days,['2026-10-05','2026-10-06','2026-10-07','2026-10-08','2026-10-09','2026-10-10','2026-10-11']);
 const result=(person,day,attempts=1,won=true,done=true)=>({person,day,attempts,won,done,updatedAt:1});
@@ -74,10 +74,10 @@ assert.deepEqual(normalizeWeekRecord({week:'2026-10-05',winners:['him']}).scores
 assert.deepEqual(normalizeWeekRecord({scores:{her:'<img>',him:99},winners:null},{scores:{her:3,him:4}}).scores,{her:3,him:4});
 assert.deepEqual(normalizeWeekRecord({winners:['him','him','bad']}).winners,['him']);
 
-assert.deepEqual([1,2,3,4,5].map(attempts=>wordPoints({day:'2026-10-08',done:true,won:true,attempts})),[10,4,3,2,1]);
-assert.deepEqual([1,2,3,4,5].map(attempts=>wordPoints({day:'2026-10-11',done:true,won:true,attempts})),[20,8,6,4,2]);
+assert.deepEqual([1,2,3,4,5].map(attempts=>wordPoints({day:'2026-10-08',done:true,won:true,attempts})),[100,40,30,20,10]);
+assert.deepEqual([1,2,3,4,5].map(attempts=>wordPoints({day:'2026-10-11',done:true,won:true,attempts})),[200,80,60,40,20]);
 const perfect=weekForDay('2026-10-12').days.map(day=>result('her',day));
-assert.equal(scoreWeek('2026-10-12',perfect).scores.her,80);
-assert.equal(normalizeWeekRecord({scores:{her:80,him:0}}).scores.her,80);
+assert.equal(scoreWeek('2026-10-12',perfect).scores.her,800);
+assert.equal(normalizeWeekRecord({scores:{her:80,him:0}}).scores.her,800);
 assert.equal(duelOutcome(result('her','2026-10-05-tie-1',2),result('him','2026-10-05-tie-1',1,false,false)),'','8 can still be tied after one miss');
 assert.equal(duelOutcome(result('her','2026-10-05-tie-1',2),result('him','2026-10-05-tie-1',2,false,false)),'her','8 cannot be caught after two misses');

@@ -15,7 +15,7 @@ Each thing lives in one place:
 - **The list** — repeatable tasks, groceries by aisle and requests; a timed request is also a reminder, for either person or yourself.
 - **Notes** — short notes, reactions and the option to pin one on both home screens.
 - **Profiles** — either Home avatar opens the same profile layout. Your own profile owns status editing and location controls; your partner's shows their status, recent notes and shared actions. Saved spots stay in Settings.
-- **Activities** — daily question + Little Word, then the anytime games on `activities.html`, with Three to Move, Four in a Row and Dots & Boxes. Each keeps a shared live board and its own score. First to three rounds wins a match; match wins persist. Confirmed transactions and rules protect turns and scores, and create the turn ping atomically. Old pings are dropped by the delivery worker.
+- **Activities** — daily question + Little Word + Sopa de letras + Mini crossword, then the anytime games on `activities.html`, with Three to Move, Four in a Row and Dots & Boxes. Each keeps a shared live board and its own score. First to three rounds wins a match; match wins persist. Confirmed transactions and rules protect turns and scores, and create the turn ping atomically. Old pings are dropped by the delivery worker.
 - **Date ideas** — ideas with optional details, filters and a random picker; completed dates can become memories.
 - **Memories** — photos and small things worth keeping.
 - **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
@@ -86,9 +86,17 @@ and [talking about sex](https://www.plannedparenthood.org/learn/sex-pleasure-and
 ### Little Word
 Five guesses, server-confirmed transactions, private per-person guess rows and shared count/result summaries. Daily words run 9 a.m. to 9 a.m. Eastern, including DST. The larger accepted-guess dictionary is [dwyl/english-words](https://github.com/dwyl/english-words), pinned in word-lexicon.js under the Unlicense (WORD-DICTIONARY-LICENSE.txt). The two answer banks are hand-picked separately.
 
-Weekly points: 10/4/3/2/1 for winning on guesses 1–5; otherwise 0. Sunday hard words count double. Once both finish Sunday, or Monday at 9 latest, the Worker settles the week. A tie opens a shared hard-word duel, repeating until one result is mathematically unbeatable. Duel rounds have no timeout and do not change the weekly total. Immutable wordWeeks records drive crown overlays and consecutive weekly streaks. New daily puzzles continue during a tie-break.
+Weekly points: 100/40/30/20/10 for winning on guesses 1–5; otherwise 0. Sunday hard words count double. Once both finish all three Sunday rounds, or Monday at 9 latest, the Worker settles the week. A tie opens a hard trio (one of each game), carrying cumulative points into each repeated set. Close only when secured points strictly exceed the opponent’s maximum final total. The word has no timeout; timed games have 120 seconds. New trio finals use format=trio and scoreVersion=2. Legacy word-only ties retain their original settlement path; old final scores display at 10× without rewriting history. Immutable wordWeeks records drive crown overlays and consecutive weekly streaks. New daily puzzles continue during a tie-break.
 
 The game is friendly, not anti-cheat software: puzzle answers exist in the client-readable puzzle documents. Private guess rows are restricted by side. Like existing question scheduling, the Worker uses a household member credential rather than an admin key; this is not a public competitive ranking service.
+
+### Sopa, crossword and the puzzle catalog
+
+Both new boards have a 120-second server-stamped timer. Scores are `round(found / total * 50)`; hard Sunday/tie boards double that rounded score. An untouched or zero-word board earns zero. Confirmed partial results still count when the timer expires with the browser closed. A refresh cannot reset a start timestamp. Timed private routes can only be read by a partner after both rounds have ended. New games count from October 9, 2026; past days are not fabricated.
+
+`puzzle-catalog.js` groups 332 original word/clue entries from `puzzle-bank.js` by theme and difficulty. `daily-words.js` retains the stable order of 905 answer words and exports their category/difficulty catalog. Add reviewed content to the appropriate pool, assign a theme, and run `node test/daily-puzzles.test.mjs`. The deterministic board generators validate word paths, crossings and theme membership. Firestore `wordPuzzles` and `timedPuzzles` are immutable daily records, including the theme, source entry IDs and catalog version; never regenerate or overwrite an existing daily document when expanding a bank. Individual crossword/search words can reappear in different boards. These are original puzzle data, not extracted APK assets.
+
+`timedGames` contains owner-private word order/times; `timedResults` contains only shared counts and timestamps. Transactions write both. `activityEvents` deduplicates completion/reveal notifications. Daily activities share one 9 a.m. opening ping. All daily-game pings use the daily-activities preference and stale waiting pings are dropped. The weekly trio maximum is 1,600, plus at most 400 per hard tie set. Closed sets reject further moves. Run `test/timed-rules.test.mjs` only under the demo Firestore emulator, and `test/timed-browser.mjs` on the local test server; real-time two-account coverage lives in `test/word-realtime-browser.mjs`.
 
 ## One-time setup
 

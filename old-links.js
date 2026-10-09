@@ -22,7 +22,7 @@
     const name = url.pathname.split('/').pop();
     if (name === 'games.html' || (name === 'today.html' && /^(?:#game(?:-[A-Za-z0-9_-]+)?|#question)$/.test(url.hash))) {
       const next = new URL('activities.html', url);
-      next.search = url.search; next.hash = url.hash;
+      next.search = url.search; next.hash = url.hash || (name === 'games.html' ? '#shelf' : '');
       return next.href;
     }
     const target = OLD_PAGES[name];

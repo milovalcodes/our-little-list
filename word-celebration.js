@@ -33,8 +33,8 @@ export function createWordCelebration(host, person, day) {
   document.addEventListener('visibilitychange',stopWhenHidden);
   motion.addEventListener('change',motionChanged);
   return {
-    play(game) {
-      const finish=wordFinish(game);
+    play(game, customFinish=null) {
+      const finish=customFinish||wordFinish(game);
       if(!finish||remembered.has(key))return;
       try { if(localStorage.getItem(key))return; localStorage.setItem(key,'seen'); } catch (_) { /* private browsing */ }
       remembered.add(key);

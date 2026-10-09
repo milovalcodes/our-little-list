@@ -6,6 +6,10 @@
 // cron triggers actually run on the minute.
 
 import { settleWordWeeks } from './word-week.js';
+import {settleActivityWeeks,notifyActivityResults} from './activity-week.js';
+import {LEAGUE_WEEK} from '../../league-scores.js';
+import {timedPuzzle,PUZZLE_TYPES,LEAGUE_START_DAY} from '../../daily-puzzles.js';
+import {timedOver} from '../../timed-game.js';
 import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../../notification-policy.js';
@@ -58,7 +62,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
     if (scheduleQuestions) {
       try { await ensureQuestionOfDay(db, household, now); }
       catch (problem) { console.error(`daily question skipped: ${problem?.message || problem}`); }
-      try { await settleWordWeeks(db, household, now); }
+      try { await settleWordWeeks(db, household, now,{before:LEAGUE_WEEK}); await settleActivityWeeks(db,household,now); await notifyActivityResults(db,household,now); }
       catch (problem) { console.error(`weekly word skipped: ${problem?.message || problem}`); }
     }
 
@@ -107,6 +111,13 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
       }
       if (message.kind === 'activities-open' && String(message.ref || '').split('/').pop() !== questionClock(now).day) {
         await db.remove(message.path); dropped += 1; continue;
+      }
+      if(message.kind==='activity-result'){
+        const match=/^activities\/(\d{4}-\d{2}-\d{2}(?:-tie-\d+)?)-(word|search|crossword)-(waiting|reveal)$/.exec(message.ref||'');
+        const day=match?.[1],type=match?.[2],event=match?.[3];
+        const stale=!match||(day.includes('-tie-')?Boolean(await db.get(`${household}/wordDuelEnds/${day}`)):day!==questionClock(now).day);
+        const result=!stale&&event==='waiting'?await db.get(`${household}/${type==='word'?'wordResults':'timedResults'}/${day}-${type==='word'?'':type+'-'}${message.to}`):null;
+        if(stale||(event==='waiting'&&(type==='word'?result?.done:timedOver(result,now)))){await db.remove(message.path);dropped+=1;continue;}
       }
       if (String(message.kind || '').startsWith('question-')) {
         const clock = questionClock(now);
@@ -223,6 +234,10 @@ export async function ensureQuestionOfDay(db, household, now) {
     const wordPath = `${household}/wordPuzzles/${clock.day}`;
     if (!await db.get(wordPath)) await db.create(wordPath, word);
   }
+  if(clock.day>=LEAGUE_START_DAY)for(const type of PUZZLE_TYPES){
+    const puzzlePath=`${household}/timedPuzzles/${clock.day}-${type}`;
+    if(!await db.get(puzzlePath))await db.create(puzzlePath,timedPuzzle(clock.day,type,now));
+  }
   const path = `${household}/questions/${clock.day}`;
   let question = await db.get(path);
   if (!question && selected) {
@@ -249,7 +264,7 @@ export async function ensureQuestionOfDay(db, household, now) {
   };
 
   // Reuse the old opening marker: deploying after the old morning ping must not send a second one.
-  await queueEvent('open', ['her', 'him'], 'Today’s activities are ready', selected && word ? 'A question for two + a five-letter mystery.' : selected ? 'Today’s question is ready.' : 'Your five-letter mystery is ready.');
+  await queueEvent('open', ['her', 'him'], 'Today’s activities are ready', clock.day>=LEAGUE_START_DAY?'Three puzzles + a question for two.':selected && word ? 'A question for two + a five-letter mystery.' : selected ? 'Today’s question is ready.' : 'Your five-letter mystery is ready.');
   const her = Boolean(question?.answers?.her?.at);
   const him = Boolean(question?.answers?.him?.at);
   if (her !== him) {

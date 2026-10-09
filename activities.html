@@ -10,6 +10,7 @@
 <body class="profile-page" data-app="activities">
   <main class="app-shell feature-shell games-shell">
     <section class="feature-hero"><h1>Activities</h1></section>
+    <nav class="tabs activity-tabs" aria-label="Activity type"><button type="button" class="tab active" data-activity-view="daily">daily</button><button type="button" class="tab" data-activity-view="shelf">play together</button></nav>
     <section id="daily" class="daily-activities" aria-label="Daily activities">
       <p class="daily-date" id="daily-date"></p>
       <details class="daily-entry" id="daily-question"><summary><span class="daily-stamp" aria-hidden="true">☀☾</span><span><strong>Our question</strong><small id="question-summary">a little check-in</small></span><span aria-hidden="true">＋</span></summary>
@@ -22,6 +23,8 @@
       </details>
       <details class="daily-entry" id="wordle"><summary><span class="daily-stamp word-stamp" aria-hidden="true">abc</span><span><strong>Little Word</strong><small id="word-summary">5 letters · 5 tries</small></span><span aria-hidden="true">＋</span></summary><section id="word-game" aria-label="Daily word"><p role="status">getting your word…</p></section></details>
       <section id="tiebreaker" hidden aria-label="Weekly tie-break"></section>
+      <details class="daily-entry" id="search"><summary><span class="daily-stamp" aria-hidden="true">abc</span><span><strong>Sopa de letras</strong><small id="search-summary">10 words · 2 minutes</small></span><span aria-hidden="true">＋</span></summary><section id="search-game" aria-label="Daily word search"></section></details>
+      <details class="daily-entry" id="crossword"><summary><span class="daily-stamp" aria-hidden="true">▦</span><span><strong>Mini crossword</strong><small id="crossword-summary">a little grid · 2 minutes</small></span><span aria-hidden="true">＋</span></summary><section id="crossword-game" aria-label="Daily crossword"></section></details>
       <details class="daily-entry weekly-entry" id="scoreboard"><summary><span aria-hidden="true">♛</span><strong>This week</strong><span id="weekly-score">…</span></summary><div id="weekly-board"></div></details>
     </section>
     <section class="game-room-intro" aria-label="Sun versus Moon">

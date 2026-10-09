@@ -351,7 +351,7 @@ function setupDeepLinkHighlight() {
   const match = /^(item|done|ask|note|date|memory)-([A-Za-z0-9_-]+)$/.exec(fragment);
   if (!match) {
     const id=/^game(?:-[A-Za-z0-9_-]+)?$/.test(fragment)?'game':fragment;
-    if(['game','question','daily','wordle','scoreboard','tiebreaker','new','fridge-note'].includes(id))requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:'center'}));
+    if(['game','question','daily','wordle','search','crossword','scoreboard','tiebreaker','new','fridge-note'].includes(id))requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:'center'}));
     return;
   }
   const [, kind, id] = match;

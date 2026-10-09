@@ -63,7 +63,7 @@ try{
  await page.waitForSelector('.word-coronation.is-crowned');
  assert.match(await page.locator('.coronation-result').textContent(),/him takes the crown after the tie-break/);
  assert.match(await page.locator('.coronation-streak').textContent(),/2 weeks/);
- assert.equal(await page.locator('[data-score="him"]').textContent(),'30');
+ assert.equal(await page.locator('[data-score="him"]').textContent(),'300');
  assert.equal(await page.locator('.coronation-confetti .word-confetti').count(),84);
  const overflow=await page.locator('.word-coronation').evaluate(d=>new Promise(resolve=>{
   const start=performance.now();let widest=0;
@@ -84,7 +84,7 @@ try{
  await reduced.page.evaluate(()=>LittleSeason.refresh(new Date('2026-12-09T18:00Z')));
  await settle(reduced.page,'her');await reduced.page.waitForSelector('.word-coronation.is-finished');
  assert.equal(await reduced.page.locator('.word-confetti').count(),0);
- assert.equal(await reduced.page.locator('[data-score="her"]').textContent(),'30');
+ assert.equal(await reduced.page.locator('[data-score="her"]').textContent(),'300');
  assert.equal(await reduced.page.locator('.coronation-crown').evaluate(e=>getComputedStyle(e).animationName),'none');
  assert.match(await reduced.page.locator('.coronation-portrait img').getAttribute('src'),/christmas/);
  await reduced.page.screenshot({path:join(tmpdir(),'word-coronation-sun-christmas.png')});

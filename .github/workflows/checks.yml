@@ -39,6 +39,7 @@ jobs:
         run: |
           node test/word-celebration.test.mjs
           node test/daily-word.test.mjs
+          node test/daily-puzzles.test.mjs
           node test/couple-game.test.mjs
           node test/game-sync.test.mjs
           node test/notification-click.test.mjs
@@ -49,7 +50,7 @@ jobs:
           java-version: '21'
 
       - name: Both players obey the real Firestore game rules
-        run: pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/word-rules.test.mjs && node test/game-rules.test.mjs"
+        run: pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/word-rules.test.mjs && node test/timed-rules.test.mjs && node test/game-rules.test.mjs"
 
       - name: Delivery layer behaves
         run: node test/delivery.test.mjs

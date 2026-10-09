@@ -101,15 +101,15 @@ try {
  console.log('word: both screens received the second guess');
  const win=await submit(moon,puzzle.word,2);assert.ok(win.ok,JSON.stringify(win));
  console.log('word: winning guess saved');
- await sun.waitForFunction(points=>document.querySelector('.word-partner').textContent.includes(points+' points'),3*multiplier);
- await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),3*multiplier);
- await secondMoon.reload();await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),3*multiplier);
+ await sun.waitForFunction(points=>document.querySelector('.word-partner').textContent.includes(points+' points'),30*multiplier);
+ await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),30*multiplier);
+ await secondMoon.reload();await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),30*multiplier);
  assert.equal(await sun.locator('[data-word-peek]').count(),0,'finishing first never exposes your guesses');
  const stillPrivate=await sun.evaluate(async day=>{try{await(await(await import('./data-hub.js')).sharedLayer()).readDoc('wordGames',day+'-him');return false;}catch(e){return e.code==='permission-denied';}},puzzle.day);
  assert.equal(stillPrivate,true,'finished partner board stays protected while I am playing');
  const herWin=await sun.evaluate(async({day,word})=>{const {sharedLayer}=await import('./data-hub.js');return(await sharedLayer()).submitWordGuess({day,person:'her',guess:word,expectedCount:0});},puzzle);
  assert.equal(herWin.won,true);
- await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),10*multiplier);
+ await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),100*multiplier);
  await Promise.all([moon,sun].map(p=>p.waitForSelector('[data-word-peek]')));
  await moon.click('[data-word-peek]');await sun.click('[data-word-peek]');
  await moon.waitForSelector('.word-peek-board .word-row');await sun.waitForSelector('.word-peek-board .word-row');
@@ -122,4 +122,22 @@ try {
  // Confirm the explicit query used for a private board is accepted by rules.
  assert.deepEqual(errors,[]);
  console.log('REAL FIREBASE WORD: two private boards, live partner scores, simultaneous-screen conflict, saved progress after reload and ownership verified');
+ const timedPuzzle=await moon.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js'),{activityClock}=await import('./activity-clock.js'),{timedPuzzle}=await import('./daily-puzzles.js');const p=timedPuzzle(activityClock().day,'search');await(await sharedLayer()).setTo('timedPuzzles',p.day+'-search',p);return p;});
+ const play=(page,person,options)=>page.evaluate(async({p,person,options})=>{try{const d=await(await import('./data-hub.js')).sharedLayer();return {ok:true,game:await d.playTimedPuzzle({day:p.day,type:p.type,person,...options})};}catch(e){return{ok:false,error:e.message};}},{p:timedPuzzle,person,options});
+ const start=await play(moon,'him',{start:true});assert.ok(start.ok,JSON.stringify(start));
+ const again=await play(secondMoon,'him',{start:true});assert.ok(again.ok);assert.deepEqual(again.game.startedAt,start.game.startedAt,'start is idempotent across screens');
+ const moves=await Promise.all([play(moon,'him',{index:0,answer:timedPuzzle.entries[0].word,expectedCount:0}),play(secondMoon,'him',{index:1,answer:timedPuzzle.entries[1].word,expectedCount:0})]);
+ assert.equal(moves.filter(r=>r.ok).length,1,'two screens cannot overwrite a saved word');
+ let board=moves.find(r=>r.ok).game;
+ for(let i=0;i<timedPuzzle.entries.length;i++)if(!board.solved.includes(i)){const move=await play(moon,'him',{index:i,answer:timedPuzzle.entries[i].word,expectedCount:board.solved.length});assert.ok(move.ok,JSON.stringify(move));board=move.game;}
+ await sun.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☾ '+points),80*multiplier);
+ assert.equal(await sun.evaluate(async day=>{try{await(await(await import('./data-hub.js')).sharedLayer()).readDoc('timedGames',day+'-search-him');return false;}catch(e){return e.code==='permission-denied';}},timedPuzzle.day),true);
+ assert.ok((await play(sun,'her',{start:true})).ok);
+ for(let i=0;i<timedPuzzle.entries.length;i++)assert.ok((await play(sun,'her',{index:i,answer:timedPuzzle.entries[i].word,expectedCount:i})).ok);
+ await moon.locator('#search>summary').click();await moon.waitForSelector('#search [data-peek]');await moon.click('#search [data-peek]');await moon.waitForSelector('#search .timed-peek li');
+ assert.equal(await moon.locator('#search .timed-peek li').count(),10);
+ assert.match(await moon.locator('#search-summary').textContent(),new RegExp((50*multiplier)+' points'));
+ await moon.reload();await moon.waitForFunction(points=>document.querySelector('#search-summary').textContent.includes(points+' points'),50*multiplier);
+ assert.deepEqual(errors,[]);
+ console.log('REAL FIREBASE TIMED: server timestamps, independent attempts, simultaneous-tab protection, live total scores, private routes, live reveal and saved reload verified');
 }finally{await browser.close();}

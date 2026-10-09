@@ -661,3 +661,50 @@ html[data-season="christmas"] body { --word-party-1:#dd8d99; --word-party-2:#acd
 .word-peek button { min-height:44px; padding:10px 16px; border:1px solid var(--diary-rule); border-radius:16px; background:var(--diary-raised); color:var(--page-text); font:inherit; font-weight:700; }
 .word-peek-board { margin-top:14px; padding-top:10px; border-top:1px solid var(--diary-rule); }
 .word-peek-board h3 { font-size:1rem; margin:8px 0 14px; }
+
+/* The daily puzzle pages use the same paper, ink and seasonal accent as the diary. */
+.timed-game { padding:10px 12px 14px; }
+/* Each timed board already reports its save state. The floating saved chip
+   must not cover a letter or intercept a drag endpoint. */
+body[data-app="activities"]:has(.timed-playing) #sync-chip { opacity:0; pointer-events:none; }
+.timed-ready { display:grid; gap:12px; text-align:center; padding:12px 6px 18px; }
+.timed-ready p,.timed-ready small { margin:0; }
+.timed-ready small { line-height:1.5; color:var(--page-muted); }
+.puzzle-doodle { font-size:2.2rem; letter-spacing:.3em; color:var(--accent); }
+.puzzle-theme { font-size:.9rem; font-weight:800; color:var(--page-text); }
+.timed-ready button,.crossword-answer button,.timed-feedback+button { min-height:44px; padding:10px 18px; border:1px solid var(--diary-rule); border-radius:14px; color:var(--page-text); background:var(--diary-raised); font:inherit; font-weight:800; }
+.timed-toolbar { display:flex; gap:10px; align-items:center; justify-content:space-between; margin:12px 0; font-variant-numeric:tabular-nums; }
+.timed-toolbar strong { border:1px solid var(--diary-rule); border-radius:12px; padding:6px 10px; }
+.timed-toolbar .time-low { color:var(--page-text); outline:2px dashed var(--accent); }
+.puzzle-grid { display:grid; grid-template-columns:repeat(var(--grid-size),minmax(0,1fr)); gap:2px; max-width:440px; margin:auto; }
+.search-grid { touch-action:none; user-select:none; -webkit-user-select:none; }
+.puzzle-grid .puzzle-cell { aspect-ratio:1; position:relative; min-width:0; min-height:0; padding:0; border:1px solid var(--diary-rule); border-radius:5px; background:var(--diary-raised); color:var(--page-text); font-family:inherit; font-weight:800; font-size:clamp(.75rem,3.6vw,1.15rem); line-height:1; opacity:1; box-shadow:none; }
+.puzzle-cell small { position:absolute; left:2px; top:1px; font:600 .5rem/1 sans-serif; }
+.puzzle-grid .puzzle-cell.chosen { outline:1px solid var(--accent); outline-offset:-2px; }
+.puzzle-grid .puzzle-cell.found,.puzzle-grid .puzzle-cell.tracing { background:var(--accent); color:var(--button-text, #171c32); border-color:var(--page-text); }
+.puzzle-cell:focus-visible { outline:3px solid var(--page-text); z-index:1; }
+.puzzle-wall { aspect-ratio:1; border-radius:3px; background:var(--page-text); opacity:.18; }
+.search-words { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 12px; margin:14px 0 8px; font-size:.8rem; font-weight:700; }
+.search-words .found { text-decoration:line-through; opacity:.6; }
+.puzzle-hint { display:block; text-align:center; color:var(--page-muted); }
+.crossword-answer { margin:14px 0; }
+.crossword-answer label { display:block; margin-bottom:8px; line-height:1.5; }
+.crossword-answer>div { display:flex; gap:8px; }
+.crossword-answer input { width:0; min-width:0; flex:1; font-family:inherit; font-weight:800; font-size:1rem; text-transform:uppercase; }
+.crossword-clues { display:grid; gap:6px; }
+.crossword-clues button { min-height:44px; padding:9px 12px; border:1px solid var(--diary-rule); border-radius:10px; text-align:left; color:var(--page-text); background:var(--diary-panel); font:inherit; font-size:.9rem; }
+.crossword-clues button[aria-pressed=true] { outline:2px solid var(--accent); outline-offset:-2px; }
+.crossword-clues button.found { opacity:.65; }
+.timed-feedback { min-height:1.4em; font-size:.9rem; line-height:1.5; }
+.timed-peek ol { padding:0; list-style:none; display:grid; gap:6px; }
+.timed-peek li { display:flex; justify-content:space-between; gap:12px; padding:8px; background:var(--diary-raised); border-radius:10px; }
+.trio-hint,.score-help p { font-size:.9rem; line-height:1.5; }
+.trio-score { font-size:1.35rem; font-weight:800; font-variant-numeric:tabular-nums; text-align:center; }
+.score-help { margin:12px 0; }
+.score-help summary { min-height:44px; cursor:pointer; }
+@media (prefers-reduced-motion:no-preference) {
+ .puzzle-cell.just-found { animation:puzzle-found .55s ease-out; }
+ .wrong-answer { animation:puzzle-shake .25s ease-in-out; }
+ @keyframes puzzle-found { 50% { transform:scale(.85); } }
+ @keyframes puzzle-shake { 30% { transform:translateX(-4px); } 70% { transform:translateX(4px); } }
+}

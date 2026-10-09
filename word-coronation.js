@@ -18,7 +18,7 @@ export function createWordCoronation(person) {
   function key(week){return `our-little-list-coronation-v1:${person}:${week}`;}
   function alreadySeen(week){try{return seen.has(key(week))||Boolean(localStorage.getItem(key(week)));}catch(_){return seen.has(key(week));}}
   function schedule(){clearTimeout(checkTimer);if(!disposed)checkTimer=setTimeout(check,1200);}
-  function occupied(){return document.activeElement?.matches('input,textarea,select,[contenteditable="true"]')||document.activeElement?.closest('.word-keyboard')||document.querySelector('dialog[open],.app-sheet:not([hidden]),.word-finale');}
+  function occupied(){return document.activeElement?.matches('input,textarea,select,[contenteditable="true"]')||document.activeElement?.closest('.word-keyboard')||document.querySelector('dialog[open],.app-sheet:not([hidden]),.word-finale,.timed-playing');}
   function check(){
     const week=coronationCandidate(records);
     if(disposed||!['her','him'].includes(person)||!week||alreadySeen(week.week)||dialog)return;
@@ -38,7 +38,7 @@ export function createWordCoronation(person) {
     dialog=document.createElement('dialog');dialog.className='word-coronation';
     dialog.setAttribute('aria-labelledby','word-coronation-title');
     dialog.innerHTML='<div class="coronation-sky" aria-hidden="true"><span>✦ · ✧ · ✦</span></div><p class="coronation-week"></p><h2 id="word-coronation-title">a crown needs a home</h2><div class="coronation-scores"></div><div class="coronation-winner"><div class="coronation-portrait"><img alt=""><span class="coronation-crown" aria-hidden="true">♛</span></div><h3></h3><p class="coronation-streak"></p></div><p class="coronation-result" role="status" aria-live="polite"></p><button type="button" class="coronation-close">skip animation</button>';
-    dialog.querySelector('.coronation-week').textContent='Little Word · week of '+week.week;
+    dialog.querySelector('.coronation-week').textContent=(week.format==='trio'?'Daily games':'Little Word')+' · week of '+week.week;
     for(const side of ['her','him']){
       const card=document.createElement('div');card.className='coronation-score';
       const name=document.createElement('span');name.textContent=personName(side);

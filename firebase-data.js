@@ -1,5 +1,7 @@
 import { nextWordAttempt, wordSummary } from './word-game.js';
 import { wordForDay } from './daily-words.js';
+import {timedPuzzle} from './daily-puzzles.js';
+import {newTimedGame,advanceTimedGame,timedSummary} from './timed-game.js';
 import { firebaseConfig } from './firebase-config.js';
 import { OUTBOX } from './push-config.js';
 import { HOUSEHOLD_ID, configured as householdConfigured } from './household.js';
@@ -29,7 +31,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
   const [
     { initializeApp, getApps, getApp },
     { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence },
-    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDoc, getDocFromCache, getDocFromServer, getDocs, getDocsFromServer, writeBatch, runTransaction, query, where, orderBy, limit: limitQuery }
+    { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, onSnapshot, setDoc, updateDoc, deleteDoc, doc, getDoc, getDocFromCache, getDocFromServer, getDocs, getDocsFromServer, writeBatch, runTransaction, serverTimestamp, query, where, orderBy, limit: limitQuery }
   ] = modules;
 
   // Better a plain sentence than a permission-denied nobody can read.
@@ -117,7 +119,11 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
           ...(spec.limit ? [limitQuery(spec.limit)] : [])
         ];
         live = { callbacks: new Set(), failures:new Map(), latest: null, unsubscribe: null };
-        live.unsubscribe = onSnapshot(query(named(name), ...constraints), snapshot => {
+        const confirmedPuzzle=['timedGames','timedResults'].includes(name);
+        live.unsubscribe = onSnapshot(query(named(name), ...constraints), {includeMetadataChanges:confirmedPuzzle}, snapshot => {
+          // Never turn an optimistic cache write into timed-game credit. The
+          // metadata-only acknowledgement must still deliver the saved row.
+          if(confirmedPuzzle&&snapshot.metadata.hasPendingWrites)return;
           live.latest = snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
           live.callbacks.forEach(handler => safelyCall(handler, [...live.latest]));
         }, problem => {
@@ -222,6 +228,32 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         }
         throw problem;
       }
+    },
+    async playTimedPuzzle(options) {
+      if(!signedIn()||navigator.onLine===false)throw Error('Reconnect to save this round.');
+      const id=`${options.day}-${options.type}-${options.person}`,ref=doc(named('timedGames'),id);
+      await runTransaction(db,async transaction=>{
+        const p=await transaction.get(doc(named('timedPuzzles'),`${options.day}-${options.type}`));
+        const current=await transaction.get(ref);
+        if(options.day.includes('-tie-')){
+          const end=await transaction.get(doc(named('wordDuelEnds'),options.day));
+          if(end.exists())throw Error('This sudden-death set has finished.');
+        }
+        const puzzle=p.exists()?p.data():null;
+        let game=current.exists()?current.data():null;
+        if(options.start){if(game)return;game={...newTimedGame(puzzle,options.person),startedAt:serverTimestamp()};}
+        else {
+          if(!game||game.person!==options.person)throw Error('Start your round first.');
+          if(game.done)return;
+          if(Number.isInteger(options.index)&&options.answer!==puzzle?.entries[options.index]?.word)throw Error('That answer does not fit.');
+          game=advanceTimedGame(game,puzzle,options);
+          if(game.done)game.finishedAt=serverTimestamp();
+        }
+        transaction.set(ref,game);
+        transaction.set(doc(named('timedResults'),id),timedSummary(game));
+      });
+      const saved=await getDocFromServer(ref);
+      return saved.exists()?{id:saved.id,...saved.data()}:null;
     },
     answerQuestion(day, person, text, at) {
       const batch = writeBatch(db);
@@ -371,6 +403,21 @@ function createLocalLayer(onAuth, onReady) {
         return next;
       };
       return navigator.locks ? navigator.locks.request('little-list-daily-word', play) : play();
+    },
+    async playTimedPuzzle(options) {
+      const play=()=>{
+        const id=`${options.day}-${options.type}-${options.person}`,games=read('timedGames');
+        const puzzle=read('timedPuzzles').find(p=>p.day===options.day&&p.type===options.type)||timedPuzzle(options.day,options.type);
+        if(options.day.includes('-tie-')&&read('wordDuelEnds').some(e=>e.id===options.day))throw Error('This sudden-death set has finished.');
+        const before=games.find(g=>g.id===id);
+        if(options.start&&before)return before;
+        if(!options.start&&Number.isInteger(options.index)&&options.answer!==puzzle.entries[options.index]?.word)throw Error('That answer does not fit.');
+        const next=options.start?newTimedGame(puzzle,options.person):advanceTimedGame(before,puzzle,options);
+        write('timedGames',[...games.filter(g=>g.id!==id),{id,...next}]);
+        write('timedResults',[...read('timedResults').filter(g=>g.id!==id),{id,...timedSummary(next)}]);
+        return next;
+      };
+      return navigator.locks?navigator.locks.request('little-list-timed-'+options.day+'-'+options.type,play):play();
     },
     async answerQuestion(day, person, text, at) {
       const key = `${day}-${person}`;

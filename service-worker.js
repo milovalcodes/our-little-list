@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v95';
+const CACHE = 'our-little-list-v96';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -19,6 +19,7 @@ const PAGES = [
 
 const ASSETS = [
   ...PAGES,
+  './timed-games.js','./timed-game.js','./daily-puzzles.js','./puzzle-catalog.js','./puzzle-bank.js','./league-scores.js',
   './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './guide.js', './profile-store.js', './profile-route.js', './couple-game.js', './arcade-game.js', './game-panel.js', './profile-names.js',
   './profiles.js', './status.js', './dates.js', './dashboard.js', './game-sync.js', './activities.js', './activity-clock.js', './daily-word.js', './daily-words.js', './word-game.js', './word-lexicon.js', './word-scores.js', './word-crowns.js', './word-tiebreaker.js', './word-celebration.js', './word-coronation.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
   './notification-policy.js', './notification-preferences.js',

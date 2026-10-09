@@ -257,7 +257,7 @@ service cloud.firestore {
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId)
         && day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}(-tie-[0-9]+)?') && request.resource.data.day == day
-        && request.resource.data.keys().hasOnly(['day','word','opensAt','closesAt','week'])
+        && request.resource.data.keys().hasOnly(['day','word','opensAt','closesAt','week','theme','difficulty','catalogVersion','entryId'])
         && request.resource.data.word.matches('[a-z]{5}')
         && request.resource.data.opensAt is int && request.resource.data.closesAt is int
         && ((day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
@@ -315,6 +315,96 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /households/{householdId}/timedPuzzles/{id} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId)
+        && request.resource.data.keys().hasOnly(['day','type','hard','size','grid','entries','opensAt','closesAt','theme','themeId','difficulty','catalogVersion'])
+        && request.resource.data.theme is string && request.resource.data.theme.size() <= 80
+        && request.resource.data.difficulty in ['normal','hard'] && request.resource.data.catalogVersion is int
+        && request.resource.data.day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}(-tie-[0-9]+)?')
+        && request.resource.data.type in ['search','crossword']
+        && id == request.resource.data.day + '-' + request.resource.data.type
+        && request.resource.data.hard is bool && request.resource.data.size in [9,10,11,12]
+        && request.resource.data.grid is string && request.resource.data.grid.matches('[A-Z#]+')
+        && request.resource.data.grid.size() == request.resource.data.size * request.resource.data.size
+        && request.resource.data.entries is list && request.resource.data.entries.size() >= 4 && request.resource.data.entries.size() <= 10
+        && request.resource.data.opensAt is int && request.resource.data.closesAt is int;
+      allow update, delete: if false;
+    }
+    function timedDuration(kind) { return 120000; }
+    function samePrefix(a,b) {
+      return (a.size()<1 || a[0]==b[0]) && (a.size()<2 || a[1]==b[1])
+        && (a.size()<3 || a[2]==b[2]) && (a.size()<4 || a[3]==b[3])
+        && (a.size()<5 || a[4]==b[4]) && (a.size()<6 || a[5]==b[5])
+        && (a.size()<7 || a[6]==b[6]) && (a.size()<8 || a[7]==b[7])
+        && (a.size()<9 || a[8]==b[8]) && (a.size()<10 || a[9]==b[9]);
+    }
+    match /households/{householdId}/timedGames/{id} {
+      function allowed(g) {
+        return g.keys().hasOnly(['day','type','person','startedAt','finishedAt','solved','foundAt','done','complete','total','closesAt'])
+          && g.person == mySide() && g.type in ['search','crossword']
+          && id == g.day + '-' + g.type + '-' + mySide()
+          && g.startedAt is timestamp && g.solved is list && g.foundAt is list
+          && g.solved.size() == g.foundAt.size() && g.solved.size() <= 10
+          && g.done is bool && g.complete is bool && g.total is int && g.closesAt is int
+          && (!g.day.matches('.*-tie-.*') || !exists(/databases/$(database)/documents/households/$(householdId)/wordDuelEnds/$(g.day)));
+      }
+      function start(g) {
+        let p = get(/databases/$(database)/documents/households/$(householdId)/timedPuzzles/$(g.day + '-' + g.type)).data;
+        return allowed(g) && g.startedAt == request.time && g.finishedAt == null
+          && g.solved.size() == 0 && !g.done && !g.complete && g.total == p.entries.size() && g.closesAt == p.closesAt
+          && request.time.toMillis() >= p.opensAt && request.time.toMillis() < p.closesAt;
+      }
+      function move(a,b) {
+        let p = get(/databases/$(database)/documents/households/$(householdId)/timedPuzzles/$(b.day + '-' + b.type)).data;
+        let n = b.solved.size();
+        let elapsed = request.time.toMillis() - a.startedAt.toMillis();
+        let expired = elapsed >= timedDuration(a.type) || request.time.toMillis() >= p.closesAt;
+        return allowed(b) && !a.done && b.day == a.day && b.type == a.type && b.person == a.person && b.startedAt == a.startedAt && b.total == a.total && b.closesAt == a.closesAt
+          && (expired
+            ? b.done && !b.complete && b.finishedAt == request.time && b.solved == a.solved && b.foundAt == a.foundAt
+            : n == a.solved.size()+1 && b.solved[n-1] is int && b.solved[n-1] >= 0 && b.solved[n-1] < p.entries.size()
+              && b.solved.toSet().size() == n && samePrefix(a.solved,b.solved) && samePrefix(a.foundAt,b.foundAt)
+              && b.foundAt[n-1] is int && b.foundAt[n-1] >= 0 && b.foundAt[n-1] <= elapsed + 5000
+              && b.done == (n == p.entries.size()) && b.complete == b.done
+              && (b.done ? b.finishedAt == request.time : b.finishedAt == null));
+      }
+      function ended(g) { return g.done || request.time.toMillis() >= g.startedAt.toMillis() + timedDuration(g.type) || request.time.toMillis() >= g.closesAt; }
+      function peek() {
+        let own = get(/databases/$(database)/documents/households/$(householdId)/timedGames/$(resource.data.day + '-' + resource.data.type + '-' + mySide())).data;
+        return ended(resource.data) && ended(own);
+      }
+      allow get: if inHousehold(householdId) && (id.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}(-tie-[0-9]+)?-(search|crossword)-' + mySide()) || peek());
+      allow list: if inHousehold(householdId) && resource.data.person == mySide();
+      allow create: if inHousehold(householdId) && start(request.resource.data);
+      allow update: if inHousehold(householdId) && move(resource.data,request.resource.data);
+      allow delete: if false;
+    }
+    match /households/{householdId}/timedResults/{id} {
+      function summary(g) {
+        let game = getAfter(/databases/$(database)/documents/households/$(householdId)/timedGames/$(id)).data;
+        return g.keys().hasOnly(['day','type','person','startedAt','finishedAt','done','complete','count','total','closesAt'])
+          && g.person == mySide() && id == g.day + '-' + g.type + '-' + mySide()
+          && g.day == game.day && g.type == game.type && g.person == game.person
+          && g.startedAt == game.startedAt && g.finishedAt == game.finishedAt
+          && g.done == game.done && g.complete == game.complete && g.count == game.solved.size() && g.total == game.total && g.closesAt == game.closesAt;
+      }
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId) && summary(request.resource.data);
+      allow delete: if false;
+    }
+    match /households/{householdId}/activityEvents/{id} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId) && request.resource.data.keys().hasOnly(['day','createdAt'])
+        && request.resource.data.day is string && request.resource.data.createdAt is int;
+      allow update, delete: if false;
+    }
+    function validLeagueScores(g) {
+      return g.format == 'trio' && g.scores is map && g.scores.keys().hasOnly(['her','him'])
+        && g.scores.her is int && g.scores.him is int && g.scores.her >= 0 && g.scores.him >= 0
+        && g.round is int && g.round >= 0 && g.round <= 1000000
+        && g.scoreVersion == 2 && g.scores.her <= 1600 + 400*g.round && g.scores.him <= 1600 + 400*g.round;
+    }
     // Immutable settlement/event records. Like question opening, the delivery
     // Worker uses the existing household member credential, not an admin key.
     function validWordScores(scores) {
@@ -322,11 +412,16 @@ service cloud.firestore {
         && scores.her is int && scores.him is int
         && scores.her >= 0 && scores.her <= 80 && scores.him >= 0 && scores.him <= 80;
     }
+    function validScaledWordScores(g) {
+      return g.get('scoreVersion',1) == 2 && g.get('format','word') == 'word'
+        && g.scores.keys().hasOnly(['her','him']) && g.scores.her is int && g.scores.him is int
+        && g.scores.her >= 0 && g.scores.her <= 800 && g.scores.him >= 0 && g.scores.him <= 800;
+    }
     match /households/{householdId}/wordWeeks/{week} {
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId) && request.resource.data.week == week
         && week.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
-        && validWordScores(request.resource.data.scores) && request.resource.data.winners is list
+        && (validWordScores(request.resource.data.scores) || validScaledWordScores(request.resource.data) || validLeagueScores(request.resource.data)) && request.resource.data.winners is list
         && request.resource.data.winners.size() <= 1
         && request.resource.data.winners.hasOnly(['her','him']) && request.resource.data.settledAt is int;
       allow update, delete: if false;
@@ -335,7 +430,7 @@ service cloud.firestore {
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId) && request.resource.data.puzzleId == id
         && request.resource.data.week is string && request.resource.data.round is int
-        && request.resource.data.round > 0 && validWordScores(request.resource.data.scores)
+        && request.resource.data.round > 0 && (validWordScores(request.resource.data.scores) || validScaledWordScores(request.resource.data) || validLeagueScores(request.resource.data))
         && request.resource.data.createdAt is int;
       allow update, delete: if false;
     }

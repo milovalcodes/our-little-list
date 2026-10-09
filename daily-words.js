@@ -1,4 +1,5 @@
 import {activityWindow} from './activity-clock.js';
+import {wordTheme,CATALOG_VERSION} from './puzzle-catalog.js';
 export const WORD_START_DAY='2026-10-08';
 // Original, hand-picked answer bank. Keep this order stable; daily documents
 // also retain their word, so future bank additions cannot rewrite a played day.
@@ -16,6 +17,8 @@ function shuffled(words,seed) {
   return bank;
 }
 const bank=shuffled(DAILY_WORDS,190819),sundays=shuffled(SUNDAY_WORDS,78123);
+export const LITTLE_WORD_CATALOG=[...DAILY_WORDS.map(word=>({word,difficulty:'normal'})),...SUNDAY_WORDS.map(word=>({word,difficulty:'hard'}))].map(entry=>({...entry,id:'word-'+entry.word,theme:wordTheme(entry.word,entry.difficulty==='hard')}));
+function metadata(word,hard){return {theme:wordTheme(word,hard),difficulty:hard?'hard':'normal',catalogVersion:CATALOG_VERSION,entryId:'word-'+word};}
 export const WORD_BANK_SIZE=bank.length;
 export function wordForDay(day) {
   const window=activityWindow(day),index=Math.round((Date.parse(day+'T12:00:00Z')-Date.parse(WORD_START_DAY+'T12:00:00Z'))/86400000);
@@ -24,11 +27,13 @@ export function wordForDay(day) {
   // First Sunday is offset 3 from the Thursday launch.
   const sundayCount=index<3?0:Math.floor((index-3)/7)+1;
   const position=sunday?sundayCount-1:index-sundayCount;
-  return {day,word:(sunday?sundays:bank)[position%(sunday?sundays:bank).length],...window};
+  const word=(sunday?sundays:bank)[position%(sunday?sundays:bank).length];
+  return {day,word,...metadata(word,sunday),...window};
 }
 
 export function wordForTie(week,round,now){
   const id=week+'-tie-'+round;
   const index=Math.floor(Date.parse(week+'T12:00:00Z')/604800000);
-  return {day:id,word:sundays[(index*13+round*17)%sundays.length],opensAt:now,closesAt:4102444800000,week};
+  const word=sundays[(index*13+round*17)%sundays.length];
+  return {day:id,word,...metadata(word,true),opensAt:now,closesAt:4102444800000,week};
 }

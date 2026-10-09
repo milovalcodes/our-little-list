@@ -35,11 +35,11 @@ try{
  await guess(solution);assert.match(await page.locator('.word-message').textContent(),/didn’t save/);
  assert.equal(await page.locator('.word-row').nth(1).textContent(),solution);
  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');(await sharedLayer()).submitWordGuess=window.saveGuess;});
- await page.click('#word-game [data-key="↵"]');await page.waitForFunction(()=>document.querySelector('#word-summary').textContent.includes('4 points'));
- await page.reload();await page.waitForFunction(()=>document.querySelector('#word-summary').textContent.includes('4 points'));
+ await page.click('#word-game [data-key="↵"]');await page.waitForFunction(()=>document.querySelector('#word-summary').textContent.includes('40 points'));
+ await page.reload();await page.waitForFunction(()=>document.querySelector('#word-summary').textContent.includes('40 points'));
  assert.equal(await page.locator('.word-keyboard').count(),0);
  await page.locator('#scoreboard>summary').click();
- assert.match(await page.locator('#weekly-score').textContent(),/☾ 4/);
+ assert.match(await page.locator('#weekly-score').textContent(),/☾ 40/);
  for(const [season,date] of [['spooky','2026-10-08T18:00Z'],['normal','2026-11-08T18:00Z'],['christmas','2026-12-08T18:00Z']]){
   await page.evaluate(d=>LittleSeason.refresh(new Date(d)),date);
   await page.setViewportSize({width:320,height:700});
@@ -75,8 +75,8 @@ try{
  });
  await page.goto(base+'/activities.html?as=him#tiebreaker');await page.waitForSelector('.tie-board .word-keyboard button:not([disabled])');
  for(const letter of 'jazzy')await page.click('.tie-board [data-key="'+letter+'"]');await page.click('.tie-board [data-key="↵"]');
- await page.waitForFunction(()=>document.querySelector('.tie-summary').textContent.includes('20 points'));
- assert.match(await page.locator('#word-summary').textContent(),/4 points/);
+ await page.waitForFunction(()=>document.querySelector('.tie-summary').textContent.includes('200 points'));
+ assert.match(await page.locator('#word-summary').textContent(),/40 points/);
  await page.goto(base+'/today.html?as=him');assert.equal(await page.locator('#question,#game').count(),0);
  await page.goto(base+'/today.html?as=him#question');await page.waitForURL('**/activities.html?as=him#question');assert.ok(await page.locator('#question-answer').isVisible());
  assert.deepEqual(errors,[]);

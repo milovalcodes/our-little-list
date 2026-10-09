@@ -69,4 +69,11 @@ await db.remove(`households/${uid}/outbox/A1`);
 assert.ok(calls.some(c => c.method === 'DELETE' && c.url.endsWith('/outbox/A1')));
 console.log(' ok  delivered messages are deleted, keeping the query cheap');
 
+await db.dayRange(`households/${uid}/timedResults`,'2026-10-05','2026-10-11');
+const range=JSON.parse(calls.at(-1).body).structuredQuery;
+assert.equal(range.from[0].collectionId,'timedResults');
+assert.deepEqual(range.where.compositeFilter.filters.map(f=>f.fieldFilter.field.fieldPath),['day','day']);
+assert.deepEqual(range.where.compositeFilter.filters.map(f=>f.fieldFilter.value.stringValue),['2026-10-05','2026-10-11']);
+await db.dayRange(`households/${uid}/wordResults`,'2026-10-05-tie-1');
+assert.equal(JSON.parse(calls.at(-1).body).structuredQuery.where.fieldFilter.op,'EQUAL');
 console.log('\nDELIVERY LAYER CLEAN');
