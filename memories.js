@@ -25,7 +25,6 @@ const { data, viewer, other } = await bootPage();
 const resetMemoryDate=()=>{$('memory-date').value=activityClock().calendarDay;$('memory-date').max=activityClock().calendarDay;};
 resetMemoryDate();
 data.listenTo('wordWeeks',items=>{weeks=items;render();});
-window.addEventListener('littlelist:profile',render);
 document.querySelectorAll('[data-memory-category]').forEach(button=>button.addEventListener('click',()=>{category=button.dataset.memoryCategory;history.replaceState(null,'',location.pathname+location.search+(category==='app'?'#app-memories':'#your-memories'));featuredId='';document.body.classList.remove('memory-open');render();}));
 addEventListener('hashchange',()=>{if(location.hash==='#app-memories')category='app';if(location.hash==='#your-memories')category='yours';render();});
 

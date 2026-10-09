@@ -19,7 +19,7 @@ for (const side of ['her','him']) {
     await page.locator('.thinking-screen').waitFor({state:'hidden'});
     const state = await page.evaluate(() => {
       const heading = document.querySelector('.feature-hero h1,.sky-heading h1');
-      const surface = document.querySelector('.feature-shell > :is(.list-card,.today-card,.now-location-card,.random-date-card,.status-card,.notification-settings-card),.feature-shell > .settings-group > .status-card,.dashboard-shell > .our-sky');
+      const surface = document.querySelector('.feature-shell > :is(.list-card,.today-card,.now-location-card,.random-date-card,.status-card,.notification-settings-card),.daily-activities > .daily-entry,.feature-shell > .settings-group > .status-card,.dashboard-shell > .our-sky');
       return {
         theme:document.body.classList.contains('her-theme') ? 'her' : document.body.classList.contains('him-theme') ? 'him' : 'none',
         diary:[...document.styleSheets].some(sheet => sheet.href?.endsWith('/diary.css')),

@@ -46,6 +46,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // A small private portrait, never a public site asset. Each person owns theirs.
+    match /households/{householdId}/profilePhotos/{person} {
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId) && ownsSide(person)
+        && request.resource.data.keys().hasOnly(['person','photo','updatedAt'])
+        && request.resource.data.person == person
+        && shortText(request.resource.data.photo, 90000)
+        && request.resource.data.photo.matches('data:image/jpeg;base64,[A-Za-z0-9+/=]+')
+        && request.resource.data.updatedAt is int;
+      allow delete: if inHousehold(householdId) && ownsSide(person);
+    }
+
     match /households/{householdId}/locations/{person} {
       allow read: if inHousehold(householdId);
       allow create, update: if inHousehold(householdId) && ownsSide(person)

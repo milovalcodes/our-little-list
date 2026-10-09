@@ -21,7 +21,7 @@ async function capture(page,name,selector){
 try{
   await moon.goto(base+'/him.html?as=him');
   await moon.waitForSelector('.app-dock');
-  await moon.click('#sky-person-him');
+  await moon.click('#sky-person-him .sky-person-label');
   await moon.waitForSelector('[data-profile-owner="true"]');
   assert.equal(await moon.locator('#sheet-quick-status').count(),0);
   await moon.click('.person-status-card.is-me');

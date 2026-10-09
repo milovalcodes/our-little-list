@@ -1,6 +1,31 @@
 /* The shared diary layer. Keep layout and component decisions here; the two
    themes only swap inks, paper, and accent colors. styles.css holds legacy
    feature-specific rules and the original character art. */
+.alter-ego-trigger { padding:0; perspective:600px; cursor:pointer; touch-action:manipulation; }
+button.status-avatar { border:0; background:none; border-radius:20px; }
+.alter-ego-trigger:disabled { opacity:1; cursor:default; }
+.alter-ego-trigger:focus-visible { outline:3px solid var(--accent); outline-offset:5px; }
+.alter-ego-turn { position:absolute; inset:0; display:block; border-radius:inherit; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.2,.7,.2,1); }
+.alter-ego-turn img { position:absolute; inset:0; width:100%; height:100%; border-radius:inherit; object-fit:cover; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.alter-ego-turn .alter-ego-back { transform:rotateY(180deg); }
+.is-flipped .alter-ego-turn { transform:rotateY(180deg); }
+.sky-person-label { text-decoration:none; min-height:38px; justify-content:center; }
+.alter-ego-settings { margin:8px 0 12px; border:1px solid var(--diary-rule); border-radius:var(--diary-small-radius); background:var(--diary-panel); }
+.alter-ego-settings summary { padding:12px 14px; cursor:pointer; font-weight:800; }
+.alter-ego-settings > div { padding:0 14px 14px; }
+.alter-ego-settings p { margin:0 0 10px; font-size:.86rem; color:var(--page-muted); }
+#alter-ego-preview { display:block; width:120px; height:120px; object-fit:cover; border-radius:22px; margin:10px 0; }
+#alter-ego-preview[hidden] { display:none; }
+.alter-ego-upload { display:grid; gap:8px; font-size:.86rem; font-weight:800; }
+.alter-ego-upload input { min-height:44px; max-width:100%; padding:8px; color:var(--page-text); background:var(--diary-raised); font:inherit; }
+.alter-ego-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.alter-ego-actions button { min-height:44px; padding:8px 14px; border:1px solid var(--diary-rule); border-radius:14px; color:var(--page-text); background:var(--diary-raised); font:inherit; font-weight:800; }
+@media(prefers-reduced-motion:reduce) {
+  .alter-ego-turn,.is-flipped .alter-ego-turn { transition:none; transform:none; }
+  .alter-ego-turn .alter-ego-back { transform:none; opacity:0; }
+  .is-flipped .alter-ego-back { opacity:1; }
+  .is-flipped .alter-ego-front { opacity:0; }
+}
 .profile-page {
   --diary-radius: 22px;
   --diary-small-radius: 14px;

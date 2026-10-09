@@ -433,7 +433,7 @@ async function openSlow(path) {
   const wins=await page.locator('#sky-wins:not([hidden])').count();
   const reaction=await page.locator('#sky-reaction-her:not([hidden])').count();
   const oldDashboard=await page.locator('.compact-hello,.home-group').count();
-  const routes=await page.evaluate(()=>({self:document.querySelector('#sky-person-her')?.getAttribute('href'),partner:document.querySelector('#sky-person-him')?.getAttribute('href')}));
+  const routes=await page.evaluate(()=>({self:document.querySelector('#sky-person-her .sky-person-label')?.getAttribute('href'),partner:document.querySelector('#sky-person-him .sky-person-label')?.getAttribute('href')}));
   note(orbit==='together'&&title?.includes('together')&&liveStatus===1&&noteStar===1&&wins===1&&reaction===1&&oldDashboard===0&&routes.self==='status.html#profile-her'&&routes.partner==='status.html#profile-him'&&errors.length===0,
        'our sky reflects live data without the old dashboard',errors[0]||JSON.stringify({orbit,title,liveStatus,noteStar,wins,reaction,oldDashboard,routes}));
   await context.close();
@@ -1167,7 +1167,7 @@ async function openSlow(path) {
 // notification URL should land on the actual row rather than just the page.
 {
   const { context, page, errors } = await open('her.html');
-  await page.locator('#sky-person-her').click();
+  await page.locator('#sky-person-her .sky-person-label').click();
   await page.locator('[data-quick-status="busy"]').click();
   await page.waitForTimeout(180);
   const status = await page.evaluate(async () => {

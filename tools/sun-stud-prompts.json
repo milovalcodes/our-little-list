@@ -1,0 +1,19 @@
+{
+  "method": "Built-in image_gen edits, followed by dimension normalization with tools/resize-season-art.ps1",
+  "date": "2026-10-09",
+  "finalPrompt": "Precise restrained jewelry refinement of this existing watercolor artwork. The sun's gold piercings are far too large in the supplied draft. SHRINK BOTH nostril studs to ONE THIRD of their current diameter: tiny discreet GOLD pinpoints, NOT large metallic balls, no heavy dark outlines. Two nostril studs total, one per side. Shrink the lower-lip gold stud to half its current diameter. Make the gold septum ring finer and subtler, about half its current thickness, still gold. All jewelry must be warm gold, never silver, black or white. Keep the nose small and soft. This is a minimal finishing pass: preserve exact character pose, glasses, eyelashes, smile, art style, background, sun rays, hats, seasonal accessories and the moon if present. Do not change anything else. Tiny tasteful jewelry should be a detail noticed up close, NOT the focal point.",
+  "outputs": [
+    "sun-profile.png",
+    "sun-profile-spooky.png",
+    "sun-profile-christmas.png",
+    "sun-moon-personalized.png",
+    "sun-moon-spooky.png",
+    "sun-moon-christmas.png",
+    "icon-192.png",
+    "icon-spooky-180.png",
+    "icon-spooky-192.png",
+    "icon-christmas-180.png",
+    "icon-christmas-192.png"
+  ],
+  "note": "All output paths are relative to the repository root. Original artwork retained in Git history. Minimal vector notification silhouettes are unchanged."
+}

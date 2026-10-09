@@ -14,7 +14,7 @@ Each thing lives in one place:
 - **Today** — due items, a focus timer and the latest activity.
 - **The list** — repeatable tasks, groceries by aisle and requests; a timed request is also a reminder, for either person or yourself.
 - **Notes** — short notes, reactions and the option to pin one on both home screens.
-- **Profiles** — either Home avatar opens the same profile layout. Your own profile owns status editing and location controls; your partner's shows their status, recent notes and shared actions. Saved spots stay in Settings.
+- **Profiles** — Home name labels open profiles. A portrait with an optional alter-ego photo flips to it briefly, then back; without a photo, the Home portrait opens the profile. Your own profile owns status editing, location controls and photo upload/removal; your partner's shows their status, recent notes and shared actions. Photos are square, compressed JPEGs in the household-only `profilePhotos` collection, writable only by their owner. Reduced motion skips the spin. Saved spots stay in Settings.
 - **Activities** — daily question, Little Word, Word Search and Mini crossword. The weekly tracker shows source-by-source points, daily details, historical recaps and the largest per-game winning margin. Crown pings deep-link to the correct week. The retired arcade is no longer loaded, linked or notified; its stored records and compatibility data methods remain intact.
 - **Date ideas** — ideas with optional details, filters and a random picker; completed dates can become memories.
 - **Memories** — photos and small things worth keeping.

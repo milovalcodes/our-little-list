@@ -81,3 +81,15 @@ await write('him','memories/bad-date',{...memory,memoryDate:'yesterday'},false);
 await write('him','memories/bad-month',{...memory,memoryDate:'2025-99-18'},false);
 await write('stranger','memories/outsider',{...memory,addedBy:'stranger'},false);
 console.log('FIRESTORE MEMORIES: backdated entries share correctly; malformed dates and outsiders rejected');
+const portrait={person:'him',photo:'data:image/jpeg;base64,/9j/abcd==',updatedAt:now};
+await write('him','profilePhotos/him',portrait);
+await read('her','profilePhotos/him',200);
+await read('stranger','profilePhotos/him',403);
+await write('her','profilePhotos/him',{...portrait,updatedAt:now+1},false);
+await write('him','profilePhotos/her',{...portrait,person:'her'},false);
+await write('him','profilePhotos/him',{...portrait,photo:'https://example.com/private.jpg'},false);
+await write('him','profilePhotos/him',{...portrait,photo:'data:image/svg+xml;base64,abcd'},false);
+await write('him','profilePhotos/him',{...portrait,photo:'data:image/jpeg;base64,'+'a'.repeat(90000)},false);
+await write('him','profilePhotos/him',{...portrait,extra:'no'},false);
+for(const [person,status]of [['her',403],['stranger',403],['him',200]]){const r=await fetch(base+'/'+path('profilePhotos/him'),{method:'DELETE',headers:headers(person)});assert.equal(r.status,status,'only the photo owner can delete');}
+console.log('FIRESTORE ALTER EGO: shared private reads, owner-only writes/deletion, JPEG bounds and URL/SVG/extra-field rejection pass');

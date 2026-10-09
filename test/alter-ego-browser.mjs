@@ -1,0 +1,28 @@
+import {chromium,webkit} from 'playwright';import assert from 'node:assert/strict';import {fileURLToPath} from 'node:url';
+const base='http://127.0.0.1:8777',browser=await(process.env.GAME_BROWSER==='webkit'?webkit:chromium).launch(),errors=[];
+try{
+ const context=await browser.newContext({viewport:{width:320,height:740},serviceWorkers:'block'});
+ await context.route('**/*',r=>new URL(r.request().url()).origin===base?r.fallback():r.abort());
+ await context.route('**/firebase-config.js',r=>r.fulfill({contentType:'text/javascript',body:'export const firebaseConfig={};'}));
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(base+'/status.html?as=him#profile-him');await page.click('#alter-ego-settings summary');
+ await page.setInputFiles('#alter-ego-file',fileURLToPath(new URL('../moon-profile.png',import.meta.url)));
+ await page.locator('#alter-ego-save').waitFor({state:'visible'});assert.equal(await page.locator('.has-alter-ego').count(),0,'preview is not published yet');
+ await page.click('#alter-ego-save');await page.waitForSelector('.status-avatar.has-alter-ego');
+ assert.equal(await page.locator('#alter-ego-save').isVisible(),false);
+ const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('our-little-list-profilePhotos-v1')).items[0]);assert.equal(stored.person,'him');assert.ok(stored.photo.length<=90000);
+ await page.click('.status-avatar');assert.equal(await page.locator('.status-avatar').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('.status-editor').getAttribute('open'),null,'photo tap must not open status editor');
+ await page.waitForFunction(()=>!document.querySelector('.status-avatar').classList.contains('is-flipped'));
+ await page.click('.status-avatar');await page.click('.status-avatar');assert.equal(await page.locator('.status-avatar').getAttribute('aria-pressed'),'false');
+ await page.click('#profile-tabs a[href$="profile-her"]');await page.waitForSelector('[data-profile-owner="false"]');assert.equal(await page.locator('#alter-ego-settings').isVisible(),false,'partner controls stay hidden');
+ await page.goto(base+'/him.html?as=him');await page.waitForSelector('#sky-person-him .has-alter-ego');
+ await page.locator('.thinking-screen').waitFor({state:'hidden'});const avatarBox=await page.locator('#sky-person-him .sky-avatar').boundingBox();await page.mouse.click(avatarBox.x+avatarBox.width/2,avatarBox.y+avatarBox.height/2);assert.match(page.url(),/him.html/);assert.equal(await page.locator('#sky-person-him .sky-avatar').getAttribute('aria-pressed'),'true');
+ await page.click('#sky-person-him .sky-person-label');await page.waitForSelector('.status-avatar.has-alter-ego');
+ await page.emulateMedia({reducedMotion:'reduce'});await page.click('.status-avatar');assert.ok(await page.locator('.alter-ego-turn').evaluate(n=>parseFloat(getComputedStyle(n).transitionDuration)<.001&&getComputedStyle(n).transform==='none'));
+ const partner=await context.newPage();await partner.goto(base+'/status.html?as=her#profile-him');await partner.waitForSelector('.status-avatar.has-alter-ego');assert.equal(await partner.locator('#alter-ego-settings').isVisible(),false);
+ await page.click('#alter-ego-settings summary');await page.click('#alter-ego-remove');await page.waitForFunction(()=>!document.querySelector('.status-avatar').classList.contains('has-alter-ego'));
+ await partner.waitForFunction(()=>!document.querySelector('.status-avatar').classList.contains('has-alter-ego'));assert.equal(await partner.locator('.alter-ego-back').count(),0,'deletion removes partner photo from the page');
+ await page.reload();assert.equal(await page.locator('.alter-ego-back').count(),0);
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));assert.deepEqual(errors,[]);
+ console.log('ALTER EGO: preview/save, private side controls, timed and manual flip-back, navigation, live partner removal, reload and reduced motion pass');
+}finally{await browser.close();}

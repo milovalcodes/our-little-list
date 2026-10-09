@@ -57,7 +57,7 @@ window.addEventListener('littlelist:profile', renderSky);
 const homeDay = questionClock().day;
 window.setInterval(() => { if (questionClock().day !== homeDay) location.reload(); else {renderSky();renderNextUp();} }, 30000);
 ['her', 'him'].forEach(person => {
-  const avatar = document.getElementById(`sky-person-${person}`);
+  const avatar = document.querySelector(`#sky-person-${person} .sky-person-label`);
   if (avatar) { avatar.href = profileUrl(person); avatar.setAttribute('aria-label', `${personName(person)}’s profile`); }
 });
 document.getElementById('home-next-up')?.addEventListener('click', event => { void handleInlineAction(event,{data,viewer,other,items:buckets.items,help:buckets.help}); });
