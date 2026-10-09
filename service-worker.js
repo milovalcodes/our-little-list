@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v99';
+const CACHE = 'our-little-list-v100';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -52,7 +52,7 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys
-        .filter(key => key !== CACHE && key !== LIBRARY_CACHE)
+        .filter(key => key.startsWith('our-little-list-') && key !== CACHE && key !== LIBRARY_CACHE)
         .map(key => caches.delete(key))))
       .then(() => pruneLibraries())
       .then(() => self.clients.claim())
@@ -114,13 +114,13 @@ self.addEventListener('fetch', event => {
     if (moved) { event.respondWith(Response.redirect(moved, 302)); return; }
     // Store one copy per page, not one copy for every harmless ?as= parameter.
     const pageKey = new Request(`${url.origin}${url.pathname}`);
-    const network = fetch(request).then(response => {
+    const network = fetch(request).then(async response => {
       // Only a good page is worth keeping. Catching a 404 mid-deploy used to
       // overwrite the precached page, and that error page then became the
       // offline copy until the next successful load.
       if (response && response.ok && response.type === 'basic') {
         const copy = response.clone();
-        caches.open(CACHE).then(cache => cache.put(pageKey, copy)).catch(() => {});
+        await caches.open(CACHE).then(cache => cache.put(pageKey, copy)).catch(() => {});
       }
       return response;
     });
@@ -149,20 +149,18 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  event.respondWith(
-    caches.match(request, { ignoreSearch: false }).then(cached => {
-      const network = fetch(request)
-        .then(response => {
-          if (response && response.status === 200 && response.type === 'basic') {
-            const copy = response.clone();
-            caches.open(CACHE).then(cache => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached || Response.error());
-      return cached || network;
-    })
-  );
+  const cached = caches.match(request, { ignoreSearch: false });
+  const network = fetch(request).then(async response => {
+    if (response && response.status === 200 && response.type === 'basic') {
+      try { const cache = await caches.open(CACHE); await cache.put(request, response.clone()); }
+      catch (_) { /* A full device cache must not break an otherwise good response. */ }
+    }
+    return response;
+  }).catch(async () => (await cached) || Response.error());
+  // The cached response can resolve immediately, but refreshing its bytes must
+  // keep the worker alive until cache.put actually finishes.
+  event.waitUntil(network.then(() => {}));
+  event.respondWith(cached.then(value => value || network));
 });
 
 const SHOWN_IN_PAGE = new Set(['note', 'item', 'date', 'help', 'help-answer', 'status', 'focus']);

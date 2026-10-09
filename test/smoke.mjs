@@ -921,7 +921,7 @@ async function openSlow(path) {
 // Energy, arrival presets and partner-status reactions share the same status screen.
 {
   const { context, page, errors } = await open('status.html?as=her');
-  await page.locator('.person-status-card.is-me').click({ position:{ x:65, y:25 } });
+  await page.locator('.person-status-card.is-me .status-person-top strong').click();
   await page.click('[data-energy="need company"]');
   const chipFilled=await page.locator('#status-text').inputValue()==='need company';
   await page.click('#status-emoji-pick');
@@ -1335,7 +1335,7 @@ async function openSlow(path) {
   const { context, page, errors } = await open('status.html?as=him');
   const first=await page.locator('#status-pair .person-status-card').first().evaluate(node=>node.classList.contains('is-me'));
   const mapHidden=!await page.locator('#couple-map').isVisible();
-  await page.locator('#status-pair .person-status-card.is-me').click({position:{x:65,y:25}});
+  await page.locator('#status-pair .person-status-card.is-me .status-person-top strong').click();
   const editorOpen=await page.locator('.status-editor-disclosure').evaluate(node=>node.open);
   const spotsMoved=await page.locator('#saved-places').count()===0;
   note(first&&mapHidden&&editorOpen&&spotsMoved&&errors.length===0,'Right now starts with your editable card and hides an empty map',errors[0]||JSON.stringify({first,mapHidden,editorOpen,spotsMoved}));

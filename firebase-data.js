@@ -225,6 +225,10 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
             let timer;try{fresh=await Promise.race([getDocFromServer(ref),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('read timeout')),4000);})]);}catch(_){}finally{clearTimeout(timer);}
           }
           if(fresh?.exists()&&fresh.data().guesses.length!==options.expectedCount)throw new Error('Your other screen made a guess. The board is catching up.');
+          // A concurrent commit can be rejected before this client's read or
+          // listener catches up. Do not leak the rules diagnostic into the UI,
+          // or claim that a guess saved when we could not confirm it.
+          throw new Error('Could not confirm this guess. If you played on another screen, wait for the board to catch up, then try again.');
         }
         throw problem;
       }

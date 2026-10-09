@@ -7,17 +7,19 @@ import {escapeHtml as esc} from './ui-helpers.js';
 export function startWeeklyTracker({data}){
  const host=document.getElementById('weekly-board'),headline=document.getElementById('weekly-score'),current=weekForDay(activityClock().day).start;
  const hashWeek=()=>{const value=/^#scoreboard-(\d{4}-\d{2}-\d{2})$/.exec(location.hash)?.[1];return value&&Number.isFinite(Date.parse(value+'T12:00Z'))&&value<=current&&weekForDay(value).start===value?value:null;};
- let selected=hashWeek()||current,weeks=[],duels=[],words=[],timed=[],loaded=new Set(),stops=[],revision=0,failed=false,signature='',disposed=false,loadTimer;
+ let selected=hashWeek()||current,weeks=[],duels=[],words=[],timed=[],loaded=new Set(),failures=new Set(),stops=[],revision=0,failed=false,timedOut=false,signature='',disposed=false,loadTimer;
  const name=p=>esc(personName(p)===p?(p==='her'?'Sun':'Moon'):personName(p)),names=games=>games.map(g=>g.name).join(' & ');
  const label=day=>new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(day+'T12:00Z'));
  function load(){
-  stops.forEach(f=>f());stops=[];clearTimeout(loadTimer);words=[];timed=[];loaded=new Set();failed=false;signature='';const token=++revision,week=weekForDay(selected);
-  stops.push(data.listenTo('wordWeeks',rows=>{if(token!==revision)return;weeks=rows;loaded.add('wordWeeks');render();},{onError:()=>{if(token!==revision)return;failed=true;render();}}));
-  stops.push(data.listenTo('wordDuels',rows=>{if(token!==revision)return;duels=rows;loaded.add('wordDuels');render();},{onError:()=>{if(token!==revision)return;failed=true;render();}}));
+  stops.forEach(f=>f());stops=[];clearTimeout(loadTimer);words=[];timed=[];loaded=new Set();failures=new Set();failed=false;timedOut=false;signature='';const token=++revision,week=weekForDay(selected);
+  const received=name=>{loaded.add(name);failures.delete(name);failed=failures.size>0||(timedOut&&loaded.size<4);render();};
+  const failure=name=>{if(token!==revision)return;failures.add(name);failed=true;render();};
+  stops.push(data.listenTo('wordWeeks',rows=>{if(token!==revision)return;weeks=rows;received('wordWeeks');},{onError:()=>failure('wordWeeks')}));
+  stops.push(data.listenTo('wordDuels',rows=>{if(token!==revision)return;duels=rows;received('wordDuels');},{onError:()=>failure('wordDuels')}));
   for(const collection of ['wordResults','timedResults'])stops.push(data.listenToQuery(collection,{where:[{field:'day',op:'>=',value:week.start},{field:'day',op:'<=',value:week.end}]},rows=>{
-   if(token!==revision)return;loaded.add(collection);if(collection==='wordResults')words=rows;else timed=rows;render();
-  },{onError:()=>{if(token!==revision)return;failed=true;render();}}));
-  loadTimer=setTimeout(()=>{if(token===revision&&loaded.size<4){failed=true;render();}},12000);
+   if(token!==revision)return;if(collection==='wordResults')words=rows;else timed=rows;received(collection);
+  },{onError:()=>failure(collection)}));
+  loadTimer=setTimeout(()=>{if(token===revision&&loaded.size<4){timedOut=true;failed=true;render();}},12000);
   render();
  }
  function render(){

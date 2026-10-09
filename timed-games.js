@@ -8,7 +8,7 @@ const time=ms=>`${Math.floor(Math.max(0,ms)/60000)}:${String(Math.floor(Math.max
 export function startTimedGame(context,{type,day=activityClock().day,host,summary,disclosure}){
  const {data,viewer,other}=context,openedDay=activityClock().day;
  host.classList.add('timed-game');
- let puzzle=null,mine=null,results=[],busy=false,message='',selected=0,draft='',dragStart=null,tapStart=null,peek=null,peekOpen=false,peekBusy=false,peekError='',closed=false,disposed=false,unsubs=[],action=0,flash=-1,flashTimer,expiredRetryAt=0;
+ let puzzle=null,mine=null,results=[],busy=false,message='',selected=0,draft='',dragStart=null,tapStart=null,peek=null,peekOpen=false,peekBusy=false,peekError='',closed=false,disposed=false,unsubs=[],action=0,flash=-1,flashTimer,expiredRetryAt=0,expiredDrawn=false;
  const celebration=createWordCelebration(host,viewer,day+'-'+type);
  let partnerFinished=false;
  const finished=()=>mine&&(closed||timedOver(mine)||puzzle&&Date.now()>=puzzle.closesAt);
@@ -29,7 +29,8 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   if(day.includes('-tie-'))unsubs.push(data.listenTo('wordDuelEnds',ends=>{closed=ends.some(e=>e.id===day);if(closed)render();},{onError:fail}));
  }
  function render(){
-  if(disposed||dragStart!==null)return;
+  if(disposed)return;
+  if(dragStart!==null){if(!finished())return;dragStart=null;tapStart=null;}
   const hadFocus=host.querySelector('[data-answer]')===document.activeElement;
   const done=finished(),solved=new Set(mine?.solved||[]),available=Boolean(puzzle&&!closed&&Date.now()<puzzle.closesAt);
   host.classList.toggle('timed-playing',Boolean(mine&&!done));
@@ -89,16 +90,16 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   void play({index:pick.index,answer:puzzle.entries[pick.index].word});
  }
  function cellAt(event){const node=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-cell]');return node&&host.contains(node)?Number(node.dataset.cell):null;}
- const down=event=>{if(type!=='search'||busy||finished()||!event.target.closest('[data-cell]'))return;event.preventDefault();dragStart=tapStart??Number(event.target.closest('[data-cell]').dataset.cell);host.querySelector('.puzzle-grid').setPointerCapture?.(event.pointerId);};
+ const down=event=>{if(type!=='search'||busy||finished()||dragStart!==null||event.isPrimary===false||event.button>0||!event.target.closest('[data-cell]'))return;event.preventDefault();dragStart=tapStart??Number(event.target.closest('[data-cell]').dataset.cell);host.querySelector('.puzzle-grid').setPointerCapture?.(event.pointerId);};
  const move=event=>{if(dragStart==null)return;const end=cellAt(event);if(end==null)return;host.querySelectorAll('.tracing').forEach(c=>c.classList.remove('tracing'));const r=dragStart/puzzle.size|0,c=dragStart%puzzle.size,dr=(end/puzzle.size|0)-r,dc=end%puzzle.size-c;if(dr&&dc&&Math.abs(dr)!==Math.abs(dc))return;for(let i=0;i<=Math.max(Math.abs(dr),Math.abs(dc));i++)host.querySelector(`[data-cell="${dragStart+i*(Math.sign(dr)*puzzle.size+Math.sign(dc))}"]`)?.classList.add('tracing');};
- const up=event=>{if(dragStart==null)return;const end=cellAt(event),start=dragStart;dragStart=null;if(end==null){tapStart=null;return;}if(start===end){tapStart=start;host.querySelector(`[data-cell="${start}"]`)?.classList.add('tracing');}else search(start,end);};
+ const up=event=>{if(dragStart==null)return;const end=cellAt(event),start=dragStart;dragStart=null;if(end==null){cancel();return;}if(start===end){tapStart=start;host.querySelector(`[data-cell="${start}"]`)?.classList.add('tracing');}else search(start,end);};
  const click=event=>{if(event.target.closest('[data-start]'))void play({start:true});if(event.target.closest('[data-retry]')){message='';listen();render();}if(event.target.closest('[data-peek]'))void loadPeek();const clue=event.target.closest('[data-clue]');if(clue){selected=Number(clue.dataset.clue);draft='';render();host.querySelector('[data-answer]')?.focus({preventScroll:true});}const cell=event.target.closest('[data-cell]');if(cell&&type==='crossword')chooseCell(Number(cell.dataset.cell));};
  const input=event=>{if(event.target.matches('[data-answer]'))draft=event.target.value.toUpperCase().replace(/[^A-Z]/g,'');};
  const submit=event=>{if(!event.target.matches('.crossword-answer'))return;event.preventDefault();if(busy||finished())return;if(draft!==puzzle.entries[selected].word){message='not quite · try that clue again';host.querySelector('.timed-feedback').textContent=message;const box=host.querySelector('[data-answer]');box.classList.remove('wrong-answer');void box.offsetWidth;box.classList.add('wrong-answer');return;}void play({index:selected,answer:draft});};
  const key=event=>{const button=event.target.closest('[data-cell]');if(!button)return;const p=Number(button.dataset.cell),offset={ArrowRight:1,ArrowLeft:-1,ArrowDown:puzzle.size,ArrowUp:-puzzle.size}[event.key];if(offset){event.preventDefault();let next=p+offset;while(next>=0&&next<puzzle.grid.length&&puzzle.grid[next]==='#')next+=offset;host.querySelector(`[data-cell="${next}"]`)?.focus();}if(type==='search'&&['Enter',' '].includes(event.key)){event.preventDefault();if(tapStart==null){tapStart=p;button.classList.add('tracing');}else search(tapStart,p);}};
- const cancel=()=>{dragStart=null;tapStart=null;host.querySelectorAll('.tracing').forEach(c=>c.classList.remove('tracing'));};
+ const cancel=()=>{dragStart=null;tapStart=null;host.querySelectorAll('.tracing').forEach(c=>c.classList.remove('tracing'));render();};
  host.addEventListener('click',click);host.addEventListener('input',input);host.addEventListener('submit',submit);host.addEventListener('pointerdown',down);host.addEventListener('pointermove',move);host.addEventListener('pointerup',up);host.addEventListener('pointercancel',cancel);host.addEventListener('keydown',key);
- const tick=()=>{if(disposed)return;if(partnerFinished!==timedOver(partner())){partnerFinished=timedOver(partner());render();}if(!mine||mine.done||closed||!puzzle)return;const remaining=Math.min(timedLimit(type)-(Date.now()-millis(mine.startedAt)),puzzle.closesAt-Date.now());const timer=host.querySelector('[data-timer]');if(timer){timer.textContent=time(remaining);timer.classList.toggle('time-low',remaining<15000);}if(remaining<=0&&!busy&&navigator.onLine&&Date.now()>=expiredRetryAt)void play({index:null});};
+ const tick=()=>{if(disposed)return;if(partnerFinished!==timedOver(partner())){partnerFinished=timedOver(partner());render();}if(!mine||mine.done||closed||!puzzle)return;const remaining=Math.min(timedLimit(type)-(Date.now()-millis(mine.startedAt)),puzzle.closesAt-Date.now());const timer=host.querySelector('[data-timer]');if(timer){timer.textContent=time(remaining);timer.classList.toggle('time-low',remaining<15000);}if(remaining<=0){if(!expiredDrawn){expiredDrawn=true;cancel();}if(!busy&&navigator.onLine&&Date.now()>=expiredRetryAt)void play({index:null});}};
  const interval=setInterval(tick,300);
  const resume=()=>{if(activityClock().day!==openedDay){location.reload();return;}if(!document.hidden){listen();tick();}};
  addEventListener('online',resume);addEventListener('offline',render);document.addEventListener('visibilitychange',resume);listen();

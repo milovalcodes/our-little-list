@@ -80,7 +80,7 @@ jobs:
         run: node test/precache.test.mjs
 
       - name: The app can still start with no network
-        run: node test/offline.test.mjs
+        run: node test/offline.test.mjs && node test/cache-lifetime.test.mjs
 
       - name: Push encryption and the delivery worker behave
         run: |
@@ -138,4 +138,5 @@ jobs:
           node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
           python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
           pnpm run test:browser
+          pnpm run test:visual
           pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/word-realtime-browser.mjs"
