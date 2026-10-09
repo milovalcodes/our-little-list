@@ -17,7 +17,7 @@ if (data.mode === 'local') {
 }
 
 function listenForNames() {
-  startWordCrowns(data);
+  startWordCrowns(data,viewerSide());
   data.listenTo('profiles', items => {
     const profile = items.find(item => item.id === 'couple');
     if (profile) saveCachedProfile(profile);

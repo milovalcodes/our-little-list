@@ -37,6 +37,7 @@ jobs:
 
       - name: Profiles, competitive game logic and notification taps
         run: |
+          node test/word-celebration.test.mjs
           node test/daily-word.test.mjs
           node test/couple-game.test.mjs
           node test/game-sync.test.mjs

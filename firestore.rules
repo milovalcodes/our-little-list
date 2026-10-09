@@ -288,7 +288,15 @@ service cloud.firestore {
           && (n<3 || b.guesses[2] == a.guesses[2])
           && (n<4 || b.guesses[3] == a.guesses[3]);
       }
-      allow get: if inHousehold(householdId) && id.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}(-tie-[0-9]+)?-' + mySide());
+      // Reveal only a specific finished board, and only after this viewer has
+      // finished the same puzzle. Collection queries remain owner-only.
+      function bothFinished() {
+        return resource.data.done == true
+          && resource.data.person in ['her','him']
+          && id == resource.data.day + '-' + resource.data.person
+          && get(/databases/$(database)/documents/households/$(householdId)/wordGames/$(resource.data.day + '-' + mySide())).data.done == true;
+      }
+      allow get: if inHousehold(householdId) && (id.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}(-tie-[0-9]+)?-' + mySide()) || bothFinished());
       allow list: if inHousehold(householdId) && resource.data.person == mySide();
       allow create: if inHousehold(householdId) && valid(request.resource.data) && request.resource.data.guesses.size() == 1;
       allow update: if inHousehold(householdId) && valid(request.resource.data) && appended(resource.data,request.resource.data);

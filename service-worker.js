@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v93';
+const CACHE = 'our-little-list-v94';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -20,7 +20,7 @@ const PAGES = [
 const ASSETS = [
   ...PAGES,
   './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './guide.js', './profile-store.js', './profile-route.js', './couple-game.js', './arcade-game.js', './game-panel.js', './profile-names.js',
-  './profiles.js', './status.js', './dates.js', './dashboard.js', './game-sync.js', './activities.js', './activity-clock.js', './daily-word.js', './daily-words.js', './word-game.js', './word-lexicon.js', './word-scores.js', './word-crowns.js', './word-tiebreaker.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
+  './profiles.js', './status.js', './dates.js', './dashboard.js', './game-sync.js', './activities.js', './activity-clock.js', './daily-word.js', './daily-words.js', './word-game.js', './word-lexicon.js', './word-scores.js', './word-crowns.js', './word-tiebreaker.js', './word-celebration.js', './word-coronation.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
   './notification-policy.js', './notification-preferences.js',
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
   './push-config.js', './push-client.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',

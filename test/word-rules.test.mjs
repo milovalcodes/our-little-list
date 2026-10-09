@@ -31,6 +31,21 @@ await commit('her',{...game,guesses:['grape','grape']},false);
 const won=nextWordAttempt(game,puzzle,{day,person:'her',guess:'apple',expectedCount:1});
 await commit('her',won,false,{...wordSummary(won),attempts:1});
 await commit('her',won);
+await read('him','wordGames/'+day+'-her',403,'a finished partner is still private until I finish');
+let moonGame=nextWordAttempt(null,puzzle,{day,person:'him',guess:'table',expectedCount:0});
+await commit('him',moonGame);
+await read('her','wordGames/'+day+'-him',403);
+await read('him','wordGames/'+day+'-her',403);
+for(const guess of ['crane','beach','crown','grape']){
+ moonGame=nextWordAttempt(moonGame,puzzle,{day,person:'him',guess,expectedCount:moonGame.guesses.length});
+ await commit('him',moonGame);
+}
+assert.equal(moonGame.done,true);assert.equal(moonGame.won,false);
+await read('her','wordGames/'+day+'-him',200);
+await read('him','wordGames/'+day+'-her',200);
+await read('stranger','wordGames/'+day+'-her',403);
+const list=await fetch(base+'/households/'+household+':runQuery',{method:'POST',headers:headers('him'),body:JSON.stringify({structuredQuery:{from:[{collectionId:'wordGames'}],where:{fieldFilter:{field:{fieldPath:'person'},op:'EQUAL',value:{stringValue:'her'}}}}})});
+assert.equal(list.status,403,'revealing one finished board never grants bulk access to partner guesses');
 await commit('her',{...won,guesses:['grape','apple','table'],won:false,done:false},false);
 await write('him','wordPuzzles/'+day,{...puzzle,word:'table'},false);
 const expired={...puzzle,day:'2026-10-07',opensAt:now-86500000,closesAt:now-100000};

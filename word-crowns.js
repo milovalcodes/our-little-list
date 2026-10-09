@@ -1,5 +1,7 @@
 import { reigningCrowns } from './word-scores.js';
-export function startWordCrowns(data){
+import { createWordCoronation } from './word-coronation.js';
+export function startWordCrowns(data,viewer){
+  const ceremony=createWordCoronation(viewer);
   let crowns={her:0,him:0},frame=0;
   const badges=new Map();
   function schedule(){if(!frame)frame=requestAnimationFrame(paint);}
@@ -8,6 +10,7 @@ export function startWordCrowns(data){
     const images=[...document.querySelectorAll('img[src*="sun-profile"],img[src*="moon-profile"]')];
     const keep=new Set();
     for(const img of images){
+      if(img.closest('.word-coronation'))continue;
       const side=img.getAttribute('src').includes('sun-profile')?'her':'him',streak=crowns[side]||0;
       const box=img.getBoundingClientRect();
       if(!streak||!box.width||!box.height||box.bottom<0||box.top>innerHeight||(img.checkVisibility&&!img.checkVisibility({checkVisibilityCSS:true})))continue;
@@ -21,7 +24,7 @@ export function startWordCrowns(data){
     }
     for(const [img,badge] of badges)if(!keep.has(img)){badge.remove();badges.delete(img);}
   }
-  data.listenTo('wordWeeks',items=>{crowns=reigningCrowns(items);schedule();});
+  data.listenTo('wordWeeks',items=>{crowns=reigningCrowns(items);schedule();ceremony.update(items);});
   new MutationObserver(records=>{
     if(records.some(r=>!r.target.closest?.('.word-crown')&&(r.type==='attributes'||[...r.addedNodes,...r.removedNodes].some(n=>n.nodeType===1&&!n.classList?.contains('word-crown')))))schedule();
   }).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['src','hidden','open']});

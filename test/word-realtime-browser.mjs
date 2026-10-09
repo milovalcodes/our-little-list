@@ -104,9 +104,21 @@ try {
  await sun.waitForFunction(points=>document.querySelector('.word-partner').textContent.includes(points+' points'),3*multiplier);
  await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),3*multiplier);
  await secondMoon.reload();await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),3*multiplier);
+ assert.equal(await sun.locator('[data-word-peek]').count(),0,'finishing first never exposes your guesses');
+ const stillPrivate=await sun.evaluate(async day=>{try{await(await(await import('./data-hub.js')).sharedLayer()).readDoc('wordGames',day+'-him');return false;}catch(e){return e.code==='permission-denied';}},puzzle.day);
+ assert.equal(stillPrivate,true,'finished partner board stays protected while I am playing');
  const herWin=await sun.evaluate(async({day,word})=>{const {sharedLayer}=await import('./data-hub.js');return(await sharedLayer()).submitWordGuess({day,person:'her',guess:word,expectedCount:0});},puzzle);
  assert.equal(herWin.won,true);
  await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),10*multiplier);
+ await Promise.all([moon,sun].map(p=>p.waitForSelector('[data-word-peek]')));
+ await moon.click('[data-word-peek]');await sun.click('[data-word-peek]');
+ await moon.waitForSelector('.word-peek-board .word-row');await sun.waitForSelector('.word-peek-board .word-row');
+ assert.equal(await moon.locator('.word-peek-board .word-row').count(),1);
+ assert.equal(await sun.locator('.word-peek-board .word-row').count(),3);
+ assert.equal(await moon.locator('.word-peek-board .word-row').textContent(),puzzle.word);
+ assert.equal(await sun.locator('.word-peek-board .word-row').last().textContent(),puzzle.word);
+ assert.equal(await sun.locator('.word-peek-board .correct').count()>=5,true);
+ console.log('word: both phones unlock each other’s exact guesses only after both finish');
  // Confirm the explicit query used for a private board is accepted by rules.
  assert.deepEqual(errors,[]);
  console.log('REAL FIREBASE WORD: two private boards, live partner scores, simultaneous-screen conflict, saved progress after reload and ownership verified');

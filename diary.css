@@ -604,4 +604,60 @@ html[data-season="christmas"] body { --word-right:#acd6c2; --word-present:#eecb8
 .app-dock .dock-item span { white-space:nowrap; overflow-wrap:normal; font-size:clamp(.61rem,2.6vw,.69rem); }
 
 .word-crown.is-anchored { position:absolute; }
+.profile-page { --word-party-1:var(--accent,#b7a0ee); --word-party-2:var(--word-right,#acd6c2); --word-party-3:#f3cf8c; --word-party-4:#fff4db; }
+html[data-season="spooky"] body { --word-party-1:#f3bb85; --word-party-2:#bdc89b; --word-party-3:#c5a2df; }
+html[data-season="christmas"] body { --word-party-1:#dd8d99; --word-party-2:#acd6c2; --word-party-3:#eecb84; }
+.word-finale { position:fixed; inset:0; z-index:80; overflow:hidden; pointer-events:none; contain:layout paint; }
+.word-finale-card { position:absolute; top:20%; left:50%; width:min(84vw,360px); padding:20px; translate:-50% 0; border:1px solid var(--diary-rule); border-radius:28px; background:var(--diary-panel); color:var(--page-text); text-align:center; box-shadow:0 12px 50px #0003; }
+.word-finale-card strong { display:block; font-size:clamp(1.1rem,5vw,1.5rem); line-height:1.3; }
+.word-finale-icon { display:block; margin-bottom:10px; color:var(--word-party-3); font-size:3rem; line-height:1.3; }
+.word-finale-jackpot .word-finale-card { border:2px solid var(--word-party-3); }
+.word-finale-win .word-finale-card,.word-finale-miss .word-finale-card { top:32%; width:min(76vw,300px); }
+.word-finale-miss .word-finale-icon { color:var(--page-muted); }
+.word-confetti { position:absolute; left:var(--x); top:-20px; width:8px; height:13px; border-radius:2px; background:var(--ink); opacity:0; pointer-events:none; }
+.word-confetti:nth-child(3n) { border-radius:50%; width:9px; height:9px; }
+.has-word-coronation { overflow:hidden; }
+.word-coronation { position:fixed; box-sizing:border-box; margin:auto; width:min(90vw,420px); max-height:calc(100dvh - 36px); overflow:auto; padding:24px 20px 20px; border:1px solid var(--word-party-3); border-radius:30px; background:var(--diary-panel); color:var(--page-text); text-align:center; box-shadow:0 24px 100px #0006; }
+.word-coronation::backdrop { background:#080d25bb; backdrop-filter:blur(6px); }
+.coronation-sky { overflow:hidden; padding:10px 0; margin:-10px 0; color:var(--word-party-3); letter-spacing:.4em; font-size:1.3rem; }
+.coronation-sky span { display:inline-block; }
+.coronation-week { margin:8px 0; color:var(--page-muted); font-size:.8rem; }
+.word-coronation h2 { font-size:clamp(1.3rem,6vw,1.8rem); margin:6px 0 18px; }
+.coronation-scores { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
+.coronation-score { display:grid; gap:4px; padding:12px; background:var(--diary-raised); border-radius:18px; }
+.coronation-score span { overflow-wrap:anywhere; font-size:.9rem; }
+.coronation-score strong { font-size:2rem; font-variant-numeric:tabular-nums; }
+.coronation-winner { opacity:0; margin-top:34px; }
+.coronation-portrait { position:relative; width:94px; margin:auto; }
+.coronation-portrait img { display:block; width:94px; height:94px; border-radius:30px; border:2px solid var(--word-party-3); box-shadow:0 0 28px color-mix(in srgb,var(--word-party-3) 32%,transparent); }
+.coronation-crown { display:block; position:absolute; top:-37px; left:20px; width:54px; color:#f5cc58; font:48px/1 serif; transform:scale(var(--crown-scale,1)); filter:drop-shadow(0 2px 1px #573c2e); }
+.coronation-crown small { position:absolute; top:-4px; right:-2px; padding:3px 5px; border-radius:50%; background:#f8dfa0; color:#473225; font:800 12px/1 sans-serif; }
+.coronation-winner h3 { font-size:1.3rem; margin:12px 0 4px; overflow-wrap:anywhere; }
+.coronation-streak,.coronation-result { font-size:.9rem; line-height:1.5; }
+.coronation-result { min-height:1.5em; }
+.coronation-close { position:relative; z-index:2; min-height:44px; padding:10px 20px; border:1px solid var(--diary-rule); border-radius:18px; background:var(--diary-raised); color:var(--page-text); font:inherit; font-weight:800; }
+.coronation-confetti { position:absolute; inset:0; overflow:hidden; contain:strict; pointer-events:none; border-radius:inherit; }
+.word-coronation.is-crowned .coronation-winner { opacity:1; }
+@media(prefers-reduced-motion:no-preference) {
+  .word-finale-card { animation:word-finale-arrive .45s cubic-bezier(.2,.8,.3,1.2) both; }
+  .word-finale-jackpot .word-finale-icon { animation:word-victory-orbit 1.2s ease-in-out 2; }
+  .word-finale-brilliant .word-finale-icon { animation:word-star-pop .9s ease-out 2; }
+  .word-finale-win .word-finale-icon { animation:word-star-pop .8s ease-out; }
+  .word-finale-miss .word-finale-icon { animation:word-sad-float 2.4s ease-in-out both; }
+  .word-confetti { animation:word-confetti-fall var(--fall) ease-in var(--delay) both; }
+  .word-coronation { animation:word-finale-arrive .45s ease-out both; }
+  .word-coronation.is-crowned .coronation-winner { animation:word-finale-arrive .65s ease-out both; }
+  .word-coronation.is-crowned .coronation-crown { animation:word-crown-land .95s cubic-bezier(.15,.7,.3,1.2) both; }
+  .word-coronation.is-crowned:not(.is-finished) .coronation-sky span { animation:word-star-pop 1.4s ease-in-out 2; }
+  @keyframes word-finale-arrive { from { opacity:0; transform:translateY(15px) scale(.9); } to { opacity:1; transform:translateY(0) scale(1); } }
+  @keyframes word-victory-orbit { 0%,100% { transform:rotate(-6deg) scale(1); } 50% { transform:rotate(7deg) scale(1.14); } }
+  @keyframes word-star-pop { 0%,100% { transform:scale(1); } 45% { transform:scale(1.24) rotate(8deg); } }
+  @keyframes word-sad-float { 0% { transform:translateY(10px) rotate(-7deg); opacity:0; } 25% { opacity:1; } 100% { transform:translateY(-12px) rotate(6deg); opacity:1; } }
+  @keyframes word-confetti-fall { 0% { opacity:0; transform:translate(0,-20px) rotate(0); } 12% { opacity:1; } 85% { opacity:1; } 100% { opacity:0; transform:translate(var(--drift),100vh) rotate(var(--spin)); } }
+  @keyframes word-crown-land { 0% { opacity:0; transform:translateY(-55px) rotate(-18deg) scale(.6); } 65% { opacity:1; transform:translateY(3px) rotate(4deg) scale(var(--crown-scale)); } 100% { transform:translateY(0) rotate(0) scale(var(--crown-scale)); } }
+}
 .tie-result { padding:14px; border:1px solid var(--diary-rule); border-radius:16px; color:var(--page-text); background:var(--diary-panel); }
+.word-peek { margin-top:12px; text-align:center; }
+.word-peek button { min-height:44px; padding:10px 16px; border:1px solid var(--diary-rule); border-radius:16px; background:var(--diary-raised); color:var(--page-text); font:inherit; font-weight:700; }
+.word-peek-board { margin-top:14px; padding-top:10px; border-top:1px solid var(--diary-rule); }
+.word-peek-board h3 { font-size:1rem; margin:8px 0 14px; }
