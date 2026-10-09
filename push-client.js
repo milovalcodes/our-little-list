@@ -80,17 +80,31 @@ async function releaseEndpointFromOtherSide(data, person, endpoint) {
     await Promise.all(
       records
         .filter(record => record.id !== person && record.subscription?.endpoint === endpoint)
-        .map(record => data.removeFrom(PUSH_SUBS, record.id))
+        .map(record => releaseMatchingEndpoint(data,record.id,endpoint))
     );
   } catch (_) { /* best effort; the next registration tries again */ }
 }
 
 // Called when somebody signs out, so the phone stops answering for them.
 export async function forgetPushSubscription(data, person) {
+  let endpoint='';
   try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    const worker=navigator.serviceWorker;
+    if(!worker)return;
+    // getRegistration settles even if no service worker was ever installed;
+    // ready can otherwise wait forever on a desktop that never enabled push.
+    const registration = worker.getRegistration?await worker.getRegistration():await worker.ready;
+    const subscription = await registration?.pushManager.getSubscription();
+    endpoint=subscription?.endpoint||'';
     await subscription?.unsubscribe();
   } catch (_) { /* nothing to undo */ }
-  try { await data?.removeFrom(PUSH_SUBS, person); } catch (_) { /* already gone */ }
+  if(endpoint)try { await releaseMatchingEndpoint(data,person,endpoint); } catch (_) { /* next registration cleans up */ }
+}
+
+async function releaseMatchingEndpoint(data,person,endpoint){
+  if(data?.releasePushEndpoint)return data.releasePushEndpoint(person,endpoint);
+  // Compatibility for test/local adapters. Production always uses the
+  // transaction above, so a concurrent phone registration cannot be deleted.
+  const records=await data?.readOnce?.(PUSH_SUBS,{fromServer:true});
+  if(records?.some(r=>r.id===person&&r.subscription?.endpoint===endpoint))await data.removeFrom(PUSH_SUBS,person);
 }

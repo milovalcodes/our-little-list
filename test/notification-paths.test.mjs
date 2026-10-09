@@ -38,7 +38,7 @@ console.log(' ok  every push shows something, and a repeat replaces it quietly')
 // rule: a silent notification may not name a vibration pattern at all, not even
 // an empty one. Quiet mode used to pass `vibrate: []`, so every push threw, showed
 // nothing, and Chrome posted its own "updated in the background" line instead.
-async function firePush(payload, { failFirst = false, watching = false, when = null } = {}) {
+async function firePush(payload, { failFirst = false, watching = false, acknowledged = true, when = null } = {}) {
   const handlers = {};
   const shown = [];
   let calls = 0;
@@ -58,11 +58,12 @@ async function firePush(payload, { failFirst = false, watching = false, when = n
       },
       getNotifications: async () => shown.map(entry => ({ close() { entry.closed = true; } }))
     },
-    clients: { matchAll: async () => watching ? [{ visibilityState: 'visible', focused: true, url: 'https://x.test/app/notes.html' }] : [] },
+    clients: { matchAll: async () => watching ? [{ visibilityState: 'visible', focused: true, url: 'https://x.test/app/notes.html',postMessage:(_,ports)=>ports[0].postMessage({shown:acknowledged}) }] : [] },
     skipWaiting() {}
   };
   // The worker loads old-links.js with importScripts; run it in the same sandbox.
-  const sandbox = { self, URL, Request: class {}, Response: {}, caches: {}, fetch() {}, setTimeout: fn => setTimeout(fn, 0), console };
+  class Channel{constructor(){this.port1={close(){},onmessage:null};this.port2={close(){},postMessage:data=>this.port1.onmessage?.({data})};}}
+  const sandbox = { self, URL, MessageChannel:Channel, Request: class {}, Response: {}, caches: {}, fetch() {}, setTimeout: fn => setTimeout(fn, 0), clearTimeout, console };
   if (when) sandbox.Date = class extends Date { constructor(...args) { super(...(args.length ? args : [when])); } };
   sandbox.importScripts = file => vm.runInContext(readFileSync(new URL(`../${file.replace(/^\.\//, '')}`, import.meta.url), 'utf8'), sandbox);
   vm.createContext(sandbox);
@@ -92,9 +93,16 @@ async function firePush(payload, { failFirst = false, watching = false, when = n
   assert.equal(open[0].options.silent, true, 'but a quiet one');
   assert.ok(!('vibrate' in open[0].options), 'with no buzz');
   assert.equal(open[0].closed, true, 'and it is cleared from the tray');
-  // An arrival has no in-page popup: it rings even with the app open.
+  const missed=await firePush({title:'hi',body:'x',url:'notes.html',kind:'note'},{watching:true,acknowledged:false});
+  assert.equal(missed[0].closed,false,'an open page cannot swallow a ping it never showed');
+  assert.equal(missed[0].options.silent,false);
+  const answer=await firePush({title:'answered',body:'x',url:'tasks.html',kind:'help-answer'},{watching:true});
+  assert.equal(answer[0].closed,true,'help answers can now be presented by the foreground app');
+  // Arrivals also use the same acknowledged foreground delivery path.
   const arrival = await firePush({ title: 'home', body: 'x', url: 'status.html', kind: 'arrival', vibrate: [180, 90, 180] }, { watching: true });
-  assert.ok(!arrival[0].options.silent && !arrival[0].closed, 'an arrival is not swallowed while the app is open');
+  assert.ok(arrival[0].options.silent && arrival[0].closed, 'a displayed arrival avoids a second phone buzz');
+  const missedArrival=await firePush({title:'home',body:'x',url:'status.html',kind:'arrival'},{watching:true,acknowledged:false});
+  assert.equal(missedArrival[0].closed,false,'unacknowledged arrivals still ring normally');
 }
 console.log(' ok  quiet mode is quiet instead of broken, and a push always shows something');
 for (const [when, icon, badge] of [

@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v102';
+const CACHE = 'our-little-list-v103';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -166,8 +166,18 @@ self.addEventListener('fetch', event => {
   event.respondWith(cached.then(value => value || network));
 });
 
-const SHOWN_IN_PAGE = new Set(['note', 'item', 'date', 'help', 'help-answer', 'status', 'focus']);
-const PAGES_WITH_POPUPS = /\/(her|him|today|tasks|notes|dates|memories|status)\.html(?:[?#]|$)/;
+const PAGES_WITH_POPUPS = /\/(her|him|today|tasks|notes|dates|memories|status|activities|practice|phone-check|guide)\.html(?:[?#]|$)/;
+function pageDisplayedPing(client,payload){
+  return new Promise(resolve=>{
+    let channel,timer;
+    const finish=shown=>{clearTimeout(timer);channel?.port1.close();channel?.port2.close();resolve(shown);};
+    try{
+      channel=new MessageChannel();timer=setTimeout(()=>finish(false),350);
+      channel.port1.onmessage=event=>finish(event.data?.shown===true);
+      client.postMessage({type:'littlelist:present-ping',payload},[channel.port2]);
+    }catch(_){finish(false);}
+  });
+}
 
 self.addEventListener('push', event => {
   let payload = { title: 'Our Little App', body: 'a little something for you ♡', url: './index.html' };
@@ -207,16 +217,15 @@ self.addEventListener('push', event => {
     data: { url: target }
   };
   event.waitUntil((async () => {
-    // With the app open and in front, live-notes.js already popped this up in
-    // the page with its own sound. A push still has to show something (iOS
-    // drops subscriptions that don't), so show it quietly and take it back
-    // out of the tray a moment later instead of buzzing twice.
-    // Only for the kinds live-notes.js pops up in the page, and only on pages
-    // that load it. Arrivals, memories, reactions and a timed ask's nudge
-    // have no in-page popup, so they always ring normally.
+    // Offer every kind to the foreground app, or acknowledge its realtime
+    // copy. Only a positive reply permits quieting the OS copy. A push still
+    // has to show something under userVisibleOnly, then can tidy it away.
     const windows = await Promise.resolve().then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true })).catch(() => []);
-    const watching = SHOWN_IN_PAGE.has(payload.kind) && windows.some(client =>
-      client.visibilityState === 'visible' && client.focused && PAGES_WITH_POPUPS.test(client.url || ''));
+    // Being on this page isn't proof: its first snapshot, a slow listener or
+    // a failed connection may mean it never displayed this specific message.
+    const candidates=windows.filter(client=>
+      client.visibilityState==='visible'&&client.focused&&PAGES_WITH_POPUPS.test(client.url||''));
+    const watching=(await Promise.all(candidates.map(client=>pageDisplayedPing(client,payload)))).some(Boolean);
     const { vibrate: _buzz, ...quiet } = options;
     const shown = watching ? { ...quiet, silent: true } : options;
     await self.registration.showNotification(payload.title, shown)

@@ -711,6 +711,7 @@ async function openSlow(path) {
   await page.selectOption('#status-category', 'listening to');
   await page.click('#status-save');
   await page.waitForTimeout(400);
+  await page.locator('.profile-quick').evaluate(node=>{node.open=true;});
   await page.click('#arrival-presets [data-quick-status="leaving now"]');
   await page.waitForTimeout(500);
   const stillThere = await page.locator('.person-status-card.is-me .status-custom', { hasText: 'the tiny mug album' }).count();
@@ -812,6 +813,7 @@ async function openSlow(path) {
 {
   const { context, page, errors } = await open('status.html?as=her');
   await page.locator('.person-status-card.is-me .status-person-top strong').click();
+  await page.locator('.status-suggestions summary').click();
   await page.click('[data-energy="need company"]');
   const chipFilled=await page.locator('#status-text').inputValue()==='need company';
   await page.click('#status-emoji-pick');
@@ -820,6 +822,7 @@ async function openSlow(path) {
   await page.fill('#status-text', 'soup would fix me');
   await page.click('#status-save');
   const chosenEmoji = await page.evaluate(() => JSON.parse(localStorage.getItem('our-little-list-statuses-v1')).items.find(item => item.id === 'her')?.emoji);
+  await page.locator('.profile-quick').evaluate(node=>{node.open=true;});
   await page.click('[data-quick-status="almost there"]');
   const ready = await page.locator('.person-status-card.is-me').filter({hasText:'soup would fix me'}).filter({hasText:'almost there'}).count();
   await page.locator('#profile-tabs a[href$="profile-him"]').click();
@@ -1023,6 +1026,7 @@ async function openSlow(path) {
 {
   const { context, page, errors } = await open('her.html');
   await page.locator('#sky-person-her .sky-person-label').click();
+  await page.locator('.profile-quick').evaluate(node=>{node.open=true;});
   await page.locator('[data-quick-status="busy"]').click();
   await page.waitForTimeout(180);
   const status = await page.evaluate(async () => {

@@ -66,6 +66,23 @@ button.status-avatar { border:0; background:none; border-radius:20px; }
 .profile-tabs small { font-weight:500; color:var(--page-muted); }
 .profile-actions { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
 .profile-actions :is(a,button), .game-card button:not(.couple-board button) { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 14px; border:1px solid var(--diary-rule); border-radius:14px; background:var(--diary-raised); color:var(--page-text); font:inherit; font-weight:750; text-decoration:none; }
+.now-shell .profile-quick > summary { display:flex; align-items:center; justify-content:space-between; min-height:44px; padding:4px 12px; list-style:none; cursor:pointer; color:var(--page-muted); font-weight:750; }
+.now-shell details.profile-quick { display:block; }
+.now-shell .profile-quick > summary::-webkit-details-marker { display:none; }
+.now-shell .profile-quick[open] #arrival-presets { padding:8px 0; }
+.now-shell #status-form { gap:12px; }
+.now-shell .status-choices { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
+.now-shell .status-choice { padding:8px 5px; min-height:44px; font-size:.8rem; justify-content:center; }
+.now-shell .status-suggestions { order:6; border-top:1px solid var(--diary-rule); }
+.now-shell .status-suggestions > summary { min-height:44px; padding:8px 0; font:inherit; font-size:.85rem; color:var(--page-muted); }
+.now-shell .status-suggestions .energy-choices { padding-bottom:8px; }
+.now-shell .status-actions { order:7; display:flex; flex-wrap:wrap; gap:8px; }
+.now-shell .status-actions button { flex:1; min-width:70px; min-height:44px; }
+.now-shell .status-custom-grid { grid-template-columns:1fr; gap:8px; }
+.now-shell .status-editor-disclosure > summary { min-height:48px; }
+.now-shell .status-custom { margin-top:10px; }
+.now-shell .now-location-copy .tiny-kicker { display:none; }
+.now-shell .now-location-foot { font-size:.78rem; }
 .now-shell #status-pair { display:block; }
 .now-shell #status-pair .person-status-card { width:100%; margin:0; }
 .now-shell .arrival-strip { padding:0; background:none; border:0; margin:0 0 12px; }

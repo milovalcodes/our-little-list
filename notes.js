@@ -74,7 +74,7 @@ $('note-inbox-list').addEventListener('submit',async event=>{
 $('note-inbox-list').addEventListener('keydown',event=>{if(event.key==='Escape'&&event.target.closest('[data-note-edit]')){editingNoteId='';renderNotes();}});
 
 function findMyReaction(targetId){return reactions.find(item=>item.id===`note-${targetId}-${sender}`||(item.targetType==='note'&&item.targetId===targetId&&item.by===sender));}
-async function saveReaction(targetId,value,button){const id=`note-${targetId}-${sender}`;const existing=findMyReaction(targetId);button.disabled=true;try{if(!value||existing?.emoji===value){if(existing)await data.removeFrom('reactions',existing.id||id);toast('reaction removed');}else{await data.setTo('reactions',id,{targetType:'note',targetId,by:sender,to:recipient,emoji:value,createdAt:Date.now()});void data.notify(recipient,{title:`${personName(sender)} reacted ${value}`,body:'to your note',url:`notes.html#note-${targetId}`,kind:'reaction'});toast(`reacted ${value}`);}}catch(_){showFailure('that reaction did not stick.','check the internet and try again.');}finally{if(button.isConnected)button.disabled=false;}}
+async function saveReaction(targetId,value,button){const id=`note-${targetId}-${sender}`;const existing=findMyReaction(targetId);button.disabled=true;try{if(!value||existing?.emoji===value){if(existing)await data.removeFrom('reactions',existing.id||id);toast('reaction removed');}else{const at=Date.now();await data.setTo('reactions',id,{targetType:'note',targetId,by:sender,to:recipient,emoji:value,createdAt:at});void data.notify(recipient,{title:`${personName(sender)} reacted ${value}`,body:'to your note',url:`notes.html#note-${targetId}`,kind:'reaction',ref:`reactions/${id}/${at}`});toast(`reacted ${value}`);}}catch(_){showFailure('that reaction did not stick.','check the internet and try again.');}finally{if(button.isConnected)button.disabled=false;}}
 
 function renderNotes() {
   const available = notes.filter(note => !isPendingDelete('notes', note.id));
@@ -106,13 +106,15 @@ function markIncomingRead(){
   if(document.hidden||readFrame)return;
   readFrame=requestAnimationFrame(()=>{
     readFrame=0;
-    if(document.hidden)return;
+    if(document.hidden||document.querySelector('.app-sheet:not([hidden]),dialog[open],.auth-gate,.global-failure,.thinking-screen'))return;
     for(const row of $('note-inbox-list').querySelectorAll('[data-id]')){
       const bounds=row.getBoundingClientRect();
       // A mounted row is not necessarily being read: leave offscreen notes
       // unread, including rows below the fold and a background browser tab.
       const visible=Math.min(bounds.bottom,window.innerHeight)-Math.max(bounds.top,0);
       if(!row.getClientRects().length||visible<Math.min(40,bounds.height/2))continue;
+      const exposed=document.elementFromPoint(Math.max(0,Math.min(innerWidth-1,bounds.left+bounds.width/2)),(Math.max(0,bounds.top)+Math.min(innerHeight,bounds.bottom))/2);
+      if(!exposed||!row.contains(exposed))continue;
       const note=notes.find(item=>item.id===row.dataset.id);
       if(!note||(note.recipient!==sender&&note.to!==sender)||note.read||markedRead.has(note.id))continue;
       markedRead.add(note.id);
@@ -123,5 +125,9 @@ function markIncomingRead(){
 document.addEventListener('visibilitychange',markIncomingRead);
 window.addEventListener('scroll',markIncomingRead,{passive:true,capture:true});
 window.addEventListener('resize',markIncomingRead,{passive:true});
+document.addEventListener('littlelist:sheet-close',markIncomingRead);
+// Loading screens, dialogs and banners can uncover a note without scrolling.
+new MutationObserver(records=>{if(records.some(r=>r.target===document.body||r.target.matches?.('dialog,.app-sheet,.auth-gate,.global-failure,.thinking-screen')))markIncomingRead();})
+ .observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden','open','class']});
 function setNames(){$('note-quick-text').setAttribute('aria-label',`Write ${personName(recipient)} a note`);$('note-quick-text').placeholder=`write ${personName(recipient)} a little note…`;}
 window.addEventListener('littlelist:profile',()=>{setNames();renderNotes();});

@@ -81,7 +81,7 @@ $('memory-form').addEventListener('submit', async event => {
         showFailure('the words saved, but the photo did not.', 'check the internet, then add it again if you want the photo.');
       }
     }
-    void data.notify(other, { title: `${personName(viewer)} added to the memory jar`, body: text.slice(0, 120), url: `memories.html#memory-${saved.id}`, kind: 'memory' });
+    void data.notify(other, { title: `${personName(viewer)} added to the memory jar`, body: text.slice(0, 120), url: `memories.html#memory-${saved.id}`, kind: 'memory', ref:`memories/${saved.id}` });
     event.target.reset();
     resetMemoryDate();category='yours';history.replaceState(null,'',location.pathname+location.search+'#your-memories');render();
     photo = null;

@@ -172,7 +172,7 @@ picker.addEventListener('change',()=>{index=Number(picker.value);store.move(type
 document.getElementById('practice-next').addEventListener('click',()=>{index=(index+1)%PRACTICE_COUNTS[type];store.move(type,index);load();host.focus({preventScroll:true});});
 document.getElementById('practice-restart').addEventListener('click',()=>{
  if(!confirm('Start this puzzle over? Your other practice puzzles stay saved.'))return;
- state={guesses:[],solved:[],hints:0,draft:'',completed:state.completed,selected:0};save();load();host.focus({preventScroll:true});
+ selected=0;state={guesses:[],solved:[],hints:0,draft:'',completed:state.completed,selected:0};save();load();host.focus({preventScroll:true});
 });
 addEventListener('hashchange',open);document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelTrace();});
 // Another tab may change the same practice puzzle. Load fresh rather than overwriting its progress.

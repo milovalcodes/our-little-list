@@ -10,11 +10,10 @@ Live: https://milovalcodes.github.io/our-little-list/
 
 Each thing lives in one place:
 
-- **Home** — both people at a glance, the pinned fridge note, quick add and search.
-- **Today** — due items, a focus timer and the latest activity.
-- **The list** — repeatable tasks, groceries by aisle and requests; a timed request is also a reminder, for either person or yourself.
+- **Home** — both people, due tasks/routines, focus, the pinned fridge note, folded Updates, quick add and search. Today is a compatibility route to Home.
+- **The list** — tasks, groceries and weekday routines with independent daily completion and optional reminder offsets. Legacy requests still render as checklist rows.
 - **Notes** — short notes, reactions and the option to pin one on both home screens.
-- **Profiles** — Home name labels open profiles. A portrait with an optional alter-ego photo flips to it briefly, then back; without a photo, the Home portrait opens the profile. Your own profile owns status editing, location controls and a camera badge for photo upload/removal (pick, preview, then save; tap the camera again to change or remove); your partner's shows their status, recent notes and shared actions. Photos are square, compressed JPEGs in the household-only `profilePhotos` collection, writable only by their owner. Reduced motion skips the spin. Saved spots stay in Settings.
+- **Profiles** — Home name labels open profiles. A portrait with an optional alter-ego photo flips on one tap, opens the profile on a double tap, then flips back; without a photo, the Home portrait opens the profile. Your own profile owns status editing, location controls and a camera badge for photo upload/removal (pick, preview, then save; tap the camera again to change or remove); your partner's shows their status and shared location; notes stay in Notes. Photos are square, compressed JPEGs in the household-only `profilePhotos` collection, writable only by their owner. Reduced motion skips the spin. Saved spots stay in Settings.
 - **Activities** — daily question, Little Word, Word Search and Mini crossword. The weekly tracker shows source-by-source points, daily details, historical recaps and the largest per-game winning margin. Crown pings deep-link to the correct week. The retired arcade is no longer loaded, linked or notified; its stored records and compatibility data methods remain intact.
 - **Date ideas** — ideas with optional details, filters and a random picker; completed dates can become memories.
 - **Memories** — photos and small things worth keeping.
@@ -22,10 +21,26 @@ Each thing lives in one place:
   Quiet hours hold ordinary pings until morning; reminders still ring at their time, and arrivals come through silently. A focus session holds chatter five minutes at a time, so ending it early lets things through soon after.
 - **Guide** — under More, an in-app walkthrough and a record of each new release.
 
-The dock is Home / List / Activities / Today / More. Notes is first in More.
+The dock is Home / List / Activities / Notes / More.
 A small **add** button beside the heading opens the full composer on List,
 Date ideas and Memories. Home has quick add; Notes has its own writing bar.
-Activities and Today have no unrelated add controls.
+Activities has no unrelated add controls.
+
+All signed-in pages load the same foreground notification module. In Firebase
+mode it listens to the recipient's outbox, rather than duplicating an incomplete
+set of per-feature listeners. Future reminders wait for worker validation. A
+service-worker push offers its message to the visible page; only a positive
+display acknowledgement quiets and closes the system copy. Category, quiet-hour
+and focus preferences apply before display. Exact same-page taps reuse the
+notification router without reloading drafts. Local preview keeps mock feed
+listeners; never use that mode to prove phone delivery.
+
+Delivery runs every minute; logs include scheduling and total duration without
+message bodies. Missing subscriptions rotate out of the due queue; stale notes,
+reactions, memories and routine nudges are checked before sending. Sign-out
+removes only the current browser endpoint, with a Firestore transaction to
+preserve a concurrent registration. Keep observability explicitly enabled in
+Wrangler ([Cloudflare logging configuration](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)).
 
 Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 

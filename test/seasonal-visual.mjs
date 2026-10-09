@@ -66,6 +66,9 @@ try {
   const landingContext = await browser.newContext({ viewport:{ width:320,height:700 }, serviceWorkers:'block', reducedMotion:'reduce' });
   const landing = await landingContext.newPage();
   await landing.route('**/*', route => new URL(route.request().url()).origin === base ? route.fallback() : route.abort());
+  // Exercise the signed-out landing screen, not local-preview auto-sign-in.
+  // CI deliberately blanks Firebase config, which otherwise redirects to Home.
+  await landing.route('**/entry.js',route=>route.fulfill({contentType:'text/javascript',body:''}));
   await landing.goto(`${base}/index.html`, { waitUntil:'domcontentloaded' });
   for (const [season, date] of seasons) {
     const state = await landing.evaluate(when => {

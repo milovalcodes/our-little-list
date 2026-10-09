@@ -98,4 +98,28 @@ const { ensurePushSubscription, forgetPushSubscription } = await import('../push
   console.log(' ok  an un-permitted phone registers nothing');
 }
 
+// Signing out here must never unregister another phone on the same account.
+for(const existing of [null,{endpoint:ENDPOINT}]){
+  const phone=browser({existing});
+  const saved={person:'him',subscription:{endpoint:'https://push.example/android',keys:{}}};
+  const data=store({him:saved});await forgetPushSubscription(data,'him');
+  assert.deepEqual(data.rows.him,saved);assert.equal(phone.current(),null);
+}
+{
+  browser();const data=store({her:{person:'her',subscription:{endpoint:ENDPOINT}}});
+  let atomic=0;data.releasePushEndpoint=async(person,endpoint)=>{
+    atomic++;data.rows[person].subscription.endpoint='https://push.example/replaced';
+    if(data.rows[person].subscription.endpoint===endpoint)delete data.rows[person];
+  };
+  await forgetPushSubscription(data,'her');
+  assert.equal(atomic,1);assert.equal(data.rows.her.subscription.endpoint,'https://push.example/replaced');
+}
+{
+  browser({existing:null});
+  navigator.serviceWorker.getRegistration=async()=>undefined;
+  navigator.serviceWorker.ready=new Promise(()=>{});
+  await forgetPushSubscription(store(),'him');
+}
+console.log(' ok  desktop sign-out preserves the phone; concurrent replacement uses atomic endpoint ownership');
+
 console.log('\nPUSH REGISTRATION CLEAN');

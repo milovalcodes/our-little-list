@@ -1,5 +1,5 @@
 import { deliver as realDeliver, ensureQuestionOfDay } from '../worker/src/index.js';
-import { focusDelivery } from '../delivery-policy.js';
+import { focusDelivery,contentSourcePath,contentStillWanted } from '../delivery-policy.js';
 import { quietHoursEndUtc } from '../notification-policy.js';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -67,7 +67,7 @@ const deliver = env => realDeliver(env, { scheduleQuestions: false });
   console.log(' ok  question pings are written with names Firestore accepts');
 }
 
-function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, questions = {}, game = null, pushStatus = 201, lockHeld = false, moveStatus = 200 }) {
+function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, questions = {}, content = {}, game = null, pushStatus = 201, lockHeld = false, moveStatus = 200 }) {
   const deleted = [];
   const pushes = [];
   const moved = [];
@@ -111,6 +111,11 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
       const status = statuses[url.split('/statuses/')[1]];
       return status ? Response.json({ name:url, fields:{ focusUntil:{ integerValue:String(status.focusUntil || 0) } } }) : new Response('', { status:404 });
     }
+    const source=/\/documents\/households\/HOUSE\/(notes|items|dates|memories|reactions)\/([A-Za-z0-9_-]+)$/.exec(url);
+    if(source&&options.method!=='DELETE'){
+      const record=content[source[1]+'/'+source[2]];
+      return record?Response.json({name:url,fields:Object.fromEntries(Object.entries(record).map(([k,v])=>[k,typeof v==='boolean'?{booleanValue:v}:{stringValue:String(v)}]))}):new Response('',{status:404});
+    }
     if (url.includes('/help/') && options.method !== 'DELETE') {
       const ask = asks[url.split('/help/')[1]];
       return ask ? Response.json({ name: url, fields: { state: { stringValue: ask.state } } }) : new Response('', { status: 404 });
@@ -142,6 +147,28 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
 }
 
 const now = Date.now();
+
+// Deleted, already-read or completed content must not reappear after quiet hours.
+{
+  assert.equal(contentSourcePath({kind:'note',url:'notes.html#note-old'}),'notes/old');
+  assert.equal(contentSourcePath({kind:'note',ref:'notes/../../private',url:'index.html'}),'');
+  assert.equal(contentSourcePath({kind:'reminder',ref:'notes/x'}),'');
+  assert.equal(contentStillWanted({kind:'note',to:'her'},{recipient:'him',read:false}),false);
+  const h=harness({outbox:[
+    {id:'deleted-note',kind:'note',ref:'notes/gone',to:'her',sendAt:now},
+    {id:'read-note',kind:'note',url:'notes.html#note-read',to:'her',sendAt:now},
+    {id:'deleted-task',kind:'item',url:'tasks.html#item-gone',to:'her',sendAt:now},
+    {id:'done-date',kind:'date',ref:'dates/done',to:'her',sendAt:now},
+    {id:'gone-memory',kind:'memory',url:'memories.html#memory-gone',to:'her',sendAt:now},
+    {id:'undone-reaction',kind:'reaction',ref:'reactions/gone/123',to:'her',sendAt:now},
+    {id:'changed-reaction',kind:'reaction',ref:'reactions/new/123',to:'her',sendAt:now},
+    {id:'valid-reaction',kind:'reaction',ref:'reactions/new/456',to:'her',sendAt:now},
+    {id:'keep-note',kind:'note',ref:'notes/keep',to:'her',sendAt:now}
+  ],content:{'notes/read':{recipient:'her',read:true},'dates/done':{done:true},'reactions/new':{to:'her',createdAt:456},'notes/keep':{recipient:'her',read:false,body:'corrected note'}}});
+  const r=await deliver(ENV);
+  assert.equal(r.dropped,7);assert.equal(r.sent,2);assert.equal(h.pushes.length,2);
+  console.log(' ok  deleted/read/completed content pings are dropped; valid unread notes still send');
+}
 
 // 1. a due message goes out and is cleaned up
 {
@@ -191,8 +218,33 @@ const now = Date.now();
   const r = await deliver(ENV);
   assert.equal(r.sent, 0);
   assert.equal(r.left, 1);
+  assert.ok(h.moved[0].sendAt>=now+60000,'unregistered phones rotate out of the due queue');
   assert.ok(!h.deleted.some(path => path.endsWith('outbox/A3')), 'stays queued until that phone registers');
   console.log(' ok  a message for an unregistered phone waits rather than vanishing');
+}
+
+{
+  const h=harness({outbox:[{id:'RETRIED',to:'him',title:'old',body:'x',kind:'note',sendAt:now,createdAt:now-8*86400000}]});
+  assert.equal((await deliver(ENV)).dropped,1,'retries must not keep old chatter alive forever');
+  assert.equal(h.pushes.length,0);
+}
+
+{
+  const {listNudgeWanted}=await import('../worker/src/list-reminders.js');
+  const {listDay}=await import('../list-schedule.js');
+  const day=listDay(now),base='households/test',docs=new Map();
+  const db={get:async path=>docs.get(path)||null};
+  const message={ref:`items/routine/${day}`};
+  assert.equal(await listNudgeWanted(db,base,message,now),false);
+  docs.set(base+'/items/routine',{routineDays:[0,1,2,3,4,5,6],done:false});
+  assert.equal(await listNudgeWanted(db,base,message,now),true);
+  docs.set(base+'/routineChecks/routine_'+day,{done:true});
+  assert.equal(await listNudgeWanted(db,base,message,now),false);
+  docs.clear();docs.set(base+'/items/routine',{routineDays:[0,1,2,3,4,5,6],done:false});
+  assert.equal(await listNudgeWanted(db,base,{ref:'items/routine/2020-01-01'},now),false);
+  docs.set(base+'/help/old',{state:'done'});
+  assert.equal(await listNudgeWanted(db,base,{ref:'help/old'},now),false);
+  console.log(' ok  completed, deleted and yesterday’s routine nudges cannot ring');
 }
 
 // 6. a week-old straggler is dropped instead of surprising someone

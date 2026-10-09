@@ -15,7 +15,7 @@ export async function addTask(data, { viewer, other, title, type = 'task', due =
     title, type: grocery ? 'grocery' : 'task', due, recurrence,
     ...schedule, aisle: grocery ? aisle : '', addedBy: viewer, done: false, createdAt: Date.now()
   });
-  void data.notify(other, { title: grocery ? 'grocery list update 🛒' : 'new thing on the list ✓', body: title, url: `tasks.html#item-${record.id}`, kind: 'item' });
+  void data.notify(other, { title: grocery ? 'grocery list update 🛒' : 'new thing on the list ✓', body: title, url: `tasks.html#item-${record.id}`, kind: 'item', ref:`items/${record.id}` });
   return record;
 }
 
@@ -27,7 +27,7 @@ export async function sendNote(data, { viewer, other, body, mood = 'heart', pinn
   });
   const delivery = await data.notify(other, {
     title: pinned ? `📌 on the fridge` : viewer === 'her' ? 'the sun says ☀️' : 'the moon says 🌙',
-    body, url: pinned ? `${other}.html#fridge-note` : `notes.html#note-${record.id}`, kind: 'note'
+    body, url: pinned ? `${other}.html#fridge-note` : `notes.html#note-${record.id}`, kind: 'note', ref:`notes/${record.id}`
   });
   return { ...record, delivery };
 }
@@ -66,6 +66,6 @@ export async function addDateIdea(data, { viewer, other, title, note = '', vibe 
     title, note, vibe: DATE_VIBES.includes(vibe) ? vibe : 'go out', ...details,
     addedBy: viewer, favorite: false, done: false, createdAt: Date.now()
   });
-  void data.notify(other, { title: 'new date idea ✦', body: title, url: `dates.html#date-${record.id}`, kind: 'date' });
+  void data.notify(other, { title: 'new date idea ✦', body: title, url: `dates.html#date-${record.id}`, kind: 'date', ref:`dates/${record.id}` });
   return record;
 }

@@ -268,6 +268,16 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
     updateIn: (name, id, changes) => applied(updateDoc(doc(named(name), id), changes), name),
     removeFrom: (name, id) => applied(deleteDoc(doc(named(name), id)), name),
 
+    // Compare and delete in one transaction: another device may have
+    // re-registered this side between our read and a sign-out.
+    async releasePushEndpoint(person, endpoint) {
+      if(!signedIn()||!endpoint)return;
+      return runTransaction(db,async transaction=>{
+        const ref=doc(named('pushSubs'),person),snapshot=await transaction.get(ref);
+        if(snapshot.exists()&&snapshot.data().subscription?.endpoint===endpoint)transaction.delete(ref);
+      });
+    },
+
     // Files a notification in the outbox. The scheduled delivery workflow picks
     // it up and sends the real web push. Nothing here claims to have delivered
     // anything: the old version fired an opaque no-cors request at Expo and

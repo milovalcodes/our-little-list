@@ -35,6 +35,8 @@ const { data, viewer, other } = await bootPage();
 let selected = profileRoute(location.hash, viewer).person;
 const editor = document.querySelector('.status-editor-disclosure');
 $('profile-editor-slot').append(editor);
+$('status-close').addEventListener('click',()=>{editor.open=false;$('profile-actions').querySelector('[data-edit-profile]')?.focus();});
+$('profile-actions').addEventListener('click',event=>{if(event.target.closest('[data-edit-profile]'))openStatusEditor();});
 function openStatusEditor(){if(selected!==viewer)return;if(!editorDirty){delete $('status-form').dataset.hydrated;hydrateEditor();}editor.open=true;editor.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}
 $('status-form').addEventListener('input',()=>{editorDirty=true;});
 $('status-form').addEventListener('change',()=>{editorDirty=true;});
@@ -71,13 +73,15 @@ revealSection();
 window.setInterval(render,30000);
 
 document.querySelectorAll('.status-choice').forEach(button=>button.addEventListener('click',()=>{
+  editorDirty=true;
   state=button.dataset.state;document.querySelectorAll('.status-choice').forEach(item=>item.classList.toggle('active',item===button));
 }));
 $('status-emoji-pick').addEventListener('click',()=>openEmojiPicker({current:emoji,label:'emoji',
-  onSelect:value=>{emoji=value;$('status-emoji-pick').textContent=`${value} pick an emoji`;},
-  onRemove:()=>{emoji='🎧';$('status-emoji-pick').textContent='🎧 pick an emoji';}
+  onSelect:value=>{editorDirty=true;emoji=value;$('status-emoji-pick').textContent=`${value} pick an emoji`;},
+  onRemove:()=>{editorDirty=true;emoji='🎧';$('status-emoji-pick').textContent='🎧 pick an emoji';}
 }));
 document.querySelectorAll('.energy-choice').forEach(button=>button.addEventListener('click',()=>{
+  editorDirty=true;
   $('status-text').value=button.dataset.energy;
   $('status-category').value='feeling';$('custom-category-wrap').hidden=true;
   syncQuickWords();$('status-text').focus();
@@ -96,7 +100,7 @@ $('arrival-presets').addEventListener('click',async event=>{const button=event.t
 $('status-pair').addEventListener('click',event=>{const picker=event.target.closest('[data-status-picker]');if(picker){const targetId=picker.dataset.statusPicker;const current=findStatusReaction(targetId);openEmojiPicker({current:current?.emoji,onSelect:value=>saveStatusReaction(targetId,value,picker),onRemove:()=>saveStatusReaction(targetId,'',picker)});return;}const button=event.target.closest('[data-react-status]');if(button)void saveStatusReaction(button.dataset.reactStatus,button.dataset.emoji,button);});
 
 function findStatusReaction(targetId){return reactions.find(item=>item.id===`status-${targetId}-${viewer}`||(item.targetType==='status'&&item.targetId===targetId&&item.by===viewer));}
-async function saveStatusReaction(targetId,value,button){const id=`status-${targetId}-${viewer}`;const existing=findStatusReaction(targetId);if(button)button.disabled=true;try{if(!value||existing?.emoji===value){if(existing)await data.removeFrom('reactions',existing.id||id);toast('reaction removed');}else{await data.setTo('reactions',id,{targetType:'status',targetId,by:viewer,to:other,emoji:value,createdAt:Date.now()});void data.notify(other,{title:`${personName(viewer)} reacted ${value}`,body:'to your status',url:profileUrl(targetId),kind:'reaction'});toast(`reacted ${value}`);}}catch(_){showFailure('that reaction did not stick.','check the internet and try again.');}finally{if(button?.isConnected)button.disabled=false;}}
+async function saveStatusReaction(targetId,value,button){const id=`status-${targetId}-${viewer}`;const existing=findStatusReaction(targetId);if(button)button.disabled=true;try{if(!value||existing?.emoji===value){if(existing)await data.removeFrom('reactions',existing.id||id);toast('reaction removed');}else{const at=Date.now();await data.setTo('reactions',id,{targetType:'status',targetId,by:viewer,to:other,emoji:value,createdAt:at});void data.notify(other,{title:`${personName(viewer)} reacted ${value}`,body:'to your status',url:profileUrl(targetId),kind:'reaction',ref:`reactions/${id}/${at}`});toast(`reacted ${value}`);}}catch(_){showFailure('that reaction did not stick.','check the internet and try again.');}finally{if(button?.isConnected)button.disabled=false;}}
 
 $('status-form').addEventListener('submit',async event=>{
   event.preventDefault();const text=$('status-text').value.trim();const rawCategory=$('status-category').value;const category=rawCategory==='custom'?$('status-custom-category').value.trim():rawCategory;
@@ -109,7 +113,7 @@ $('status-form').addEventListener('submit',async event=>{
     const display=text?`${emoji} ${category} ${text}`:stateLabels[state];
     void data.notify(other,{title:`${personName(viewer)} updated their status`,body:display,url:profileUrl(viewer),kind:'status'});
     editorDirty=false;
-    toast('status saved. lore updated.');
+    toast('status saved');
   }catch(_){showFailure('the status did not save.','check the internet, then try it once more.');}
   finally{setButtonBusy(button,false);}
 });
@@ -123,6 +127,7 @@ $('status-clear').addEventListener('click',async event=>{
 });
 
 function hydrateEditor(){
+  if(editorDirty)return;
   if($('status-form').dataset.hydrated)return;const mine=statuses.find(item=>item.id===viewer||item.person===viewer);if(!mine)return;
   $('status-form').dataset.hydrated='true';state=mine.state||'online';emoji=mine.emoji||'🎧';
   const typing=$('status-text').value.trim()!=='';
@@ -148,15 +153,15 @@ function render(){
   $('status-pair').innerHTML=statusCard(selected,statuses.find(item=>item.id===selected||item.person===selected));
   document.querySelectorAll('[data-owner-control]').forEach(node=>{node.hidden=!own;});
   $('profile-actions').innerHTML=own
-    ? '<a href="phone-check.html#names">name & settings</a>'
+    ? '<button type="button" data-edit-profile>Edit status</button><a href="phone-check.html#names" aria-label="Profile settings">Settings</a>'
     : '<button type="button" data-open-quick="note">leave a note</button><a href="tasks.html#routines">our routine</a>';
 }
 
 function statusCard(person,item={}){
   const focus=focusActive(item);const custom=item.text&&!isExpired(item);const name=personName(person);const image=person==='her'?'sun-profile.png':'moon-profile.png';
-  const arrival=arrivalActive(item)?`<p class="status-arrival">↗ ${escapeHtml(item.arrival)}</p>`:'';const location=item.locationText?`<p class="status-location place-${escapeHtml(item.locationPreset||'custom')}"><b>${escapeHtml(item.locationEmoji||'📍')}</b><span>${escapeHtml(item.locationText)}</span></p>`:'';const received=person===other?findStatusReaction(person):reactions.find(reaction=>reaction.targetType==='status'&&reaction.targetId===person&&reaction.by===other);const reactionDisplay=received?(person===other?`<button class="reaction-display" type="button" data-react-status="${escapeHtml(person)}" data-emoji="${escapeHtml(received.emoji)}" aria-label="Remove your ${escapeHtml(received.emoji)} reaction"><b>${escapeHtml(received.emoji)}</b><span>yours · tap to undo</span></button>`:`<div class="reaction-display is-readonly"><b>${escapeHtml(received.emoji)}</b><span>from ${escapeHtml(personName(other))}</span></div>`):'';const reactionButton=person===other?`<button class="reaction-trigger" type="button" data-status-picker="${escapeHtml(person)}">react</button>`:'';
+  const arrival=arrivalActive(item)?`<p class="status-arrival">↗ ${escapeHtml(item.arrival)}</p>`:'';const location=!custom&&!focus&&!arrival&&item.locationText?`<p class="status-location place-${escapeHtml(item.locationPreset||'custom')}"><b>${escapeHtml(item.locationEmoji||'📍')}</b><span>${escapeHtml(item.locationText)}</span></p>`:'';const received=person===other?findStatusReaction(person):reactions.find(reaction=>reaction.targetType==='status'&&reaction.targetId===person&&reaction.by===other);const reactionDisplay=received?(person===other?`<button class="reaction-display" type="button" data-react-status="${escapeHtml(person)}" data-emoji="${escapeHtml(received.emoji)}" aria-label="Remove your ${escapeHtml(received.emoji)} reaction"><b>${escapeHtml(received.emoji)}</b><span>yours · tap to undo</span></button>`:`<div class="reaction-display is-readonly"><b>${escapeHtml(received.emoji)}</b><span>from ${escapeHtml(personName(other))}</span></div>`):'';const reactionButton=person===other?`<button class="reaction-trigger" type="button" data-status-picker="${escapeHtml(person)}">react</button>`:'';
   const legacy=!custom&&!location&&!focus&&!arrival?statusShows(item):null;
-  return `<article class="person-status-card ${person===viewer?'is-me':''} ${item.locationPreset?`has-place place-${escapeHtml(item.locationPreset)}`:''}"${person===viewer?' tabindex="0" role="button" aria-label="Edit your status"':''}><button type="button" class="status-avatar alter-ego-trigger" data-person="${person}" aria-label="Peek at ${escapeHtml(name)}’s alter ego"><img src="${image}" alt=""><i class="status-dot state-${escapeHtml(item.state||'invisible')}"></i></button><div class="status-person-copy"><div class="status-person-top"><strong>${escapeHtml(name)}</strong>${person===viewer?'<span>you · tap to edit</span>':''}</div><p class="status-presence">${escapeHtml(hereLine({presence:presence.find(entry=>entry.id===person||entry.person===person),status:item}).text)}</p>${location}${arrival}${focus?`<p class="status-custom"><b>⏱</b><span><small>locking in</small>${escapeHtml(item.focusLabel||'doing the thing')}</span></p>`:''}${custom?`<p class="status-custom"><b>${escapeHtml(item.emoji||'✦')}</b><span><small>${escapeHtml(item.category||'currently')}</small>${escapeHtml(item.text)}</span></p>`:legacy?.text?`<p class="status-custom"><b>✦</b><span><small>feeling</small>${escapeHtml(legacy.text)}</span></p>`:location||focus||arrival?'':`<p class="status-blank">${person===viewer?'a little status goes here':'no status right now'}</p>`}<div class="reaction-controls">${reactionDisplay}${reactionButton}</div></div></article>`;
+  return `<article class="person-status-card ${person===viewer?'is-me':''} ${item.locationPreset?`has-place place-${escapeHtml(item.locationPreset)}`:''}"${person===viewer?' tabindex="0" role="button" aria-label="Edit your status"':''}><button type="button" class="status-avatar alter-ego-trigger" data-person="${person}" aria-label="Peek at ${escapeHtml(name)}’s alter ego"><img src="${image}" alt=""><i class="status-dot state-${escapeHtml(item.state||'invisible')}"></i></button><div class="status-person-copy"><div class="status-person-top"><strong>${escapeHtml(name)}</strong>${person===viewer?'<span>you</span>':''}</div><p class="status-presence">${escapeHtml(hereLine({presence:presence.find(entry=>entry.id===person||entry.person===person),status:item}).text)}</p>${location}${arrival}${focus?`<p class="status-custom"><b>⏱</b><span><small>locking in</small>${escapeHtml(item.focusLabel||'doing the thing')}</span></p>`:''}${custom?`<p class="status-custom"><b>${escapeHtml(item.emoji||'✦')}</b><span><small>${escapeHtml(item.category||'currently')}</small>${escapeHtml(item.text)}</span></p>`:legacy?.text?`<p class="status-custom"><b>✦</b><span><small>feeling</small>${escapeHtml(legacy.text)}</span></p>`:location||focus||arrival?'':`<p class="status-blank">${person===viewer?'What are you up to?':'no status right now'}</p>`}<div class="reaction-controls">${reactionDisplay}${reactionButton}</div></div></article>`;
 }
 function expiryTime(value){if(value==='today'){const date=new Date();date.setHours(23,59,59,999);return date.getTime();}const hours=Number(value)||0;return hours?Date.now()+hours*3600000:0;}
 function isExpired(item){return Boolean(item.expiresAt&&item.expiresAt<Date.now());}

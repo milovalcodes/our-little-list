@@ -8,9 +8,23 @@ import { friendlyWhen } from './time-format.js';
 import { startPresence } from './presence.js';
 import { readNotificationPreferences, shouldShowNotification } from './notification-preferences.js';
 import { focusDelivery } from './delivery-policy.js';
+import { quietHoursEndUtc } from './notification-policy.js';
 import { NOTE_MOODS } from './records.js';
 
 let ownFocusUntil=0;
+let foregroundReady=false;
+const displayedPings=new Map();
+function pingUrl(message){
+  try{const url=new URL(message.url||'index.html',location.href),root=new URL('.',location.href);return url.origin===root.origin&&url.pathname.startsWith(root.pathname)&&url.pathname.endsWith('.html')?url.href:new URL('index.html',root).href;}catch(_){return new URL('index.html',location.href).href;}
+}
+const pingKey=message=>JSON.stringify([message.kind,pingUrl(message),message.body||'']);
+navigator.serviceWorker?.addEventListener('message',event=>{
+  if(!['littlelist:was-ping-shown','littlelist:present-ping'].includes(event.data?.type))return;
+  const at=displayedPings.get(pingKey(event.data.payload));
+  const already=!document.hidden&&Number.isFinite(at)&&Date.now()-at<5*60000;
+  const shown=already||(event.data.type==='littlelist:present-ping'&&announce({...event.data.payload,label:event.data.payload.title}));
+  event.ports?.[0]?.postMessage({shown:Boolean(shown)});
+});
 
 const signedInSide = await awaitViewer();
 if (signedInSide) boot(signedInSide);
@@ -22,8 +36,21 @@ async function boot(viewer) {
 
   const data = await sharedLayer();
   const recent = { orderBy: { field: 'createdAt', direction: 'desc' }, limit: 50 };
+  const openedAt=Date.now();
+  if(data.mode!=='local'){
+    // One real-time source for every kind, rather than a second partial list
+    // of actions to maintain. Future reminders wait for validated worker push.
+    const seenIds=new Set();
+    data.listenToQuery('outbox',{where:{field:'to',value:viewer}},rows=>{
+      for(const message of rows){
+        if(seenIds.has(message.id))continue;seenIds.add(message.id);
+        if(Number(message.createdAt)<openedAt-5000||Number(message.sendAt)>Date.now())continue;
+        announce({...message,label:message.title});
+      }
+    });
+  }
 
-  {
+  if(data.mode==='local'){
     data.listenToQuery('notes', recent, notes => {
       const incoming = firstFresh('notes', notes, note => note.recipient === viewer && !note.read);
       if (!incoming) return;
@@ -54,14 +81,13 @@ async function boot(viewer) {
       if (fresh) announce({ icon: fresh.emoji || (timed ? '⏰' : '🙋'), label: timed ? `${personName(other)} set you a reminder` : `${personName(other)} needs a hand`, body: timed ? `${fresh.title} · ${friendlyWhen(Number(fresh.dueAt))}` : fresh.title, url: `tasks.html#ask-${fresh.id}`, kind: 'help', urgent:fresh.urgent===true });
     });
 
-    data.listenTo('statuses', items => {
-      ownFocusUntil=Number(items.find(entry=>entry.id===viewer||entry.person===viewer)?.focusUntil)||0;
-      watchStatus(items);
-    });
-
-    // Pages other than the two dashboards still need to say they were here.
-    if (!document.body.dataset.viewer) startPresence(data, viewer, document.body.dataset.app || 'somewhere');
   }
+  data.listenTo('statuses',items=>{
+    ownFocusUntil=Number(items.find(entry=>entry.id===viewer||entry.person===viewer)?.focusUntil)||0;
+    foregroundReady=true;
+    if(data.mode==='local')watchStatus(items);
+  });
+  if(!document.body.dataset.viewer)startPresence(data,viewer,document.body.dataset.app||'somewhere');
 
   // Returns the newest matching record that appeared after the first snapshot.
   // The first snapshot only seeds the baseline, so opening a page never
@@ -124,26 +150,41 @@ function announce(message) {
   // The push worker owns every operating-system notification; raising another
   // one here made the same event arrive twice on backgrounded phones.
   if (document.hidden) return false;
+  if(!foregroundReady)return false;
+  const already=displayedPings.get(pingKey(message));
+  if(Number.isFinite(already)&&Date.now()-already<5*60000)return true;
   if (!shouldShowNotification(message.kind)) return false;
 
   const focus=focusDelivery(message,{focusUntil:ownFocusUntil});
   if(focus.holdUntil)return false;
-
-  if(!focus.quiet)window.playLittleSound?.(readNotificationPreferences().inAppSound);
+  const preferences=readNotificationPreferences();
+  const quiet=message.urgent!==true&&!['reminder','list-reminder'].includes(message.kind)&&quietHoursEndUtc(Date.now(),preferences.quietHours,-new Date().getTimezoneOffset());
+  if(quiet&&message.kind!=='arrival')return false;
+  if(!focus.quiet&&!quiet)window.playLittleSound?.(preferences.inAppSound);
 
   document.querySelector('.incoming-note')?.remove();
   const popup = document.createElement('aside');
   popup.className = 'incoming-note';
   popup.innerHTML = '<a class="incoming-note-link"><span></span><div><small></small><p></p></div></a><button class="incoming-note-close" type="button" aria-label="Close">×</button>';
   const link = popup.querySelector('a');
-  link.href = message.url;
-  link.querySelector('span').textContent = message.icon;
+  link.href = pingUrl(message);
+  link.addEventListener('click',event=>{
+    const target=new URL(link.href);
+    if(target.pathname===location.pathname&&target.search===location.search&&navigator.serviceWorker){
+      event.preventDefault();popup.remove();
+      navigator.serviceWorker.dispatchEvent(new MessageEvent('message',{data:{type:'OPEN_NOTIFICATION',url:target.href}}));
+    }
+  });
+  link.querySelector('span').textContent = message.icon||({note:'💌',reaction:'♡',item:'✓','item-finished':'✓','list-nudge':'↗','list-reminder':'⏰',memory:'◒',date:'✦',arrival:'📍',status:'●',focus:'⏱'}[message.kind]||'✦');
   link.querySelector('small').textContent = message.label;
   link.querySelector('p').textContent = message.body || '';
   popup.querySelector('.incoming-note-close').addEventListener('click', () => {
     popup.remove();
   });
   document.body.append(popup);
+  popup.setAttribute('role','status');
+  for(const [key,at] of displayedPings)if(Date.now()-at>5*60000)displayedPings.delete(key);
+  displayedPings.set(pingKey(message),Date.now());
   window.setTimeout(() => popup.remove(), 10000);
   return true;
 }

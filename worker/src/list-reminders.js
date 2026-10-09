@@ -1,4 +1,15 @@
-import {reminderCandidates,isRoutine,checkId,listInstant,routineDue} from '../../list-schedule.js';
+import {reminderCandidates,isRoutine,checkId,listInstant,routineDue,listDay} from '../../list-schedule.js';
+export async function listNudgeWanted(db,household,message,now=Date.now()) {
+  const match=/^(items|help)\/([A-Za-z0-9_-]+)(?:\/(\d{4}-\d{2}-\d{2}))?$/.exec(message.ref||'');
+  if(!match)return true; // Older clients did not attach a source.
+  const [,collection,id,day]=match,item=await db.get(`${household}/${collection}/${id}`);
+  if(!item||item.done||['done','cant'].includes(item.state))return false;
+  if(collection==='items'&&isRoutine(item)){
+    if(day!==listDay(now)||!routineDue(item,day))return false;
+    if((await db.get(`${household}/routineChecks/${checkId(id,day)}`))?.done)return false;
+  }
+  return true;
+}
 // A persisted marker plus both outbox rows in one atomic commit prevents a
 // restart, retry or overlapping cron pass from ringing twice.
 export async function scheduleListReminders(db,household,now) {

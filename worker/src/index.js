@@ -13,11 +13,11 @@ import {timedOver} from '../../timed-game.js';
 import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../../notification-policy.js';
-import { focusDelivery } from '../../delivery-policy.js';
+import { focusDelivery,contentSourcePath,contentStillWanted } from '../../delivery-policy.js';
 import { questionClock, questionForDay } from '../../question-prompts.js';
 import { wordForDay } from '../../daily-words.js';
 import { activityWindow } from '../../activity-clock.js';
-import {scheduleListReminders,listReminderWanted} from './list-reminders.js';
+import {scheduleListReminders,listReminderWanted,listNudgeWanted} from './list-reminders.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
 const STALE_MS = 3 * 60 * 60_000;    // older than 3h: still send, but say it is late
@@ -32,6 +32,7 @@ function required(env, name) {
 }
 
 export async function deliver(env, { scheduleQuestions = true } = {}) {
+  const startedAt=Date.now();
   const apiKey = required(env, 'FIREBASE_API_KEY');
   const projectId = required(env, 'FIREBASE_PROJECT_ID');
   const householdId = required(env, 'HOUSEHOLD_ID');
@@ -57,16 +58,18 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
   try {
 
     const now = Date.now();
-    try { await scheduleListReminders(db,household,now); }
-    catch(problem) { console.error(`list reminders skipped: ${problem?.message || problem}`); }
     // The daily question is a nicety; a failure there (a 5xx, or rules not
     // deployed yet) must not stop reminders, asks and notes going out.
-    if (scheduleQuestions) {
-      try { await ensureQuestionOfDay(db, household, now); }
-      catch (problem) { console.error(`daily question skipped: ${problem?.message || problem}`); }
-      try { await settleWordWeeks(db, household, now,{before:LEAGUE_WEEK}); await settleActivityWeeks(db,household,now); await notifyActivityResults(db,household,now); }
-      catch (problem) { console.error(`weekly word skipped: ${problem?.message || problem}`); }
-    }
+    // Independent schedulers can fetch concurrently. Crown settlement stays
+    // before activity-result pings, so a closed tie never queues another turn.
+    await Promise.all([
+      scheduleListReminders(db,household,now).catch(problem=>console.error(`list reminders skipped: ${problem?.message||problem}`)),
+      ...(scheduleQuestions?[
+        ensureQuestionOfDay(db,household,now).catch(problem=>console.error(`daily question skipped: ${problem?.message||problem}`)),
+        (async()=>{await settleWordWeeks(db,household,now,{before:LEAGUE_WEEK});await settleActivityWeeks(db,household,now);await notifyActivityResults(db,household,now);})().catch(problem=>console.error(`weekly word skipped: ${problem?.message||problem}`))
+      ]:[])
+    ]);
+    const schedulingMs=Date.now()-now;
 
     const subscriptions = {};
     for (const record of await db.list(`${household}/pushSubs`)) {
@@ -75,7 +78,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
 
     const due = await db.dueFrom(`${household}/outbox`, 'sendAt', now + GRACE_MS, 50);
     if (due.length === 0) {
-      return { checked: true, sent: 0, subscribed: Object.keys(subscriptions).length };
+      return { checked: true, sent: 0, subscribed: Object.keys(subscriptions).length, schedulingMs, durationMs:Date.now()-startedAt };
     }
 
     let sent = 0;
@@ -86,13 +89,27 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
     const statusCache = new Map();
 
     for (const message of due) {
+      if(message.kind==='list-nudge'&&!await listNudgeWanted(db,household,message,now)){
+        await db.remove(message.path);dropped+=1;continue;
+      }
+      const sourcePath=contentSourcePath(message);
+      if(sourcePath){
+        const source=await db.get(`${household}/${sourcePath}`);
+        if(!contentStillWanted(message,source)){
+          await db.remove(message.path);dropped+=1;continue;
+        }
+        // If a queued note or title was corrected, don't deliver the old typo.
+        const body=message.kind==='note'?(source.body??source.message):message.kind==='memory'?source.text:source.title;
+        if(typeof body==='string')message.body=body.slice(0,400);
+      }
       if(message.kind==='list-reminder' && !await listReminderWanted(db,household,message)) {
         await db.remove(message.path);dropped+=1;continue;
       }
       // Lateness starts when the message was due, not when it was created. A
       // reminder made a month early is brand-new at its scheduled moment.
       const dueAge = Math.max(0, now - Number(message.sendAt || message.createdAt || now));
-      if (dueAge > ABANDONED_MS) {
+      const chatterAge=['reminder','list-reminder'].includes(message.kind)?dueAge:Math.max(dueAge,now-Number(message.createdAt||now));
+      if (chatterAge > ABANDONED_MS) {
         await db.remove(message.path);
         dropped += 1;
         continue;
@@ -151,6 +168,9 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
       // Nobody on that side has turned notifications on yet. Leave it queued so
       // it lands once they do, then give up quietly.
         left += 1;
+        // Rotate unsendable messages out of the first 50 due rows so one
+        // unregistered phone cannot starve the other phone's fresh pings.
+        await db.moveSendAt(message.path,now+60000).catch(problem=>console.error(`could not defer ${message.id}: ${problem?.message||problem}`));
         continue;
       }
 
@@ -197,6 +217,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
         url: message.url || 'index.html',
         tag: `${message.kind || 'note'}-${message.id}`,
         kind: message.kind || 'note',
+        urgent: message.urgent === true,
         late: dueAge > STALE_MS,
         silent: preferences.backgroundSound === 'silent' || focus.quiet || quietArrival,
         vibrate: vibrationPattern(preferences.vibration)
@@ -223,7 +244,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
       }
     }
 
-    return { checked: true, sent, left, dropped, muted, held, subscribed: Object.keys(subscriptions).length };
+    return { checked: true, sent, left, dropped, muted, held, subscribed: Object.keys(subscriptions).length, schedulingMs, durationMs:Date.now()-startedAt };
   } finally {
     await db.remove(lockPath).catch(problem => console.error(`could not release delivery lock: ${problem.message || problem}`));
   }

@@ -127,5 +127,24 @@ try {
   assert.equal(await listReminderWanted(db,household,messages[0]),false);
  }finally{globalThis.fetch=originalFetch;}
  assert.deepEqual(errors,[]);
+ const released=await moon.evaluate(async()=>{
+   const d=await(await import('./data-hub.js')).sharedLayer();
+   await d.setTo('pushSubs','him',{person:'him',subscription:{endpoint:'https://example.test/phone'},updatedAt:Date.now()});
+   await d.releasePushEndpoint('him','https://example.test/desktop');
+   const kept=(await d.readOnce('pushSubs',{fromServer:true})).some(r=>r.id==='him');
+   await d.releasePushEndpoint('him','https://example.test/phone');
+   const removed=!(await d.readOnce('pushSubs',{fromServer:true})).some(r=>r.id==='him');
+   return {kept,removed};
+ });
+ assert.deepEqual(released,{kept:true,removed:true},'real SDK sign-out only removes its own endpoint');
+ await sun.goto(base+'/activities.html');await sun.waitForSelector('.app-dock');
+ for(const [kind,url] of [['note','notes.html#note-notice'],['reaction','status.html#profile-him'],['item','tasks.html#item-notice'],['item-finished','tasks.html#done-notice'],['list-nudge','tasks.html#routines'],['list-reminder','tasks.html#item-notice'],['memory','memories.html#memory-notice'],['date','dates.html#date-notice'],['status','status.html#profile-him'],['arrival','status.html#profile-him-map'],['activities-open','activities.html#daily'],['question-reveal','activities.html#question'],['activity-result','activities.html#search'],['word-week','activities.html#scoreboard-2026-10-05']]){
+  const body='test foreground '+kind;
+  await moon.evaluate(async({kind,url,body})=>{const d=await(await import('./data-hub.js')).sharedLayer();const result=await d.notify('her',{kind,url,body,title:'A partner update'});if(!result.queued)throw Error('not queued');},{kind,url,body});
+  await sun.waitForFunction(body=>document.querySelector('.incoming-note p')?.textContent===body,body);
+  assert.ok((await sun.locator('.incoming-note-link').getAttribute('href')).endsWith('/'+url));
+  await sun.locator('.incoming-note-close').click();
+ }
+ console.log('REAL FOREGROUND: all 14 notification kinds arrive on Activities with exact destinations, without refreshing');
  console.log('REAL ROUTINES: two authenticated phones share completion/undo, real nudge outbox, schedule validation, check ownership and worker marker permissions pass');
 } finally {await browser.close();}

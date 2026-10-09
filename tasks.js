@@ -109,7 +109,7 @@ byId('task-list').addEventListener('click', async event => {
   pending.add(item.id);
   try{
     if(['nudge','help'].includes(button.dataset.action)){
-      const result=await data.notify(other,{title:button.dataset.action==='help'?`${personName(viewer)} could use a hand`:`A little nudge from ${personName(viewer)}`,body:item.title,url:`tasks.html#${item.legacyId?'ask-'+item.legacyId:'item-'+item.id}`,kind:'list-nudge'});
+      const result=await data.notify(other,{title:button.dataset.action==='help'?`${personName(viewer)} could use a hand`:`A little nudge from ${personName(viewer)}`,body:item.title,url:`tasks.html#${item.legacyId?'ask-'+item.legacyId:'item-'+item.id}`,kind:'list-nudge',ref:item.legacyId?`help/${item.legacyId}`:`items/${item.id}/${listDay()}`});
       if(!result.queued)throw Error('not queued');toast(`queued for ${personName(other)}`);return;
     }
     if(button.dataset.action==='toggle'){

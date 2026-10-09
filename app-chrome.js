@@ -10,6 +10,7 @@ import { openEmojiPicker } from './emoji-picker.js';
 
 const SEARCH_COLLECTIONS = ['items', 'notes', 'help', 'dates', 'memories'];
 const page = document.body.dataset.app || (document.body.dataset.viewer ? 'home' : '');
+let sheetCloseTimer=0,sheetFocusTimer=0,sheetFrame=0;
 
 if (page && !document.querySelector('.app-dock')) void boot();
 
@@ -165,13 +166,14 @@ function openSheet(name) {
   document.querySelector('.sheet-scrim').hidden = false;
   document.body.classList.add('sheet-open');
   window.littleHaptic?.('tap');
-  requestAnimationFrame(() => sheet.classList.add('is-open'));
+  sheetFrame=requestAnimationFrame(() => sheet.classList.add('is-open'));
   document.dispatchEvent(new CustomEvent('littlelist:sheet-open', { detail: { name } }));
   const firstField = { search:'global-search', quick:'quick-text', 'task-form':'shared-task-title', 'ask-form':'help-title', 'date-form':'date-title', 'memory-form':'memory-text' }[name];
-  if (firstField) window.setTimeout(() => document.getElementById(firstField)?.focus(), 220);
+  if (firstField) sheetFocusTimer=window.setTimeout(() => {if(!sheet.hidden)document.getElementById(firstField)?.focus();}, 220);
 }
 
 function closeSheets(animate = true) {
+  clearTimeout(sheetCloseTimer);clearTimeout(sheetFocusTimer);cancelAnimationFrame(sheetFrame);
   const open = [...document.querySelectorAll('.app-sheet:not([hidden])')];
   open.forEach(sheet => sheet.classList.remove('is-open'));
   document.body.classList.remove('sheet-open');
@@ -179,8 +181,9 @@ function closeSheets(animate = true) {
     open.forEach(sheet => { sheet.hidden = true; });
     const scrim = document.querySelector('.sheet-scrim');
     if (scrim) scrim.hidden = true;
+    document.dispatchEvent(new CustomEvent('littlelist:sheet-close'));
   };
-  animate && open.length ? window.setTimeout(finish, 190) : finish();
+  animate && open.length ? sheetCloseTimer=window.setTimeout(finish, 190) : finish();
 }
 
 function setupQuickAdd(data, viewer, other) {
