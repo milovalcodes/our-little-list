@@ -2,7 +2,9 @@ import { escapeHtml, toast, dateKey, setButtonBusy, settleQuickly, showFailure, 
 import { bootPage } from './page-boot.js';
 import { recurrenceAnchor, repeatCompletion, groceryListFinished } from './recurrence.js';
 import { personName } from './profile-store.js';
-import { initHelpPanel } from './help-panel.js';
+import {isRoutine,routineDue,checkedToday,listDay,dayLabel,checkId,listInstant} from './list-schedule.js';
+import {watchRoutineChecks,completeRoutine} from './routine-checks.js';
+import {daysFields,reminderFields,readReminderFields} from './list-fields.js';
 import { addTask } from './records.js';
 import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 import { prettyDue } from './time-format.js';
@@ -14,16 +16,25 @@ let when = 'whenever';
 let recurrence = 'once';
 let editingTaskId = '';
 let recentGroceryOptions = [];
+let checks=[],legacy=[];
+const pending=new Set();
 
 const { data, viewer, other } = await bootPage();
 byId('task-list-card').querySelector('.list-heading').after(byId('recent-groceries'));
-initHelpPanel({ data, viewer, other, openGroceries: () => { selectTab('grocery', true); byId('page-add').click(); byId('shared-task-title').focus(); } });
+byId('routine-days').querySelector('.routine-days').innerHTML=daysFields();
+byId('task-reminders').innerHTML=reminderFields();
+watchRoutineChecks(data,next=>{checks=next;render();});
+// Old asks stay in their original records, but are now ordinary checklist
+// rows. No copying, lost history, or duplicate scheduled notifications.
+data.listenTo('help',next=>{legacy=next;if(location.hash.startsWith('#ask-')&&tab!==tabFromHash())selectTab(tabFromHash());else render();});
+function legacyItem(entry){return {...entry,id:'legacy-'+entry.id,legacyId:entry.id,type:'task',addedBy:entry.from,done:['done','cant'].includes(entry.state),due:entry.dueAt?listDay(entry.dueAt):'',recurrence:'once'};}
+function allItems(){return [...items,...legacy.map(legacyItem)];}
 
 data.listenTo('items', nextItems => {
   items = nextItems;
   // A grocery uses the same #item-id link as a to-do. Once its record lands,
   // choose the right tab so search and notification links can reveal it.
-  if (/^#(?:item|done)-/.test(location.hash)) selectTab(tabFromHash());
+  if (/^#(?:item|done)-/.test(location.hash)&&tab!==tabFromHash()) selectTab(tabFromHash());
   else render();
 });
 
@@ -47,7 +58,8 @@ byId('shared-task-form').addEventListener('submit', async event => {
   if (!title) return;
   const grocery = tab === 'grocery';
   // Groceries can repeat too (weekly milk); the repeat chips show on that tab.
-  const repeat = recurrence;
+  const routine=tab==='routines';
+  const repeat = routine?'once':recurrence;
 
   // The when-chips are hidden on the grocery tab, so whatever was last picked on
   // the to-do tab must not follow the groceries over and set a due date nobody
@@ -64,11 +76,15 @@ byId('shared-task-form').addEventListener('submit', async event => {
 
   setButtonBusy(submit,true,'…');
   try{
+    const schedule=grocery?{}:readReminderFields(event.target);
+    if(routine){schedule.routineDays=[...byId('routine-days').querySelectorAll(':checked')].map(i=>Number(i.value));if(!schedule.routineDays.length)throw Error('Choose at least one day.');due='';}
+    else if(!grocery)due=event.target.querySelector('[name=exactDue]').value||due;
     if(repeat!=='once'&&!due)due=dateKey(new Date());
-    await settleQuickly(addTask(data,{viewer,other,title,type:grocery?'grocery':'task',due,recurrence:repeat,aisle:grocery?byId('grocery-aisle').value:''}),`“${title.slice(0,40)}” did not get added.`);
+    if(schedule.reminderTime&&!routine&&(!due||listInstant(due,schedule.reminderTime)<=Date.now()))throw Error('Choose a future day and time for the reminder.');
+    await settleQuickly(addTask(data,{viewer,other,title,type:grocery?'grocery':'task',due,recurrence:repeat,schedule,aisle:grocery?byId('grocery-aisle').value:''}),`“${title.slice(0,40)}” did not get added.`);
     event.target.reset();toast(tab==='grocery'?'on the grocery list 🛒':'added 🫡');
     byId('task-composer').querySelector('[data-close-sheet]')?.click();
-  }catch(_){showFailure('that did not get added.','check the internet, then try again. Your text is still here.');}
+  }catch(error){showFailure('that did not get added.',/Choose/.test(error.message)?error.message:'check the internet, then try again. Your text is still here.');}
   finally{setButtonBusy(submit,false);}
 });
 
@@ -76,8 +92,10 @@ byId('task-list').addEventListener('click', async event => {
   const button = event.target.closest('[data-action]');
   if (!button) return;
   const row = button.closest('[data-id]');
-  const item = items.find(entry => entry.id === row?.dataset.id);
-  if (!item) return;
+  const item = allItems().find(entry => entry.id === row?.dataset.id);
+  if (!item || pending.has(item.id)) return;
+  const routine=isRoutine(item),day=row.dataset.day||listDay();
+  const done=routine?checkedToday(item,checks,day):item.done;
   if (button.dataset.action === 'edit') {
     editingTaskId = item.id;
     render();
@@ -85,13 +103,20 @@ byId('task-list').addEventListener('click', async event => {
     return;
   }
   if (button.dataset.action === 'cancel-edit') { editingTaskId = ''; render(); return; }
-  if (button.dataset.action === 'delete') { deleteWithUndo(data, 'items', item.id, { label: `deleted “${item.title.slice(0, 28)}”`, onChange: render }); return; }
+  if (button.dataset.action === 'delete') { deleteWithUndo(data, item.legacyId?'help':'items', item.legacyId||item.id, { label: `deleted “${item.title.slice(0, 28)}”`, onChange: render }); return; }
 
   button.disabled=true;
+  pending.add(item.id);
   try{
+    if(['nudge','help'].includes(button.dataset.action)){
+      const result=await data.notify(other,{title:button.dataset.action==='help'?`${personName(viewer)} could use a hand`:`A little nudge from ${personName(viewer)}`,body:item.title,url:`tasks.html#${item.legacyId?'ask-'+item.legacyId:'item-'+item.id}`,kind:'list-nudge'});
+      if(!result.queued)throw Error('not queued');toast(`queued for ${personName(other)}`);return;
+    }
     if(button.dataset.action==='toggle'){
-      const finishing = !item.done;
-      if(finishing&&item.recurrence&&item.recurrence!=='once'){
+      const finishing = !done;
+      if(routine)await completeRoutine(data,item,viewer,finishing,day);
+      else if(item.legacyId)await data.updateIn('help',item.legacyId,{state:finishing?'done':'open',closedAt:finishing?Date.now():0});
+      else if(finishing&&item.recurrence&&item.recurrence!=='once'){
         const update=repeatCompletion(item,viewer);
         await data.updateIn('items',item.id,update);
         toast(`done · back on ${prettyDue(update.due)}`);
@@ -99,13 +124,14 @@ byId('task-list').addEventListener('click', async event => {
       else await data.updateIn('items',item.id,{done:!item.done,doneBy:!item.done?viewer:'',doneAt:!item.done?Date.now():0});
       // Ticking off a whole shop used to send one ping per item. Groceries say
       // something once, when the list is empty; tasks still ping each time.
-      if (finishing && item.type !== 'grocery') void data.notify(other, { title:`${personName(viewer)} finished something ✓`, body:item.title, url:`tasks.html#done-${item.id}`, kind:'item-finished' });
+      if (finishing && item.type !== 'grocery') void data.notify(other, { title:`${personName(viewer)} finished something ✓`, body:item.title, url:item.legacyId?`tasks.html#ask-${item.legacyId}`:`tasks.html#done-${item.id}`, kind:'item-finished' });
       else if (finishing && groceryListFinished(items,item)) void data.notify(other, { title:`${personName(viewer)} got all the groceries 🛒`, body:'the grocery list is empty', url:'tasks.html#grocery', kind:'item-finished' });
     }
     // A repeat has no Done tab to undo from, so "undo" puts the old date back.
     if(button.dataset.action==='undo-roll')await data.updateIn('items',item.id,{due:item.previousDue||'',previousDue:'',lastDoneBy:'',lastDoneAt:0});
     if(button.dataset.action==='readd')await data.updateIn('items',item.id,{done:false,doneBy:'',doneAt:0});
-  }catch(_){showFailure('the list edit did not stick.','check the internet and try the button again.');button.disabled=false;button.classList.remove('is-busy');}
+  }catch(_){showFailure('the list edit did not stick.','check the internet and try the button again.');}
+  finally{pending.delete(item.id);render();}
 });
 
 // On a phone: right finishes, left deletes with the same undo path as the ×.
@@ -160,9 +186,13 @@ byId('task-list').addEventListener('submit', async event => {
   setButtonBusy(save, true, 'saving…');
   try {
     const due = item.type === 'grocery' ? (item.due || '') : form.querySelector('[name="due"]').value;
-    const repeat = form.querySelector('[name="recurrence"]').value;
+    const routine=isRoutine(item);
+    const repeat = routine?'once':form.querySelector('[name="recurrence"]').value;
+    const schedule=item.type==='grocery'?{}:readReminderFields(form);
+    if(routine){schedule.routineDays=[...form.querySelectorAll('[name=routineDay]:checked')].map(i=>Number(i.value));if(!schedule.routineDays.length)throw Error('Pick a day');}
     await data.updateIn('items', item.id, {
       title,
+      ...schedule,
       // A grocery has no day field in the form: keep the day its repeat runs on.
       due,
       recurrenceDay: recurrenceAnchor(due === (item.due || '') && repeat === item.recurrence ? item : { due }),
@@ -180,27 +210,30 @@ byId('task-list').addEventListener('keydown', event => {
 });
 
 function visibleItems() {
-  if (tab === 'asks') return [];
   const wantedType = tab === 'tasks' ? 'task' : tab;
-  return items
-    .filter(item => !isPendingDelete('items', item.id))
-    .filter(item => tab === 'done' ? item.done : item.type === wantedType && !item.done)
+  return allItems()
+    .filter(item => !isPendingDelete(item.legacyId?'help':'items', item.legacyId||item.id))
+    .filter(item => tab === 'routines'?isRoutine(item):!isRoutine(item)&&(tab === 'done' ? item.done : item.type === wantedType && !item.done))
     .sort((a, b) => {
+      if(tab==='routines'){
+        const rank=item=>routineDue(item)?(checkedToday(item,checks)?1:0):2;
+        const order=rank(a)-rank(b);if(order)return order;
+      }
       const dueOrder = (a.due || '9999').localeCompare(b.due || '9999');
       return dueOrder || (b.createdAt || 0) - (a.createdAt || 0);
     });
 }
 
 function render() {
-  if (tab === 'asks') return;
   const list = visibleItems();
-  byId('item-count').textContent = tab === 'done' ? `${list.length} done` : `${list.length} left`;
+  byId('item-count').textContent = tab === 'routines'?`${list.filter(i=>routineDue(i)&&!checkedToday(i,checks)).length} left today`:tab === 'done' ? `${list.length} done` : `${list.length} left`;
   byId('empty-state').hidden = list.length > 0;
   // "0 left" next to "Nothing here" said the same thing twice.
   byId('item-count').hidden = list.length === 0;
 
   const labels = {
     tasks: ['our things', 'To do', '✦', 'Nothing here', 'tap ＋ add to put something on it'],
+    routines: ['', 'Our routine', '↻', 'A little rhythm', 'add something we do regularly'],
     grocery: ['to pick up', 'Groceries', '🛒', 'No groceries', 'tap ＋ add when something runs out'],
     done: ['finished', 'Done', '✨', 'Nothing done yet', '']
   }[tab];
@@ -237,7 +270,7 @@ function renderRecentGroceries() {
 
 function selectTab(next, updateHash = false) {
   const previous = tab;
-  tab = ['tasks', 'grocery', 'asks', 'done'].includes(next) ? next : 'tasks';
+  tab = ['tasks', 'grocery', 'routines', 'done'].includes(next) ? next : 'tasks';
   // A repeat picked on one tab must not follow you to the other and quietly
   // make the next grocery (or task) repeat.
   if (previous !== tab) {
@@ -245,33 +278,37 @@ function selectTab(next, updateHash = false) {
     document.querySelectorAll('.repeat-chip').forEach(item => item.classList.toggle('active', item.dataset.repeat === 'once'));
   }
   document.querySelectorAll('.tab').forEach(item => item.classList.toggle('active', item.dataset.tab === tab));
-  const asks = tab === 'asks';
+  const routine = tab === 'routines';
   const grocery = tab === 'grocery';
   byId('recent-groceries').hidden = !grocery;
-  byId('task-list-card').hidden = asks;
-  byId('asks-workspace').hidden = !asks;
+  byId('task-list-card').hidden = false;
+  byId('routine-days').hidden = !routine;
+  byId('task-reminders').hidden = grocery;
+  byId('task-reminders').innerHTML=reminderFields({},routine);
   byId('task-prompt').textContent = grocery ? 'What should we grab?' : 'What needs doing?';
   byId('shared-task-title').placeholder = grocery ? 'oat milk, batteries, tiny treats…' : 'type it before it leaves your brain';
-  byId('task-options').hidden = grocery || tab === 'done';
+  byId('task-options').hidden = grocery || routine || tab === 'done';
   byId('grocery-aisle-wrap').hidden = !grocery;
   // Groceries have no day, only an aisle and a repeat.
-  if (byId('task-more-summary')) byId('task-more-summary').textContent = grocery ? '⋯ aisle / repeat' : '⋯ when / repeat';
-  byId('repeat-options').hidden = tab === 'done';
+  if (byId('task-more-summary')) byId('task-more-summary').textContent = routine?'⋯ reminders':grocery ? '⋯ aisle / repeat' : '⋯ when / repeat / reminders';
+  byId('repeat-options').hidden = routine || tab === 'done';
   byId('page-add').hidden = tab === 'done';
-  byId('page-add').dataset.openSheet = asks ? 'ask-form' : 'task-form';
-  byId('page-add').textContent = asks ? '＋ ask' : grocery ? '＋ grocery' : '＋ add';
+  byId('page-add').dataset.openSheet = 'task-form';
+  byId('page-add').textContent = routine?'＋ routine':grocery ? '＋ grocery' : '＋ add';
   byId('task-composer').querySelector('.compose-more').open = grocery;
-  if (updateHash) history.replaceState(null, '', asks ? '#asks' : location.pathname + location.search);
-  if (!asks) render();
+  if (updateHash) history.replaceState(null, '', '#'+tab);
+  render();
 }
 
 function taskMarkup(item) {
+  const routine=isRoutine(item),scheduled=!routine||routineDue(item),day=listDay();
+  if(routine)item={...item,done:checkedToday(item,checks),doneBy:checks.find(c=>c.id===checkId(item.id))?.by};
   const doneClass = item.done ? ' done' : '';
   const check = item.done ? '✓' : '';
   const due = item.due ? `<span>${escapeHtml(prettyDue(item.due))}</span>` : '';
   const addedBy = item.addedBy===other ? `<span>from ${escapeHtml(personName(other))}</span>` : '';
   const finished = item.doneBy===other ? `<span>done by ${escapeHtml(personName(other))}</span>` : '';
-  const repeat=item.recurrence&&item.recurrence!=='once'?`<span>↻ ${escapeHtml(item.recurrence)}</span>`:'';
+  const repeat=routine?`<span>${scheduled?'today · ':''}${dayLabel(item.routineDays)}</span>`:item.recurrence&&item.recurrence!=='once'?`<span>↻ ${escapeHtml(item.recurrence)}</span>`:'';
   const rolledBack=item.recurrence&&item.recurrence!=='once'&&item.lastDoneAt&&Date.now()-Number(item.lastDoneAt)<10*60000
     ?'<button class="readd-task" data-action="undo-roll" type="button">undo</button>':'';
   const aisle=item.type==='grocery'&&item.aisle&&tab!=='grocery'?`<span>${escapeHtml(item.aisle)}</span>`:'';
@@ -279,13 +316,14 @@ function taskMarkup(item) {
     <input name="title" aria-label="Task title" maxlength="180" required value="${escapeHtml(item.title)}">
     ${item.type === 'grocery'
       ? `<label>aisle<select name="aisle">${['produce','fridge','pantry','frozen','home','other'].map(value => `<option value="${value}"${item.aisle === value ? ' selected' : ''}>${value === 'home' ? 'home stuff' : value}</option>`).join('')}</select></label>`
-      : `<label>day<input type="date" name="due" value="${escapeHtml(item.due || '')}"></label>`}<label>repeat<select name="recurrence">${['once','daily','weekly','monthly'].map(value => `<option value="${value}"${(item.recurrence || 'once') === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label>
+      : routine?`<fieldset><legend>Days</legend><div class="routine-days">${daysFields(item.routineDays)}</div></fieldset><input type="hidden" name="due" value="">`:`<label>day<input type="date" name="due" value="${escapeHtml(item.due || '')}"></label>`}${routine?'':`<label>repeat<select name="recurrence">${['once','daily','weekly','monthly'].map(value => `<option value="${value}"${(item.recurrence || 'once') === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label>`}${item.type==='grocery'?'':reminderFields(item,true)}
     <div class="inline-edit-actions"><button type="submit">save</button><button type="button" data-action="cancel-edit">cancel</button></div>
-  </form>` : `<button class="task-title" data-action="edit" type="button" aria-label="Edit ${escapeHtml(item.title)}">${escapeHtml(item.title)}</button>`;
-  return `<li class="task-row${doneClass}" data-id="${escapeHtml(item.id)}">
-    <button class="task-check" data-action="toggle" aria-label="Mark ${escapeHtml(item.title)} ${item.done ? 'not done' : 'done'}">${check}</button>
+  </form>` : item.legacyId?`<strong>${escapeHtml(item.title)}</strong>`:`<button class="task-title" data-action="edit" type="button" aria-label="Edit ${escapeHtml(item.title)}">${escapeHtml(item.title)}</button>`;
+  return `<li class="task-row${doneClass}" data-id="${escapeHtml(item.id)}" data-day="${day}" ${item.legacyId?`data-legacy-id="${escapeHtml(item.legacyId)}"`:''}>
+    <button class="task-check" data-action="toggle" ${!scheduled||pending.has(item.id)?'disabled':''} aria-label="Mark ${escapeHtml(item.title)} ${item.done ? 'not done' : 'done'}">${check}</button>
     <div>${title}${due||aisle||repeat||addedBy||finished?`<div class="task-meta">${due}${aisle}${repeat}${addedBy}${finished}</div>`:''}${item.done&&item.type==='grocery'?'<button class="readd-task" data-action="readd" type="button">put back</button>':''}${rolledBack}</div>
     <button class="delete-task" data-action="delete" aria-label="Delete ${escapeHtml(item.title)}">×</button>
+    ${!item.done&&scheduled?`<div class="routine-actions"><button type="button" data-action="nudge" ${pending.has(item.id)?'disabled':''}>nudge</button><button type="button" data-action="help" ${pending.has(item.id)?'disabled':''}>need a hand?</button>${item.reminderTime?`<small>◷ ${escapeHtml(item.reminderTime)} ET</small>`:''}</div>`:''}
   </li>`;
 }
 
@@ -293,10 +331,13 @@ function groceryMarkup(list){const groups=new Map();list.forEach(item=>{const ai
 
 window.addEventListener('littlelist:profile',render);
 function tabFromHash() {
-  if (location.hash === '#asks' || location.hash.startsWith('#ask-')) return 'asks';
+  if (location.hash === '#routines') return 'routines';
+  if(location.hash.startsWith('#ask-'))return ['done','cant'].includes(legacy.find(i=>i.id===location.hash.slice(5))?.state)?'done':'tasks';
+  if(location.hash==='#done')return 'done';
   if (location.hash === '#grocery') return 'grocery';
   const id = /^#(?:item|done)-([A-Za-z0-9_-]+)$/.exec(location.hash)?.[1];
   const item=items.find(item=>item.id===id);
+  if(isRoutine(item))return 'routines';
   if(item?.done)return 'done';
   if(!item&&location.hash.startsWith('#done-'))return 'done';
   return item?.type === 'grocery' ? 'grocery' : 'tasks';

@@ -17,6 +17,7 @@ import { focusDelivery } from '../../delivery-policy.js';
 import { questionClock, questionForDay } from '../../question-prompts.js';
 import { wordForDay } from '../../daily-words.js';
 import { activityWindow } from '../../activity-clock.js';
+import {scheduleListReminders,listReminderWanted} from './list-reminders.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
 const STALE_MS = 3 * 60 * 60_000;    // older than 3h: still send, but say it is late
@@ -56,6 +57,8 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
   try {
 
     const now = Date.now();
+    try { await scheduleListReminders(db,household,now); }
+    catch(problem) { console.error(`list reminders skipped: ${problem?.message || problem}`); }
     // The daily question is a nicety; a failure there (a 5xx, or rules not
     // deployed yet) must not stop reminders, asks and notes going out.
     if (scheduleQuestions) {
@@ -83,6 +86,9 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
     const statusCache = new Map();
 
     for (const message of due) {
+      if(message.kind==='list-reminder' && !await listReminderWanted(db,household,message)) {
+        await db.remove(message.path);dropped+=1;continue;
+      }
       // Lateness starts when the message was due, not when it was created. A
       // reminder made a month early is brand-new at its scheduled moment.
       const dueAge = Math.max(0, now - Number(message.sendAt || message.createdAt || now));
@@ -167,7 +173,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
       // Quiet hours hold chatter until morning. A reminder is a time someone
       // chose on purpose, so it is never held; an arrival is only news right
       // now ("just got home" at 8am is not), so it comes through silently.
-      const quietEnd = message.urgent === true || message.kind === 'reminder'
+      const quietEnd = message.urgent === true || ['reminder','list-reminder'].includes(message.kind)
         ? 0
         : quietHoursEndUtc(now, preferences.quietHours, Number(target.utcOffsetMinutes));
       const quietArrival = Boolean(quietEnd) && message.kind === 'arrival';
@@ -198,7 +204,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
 
       const result = await sendNotification(target.subscription, payload, vapid, {
         ttl: 86400,
-        urgency: ['reminder', 'help', 'arrival'].includes(message.kind) || message.urgent === true ? 'high' : 'normal'
+        urgency: ['reminder', 'list-reminder', 'list-nudge', 'help', 'arrival'].includes(message.kind) || message.urgent === true ? 'high' : 'normal'
       });
 
       if (result.ok) {

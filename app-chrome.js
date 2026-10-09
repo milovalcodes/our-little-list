@@ -3,11 +3,8 @@ import { sharedLayer } from './data-hub.js';
 import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
 import { escapeHtml, setButtonBusy, settleQuickly, showFailure, toast } from './ui-helpers.js';
-import { addTask, sendNote, sendAsk, addDateIdea } from './records.js';
-import { chooseAskUrgency } from './focus-ask.js';
+import { addTask, sendNote, addDateIdea } from './records.js';
 import { fridgeNote, clearFridge } from './fridge.js';
-import { momentPickerHtml, setupMomentPicker } from './moment-picker.js';
-import { friendlyWhen } from './time-format.js';
 import { openEmojiPicker } from './emoji-picker.js';
 
 const SEARCH_COLLECTIONS = ['items', 'notes', 'help', 'dates', 'memories'];
@@ -93,7 +90,6 @@ function movePageComposers() {
   };
   if (page === 'tasks') {
     move('#task-composer', 'sheet-task-form', 'Add to the list');
-    move('.help-maker', 'sheet-ask-form', 'Ask for a hand');
   }
   if (page === 'dates') move('.date-composer', 'sheet-date-form', 'Add a date idea');
   if (page === 'today') move('.focus-card', 'sheet-focus', 'Focus together');
@@ -133,16 +129,11 @@ function addSheets() {
       <header class="sheet-head"><div><h2 id="quick-title">Quick add</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <button class="thinking-ping" id="quick-thinking" type="button"><span>♡</span> send “thinking of you”</button>
       <div class="quick-kind" role="tablist">
-        <button class="active" type="button" data-quick-kind="task">to-do</button><button type="button" data-quick-kind="grocery">grocery</button><button type="button" data-quick-kind="note">note</button><button type="button" data-quick-kind="ask">ask</button><button type="button" data-quick-kind="date">date idea</button>
+        <button class="active" type="button" data-quick-kind="task">to-do</button><button type="button" data-quick-kind="grocery">grocery</button><button type="button" data-quick-kind="note">note</button><a href="tasks.html#routines">routine</a><button type="button" data-quick-kind="date">date idea</button>
       </div>
       <form class="quick-add-form" id="quick-add-form">
         <label><span id="quick-label">what needs doing?</span><input id="quick-text" maxlength="180" required autocomplete="off" placeholder="the thing"></label>
         <label id="quick-grocery-options" hidden><span>aisle-ish</span><select id="quick-grocery-aisle"><option value="produce">produce</option><option value="fridge">fridge</option><option value="pantry">pantry</option><option value="frozen">frozen</option><option value="home">home stuff</option><option value="other" selected>other</option></select></label>
-        <div class="quick-ask-options" id="quick-ask-options" hidden>
-          <div class="choice-cloud" id="quick-urgency"><button class="choice" type="button" data-quick-urgency="whenever">whenever</button><button class="choice active" type="button" data-quick-urgency="soon">soon-ish</button><button class="choice" type="button" data-quick-urgency="now">kind of now</button><button class="choice" type="button" data-quick-urgency="timed">⏰ remind at a time…</button></div>
-          <label><span>extra detail, if any</span><textarea id="quick-ask-note" maxlength="500" placeholder="only if it helps"></textarea></label>
-          <div class="ask-when" id="quick-when-wrap" hidden>${momentPickerHtml('quick')}</div>
-        </div>
         <button class="primary-action" id="quick-submit" type="submit">add it</button>
       </form>
     </section>
@@ -190,25 +181,20 @@ function closeSheets(animate = true) {
 
 function setupQuickAdd(data, viewer, other) {
   let kind = 'task';
-  let urgency = 'soon';
-  const moment = setupMomentPicker(document.getElementById('quick-when-wrap'), friendlyWhen);
   const labels = {
     task: ['what needs doing?', 'the thing', 'add it'],
     grocery: ['what should we grab?', 'oat milk, tiny treats…', 'add it'],
     note: [`note for ${personName(other)}`, 'say it here', 'send it'],
-    ask: [`ask ${personName(other)} for…`, 'the thing', 'ask'],
     date: ['the date idea', 'what are we doing?', 'save it']
   };
   const pick = next => {
-    kind = labels[next] ? next : next === 'reminder' ? 'ask' : 'task';
+    kind = labels[next] ? next : 'task';
     document.querySelectorAll('[data-quick-kind]').forEach(button => button.classList.toggle('active', button.dataset.quickKind === kind));
     const words = labels[kind];
     document.getElementById('quick-label').textContent = words[0];
     document.getElementById('quick-text').placeholder = words[1];
     document.getElementById('quick-submit').textContent = words[2];
-    document.getElementById('quick-ask-options').hidden = kind !== 'ask';
     document.getElementById('quick-grocery-options').hidden = kind !== 'grocery';
-    document.getElementById('quick-when-wrap').hidden = kind !== 'ask' || urgency !== 'timed';
     document.getElementById('quick-text').focus();
   };
   // One tap, no typing: the Locket-style "I thought of you" that a couple app
@@ -229,14 +215,6 @@ function setupQuickAdd(data, viewer, other) {
     const button = event.target.closest('[data-quick-kind]');
     if (button) pick(button.dataset.quickKind);
   });
-  document.getElementById('quick-urgency').addEventListener('click', event => {
-    const button = event.target.closest('[data-quick-urgency]');
-    if (!button) return;
-    urgency = button.dataset.quickUrgency;
-    document.querySelectorAll('[data-quick-urgency]').forEach(item => item.classList.toggle('active', item === button));
-    document.getElementById('quick-when-wrap').hidden = urgency !== 'timed';
-    moment.setActive(urgency === 'timed');
-  });
   document.getElementById('quick-add-form').addEventListener('submit', async event => {
     event.preventDefault();
     // Held now: event.currentTarget is null by the time a real network write
@@ -246,11 +224,6 @@ function setupQuickAdd(data, viewer, other) {
     const form = event.currentTarget;
     const text = document.getElementById('quick-text').value.trim();
     if (!text) return;
-    const dueAt = kind === 'ask' && urgency === 'timed' ? moment.chosen()?.getTime() || 0 : 0;
-    if (kind === 'ask' && urgency === 'timed' && (!dueAt || dueAt <= Date.now())) {
-      showFailure('that time does not work.', 'pick a future day and time.');
-      return;
-    }
     const button = document.getElementById('quick-submit');
     setButtonBusy(button, true, '…');
     try {
@@ -261,15 +234,9 @@ function setupQuickAdd(data, viewer, other) {
       else if (kind === 'grocery') await settleQuickly(addTask(data, { viewer, other, title: text, type: 'grocery', aisle: document.getElementById('quick-grocery-aisle').value }), lost);
       else if (kind === 'note') await settleQuickly(sendNote(data, { viewer, other, body: text }), lost);
       else if (kind === 'date') await settleQuickly(addDateIdea(data, { viewer, other, title: text }), lost);
-      else { const urgent=await chooseAskUrgency(data,viewer,other);await settleQuickly(sendAsk(data, { viewer, other, title: text, note: document.getElementById('quick-ask-note').value.trim(), urgency, dueAt, urgent }), lost); }
       form.reset();
-      urgency = 'soon';
-      document.querySelectorAll('[data-quick-urgency]').forEach(item => item.classList.toggle('active', item.dataset.quickUrgency === 'soon'));
-      moment.setActive(false);
-      moment.reset();
-      document.getElementById('quick-when-wrap').hidden = true;
       closeSheets();
-      toast(kind === 'note' ? 'sent 💌' : kind === 'ask' ? (dueAt ? 'reminder secured' : 'asked 🫡') : 'added');
+      toast(kind === 'note' ? 'sent 💌' : 'added');
       window.littleHaptic?.('success');
     } catch (_) {
       showFailure('that did not get added.', 'check the internet and try again. Your text is still here.');
@@ -335,7 +302,7 @@ function searchable(collection, item, viewer) {
   const map = {
     items: { icon: item.type === 'grocery' ? '🛒' : '✓', title: item.title, meta: item.done ? 'finished list thing' : 'on the list', url: `tasks.html#${item.done ? 'done' : 'item'}-${item.id}` },
     notes: { icon: '💌', title: item.body || item.message, meta: item.sender === viewer ? 'note you sent' : `note from ${personName(item.sender || item.from)}`, url: `notes.html#note-${item.id}` },
-    help: { icon: item.emoji || (item.dueAt ? '⏰' : '🙋'), title: item.title, meta: item.dueAt ? 'ask with a time' : item.from === viewer ? 'you asked' : `${personName(item.from)} asked`, url: `tasks.html#ask-${item.id}` },
+    help: { icon: item.emoji || (item.dueAt ? '⏰' : '🙋'), title: item.title, meta: 'on the list', url: `tasks.html#ask-${item.id}` },
     dates: { icon: '✦', title: item.title, meta: item.done ? 'date we did' : 'date idea', url: `dates.html#date-${item.id}` },
     memories: { icon: '◒', title: item.text, meta: 'memory', url: `memories.html#memory-${item.id}` }
   };
@@ -356,11 +323,11 @@ function setupDeepLinkHighlight() {
   }
   const [, kind, id] = match;
   const selectors = {
-    item: '.task-row', done: '.task-row', ask: '.help-card',
+    item: '.task-row', done: '.task-row', ask: '.task-row',
     note: '.note-thread-row', date: '.date-idea-card', memory: '.memory-card'
   };
   const find = () => [...document.querySelectorAll(selectors[kind])].find(node =>
-    node.dataset.id === id || node.dataset.noteId === id ||
+    node.dataset.id === id || node.dataset.noteId === id || (kind==='ask'&&node.dataset.legacyId===id) ||
     (kind === 'note' && [...node.querySelectorAll('[data-note-picker],[data-edit-note],[data-delete-note]')]
       .some(button => (button.dataset.notePicker || button.dataset.editNote || button.dataset.deleteNote) === id)));
   let highlighted = null;

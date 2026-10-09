@@ -10,6 +10,7 @@ import { questionClock } from './question-prompts.js';
 import { escapeHtml, showFailure, toast } from './ui-helpers.js';
 import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
 import { dueRows, fairShare } from './needs-you.js';
+import {watchRoutineChecks} from './routine-checks.js';
 import { profileUrl } from './profile-route.js';
 import {timedOver} from './timed-game.js';
 import {LEAGUE_START_DAY} from './daily-puzzles.js';
@@ -41,7 +42,8 @@ let openItems = [], recentDone = [];
 const updateItems = () => { buckets.items = [...openItems, ...recentDone]; scheduleDashboardRender(); };
 data.listenToQuery('items', { where: { field: 'done', value: false } }, items => { openItems = items; updateItems(); });
 data.listenToQuery('items', { where: { field: 'doneAt', op: '>=', value: doneSince }, orderBy: { field: 'doneAt', direction: 'desc' }, limit: 50 }, items => { recentDone = items; updateItems(); });
-for (const name of Object.keys(buckets).filter(name => name !== 'items')) {
+watchRoutineChecks(data,checks=>{buckets.routineChecks=checks;scheduleDashboardRender();});
+for (const name of Object.keys(buckets).filter(name => !['items','routineChecks'].includes(name))) {
   const receive = items => { buckets[name] = items; scheduleDashboardRender(); };
   if(['wordResults','timedResults'].includes(name)){data.listenToQuery(name,{where:{field:'day',value:questionClock().day}},receive);continue;}
   if (name === 'questions') { data.listenToQuery('questions', { where:{field:'day', value:questionClock().day} }, receive); continue; }

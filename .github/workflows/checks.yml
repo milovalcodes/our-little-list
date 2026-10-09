@@ -139,4 +139,4 @@ jobs:
           python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
           pnpm run test:browser
           pnpm run test:visual
-          pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/word-realtime-browser.mjs"
+          pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/routines-realtime-browser.mjs && node test/word-realtime-browser.mjs"

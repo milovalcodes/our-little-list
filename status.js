@@ -151,7 +151,7 @@ function render(){
   document.querySelectorAll('[data-owner-control]').forEach(node=>{node.hidden=!own;});
   $('profile-actions').innerHTML=own
     ? '<a href="phone-check.html#names">name & settings</a>'
-    : '<button type="button" data-open-quick="note">leave a note</button><button type="button" data-open-quick="ask">ask for a hand</button>';
+    : '<button type="button" data-open-quick="note">leave a note</button><a href="tasks.html#routines">our routine</a>';
   renderProfileNotes();
 }
 function renderProfileNotes(){

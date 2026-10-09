@@ -6,14 +6,16 @@ import { startActivityFeed } from './activity-feed.js';
 import { focusActive } from './availability.js';
 import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
 import { dueRows, fairShare } from './needs-you.js';
+import {watchRoutineChecks} from './routine-checks.js';
 
 const $=id=>document.getElementById(id);
 const buckets={items:[],help:[],statuses:[]};
 let focusMinutes=15;let tick;
 const { data, viewer, other } = await bootPage();
+watchRoutineChecks(data,checks=>{buckets.routineChecks=checks;renderToday();});
 $('today-date').textContent=new Intl.DateTimeFormat(undefined,{weekday:'long',month:'short',day:'numeric'}).format(new Date()).toLowerCase();
 
-Object.keys(buckets).forEach(name=>{
+Object.keys(buckets).filter(name=>name!=='routineChecks').forEach(name=>{
   const receive=items=>{buckets[name]=items;render();};
   if(name==='items')data.listenToQuery(name,{where:{field:'done',value:false}},receive);
   else data.listenTo(name,receive);

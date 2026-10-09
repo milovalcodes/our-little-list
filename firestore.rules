@@ -141,14 +141,20 @@ service cloud.firestore {
     }
 
     match /households/{householdId}/items/{itemId} {
+      function scheduleValid(d) {
+        return (!d.keys().hasAny(['routineDays']) || (d.routineDays is list && d.routineDays.size() > 0 && d.routineDays.size() <= 7 && d.routineDays.toSet().hasOnly([0,1,2,3,4,5,6])))
+          && (!d.keys().hasAny(['reminderTime']) || d.reminderTime == '' || d.reminderTime.matches('([01][0-9]|2[0-3]):[0-5][0-9]'))
+          && (!d.keys().hasAny(['reminderOffsets']) || (d.reminderOffsets is list && d.reminderOffsets.size() <= 4 && d.reminderOffsets.toSet().hasOnly([0,15,30,60])))
+          && (!d.keys().hasAny(['reminderTo']) || d.reminderTo in ['both','her','him']);
+      }
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId)
         && request.resource.data.addedBy == mySide()
-        && shortText(request.resource.data.title, 180);
+        && shortText(request.resource.data.title, 180) && scheduleValid(request.resource.data);
       allow update: if inHousehold(householdId)
         && request.resource.data.addedBy == resource.data.addedBy
         && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.type == resource.data.type
+        && request.resource.data.type == resource.data.type && scheduleValid(request.resource.data)
         && shortText(request.resource.data.title, 180)
         && (!request.resource.data.keys().hasAny(['due']) || shortText(request.resource.data.due, 10))
         && (!request.resource.data.keys().hasAny(['aisle']) || shortText(request.resource.data.aisle, 40))
@@ -263,6 +269,24 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAny(['thumb']) || shortText(request.resource.data.thumb, 30000))
         && (!request.resource.data.keys().hasAny(['hasPhoto']) || request.resource.data.hasPhoto is bool);
       allow delete: if inHousehold(householdId);
+    }
+
+    match /households/{householdId}/routineChecks/{checkId} {
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId)
+        && request.resource.data.keys().hasOnly(['itemId','day','done','by','updatedAt'])
+        && request.resource.data.itemId.matches('[A-Za-z0-9_-]{1,120}')
+        && request.resource.data.day.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && checkId == request.resource.data.itemId + '_' + request.resource.data.day
+        && request.resource.data.done is bool && request.resource.data.by == mySide()
+        && request.resource.data.updatedAt is int
+        && exists(/databases/$(database)/documents/households/$(householdId)/items/$(request.resource.data.itemId));
+      allow delete: if inHousehold(householdId);
+    }
+    match /households/{householdId}/listReminderEvents/{eventId} {
+      allow read: if inHousehold(householdId);
+      allow create: if inHousehold(householdId) && request.resource.data.createdAt is int;
+      allow update, delete: if false;
     }
 
     // Guess rows are private. Only the count and final result are shared.

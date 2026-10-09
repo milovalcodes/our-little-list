@@ -47,6 +47,11 @@ export function createClient({ projectId, idToken }) {
       const payload = await call(`/${documentPath}`);
       return payload.missing ? null : readDocument(payload);
     },
+    async withReminders(collectionPath) {
+      const parent=collectionPath.split('/').slice(0,-1).join('/');
+      const payload=await call(`/${parent}:runQuery`,{method:'POST',body:JSON.stringify({structuredQuery:{from:[{collectionId:'items'}],where:{fieldFilter:{field:{fieldPath:'reminderTime'},op:'GREATER_THAN',value:{stringValue:''}}}}})});
+      return (Array.isArray(payload)?payload:[]).filter(row=>row.document).map(row=>readDocument(row.document));
+    },
     // Atomically creates a document. A false result means another delivery pass
     // already owns the lock; unlike read-then-write, two callers cannot win.
     async create(documentPath, fields) {

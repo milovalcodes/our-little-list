@@ -227,6 +227,14 @@ query strings, and `household.js` and `firestore.rules` list the same accounts.
 
 ## Notes
 
+### Shared routines and reminders
+
+Routines are task records with `routineDays` (Sunday=0). Each day's completion lives in `routineChecks/{itemId}_{YYYY-MM-DD}`; never reset the shared item with a timer or reuse yesterday's completion document. The shared day resets at midnight America/New_York, while activities still reset at 9 a.m. Eastern. Home, Today and the list subscribe only to the current day's checks.
+
+The worker queries only items with a reminder time. It atomically creates an event marker and notifications for each selected offset. Before delivery it rechecks the schedule, recipient, completion and deletion. Existing asks retain their original records and scheduled pings but render as checklist rows. Deploy the additive Firestore rules, then the worker, then Pages.
+
+`test/routines.test.mjs` checks clocks/DST, scheduling and dedupe. `test/routines-browser.mjs` covers the UI and daily resets; `test/routines-realtime-browser.mjs` uses two authenticated demo-emulator phones and the real Firebase SDK. Run the regular browser and seasonal visual suites as well. The new recovery and cache-lifetime tests cover slow snapshots, interrupted drags, photo failures and service-worker persistence. Physical push delivery and GPS still need a phone check.
+
 - Do not put private keys, service-account files or push secrets in the files
   served by Pages. The Firebase web config is the one exception — it is meant to
   be public.

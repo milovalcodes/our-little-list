@@ -9,11 +9,11 @@ import { friendlyWhen } from './time-format.js';
 export const DATE_VIBES = ['go out', 'stay in', 'food', 'little trip'];
 export const NOTE_MOODS = { heart: '💛', sun: '☀️', moon: '🌙', star: '✦' };
 
-export async function addTask(data, { viewer, other, title, type = 'task', due = '', recurrence = 'once', aisle = '' }) {
+export async function addTask(data, { viewer, other, title, type = 'task', due = '', recurrence = 'once', aisle = '', schedule = {} }) {
   const grocery = type === 'grocery';
   const record = await data.addTo('items', {
     title, type: grocery ? 'grocery' : 'task', due, recurrence,
-    aisle: grocery ? aisle : '', addedBy: viewer, done: false, createdAt: Date.now()
+    ...schedule, aisle: grocery ? aisle : '', addedBy: viewer, done: false, createdAt: Date.now()
   });
   void data.notify(other, { title: grocery ? 'grocery list update 🛒' : 'new thing on the list ✓', body: title, url: `tasks.html#item-${record.id}`, kind: 'item' });
   return record;

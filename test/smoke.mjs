@@ -480,110 +480,7 @@ async function openSlow(path) {
   await context.close();
 }
 
-// Reminders are asks with a time. "weekend" on a Saturday or Sunday used to jump
-// a whole week: with the clock pinned to a Saturday morning, "weekend, evening"
-// is tonight; on a Saturday night, "weekend, morning-ish" is tomorrow.
-{
-  const weekendAt = async (when, time) => {
-    const { context, page } = await open('about:blank');
-    await page.clock.install({ time: when });
-    await page.goto(`${BASE}/tasks.html?as=her#asks`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(900);
-    await openSheet(page, 'ask-form');
-    await page.click('#help-form .compose-more summary');
-    await page.click('#help-urgency [data-urgency="timed"]');
-    await page.click('#day-choices [data-day="weekend"]');
-    await page.click(`#time-choices [data-time="${time}"]`);
-    const preview = await page.evaluate(() => document.getElementById('reminder-when-preview')?.textContent || '');
-    await context.close();
-    return preview;
-  };
-  const saturdayMorning = await weekendAt(new Date(2026, 9, 3, 8, 0), '19:00');
-  const saturdayNight = await weekendAt(new Date(2026, 9, 3, 22, 0), '09:00');
-  const wednesday = await weekendAt(new Date(2026, 8, 30, 8, 0), '09:00');
-  note(saturdayMorning.startsWith('today') && saturdayNight.startsWith('tomorrow') && /Saturday/.test(wednesday),
-       '"weekend" on a weekend means this weekend', JSON.stringify({ saturdayMorning, saturdayNight, wednesday }));
-}
-
-// An ask for a moment that has passed is refused; one in the future is saved,
-// shows its time on both sides, and appears on the other side's Today.
-{
-  const { context, page, errors } = await open('tasks.html?as=her#asks');
-  await openSheet(page, 'ask-form');
-  await page.click('#help-form .compose-more summary');
-  await page.fill('#help-title', 'past thing');
-  await page.click('#help-urgency [data-urgency="timed"]');
-  await page.click('#day-choices [data-day="today"]');
-  await page.click('#time-choices [data-time="custom"]');
-  await page.fill('#custom-time', '00:01');
-  await page.click('#help-submit');
-  await page.waitForTimeout(400);
-  const refused = await page.locator('.global-failure').count();
-  note(refused === 1, 'an ask for a time already gone is refused', refused !== 1 ? 'it was accepted' : '');
-
-  await page.click('.global-failure .failure-close');
-  await page.click('#day-choices [data-day="tomorrow"]');
-  await page.fill('#help-title', 'bring the water bottle');
-  await page.click('#help-submit');
-  await page.waitForTimeout(500);
-  const mine = await page.locator('#help-mine-list .help-card', { hasText: 'bring the water bottle' }).innerText().catch(() => '');
-  const whenHidden = await page.locator('#ask-when').isHidden();
-
-  // "grab something" is the grocery list, not a second list of things to pick up.
-  await openSheet(page, 'ask-form');
-  await page.click('#help-presets [data-groceries]');
-  await page.waitForTimeout(200);
-  const onGroceries = await page.locator('.tab.active[data-tab="grocery"]').count();
-  note(onGroceries === 1 && page.url().endsWith('tasks.html?as=her'), '"grab something" opens the grocery list', page.url());
-
-  // Local mode keeps data per browser context, so look from his side in this one.
-  await page.goto(`${BASE}/tasks.html?as=him#asks`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(1000);
-  const theirs = await page.locator('#help-inbox-list .help-card', { hasText: 'bring the water bottle' }).innerText().catch(() => '');
-  note(mine.includes('⏰ tomorrow') && theirs.includes('⏰ tomorrow') && whenHidden && errors.length === 0,
-       'an ask with a time is what a reminder was', errors[0] || JSON.stringify({ mine, theirs, whenHidden }));
-  await context.close();
-}
-
-// The first ask of the day while the other person focuses offers a real urgent
-// choice. Later asks do not repeatedly stop you with the same prompt.
-{
-  const {context,page,errors}=await open('tasks.html?as=her#asks');
-  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();await data.setTo('statuses','him',{person:'him',state:'online',text:'',category:'',emoji:'',focusUntil:Date.now()+15*60000,updatedAt:Date.now()});});
-  await openSheet(page, 'ask-form');
-  await page.fill('#help-title','urgent cup of water');
-  await page.click('#help-submit');
-  const prompted=await page.locator('.focus-ask-dialog').count();
-  await page.click('[data-focus-choice="urgent"]');
-  await page.locator('#help-mine-list .help-card',{hasText:'urgent cup of water'}).waitFor();
-  const first=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return (await data.readOnce('help')).find(item=>item.title==='urgent cup of water');});
-  await openSheet(page, 'ask-form');
-  await page.fill('#help-title','ordinary second ask');
-  await page.click('#help-submit');
-  await page.locator('#help-mine-list .help-card',{hasText:'ordinary second ask'}).waitFor();
-  const second=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return (await data.readOnce('help')).find(item=>item.title==='ordinary second ask');});
-  note(prompted===1&&first?.urgent===true&&second?.urgent===false&&await page.locator('.focus-ask-dialog').count()===0&&errors.length===0,'focus asks can notify anyway without nagging all day',errors[0]||JSON.stringify({prompted,first,second}));
-  await context.close();
-}
-
-// A self-reminder has one scheduled nudge to this phone, with no immediate
-// heads-up (especially not to the partner).
-{
-  const {context,page,errors}=await open('tasks.html?as=her#asks');
-  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();window.__selfNudges=[];data.notify=async(...args)=>{window.__selfNudges.push(args);return {queued:true};};});
-  await openSheet(page, 'ask-form');
-  await page.click('#help-form .compose-more summary');
-  await page.locator('#ask-for-me').check();
-  const timeShown=await page.locator('#ask-when').isVisible();
-  await page.click('#day-choices [data-day="tomorrow"]');
-  await page.fill('#help-title','check the plant');
-  await page.click('#help-submit');
-  await page.locator('#help-mine-list .help-card',{hasText:'check the plant'}).waitFor();
-  const self=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return {record:(await data.readOnce('help')).find(item=>item.title==='check the plant'), nudges:window.__selfNudges};});
-  const noInbox=await page.locator('#help-inbox-list .help-card',{hasText:'check the plant'}).count()===0;
-  note(timeShown&&self.record?.to==='her'&&self.nudges.length===1&&self.nudges[0][0]==='her'&&self.nudges[0][1]?.kind==='reminder'&&noInbox&&errors.length===0,'self-reminders nudge only your own phone at the chosen time',errors[0]||JSON.stringify(self));
-  await context.close();
-}
+// Routines and the new reminder editor are exercised in routines-browser.mjs.
 
 // Recurring tasks roll forward instead of disappearing, and groceries keep an aisle.
 {
@@ -742,21 +639,14 @@ async function openSlow(path) {
   await context.close();
 }
 
-// Quick add makes the same asks the Asks tab does, time and all.
+// Quick add no longer creates a second inbox; routines have one home.
 {
-  const { context, page, errors } = await open('her.html?as=her');
+  const {context,page,errors}=await open('her.html?as=her');
   await page.click('[data-open-sheet="quick"]');
-  await page.click('[data-quick-kind="ask"]');
-  await page.fill('#quick-text', 'call the vet');
-  await page.fill('#quick-ask-note', 'ask about the tiny dog');
-  await page.click('[data-quick-urgency="timed"]');
-  await page.click('#quick-day-choices [data-day="tomorrow"]');
-  await page.click('#quick-time-choices [data-time="19:00"]');
-  await page.click('#quick-submit');
-  await page.waitForTimeout(500);
-  const saved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('our-little-list-help-v1')).items.find(item => item.title === 'call the vet'); } catch (_) { return null; } });
-  note(saved && saved.dueAt > Date.now() && saved.state === 'open' && saved.to === 'him' && saved.note === 'ask about the tiny dog' && errors.length === 0,
-       'quick add uses the same day and time picker as asks', errors[0] || JSON.stringify(saved));
+  const retired=await page.locator('[data-quick-kind="ask"]').count();
+  await page.click('.quick-kind a[href="tasks.html#routines"]');
+  await page.waitForSelector('.tab.active[data-tab="routines"]');
+  note(retired===0&&errors.length===0,'Quick add takes routines to the shared list');
   await context.close();
 }
 
@@ -970,29 +860,7 @@ async function openSlow(path) {
   await context.close();
 }
 
-// Help request round trip: her asks, him answers.
-{
-  const her = await open('tasks.html?as=her#asks');
-  await openSheet(her.page, 'ask-form');
-  await her.page.click('#help-presets [data-title="bring me water"]');
-  await her.page.click('#help-submit');
-  await her.page.waitForTimeout(500);
-  const asked = await her.page.locator('#help-mine-list .help-card', { hasText:'bring me water' }).count();
-  note(asked === 1 && her.errors.length === 0, 'send a help request', her.errors[0] || '');
-
-  // Local mode keeps data per browser context, so answer it in the same one.
-  await her.page.goto(`${BASE}/tasks.html?as=him#asks`, { waitUntil: 'domcontentloaded' });
-  await her.page.waitForTimeout(1100);
-  const inbox = await her.page.locator('#help-inbox-list .help-card').count();
-  note(inbox >= 1, 'request arrives in the other inbox', inbox === 0 ? 'inbox empty' : '');
-  if (inbox >= 1) {
-    await her.page.click('#help-inbox-list [data-answer="on-it"]');
-    await her.page.waitForTimeout(600);
-    const chosen = await her.page.locator('.help-answer.is-chosen').count();
-    note(chosen >= 1, 'answering marks the request');
-  }
-  await her.context.close();
-}
+// Legacy asks are preserved as checklist rows (routines-browser.mjs).
 
 // Names are free text, so a name with markup must not break the map panel.
 {
@@ -1295,18 +1163,18 @@ async function openSlow(path) {
   const { context, page, errors } = await open('her.html');
   await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());await data.setTo('items','home-due',{title:'pay the electric bill',type:'task',due:today,done:false,addedBy:'him',createdAt:Date.now()});await data.setTo('help','home-ask',{from:'him',to:'her',title:'bring the charger',state:'open',createdAt:Date.now()});});
   await page.locator('#home-next-up [data-inline-kind="item"] [data-inline-action="finish"]').click();
-  await page.locator('#home-next-up [data-inline-kind="ask"] [data-inline-action="on-it"]').click();
+  await page.locator('#home-next-up [data-inline-kind="ask"] [data-inline-action="finish"]').click();
   const result=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return {item:(await data.readOnce('items')).find(i=>i.id==='home-due'),ask:(await data.readOnce('help')).find(i=>i.id==='home-ask')};});
-  note(result.item?.done===true&&result.ask?.state==='on-it'&&errors.length===0,'Home finishes a task and answers an ask in place',errors[0]||JSON.stringify(result));
+  note(result.item?.done===true&&result.ask?.state==='done'&&errors.length===0,'Home finishes a task and finishes a preserved ask in place',errors[0]||JSON.stringify(result));
   await context.close();
 }
 {
   const { context, page, errors } = await open('today.html?as=her');
   await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());await data.setTo('items','today-due',{title:'water the plant',type:'task',due:today,done:false,addedBy:'her',createdAt:Date.now()});await data.setTo('help','today-ask',{from:'him',to:'her',title:'grab the keys',state:'open',createdAt:Date.now()});});
   await page.locator('#today-list [data-inline-kind="item"] [data-inline-action="finish"]').click();
-  await page.locator('#today-list [data-inline-kind="ask"] [data-inline-action="later"]').click();
+  await page.locator('#today-list [data-inline-kind="ask"] [data-inline-action="finish"]').click();
   const result=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return {item:(await data.readOnce('items')).find(i=>i.id==='today-due'),ask:(await data.readOnce('help')).find(i=>i.id==='today-ask')};});
-  note(result.item?.done===true&&result.ask?.state==='later'&&errors.length===0,'Today finishes a task and answers an ask in place',errors[0]||JSON.stringify(result));
+  note(result.item?.done===true&&result.ask?.state==='done'&&errors.length===0,'Today finishes a task and finishes a preserved ask in place',errors[0]||JSON.stringify(result));
   await context.close();
 }
 {

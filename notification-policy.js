@@ -6,7 +6,7 @@ export const NOTIFICATION_GROUPS = [
   { id: 'listsAdded', label: 'added to the list', kinds: ['item'] },
   { id: 'listsFinished', label: 'finished on the list', kinds: ['item-finished'] },
   // Reminders are asks with a time now, so one switch covers both.
-  { id: 'asks', label: 'asks & reminders', kinds: ['help', 'help-answer', 'reminder', 'reminder-created'] },
+  { id: 'asks', label: 'reminders & nudges', kinds: ['help', 'help-answer', 'reminder', 'reminder-created', 'list-reminder', 'list-nudge'] },
   { id: 'arrivals', label: 'arrivals & on my way', kinds: ['arrival'] },
   { id: 'status', label: 'status & focus', kinds: ['status', 'focus'] },
   { id: 'keepsakes', label: 'date ideas & memories', kinds: ['date', 'memory'] },
