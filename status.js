@@ -33,7 +33,6 @@ let editorDirty=false;
 
 const { data, viewer, other } = await bootPage();
 let selected = profileRoute(location.hash, viewer).person;
-let profileNotes = [];
 const editor = document.querySelector('.status-editor-disclosure');
 $('profile-editor-slot').append(editor);
 function openStatusEditor(){if(selected!==viewer)return;if(!editorDirty){delete $('status-form').dataset.hydrated;hydrateEditor();}editor.open=true;editor.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}
@@ -53,7 +52,6 @@ data.listenTo('statuses',items=>{statuses=items;loaded=true;settleLoaded();rende
 data.listenTo('reactions',items=>{reactions=items;render();});
 // Being here and being around are one line now: "here now · busy".
 data.listenTo('presence',items=>{presence=items;render();});
-data.listenToQuery('notes', { orderBy:{field:'createdAt',direction:'desc'}, limit:30 }, items => { profileNotes=items; renderProfileNotes(); });
 let stopSectionWatch=()=>{};
 window.addEventListener('hashchange', () => { selected=profileRoute(location.hash,viewer).person; render(); revealSection(); });
 function revealSection(){
@@ -152,14 +150,8 @@ function render(){
   $('profile-actions').innerHTML=own
     ? '<a href="phone-check.html#names">name & settings</a>'
     : '<button type="button" data-open-quick="note">leave a note</button><a href="tasks.html#routines">our routine</a>';
-  renderProfileNotes();
 }
-function renderProfileNotes(){
-  const notes=profileNotes.filter(note=>(note.sender||note.from)===selected).slice(0,3);
-  $('profile-notes').hidden=!notes.length;
-  $('profile-notes-title').textContent=selected===viewer?'From you':`From ${personName(selected)}`;
-  $('profile-note-list').innerHTML=notes.map(note=>`<a class="profile-note-link" href="notes.html#note-${encodeURIComponent(note.id)}"><span>${escapeHtml(note.body||note.message||'')}</span><small>${escapeHtml(timeAgo(note.createdAt))} <span aria-hidden="true">→</span></small></a>`).join('');
-}
+
 function statusCard(person,item={}){
   const focus=focusActive(item);const custom=item.text&&!isExpired(item);const name=personName(person);const image=person==='her'?'sun-profile.png':'moon-profile.png';
   const arrival=arrivalActive(item)?`<p class="status-arrival">↗ ${escapeHtml(item.arrival)}</p>`:'';const location=item.locationText?`<p class="status-location place-${escapeHtml(item.locationPreset||'custom')}"><b>${escapeHtml(item.locationEmoji||'📍')}</b><span>${escapeHtml(item.locationText)}</span></p>`:'';const received=person===other?findStatusReaction(person):reactions.find(reaction=>reaction.targetType==='status'&&reaction.targetId===person&&reaction.by===other);const reactionDisplay=received?(person===other?`<button class="reaction-display" type="button" data-react-status="${escapeHtml(person)}" data-emoji="${escapeHtml(received.emoji)}" aria-label="Remove your ${escapeHtml(received.emoji)} reaction"><b>${escapeHtml(received.emoji)}</b><span>yours · tap to undo</span></button>`:`<div class="reaction-display is-readonly"><b>${escapeHtml(received.emoji)}</b><span>from ${escapeHtml(personName(other))}</span></div>`):'';const reactionButton=person===other?`<button class="reaction-trigger" type="button" data-status-picker="${escapeHtml(person)}">react</button>`:'';

@@ -37,6 +37,8 @@ jobs:
 
       - name: Profiles, competitive game logic and notification taps
         run: |
+          node test/practice.test.mjs
+          node test/navigation-attention.test.mjs
           node test/word-celebration.test.mjs
           node test/daily-word.test.mjs
           node test/daily-puzzles.test.mjs
@@ -51,6 +53,22 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+
+      - name: Cache the Firestore test emulator
+        id: firestore-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firestore-emulator-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Download the test emulator before running rules checks
+        if: steps.firestore-cache.outputs.cache-hit != 'true'
+        run: |
+          for attempt in 1 2 3; do
+            if timeout 180s pnpm exec firebase setup:emulators:firestore; then exit 0; fi
+            echo "Emulator download did not finish (attempt $attempt of 3)."
+          done
+          exit 1
 
       - name: Both players obey the real Firestore game rules
         run: pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/word-rules.test.mjs && node test/timed-rules.test.mjs && node test/game-rules.test.mjs"

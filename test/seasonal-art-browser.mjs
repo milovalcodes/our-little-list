@@ -10,8 +10,13 @@ try {
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/firebase-config.js', route => route.fulfill({ contentType:'text/javascript', body:'export const firebaseConfig = {};' }));
     await page.route('**/*', route => new URL(route.request().url()).origin === base ? route.fallback() : route.abort());
-    await page.goto(base + '/' + side + '.html');
+    await page.goto(base + '/' + side + '.html?as=' + side);
     await page.waitForSelector('.app-dock');
+    await page.evaluate(async side => {
+      const data = await (await import('./data-hub.js')).sharedLayer();
+      await data.setTo('notes', 'seasonal-unread', {sender:side === 'her' ? 'him' : 'her',recipient:side,body:'badge test',createdAt:Date.now(),read:false});
+    }, side);
+    await page.waitForSelector('.app-dock a[href="notes.html"] .attention-badge');
     for (const [season, when] of [
       ['spooky','2026-10-08T12:00:00-04:00'],
       ['christmas','2026-12-01T00:00:00-05:00'],
@@ -34,6 +39,8 @@ try {
           favicon:document.querySelector('link[rel="icon"]').getAttribute('href'),
           manifest:document.querySelector('link[rel="manifest"]').getAttribute('href'),
           mask:getComputedStyle(document.querySelector('.context-add i'), '::after').maskImage,
+          attentionMask:getComputedStyle(document.querySelector('.attention-badge')).maskImage,
+          attentionColor:getComputedStyle(document.querySelector('.attention-badge')).backgroundColor,
           overflow:document.documentElement.scrollWidth - innerWidth, assets
         };
         late.remove();
@@ -57,9 +64,17 @@ try {
         return { unchecked, checked };
       });
       if (season !== 'normal') assert.notEqual(checkboxes.unchecked, checkboxes.checked, 'finished tasks keep a distinct checkmark state');
-      if (season !== 'normal') assert.ok(result.mask.includes('season-mark-' + season + '.svg'));
-      else assert.equal(result.mask, 'none');
+      assert.equal(result.mask, 'none', 'action icons never wear fake unread badges');
+      if (season !== 'normal') {
+        assert.ok(result.attentionMask.includes('season-mark-' + season + '.svg'));
+        assert.equal(result.attentionColor, season === 'spooky' ? 'rgb(255, 122, 24)' : 'rgb(248, 200, 91)');
+      } else assert.equal(result.attentionMask, 'none');
     }
+    await page.evaluate(async () => {
+      const data = await (await import('./data-hub.js')).sharedLayer();
+      await data.updateIn('notes', 'seasonal-unread', {read:true});
+    });
+    await page.waitForFunction(() => !document.querySelector('.app-dock a[href="notes.html"] .attention-badge'));
     for (const season of ['spooky', 'christmas']) {
       const pixels = await page.evaluate(async season => {
         const image = new Image(); image.src = 'notification-badge-' + season + '.png';

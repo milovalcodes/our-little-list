@@ -24,7 +24,7 @@ export function startAlterEgos(data,viewer){
   if(!document.getElementById('alter-ego-settings')&&!document.querySelector('.alter-ego-trigger'))return;
   if(started)return;started=true;
   let photos={},loaded=false,frame=0,draft='',selection=0,busy=false,preparing=false,loadFailed=false,error='',stopPhotos,loadTimer,loadVersion=0;
-  const timers=new Map(),settings=document.getElementById('alter-ego-settings');
+  const timers=new Map(),lastTaps=new WeakMap(),settings=document.getElementById('alter-ego-settings');
   const $=id=>document.getElementById(id);
   function closeFlip(button){clearTimeout(timers.get(button));timers.delete(button);button.classList.remove('is-flipped');button.setAttribute('aria-pressed','false');}
   function schedule(){if(!frame)frame=requestAnimationFrame(paint);}
@@ -41,7 +41,7 @@ export function startAlterEgos(data,viewer){
       if(photo){if(!back){back=new Image();back.className='alter-ego-back';back.alt='';turn.append(back);}if(back.getAttribute('src')!==photo){closeFlip(button);back.src=photo;}}
       else if(back){closeFlip(button);back.remove();}
       button.classList.toggle('has-alter-ego',Boolean(photo));
-      const label=photo?`Peek at ${personName(person)}’s alter ego`:button.dataset.profileUrl?`Open ${personName(person)}’s profile`:person===viewer?'Add your alter ego':'No alter ego photo yet';
+      const label=photo?`Peek at ${personName(person)}’s alter ego${button.dataset.profileUrl?'; double tap to open profile':''}`:button.dataset.profileUrl?`Open ${personName(person)}’s profile`:person===viewer?'Add your alter ego':'No alter ego photo yet';
       button.setAttribute('aria-label',label);button.title=label;
       if(!button.hasAttribute('aria-pressed'))button.setAttribute('aria-pressed','false');
       button.disabled=!photo&&!button.dataset.profileUrl&&person!==viewer;
@@ -88,6 +88,11 @@ export function startAlterEgos(data,viewer){
     const button=event.target.closest('.alter-ego-trigger');if(!button)return;
     const person=button.dataset.person;
     if(!photos[person]){if(button.dataset.profileUrl)location.href=button.dataset.profileUrl;else if(person===viewer&&settings)choosePhoto();return;}
+    const now=performance.now(),previous=lastTaps.get(button);
+    if(button.dataset.profileUrl&&event.detail!==0&&previous!==undefined&&now-previous<450){
+      lastTaps.delete(button);closeFlip(button);location.href=button.dataset.profileUrl;return;
+    }
+    if(event.detail!==0)lastTaps.set(button,now);
     if(button.classList.contains('is-flipped')){closeFlip(button);return;}
     button.classList.add('is-flipped');button.setAttribute('aria-pressed','true');
     timers.set(button,setTimeout(()=>closeFlip(button),2600));

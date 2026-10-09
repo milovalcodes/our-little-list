@@ -6,9 +6,9 @@ export const PUZZLE_NAMES={search:'Word Search',crossword:'Mini crossword'};
 export const PUZZLE_LIMIT_MS=120000;
 export const LEAGUE_START_DAY='2026-10-09';
 export function isHardDay(day){return day.includes('-tie-')||new Date(day+'T12:00:00Z').getUTCDay()===0;}
-function random(seed){let n=2166136261;for(const c of seed)n=Math.imul(n^c.charCodeAt(0),16777619);return()=>{n+=0x6D2B79F5;let t=Math.imul(n^n>>>15,1|n);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296;};}
+export function random(seed){let n=2166136261;for(const c of seed)n=Math.imul(n^c.charCodeAt(0),16777619);return()=>{n+=0x6D2B79F5;let t=Math.imul(n^n>>>15,1|n);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296;};}
 function shuffled(items,rng){const result=[...items];for(let i=result.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;}
-function searchGrid(bank,size,rng,hard){
+export function searchGrid(bank,size,rng,hard){
  const cells=Array(size*size).fill(''),entries=[];
  const dirs=hard?[[0,1],[1,0],[1,1],[1,-1],[0,-1],[-1,0],[-1,-1],[-1,1]]:[[0,1],[1,0],[1,1]];
  for(const entry of shuffled(bank.filter(e=>e.word.length>=4&&e.word.length<=size-2),rng)){
@@ -26,7 +26,7 @@ function searchGrid(bank,size,rng,hard){
  if(entries.length!==10)throw Error('Could not make a full word search');
  return {size,grid:cells.map(c=>c||String.fromCharCode(65+Math.floor(rng()*26))).join(''),entries};
 }
-function crosswordGrid(bank,size,rng,target){
+export function crosswordGrid(bank,size,rng,target){
  let best=null;
  for(let attempt=0;attempt<24;attempt++){
   const grid=Array(size*size).fill('#'),used=Array(size*size).fill(0),entries=[];

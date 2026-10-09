@@ -29,7 +29,7 @@
           <button type="button" class="sky-avatar alter-ego-trigger" data-person="him" data-profile-url="status.html#profile-him" aria-label="Open profile"><img src="moon-profile.png" alt=""><i class="sky-presence" id="sky-presence-him"></i><em class="sky-reaction" id="sky-reaction-him" hidden></em></button>
           <a class="sky-person-label" href="status.html#profile-him"><strong id="sky-name-him">him</strong><small id="sky-seen-him">somewhere</small></a>
         </div>
-        <a class="sky-note-star" id="sky-note-star" href="notes.html" hidden><span>💌</span><small id="sky-note-copy"></small></a>
+
         <span class="sky-wins" id="sky-wins" hidden></span>
       </div>
       <footer class="sky-footer">
@@ -37,8 +37,26 @@
       </footer>
     </section>
 
-    <section class="home-next-up" aria-label="Next up"><h2>Next up</h2><div id="home-next-up"><p>checking our stuff…</p></div></section>
+    <section class="home-next-up" aria-label="Today"><div class="home-today-heading"><h2>Today</h2><button type="button" data-open-sheet="focus">⏱ focus</button></div><div id="home-next-up"><p>checking our stuff…</p></div></section>
+    <section class="today-card focus-card">
+      <div class="today-card-head"><div><p class="tiny-kicker">body double</p><h2>Lock in together</h2></div><span>⏱</span></div>
+      <div class="focus-pair" id="focus-pair"></div>
+      <form class="focus-form" id="focus-form">
+        <input id="focus-label" maxlength="70" placeholder="what are we fighting today?">
+        <div class="focus-presets" id="focus-presets"><button type="button" data-minutes="15" class="active">15m</button><button type="button" data-minutes="30">30m</button><button type="button" data-minutes="45">45m</button></div>
+        <button class="primary-action" id="focus-start" type="submit">start focus</button>
+      </form>
+    </section>
+
+    <details class="today-new home-updates" id="new"><summary>Updates <span class="count-bubble" id="new-count" hidden>0</span></summary>
+      <section class="activity-card">
+        <div class="activity-heading"><button id="mark-seen" type="button">mark all seen</button></div>
+        <div class="empty-state" id="activity-empty"><span>✦</span><strong>Nothing new</strong></div>
+        <ol class="activity-list" id="activity-list"></ol>
+        <button class="activity-see-all" id="activity-see-all" type="button" hidden>see all</button>
+      </section>
+    </details>
   </main>
-  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="dashboard.js"></script><script type="module" src="live-notes.js"></script><script type="module" src="setup-nudge.js"></script>
+  <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="dashboard.js"></script><script type="module" src="home-extras.js"></script><script type="module" src="live-notes.js"></script><script type="module" src="setup-nudge.js"></script>
 </body>
 </html>

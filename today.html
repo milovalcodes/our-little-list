@@ -14,34 +14,7 @@
 </head>
 <body class="profile-page" data-app="today">
   <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">today ◎</span></header>
-  <main class="app-shell feature-shell today-shell">
-    <section class="feature-hero today-hero"><span class="feature-icon">◎</span><p class="tiny-kicker" id="today-date">today</p><h1>Today</h1><button class="today-focus-open" type="button" data-open-sheet="focus">⏱ focus</button></section>
-
-    <section class="today-card">
-      <div class="today-card-head"><div><h2>Due & waiting</h2></div><span class="count-bubble" id="today-count">0</span></div>
-      <div class="today-list" id="today-list"></div>
-      <div class="empty-state" id="today-empty"><span>✓</span><strong>Nothing urgent</strong></div>
-    </section>
-
-    <section class="today-card focus-card">
-      <div class="today-card-head"><div><p class="tiny-kicker">body double</p><h2>Lock in together</h2></div><span>⏱</span></div>
-      <div class="focus-pair" id="focus-pair"></div>
-      <form class="focus-form" id="focus-form">
-        <input id="focus-label" maxlength="70" placeholder="what are we fighting today?">
-        <div class="focus-presets" id="focus-presets"><button type="button" data-minutes="15" class="active">15m</button><button type="button" data-minutes="30">30m</button><button type="button" data-minutes="45">45m</button></div>
-        <button class="primary-action" id="focus-start" type="submit">start focus</button>
-      </form>
-    </section>
-
-    <section class="today-new" id="new">
-      <section class="activity-card">
-        <div class="activity-heading"><div><p class="tiny-kicker">since you were here</p><h2>What’s new <span class="count-bubble" id="new-count" hidden>0</span></h2></div><button id="mark-seen" type="button">mark all seen</button></div>
-        <div class="empty-state" id="activity-empty"><span>✦</span><strong>Nothing new</strong></div>
-        <ol class="activity-list" id="activity-list"></ol>
-        <button class="activity-see-all" id="activity-see-all" type="button" hidden>see all</button>
-      </section>
-    </section>
-  </main>
+  <main class="app-shell"><p role="status">opening Home…</p></main>
   <div id="auth-root"></div><script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="today.js"></script><script type="module" src="live-notes.js"></script>
 </body>
 </html>

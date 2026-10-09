@@ -20,5 +20,5 @@ if (!viewer) {
   showNotAMember();
 } else {
   if (note) note.textContent = viewer === 'her' ? 'hi sunshine ☀️' : 'hi moon 🌙';
-  location.replace(`${viewer}.html`);
+  location.replace(`${viewer}.html${location.hash}`);
 }

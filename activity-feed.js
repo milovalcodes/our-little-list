@@ -1,15 +1,12 @@
-// The activity feed, which used to be its own page (What's new). It lives at
-// the bottom of Today now: one page for what matters today and what happened
-// lately, instead of two that each merged everything together.
+// A folded history on Home. Notes and their read receipts live only in Notes.
 
 import { escapeHtml, showFailure, toast } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { timeAgo, friendlyWhen } from './time-format.js';
-import { NOTE_MOODS } from './records.js';
 import { newActivityCount } from './activity-summary.js';
 
 export function startActivityFeed({ data, viewer, other }) {
-const $=id=>document.getElementById(id);const buckets={items:[],notes:[],dates:[],statuses:[],help:[],memories:[],reactions:[]};
+const $=id=>document.getElementById(id);const buckets={items:[],dates:[],statuses:[],help:[],memories:[],reactions:[]};
 let started=false;
 let expanded=false;
 // The "delete for us" confirm used to be stored on the button element itself.
@@ -18,13 +15,6 @@ let expanded=false;
 // forgotten the first one — and nothing was ever deleted. Keeping the armed row
 // here lets the confirm survive a redraw.
 let armedDelete=null;let armedTimer=0;
-// Marking incoming things read used to be a single timer 900ms after startup,
-// which on a slow first load ran before any of the snapshots had arrived and
-// then never ran again.
-const markedRead=new Set();let markTimer=0;
-// Opening Today is not the same as reading the feed at its bottom, so incoming
-// notes only count as read once the feed has actually been on screen.
-let feedSeen=false;
 const seenKey=`our-little-list-seen-${viewer}`;
 const hiddenKey=`our-little-list-hidden-activity-${viewer}-v1`;
 const hidden=readHidden();
@@ -33,7 +23,6 @@ start();
 $('mark-seen').addEventListener('click',markSeen);
 $('activity-see-all')?.addEventListener('click', () => { expanded=!expanded; render(); });
 $('activity-list').addEventListener('click',handleActivityAction);
-watchFeedVisibility();
 
 function start(){
   if(started)return;started=true;
@@ -41,9 +30,9 @@ function start(){
   const updateItems=()=>{buckets.items=[...openItems,...recentDone];render();};
   data.listenToQuery('items',{where:{field:'done',value:false}},items=>{openItems=items;updateItems();});
   data.listenToQuery('items',{where:{field:'doneAt',op:'>=',value:Date.now()-7*86400000},orderBy:{field:'doneAt',direction:'desc'},limit:50},items=>{recentDone=items;updateItems();});
-  ['notes','dates','statuses','help','memories','reactions'].forEach(name=>{
-    const receive=items=>{buckets[name]=items;render();if(name==='notes')scheduleMarkRead();};
-    if(['notes','memories','reactions'].includes(name))data.listenToQuery(name,{orderBy:{field:'createdAt',direction:'desc'},limit:50},receive);
+  ['dates','statuses','help','memories','reactions'].forEach(name=>{
+    const receive=items=>{buckets[name]=items;render();};
+    if(['memories','reactions'].includes(name))data.listenToQuery(name,{orderBy:{field:'createdAt',direction:'desc'},limit:50},receive);
     else data.listenTo(name,receive);
   });
 }
@@ -54,7 +43,6 @@ function events(){
     all.push({id:`item-${item.id}`,recordId:item.id,collection:'items',at:Number(item.createdAt)||0,icon:item.type==='grocery'?'🛒':'✓',who:item.addedBy,kind:item.type==='grocery'?'put on groceries':'put on the list',text:item.title});
     if(item.done&&item.doneAt)all.push({id:`done-${item.id}`,recordId:item.id,collection:'items',at:Number(item.doneAt),icon:'🫡',who:item.doneBy,kind:'finished',text:item.title});
   });
-  buckets.notes.forEach(note=>all.push({id:`note-${note.id}`,recordId:note.id,collection:'notes',at:Number(note.createdAt)||0,icon:NOTE_MOODS[note.mood]||'💌',who:note.sender,kind:'sent a note',text:note.body,status:note.recipient===viewer?(note.read?'seen by you':'new for you'):(note.read?'seen':'delivered')}));
   buckets.dates.filter(idea=>!idea.imported).forEach(idea=>all.push({id:`date-${idea.id}`,recordId:idea.id,collection:'dates',at:Number(idea.createdAt)||0,icon:'✦',who:idea.addedBy,kind:'saved a date idea',text:idea.title,status:idea.vibe||''}));
   buckets.help.forEach(request=>{
     const timed=Number(request.dueAt)>0;const self=request.from===request.to;all.push({id:`help-${request.id}`,recordId:request.id,collection:'help',at:Number(request.createdAt)||0,icon:request.emoji||(timed?'⏰':'🙋'),who:request.from,kind:self?'set a reminder for themselves':timed?`set a reminder for ${friendlyWhen(request.dueAt)}`:'asked for a hand',selfKind:self?'set a reminder for yourself':timed?`set a reminder for ${friendlyWhen(request.dueAt)}`:'asked for a hand',text:request.title,status:request.state&&request.state!=='open'?`answered: ${request.state==='on-it'?'on it':request.state==='later'?'in a bit':request.state==='cant'?"can't":'sorted'}`:self?'for you':'waiting'});
@@ -121,28 +109,7 @@ async function handleActivityAction(event){
 function readHidden(){try{return new Set(JSON.parse(localStorage.getItem(hiddenKey))||[]);}catch(_){return new Set();}}
 function saveHidden(){localStorage.setItem(hiddenKey,JSON.stringify([...hidden].slice(-500)));}
 
-function markSeen(){localStorage.setItem(seenKey,String(Date.now()));$('mark-seen').textContent='all seen ✓';render();window.setTimeout(()=>$('mark-seen').textContent='mark all seen',1600);markIncomingRead();}
-function scheduleMarkRead(){if(!feedSeen)return;window.clearTimeout(markTimer);markTimer=window.setTimeout(markIncomingRead,900);}
-function watchFeedVisibility(){
-  const feed=$('new');
-  const seen=()=>{if(feedSeen)return;feedSeen=true;scheduleMarkRead();};
-  if(location.hash==='#new'){seen();return;}
-  if(!feed||!('IntersectionObserver' in window)){seen();return;}
-  const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();seen();}},{threshold:.25});
-  observer.observe(feed);
-}
-function markIncomingRead(){
-  window.clearTimeout(markTimer);
-  buckets.notes.filter(note=>note.recipient===viewer&&!note.read).forEach(note=>markOnce(`note-${note.id}`,()=>data.updateIn('notes',note.id,{read:true,readAt:Date.now()})));
-}
-// One write per thing per visit. The snapshot that the write itself triggers
-// would otherwise come back before the change is visible in it and start the
-// same write again. A write that fails is allowed to be retried.
-function markOnce(key,write){
-  if(markedRead.has(key))return;
-  markedRead.add(key);
-  void write().catch(()=>markedRead.delete(key));
-}
+function markSeen(){localStorage.setItem(seenKey,String(Date.now()));$('mark-seen').textContent='all seen ✓';render();window.setTimeout(()=>$('mark-seen').textContent='mark all seen',1600);}
 window.addEventListener('littlelist:profile',render);
 
 }

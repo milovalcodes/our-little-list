@@ -15,7 +15,7 @@ const pushClient = readFileSync(new URL('../push-client.js', import.meta.url), '
 
 assert.ok(!live.includes('showNotification('), 'live listeners must never raise a second system notification');
 assert.match(live, /if \(document\.hidden\) return false;/, 'a hidden page shows no in-page popup and says so to its caller');
-assert.match(live, /if \(shown\)/, 'a note is only marked read when it was actually shown');
+assert.doesNotMatch(live, /data\.updateIn\('notes'/, 'a transient banner must not acknowledge an unread note');
 console.log(' ok  in-page popups never double up on a push, and never eat an unseen note');
 
 // Every path through the push handler has to reach showNotification.

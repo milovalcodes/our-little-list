@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="apple-mobile-web-app-title" content="Our Little App"><script src="appearance-boot.js"></script>
+ <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+ <title>Practice · Our Little App</title><link rel="manifest" href="manifest.webmanifest">
+ <link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="sun-moon-personalized.png">
+ <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="diary.css"><link rel="stylesheet" href="practice.css">
+ <script src="seasonal-assets.js"></script><script src="seasonal-theme.js"></script><link rel="stylesheet" href="seasonal.css">
+</head>
+<body class="profile-page" data-app="activities" data-practice>
+ <main class="app-shell feature-shell games-shell practice-shell">
+  <a class="practice-back" href="activities.html#practice">‹ activities</a>
+  <section class="feature-hero"><h1>Practice makes perfect</h1></section>
+  <p class="practice-caption">No clock. No points. Just one more?</p>
+  <nav class="practice-tabs" aria-label="Practice games"><a href="#word" data-practice-tab="word">Little Word</a><a href="#search" data-practice-tab="search">Word Search</a><a href="#crossword" data-practice-tab="crossword">Crossword</a></nav>
+  <section class="practice-card">
+   <div class="practice-toolbar"><h2 id="practice-title">Getting your puzzle…</h2><label>puzzle <select id="practice-picker" aria-label="Choose practice puzzle"></select></label></div>
+   <p class="practice-caption" id="practice-progress"></p>
+   <div id="practice-game" aria-busy="true"><p role="status">a second to get ready…</p></div>
+   <p class="practice-storage" id="practice-warning" role="status"></p>
+   <div class="practice-actions"><button type="button" id="practice-restart">start this one over</button><button type="button" id="practice-next">next puzzle →</button></div>
+  </section>
+  <p class="practice-caption">Your practice progress stays on this browser. Come back whenever.</p>
+ </main>
+ <div id="auth-root"></div>
+ <script src="shared.js"></script><script type="module" src="profile-names.js"></script><script type="module" src="practice.js"></script><script type="module" src="live-notes.js"></script>
+</body></html>

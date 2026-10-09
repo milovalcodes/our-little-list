@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v101';
+const CACHE = 'our-little-list-v102';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -18,6 +18,8 @@ const PAGES = [
 ];
 
 const ASSETS = [
+  './navigation-attention.js', './home-extras.js',
+  './practice.html', './practice.js', './practice.css', './practice-bank.js', './practice-catalog.js', './practice-links.js', './practice-store.js', './word-lexicon-extra.js',
   ...PAGES,
   './appearance-boot.js',
   './alter-ego.js',

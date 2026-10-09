@@ -5,18 +5,12 @@ import { startPresence } from './presence.js';
 import { ensurePushSubscription } from './push-client.js';
 import { personName } from './profile-store.js';
 import { hereLine, statusShows, orbitLine } from './availability.js';
-import { newActivityCount } from './activity-summary.js';
-import { questionClock } from './question-prompts.js';
-import { escapeHtml, showFailure, toast } from './ui-helpers.js';
 import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
 import { dueRows, fairShare } from './needs-you.js';
 import {watchRoutineChecks} from './routine-checks.js';
 import { profileUrl } from './profile-route.js';
-import {timedOver} from './timed-game.js';
-import {LEAGUE_START_DAY} from './daily-puzzles.js';
 
-const badge = document.getElementById('activity-badge');
-const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [], wordResults: [], timedResults: [], wordDuels: [], wordDuelEnds: [], wordWeeks: [] };
+const buckets = { items: [], statuses: [], help: [], reactions: [], locations: [], presence: [], wordDuels: [], wordDuelEnds: [], wordWeeks: [] };
 let dashboardFrame = 0;
 
 const data = await sharedLayer();
@@ -34,7 +28,6 @@ if (document.body.dataset.viewer !== viewer) {
 }
 
 const other = partnerOf(viewer);
-const seenKey = `our-little-list-seen-${viewer}`;
 
 const recent = { orderBy: { field: 'createdAt', direction: 'desc' }, limit: 50 };
 const doneSince = Date.now() - 7 * 86400000;
@@ -45,9 +38,7 @@ data.listenToQuery('items', { where: { field: 'doneAt', op: '>=', value: doneSin
 watchRoutineChecks(data,checks=>{buckets.routineChecks=checks;scheduleDashboardRender();});
 for (const name of Object.keys(buckets).filter(name => !['items','routineChecks'].includes(name))) {
   const receive = items => { buckets[name] = items; scheduleDashboardRender(); };
-  if(['wordResults','timedResults'].includes(name)){data.listenToQuery(name,{where:{field:'day',value:questionClock().day}},receive);continue;}
-  if (name === 'questions') { data.listenToQuery('questions', { where:{field:'day', value:questionClock().day} }, receive); continue; }
-  if (['notes', 'memories', 'reactions'].includes(name)) data.listenToQuery(name, recent, receive);
+  if (name === 'reactions') data.listenToQuery(name, recent, receive);
   else data.listenTo(name, receive);
 }
 startPresence(data, viewer, 'home');
@@ -56,66 +47,28 @@ startPresence(data, viewer, 'home');
 void ensurePushSubscription(data, viewer);
 
 window.addEventListener('littlelist:profile', renderSky);
-const homeDay = questionClock().day;
-window.setInterval(() => { if (questionClock().day !== homeDay) location.reload(); else {renderSky();renderNextUp();} }, 30000);
+window.setInterval(() => {renderSky();renderNextUp();}, 30000);
 ['her', 'him'].forEach(person => {
   const avatar = document.querySelector(`#sky-person-${person} .sky-person-label`);
   if (avatar) { avatar.href = profileUrl(person); avatar.setAttribute('aria-label', `${personName(person)}’s profile`); }
 });
 document.getElementById('home-next-up')?.addEventListener('click', event => { void handleInlineAction(event,{data,viewer,other,items:buckets.items,help:buckets.help}); });
 
-function renderBadge() {
-  const since = Number(localStorage.getItem(seenKey) || 0);
-  const fresh = value => Number(value) > since;
-
-  const newCount = newActivityCount(buckets, viewer, other, since);
-  if (badge) {
-    badge.hidden = newCount === 0;
-    badge.textContent = newCount > 9 ? '9+' : String(newCount);
-    badge.setAttribute('aria-label', `${newCount} new`);
-  }
-
-  setIconBadge(newCount + buckets.help.filter(request => request.to === viewer && request.from !== viewer && request.state === 'open' && !fresh(request.createdAt)).length);
-}
-
-// The number on the app icon (iPhone home-screen apps since iOS 16.4). The
-// service worker bumps it when a ping lands; opening home sets the real count.
-function setIconBadge(count) {
-  try {
-    if (count > 0) void navigator.setAppBadge?.(count)?.catch?.(() => {});
-    else void navigator.clearAppBadge?.()?.catch?.(() => {});
-  } catch (_) { /* not supported */ }
-}
-
 function renderDashboard() {
-  renderBadge();
   renderSky();
   renderNextUp();
 }
 
-// Home shows the top of the same list Today shows in full, plus the things only
-// Home points to (unread notes, today's question, what's new), so the two never
-// disagree about what needs you.
+// Home and Today are one place. Destination badges own notes and daily activities.
 function renderNextUp() {
   const target = document.getElementById('home-next-up');
   if (!target) return;
   const due = dueRows(buckets, viewer);
-  const unread = buckets.notes.filter(note => (note.recipient === viewer || note.to === viewer) && !note.read).length;
-  const clock = questionClock();
-  const question = buckets.questions.find(item => item.day === clock.day);
-  const answerNeeded = clock.open && question && !question.answers?.[viewer]?.at;
-  const wordNeeded=clock.day>='2026-10-08'&&!buckets.wordResults.some(r=>r.person===viewer&&r.done);
-  const timedLeft=clock.day>=LEAGUE_START_DAY?['search','crossword'].filter(type=>!buckets.timedResults.some(r=>r.person===viewer&&r.type===type&&timedOver(r))).length:0;
-  const dailyLeft=Number(Boolean(answerNeeded))+Number(wordNeeded)+timedLeft;
   const tie=buckets.wordDuels.some(d=>!buckets.wordDuelEnds.some(e=>e.id===d.puzzleId)&&!buckets.wordWeeks.some(w=>w.week===d.week));
-  const fresh = newActivityCount(buckets, viewer, other, Number(localStorage.getItem(seenKey) || 0));
   const rows = [
-    ...fairShare(due, 3),
-    due.length > 3 && { icon:'◎', title:`${due.length - 3} more due or waiting`, href:'today.html' },
-    unread && { icon:'✉', title:`${unread} unread note${unread===1?'':'s'}`, href:'notes.html' },
-    dailyLeft>0 && { icon:'◎', title:`daily activities · ${dailyLeft} left`, href:'activities.html#daily' },
+    ...fairShare(due, 12),
+    due.length > 12 && { icon:'✓', title:`${due.length - 12} more on the list`, href:'tasks.html' },
     tie && {icon:'♛',title:'the crown is still up for grabs',href:'activities.html#tiebreaker'},
-    fresh && { icon:'✦', title:`${fresh} new thing${fresh===1?'':'s'} since you looked`, href:'today.html#new' }
   ].filter(Boolean);
   target.innerHTML = rows.length ? rows.map(row=>inlineActionMarkup(row,'home-next-row')).join('') : '<p>nothing needs you right now ✦</p>';
 }
@@ -143,7 +96,6 @@ function renderSky() {
     renderSkyReaction(person, now);
   });
   renderSkyOrbit(stage, now);
-  renderSkyNote(now);
   renderSkyWins(now);
 }
 
@@ -201,14 +153,6 @@ function renderSkyOrbit(stage, now) {
   detail.textContent = partner&&Number(partner.shareUntil)<=now?`${line.detail} · updates when ${personName(other)} opens the app`:line.detail;
 }
 
-function renderSkyNote(now) {
-  const latest = buckets.notes
-    .filter(note => (note.recipient === viewer || note.to === viewer) && (note.sender === other || note.from === other) && now - Number(note.createdAt || 0) < 86400000)
-    .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))[0];
-  const star = document.getElementById('sky-note-star');
-  star.hidden = !latest;
-  document.getElementById('sky-note-copy').textContent = latest ? shortText(latest.body || latest.message || 'a note appeared') : '';
-}
 
 function renderSkyWins(now) {
   const start = new Date(now); start.setHours(0, 0, 0, 0);
@@ -219,10 +163,5 @@ function renderSkyWins(now) {
   const wins = document.getElementById('sky-wins');
   wins.hidden = count === 0;
   wins.textContent = count ? `✦ ${count} tiny win${count === 1 ? '' : 's'} today` : '';
-}
-
-function shortText(value) {
-  const text = String(value || '').replace(/\s+/g, ' ').trim();
-  return text.length > 42 ? `${text.slice(0, 39)}…` : text;
 }
 

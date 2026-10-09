@@ -809,3 +809,17 @@ body[data-app="activities"]:has(.timed-playing) #sync-chip { opacity:0; pointer-
 .routine-actions button { min-height:44px; padding:6px 12px; border-radius:14px; background:transparent; color:inherit; border:1px solid currentColor; font:inherit; font-size:.84rem; }
 .task-row:has(.task-check:disabled):not(.done) { opacity:.75; }
 .quick-kind a { padding:10px 12px; color:inherit; font-size:.85rem; border-radius:20px; }
+/* Attention belongs to destinations, not every seasonal decoration. */
+.dock-item,.more-grid a { position:relative; }
+.attention-badge { position:absolute; top:2px; left:calc(50% + 10px); width:12px; height:12px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 2px var(--diary-panel); pointer-events:none; }
+.more-grid .attention-badge { left:auto; right:7px; top:7px; }
+html[data-season="spooky"] .attention-badge { width:21px; height:21px; top:-3px; background:#ff7a18; border-radius:0; box-shadow:none; mask:url('season-mark-spooky.svg') center/contain no-repeat; -webkit-mask:url('season-mark-spooky.svg') center/contain no-repeat; }
+html[data-season="christmas"] .attention-badge { width:20px; height:20px; top:-3px; background:#f8c85b; border-radius:0; box-shadow:none; mask:url('season-mark-christmas.svg') center/contain no-repeat; -webkit-mask:url('season-mark-christmas.svg') center/contain no-repeat; }
+.home-next-up>.home-today-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+.home-today-heading h2 { margin:0; }
+.home-today-heading button { border:1px solid var(--diary-rule); background:var(--diary-raised); color:var(--page-text); border-radius:14px; min-height:44px; padding:8px 12px; font:inherit; font-size:.85rem; }
+.home-updates { border:1px solid var(--diary-rule); border-radius:20px; margin:12px 0; background:var(--diary-panel); }
+.home-updates>summary { padding:16px; color:var(--page-text); font-weight:800; cursor:pointer; min-height:44px; box-sizing:border-box; }
+.home-updates .activity-card { border:0; box-shadow:none; margin:0; padding-top:0; }
+.home-updates .activity-heading .tiny-kicker { display:none; }
+.compact-dashboard .focus-card:not(.app-sheet) { display:none; }

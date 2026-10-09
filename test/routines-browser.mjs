@@ -21,7 +21,7 @@ try {
  assert.equal(await page.evaluate(()=>pings[0].to),'her');assert.match(await page.evaluate(()=>pings[0].url),/^tasks.html#item-/);
  await row.locator('.task-title').click();await page.fill('[data-edit-task] [name=title]','feed both cats');await page.click('[data-edit-task] [type=submit]');
  await page.waitForFunction(()=>document.querySelector('.task-row').textContent.includes('feed both cats'));
- await page.goto(base+'/today.html?as=him');await page.locator('#today-list [data-inline-action=finish]').first().click();
+ await page.goto(base+'/today.html?as=him');await page.locator('#home-next-up [data-inline-action=finish]').first().click();
  await page.goto(base+'/tasks.html?as=him#routines');await page.waitForSelector('.task-row.done');
  await page.clock.fastForward(10*3600000+31000);await page.waitForFunction(()=>!document.querySelector('.task-row.done'));
  assert.equal(await page.locator('.task-check').isEnabled(),true,'Saturday resets');

@@ -1,0 +1,41 @@
+.practice-shell { max-width:700px; }
+.practice-back { display:inline-flex; align-items:center; min-height:44px; color:var(--accent); font-weight:800; text-decoration:none; }
+.practice-caption { color:var(--page-muted); font-size:.88rem; margin:6px 0 14px; }
+.practice-card,.practice-shelf { padding:18px; background:var(--diary-panel); border:1px solid var(--diary-rule); border-radius:22px; margin:12px 0; }
+.practice-shelf h2 { margin:0 0 4px; font-size:1.15rem; }
+.practice-tabs { display:flex; gap:6px; margin:12px 0; }
+.practice-tabs a { flex:1; display:grid; place-items:center; min-height:44px; padding:6px; text-align:center; text-decoration:none; border-radius:14px; border:1px solid var(--diary-rule); background:var(--diary-raised); color:var(--page-text); font-size:.88rem; font-weight:800; }
+.practice-tabs a[aria-current="page"] { background:var(--accent); color:var(--button-text,#241c32); }
+.practice-toolbar { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+.practice-toolbar h2 { margin:0; font-size:1.12rem; }
+.practice-toolbar label { display:flex; gap:8px; align-items:center; font-size:.85rem; }
+.practice-toolbar select { width:auto; min-height:44px; padding:6px 8px; max-width:120px; background:var(--diary-raised); color:var(--page-text); border:1px solid var(--diary-rule); font:inherit; color-scheme:light; }
+.him-theme .practice-toolbar select { color-scheme:dark; }
+.practice-toolbar option { background:var(--diary-panel); color:var(--page-text); }
+.practice-shell .feature-hero h1 { font-size:1.35rem; }
+#practice-game .word-grid { max-width:220px; gap:4px; }
+#practice-game .word-row { gap:4px; }
+#practice-game .word-legend { gap:10px; margin:6px 0; }
+#practice-game .word-message:empty { min-height:0; margin:4px 0; }
+.practice-actions,.practice-hints { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.practice-actions button,.practice-hints button { min-height:44px; padding:9px 12px; border:1px solid var(--diary-rule); border-radius:14px; color:var(--page-text); background:var(--diary-raised); font:inherit; font-size:.85rem; font-weight:800; cursor:pointer; }
+.practice-actions #practice-next { margin-left:auto; background:var(--accent); color:var(--button-text,#241c32); }
+.practice-storage:empty { display:none; }
+.practice-storage { color:var(--page-text); border-left:3px solid var(--accent); padding:8px; font-size:.86rem; }
+.practice-link { display:flex; gap:12px; align-items:center; justify-content:space-between; padding:12px 0; min-height:56px; text-decoration:none; color:var(--page-text); border-top:1px solid var(--diary-rule); }
+.practice-link small { display:block; color:var(--page-muted); font-size:.82rem; margin-top:2px; }
+.practice-count { white-space:nowrap; font-size:.9rem; font-variant-numeric:tabular-nums; color:var(--accent); font-weight:800; }
+.practice-count i { font-style:normal; margin-left:5px; }
+#practice-game .word-tile { animation:none; }
+#practice-game .word-row.practice-reveal .word-tile { animation:practice-pop .3s ease-out both; }
+#practice-game .word-message { min-height:1.5em; }
+#practice-game .practice-clue { padding:10px 12px; border-radius:12px; background:var(--diary-raised); font-size:.9rem; }
+#practice-game .practice-clue:empty { display:none; }
+#practice-game .search-grid { touch-action:none; user-select:none; -webkit-user-select:none; }
+#practice-game .puzzle-cell { -webkit-tap-highlight-color:transparent; }
+#practice-game .word-keyboard button { min-height:46px; }
+#practice-game .crossword-clues button { min-height:44px; }
+#practice-game .practice-done { color:var(--page-text); font-size:1rem; font-weight:800; }
+@keyframes practice-pop { from { transform:scale(.92); } to { transform:scale(1); } }
+@media(max-width:360px) { .practice-card { padding:12px; }.practice-tabs a { font-size:.78rem; } }
+@media(prefers-reduced-motion:reduce) { #practice-game .word-row.practice-reveal .word-tile { animation:none; } }

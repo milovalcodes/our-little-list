@@ -27,17 +27,15 @@ async function boot(viewer) {
     data.listenToQuery('notes', recent, notes => {
       const incoming = firstFresh('notes', notes, note => note.recipient === viewer && !note.read);
       if (!incoming) return;
-      const shown = announce({
+      announce({
         icon: NOTE_MOODS[incoming.mood] || '💌',
         label: 'a note for you',
         body: incoming.body,
         url: `notes.html#note-${incoming.id}`,
         kind: 'note'
       });
-      // Only a note you were actually shown counts as read. A backgrounded page
-      // still receives snapshots, and marking those read burned the note: no
-      // popup now, and nothing unread waiting when the page came back.
-      if (shown) window.setTimeout(() => void data.updateIn('notes', incoming.id, { read: true, readAt: Date.now() }).catch(() => {}), 1200);
+      // A transient banner is not a read receipt. Keep the Notes badge until
+      // the actual note is visible in its thread, even if this banner times out.
     });
 
     data.listenToQuery('items', recent, items => {

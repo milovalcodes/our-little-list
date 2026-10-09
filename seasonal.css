@@ -162,12 +162,7 @@ html[data-season]:not([data-season="normal"]) .profile-page :is(.incoming-note,.
 html[data-season]:not([data-season="normal"]) .incoming-note :is(p,.incoming-note-close) { color:var(--page-text); }
 html[data-season]:not([data-season="normal"]) .incoming-note small { color:var(--page-muted); }
 html[data-season]:not([data-season="normal"]) .profile-page .toast { background:var(--accent-deep); color:var(--diary-pressed-ink); }
-html[data-season]:not([data-season="normal"]) :is(.dock-item i,.context-add i,.more-grid i) { position:relative; }
-html[data-season]:not([data-season="normal"]) :is(.dock-item i,.context-add i,.more-grid i)::after {
-  content:""; position:absolute; width:10px; height:10px; right:-8px; top:-3px;
-  background:currentColor; opacity:.8; mask:var(--season-mark) center/contain no-repeat;
-  -webkit-mask:var(--season-mark) center/contain no-repeat; pointer-events:none;
-}
+/* Navigation seasonal markers are meaningful unread badges, not permanent decoration. */
 html[data-season="spooky"] .couple-marker.her { background:#ffc078; border-color:#ffecd2; }
 html[data-season="spooky"] .couple-marker.him { background:#4e345f; border-color:#e7c5de; }
 html[data-season="christmas"] .couple-marker.her { background:#f6d59d; border-color:#f9efda; }

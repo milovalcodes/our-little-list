@@ -1,4 +1,5 @@
 import './old-links.js';
+import {startNavigationAttention} from './navigation-attention.js';
 import { sharedLayer } from './data-hub.js';
 import { awaitViewer, partnerOf } from './viewer.js';
 import { personName } from './profile-store.js';
@@ -21,6 +22,7 @@ async function boot() {
   markReturningVisit();
   addDock(viewer);
   addSheets();
+  startNavigationAttention({data,viewer,other,page});
   movePageComposers();
   addSyncTray();
   if (page === 'home') setupFridgeNote(data, viewer, other);
@@ -61,10 +63,12 @@ async function boot() {
     } catch (_) { /* ignore malformed messages */ }
   });
   const openSection = () => {
-    if(page==='today'&&location.hash==='#focus')openSheet('focus');
+    if(['home','today'].includes(page)&&location.hash==='#focus')openSheet('focus');
   };
   window.addEventListener('hashchange',openSection);
   openSection();
+  const openUpdates=()=>{if(page==='home'&&location.hash==='#new'){const panel=document.getElementById('new');if(panel)panel.open=true;}};
+  openUpdates();addEventListener('hashchange',openUpdates);
   setupRowMenus();
   const searchHost = document.querySelector('.feature-shell > .feature-hero') || document.querySelector('.app-topbar');
   if (searchHost && !searchHost.querySelector('[data-open-sheet="search"]')) {
@@ -92,7 +96,7 @@ function movePageComposers() {
     move('#task-composer', 'sheet-task-form', 'Add to the list');
   }
   if (page === 'dates') move('.date-composer', 'sheet-date-form', 'Add a date idea');
-  if (page === 'today') move('.focus-card', 'sheet-focus', 'Focus together');
+  if (['home','today'].includes(page)) move('.focus-card', 'sheet-focus', 'Focus together');
   if (page === 'memories') move('.memory-composer', 'sheet-memory-form', 'Add a memory');
 }
 
@@ -102,7 +106,7 @@ function addDock(viewer) {
     <a class="dock-item${active('home')}" href="${viewer}.html"><i>⌂</i><span>home</span></a>
     <a class="dock-item${active('tasks')}" href="tasks.html"><i>✓</i><span>list</span></a>
     <a class="dock-item${active('activities')}" href="activities.html"><i>⚄</i><span>activities</span></a>
-    <a class="dock-item${active('today')}" href="today.html"><i>◎</i><span>today</span></a>
+    <a class="dock-item${active('notes')}" href="notes.html"><i>✉</i><span>notes</span></a>
     <button class="dock-item" type="button" data-open-sheet="more"><i>•••</i><span>more</span></button>
   </nav>`);
   document.body.classList.add('has-app-dock');
@@ -145,7 +149,7 @@ function addSheets() {
     <section class="app-sheet more-sheet" id="sheet-more" role="dialog" aria-modal="true" aria-labelledby="more-title" hidden>
       <header class="sheet-head"><div><h2 id="more-title">More</h2></div><button type="button" data-close-sheet aria-label="Close">×</button></header>
       <nav class="more-grid">
-        <a href="notes.html"><i>✉</i><span>notes</span></a><a href="status.html"><i>☀︎☾</i><span>profiles</span></a>
+        <a href="status.html"><i>☀︎☾</i><span>profiles</span></a>
         <a href="dates.html"><i>✦</i><span>date ideas</span></a><a href="memories.html"><i>◒</i><span>memories</span></a>
         <a href="phone-check.html"><i>⚙︎</i><span>settings</span></a><a href="guide.html#tutorial"><i>✎</i><span>guide</span></a>
       </nav>

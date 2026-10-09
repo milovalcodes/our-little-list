@@ -15,6 +15,7 @@
         notes: 'mail from this plane of existence',
         today: 'the october pile',
         activities: 'a little spooky rivalry',
+        practice: 'no tricks. take your time.',
         status: 'currently haunting',
         dates: 'plans after dark',
         memories: 'evidence we survived october',
@@ -47,6 +48,7 @@
         notes: 'warm little notes',
         today: 'the december pile',
         activities: 'a little snow-day rivalry',
+        practice: 'a little snow-day practice',
         status: 'snowed in or on the move?',
         dates: 'plans worth leaving the blanket for',
         memories: 'kept warm in here',
@@ -154,7 +156,7 @@
 
     const hero = document.querySelector('.feature-shell > .feature-hero');
     let whisper = document.querySelector('.seasonal-whisper');
-    const line = copy?.pages[document.body.dataset.app];
+    const line = copy?.pages[document.body.hasAttribute('data-practice')?'practice':document.body.dataset.app];
     if (hero && line) {
       if (!whisper) { whisper = document.createElement('p'); whisper.className = 'seasonal-whisper'; hero.after(whisper); }
       whisper.textContent = `${copy.mark} ${line}`;

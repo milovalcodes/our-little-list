@@ -227,6 +227,27 @@ query strings, and `household.js` and `firestore.rules` list the same accounts.
 
 ## Notes
 
+### Home, attention badges and practice
+
+Home owns today's tasks, focus and the folded updates feed. `today.html` is a
+compatibility redirect that preserves anchors; do not build another dashboard
+there. Notes live in Notes, not profiles or the Home feed. A transient incoming
+note banner is not a read receipt.
+
+`navigation-attention.js` owns destination badges and the installed app badge.
+Seasonal shapes are only styling for real unread or unfinished work, never
+permanent decoration on every navigation icon.
+
+Practice has 200 Little Words, 100 Word Searches and 100 crosswords. Progress is
+local to the browser, household and side; it never writes competitive records,
+points or notifications. Keep the v1 catalog order and seeds stable so saved
+boards remain valid. A layout-changing catalog needs a new storage version.
+Practice clues are original. The MIT-attributed extra dictionary expands
+accepted guesses only, not daily answers (`WORD-LIST-LICENSE.txt`).
+
+Run `test/practice.test.mjs`, `test/practice-browser.mjs` and
+`test/declutter-browser.mjs` alongside the full regression suite.
+
 ### Shared routines and reminders
 
 Routines are task records with `routineDays` (Sunday=0). Each day's completion lives in `routineChecks/{itemId}_{YYYY-MM-DD}`; never reset the shared item with a timer or reuse yesterday's completion document. The shared day resets at midnight America/New_York, while activities still reset at 9 a.m. Eastern. Home, Today and the list subscribe only to the current day's checks.

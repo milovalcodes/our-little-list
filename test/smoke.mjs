@@ -145,8 +145,8 @@ console.log('\n--- interactions ---');
   const { context, page, errors } = await open('her.html');
   await openSheet(page, 'more');
   const links = await page.locator('#sheet-more a[href^="guide.html"]').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
-  note(links.length === 1 && links[0] === 'guide.html#tutorial' && await page.locator('#sheet-more .more-grid a').count() === 6 && errors.length === 0,
-       'More keeps only the six secondary destinations', errors[0] || JSON.stringify(links));
+  note(links.length === 1 && links[0] === 'guide.html#tutorial' && await page.locator('#sheet-more .more-grid a').count() === 5 && errors.length === 0,
+       'More keeps only the five secondary destinations', errors[0] || JSON.stringify(links));
   await context.close();
 }
 
@@ -404,7 +404,7 @@ async function openSlow(path) {
   await admire.context.close();
   // Merged pages: queued reminder nudges and old bookmarks still land somewhere real.
   const moved = {};
-  for (const [from, to] of [['reminders.html?from=her', '/tasks.html#asks'], ['activity.html?as=her', '/today.html#new'], ['notifications.html?as=her', '/phone-check.html#pings']]) {
+  for (const [from, to] of [['reminders.html?from=her', '/tasks.html#asks'], ['activity.html?as=her', '/her.html#new'], ['notifications.html?as=her', '/phone-check.html#pings']]) {
     const opened = await open(from);
     moved[from] = opened.page.url().endsWith(to) ? 'ok' : opened.page.url();
     await opened.context.close();
@@ -429,7 +429,7 @@ async function openSlow(path) {
   const orbit=await page.locator('#sky-stage').getAttribute('data-orbit');
   const title=await page.locator('#sky-orbit-title').textContent();
   const liveStatus=await page.locator('#sky-status-him:not([hidden])').count();
-  const noteStar=await page.locator('#sky-note-star:not([hidden])').count();
+  const noteStar=await page.locator('.app-dock a[href="notes.html"] .attention-badge').count();
   const wins=await page.locator('#sky-wins:not([hidden])').count();
   const reaction=await page.locator('#sky-reaction-her:not([hidden])').count();
   const oldDashboard=await page.locator('.compact-hello,.home-group').count();
@@ -902,29 +902,16 @@ async function openSlow(path) {
 // the button element, so a redraw between the two taps silently threw it away
 // and the delete never happened.
 {
-  // What's new lives at the bottom of Today now.
-  const { context, page, errors } = await open('today.html?as=her');
-  await page.setViewportSize({ width: 390, height: 320 });
-  await page.addInitScript(()=>{document.addEventListener('DOMContentLoaded',()=>{const section=document.getElementById('new');if(section)section.style.marginTop='500px';});});
-  await page.evaluate(() => localStorage.setItem('our-little-list-notes-v1', JSON.stringify({ items: [
-    { id: 'n1', sender: 'him', recipient: 'her', body: 'a note to delete', mood: 'heart', createdAt: Date.now() }
-  ] })));
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(1300);
-  const rows = await page.locator('.activity-row').count();
-  const readNow = () => page.evaluate(() => {
-    try { return !!JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items[0].read; } catch (_) { return false; }
+  // Notes stay in Notes, unread, even when Home updates are opened.
+  const { context, page, errors } = await open('today.html?as=her#new');
+  await page.evaluate(() => {
+    localStorage.setItem('our-little-list-notes-v1', JSON.stringify({items:[{id:'n1',sender:'him',recipient:'her',body:'a private note',mood:'heart',createdAt:Date.now()}]}));
+    localStorage.setItem('our-little-list-dates-v1', JSON.stringify({items:[{id:'d1',addedBy:'him',title:'a date to delete',createdAt:Date.now()}]}));
   });
-  // Keep the row genuinely below the viewport: Today no longer has the
-  // old question card pushing the feed down.
-  // Opening Today is not reading an off-screen feed; scrolling to it is.
-  const readBeforeScrolling = await readNow();
-  await page.locator('#new').scrollIntoViewIfNeeded();
-  await page.waitForTimeout(1300);
-  const markedRead = await readNow();
-  note(!readBeforeScrolling && markedRead, 'reading the feed marks the note read, and only then',
-       JSON.stringify({ readBeforeScrolling, markedRead }));
+  await page.reload({waitUntil:'domcontentloaded'});await page.waitForTimeout(1000);
+  const rows=await page.locator('.activity-row').count();
+  const read=await page.evaluate(()=>JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items[0].read);
+  note(!read&&!(await page.locator('.activity-row',{hasText:'a private note'}).count()),'Home neither repeats notes nor marks them read');
   await rowMenu(page.locator('.activity-row').first(), 'delete for us');
   // Stand in for the snapshot that lands between the two taps.
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('littlelist:profile')));
@@ -933,7 +920,7 @@ async function openSlow(path) {
   await rowMenu(page.locator('.activity-row').first(), 'delete for us');
   await page.waitForTimeout(500);
   const left = await page.evaluate(() => {
-    try { return JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items.length; } catch (_) { return -1; }
+    try { return JSON.parse(localStorage.getItem('our-little-list-dates-v1')).items.length; } catch (_) { return -1; }
   });
   note(rows === 1 && armed.includes('tap again') && left === 0,
        'a redraw between the two taps does not eat the delete',
@@ -1171,8 +1158,8 @@ async function openSlow(path) {
 {
   const { context, page, errors } = await open('today.html?as=her');
   await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());await data.setTo('items','today-due',{title:'water the plant',type:'task',due:today,done:false,addedBy:'her',createdAt:Date.now()});await data.setTo('help','today-ask',{from:'him',to:'her',title:'grab the keys',state:'open',createdAt:Date.now()});});
-  await page.locator('#today-list [data-inline-kind="item"] [data-inline-action="finish"]').click();
-  await page.locator('#today-list [data-inline-kind="ask"] [data-inline-action="finish"]').click();
+  await page.locator('#home-next-up [data-inline-kind="item"] [data-inline-action="finish"]').click();
+  await page.locator('#home-next-up [data-inline-kind="ask"] [data-inline-action="finish"]').click();
   const result=await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js');const data=await sharedLayer();return {item:(await data.readOnce('items')).find(i=>i.id==='today-due'),ask:(await data.readOnce('help')).find(i=>i.id==='today-ask')};});
   note(result.item?.done===true&&result.ask?.state==='done'&&errors.length===0,'Today finishes a task and finishes a preserved ask in place',errors[0]||JSON.stringify(result));
   await context.close();
