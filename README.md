@@ -35,8 +35,12 @@ and focus preferences apply before display. Exact same-page taps reuse the
 notification router without reloading drafts. Local preview keeps mock feed
 listeners; never use that mode to prove phone delivery.
 
-Delivery runs every minute; logs include scheduling and total duration without
-message bodies. Missing subscriptions rotate out of the due queue; stale notes,
+Delivery runs every minute. Every opted-in visible ping requests high Web Push
+transport priority on Apple and Android; this does not bypass focus, quiet hours
+or category choices. Logs separate queue wait from push-provider acceptance time,
+alongside scheduling and total duration, without message bodies or endpoints.
+Provider acceptance is not proof of phone display; locked-phone delivery must
+also be checked on real devices. Missing subscriptions rotate out of the due queue; stale notes,
 reactions, memories and routine nudges are checked before sending. Sign-out
 removes only the current browser endpoint, with a Firestore transaction to
 preserve a concurrent registration. Keep observability explicitly enabled in

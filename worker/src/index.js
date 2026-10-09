@@ -57,7 +57,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
 
   try {
 
-    const now = Date.now();
+    let now = Date.now();
     // The daily question is a nicety; a failure there (a 5xx, or rules not
     // deployed yet) must not stop reminders, asks and notes going out.
     // Independent schedulers can fetch concurrently. Crown settlement stays
@@ -76,6 +76,9 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
       if (record?.subscription?.endpoint) subscriptions[record.id] = record;
     }
 
+    // Include messages queued while the schedulers/subscriptions were loading,
+    // instead of making them wait for an unnecessary extra minute.
+    now = Date.now();
     const due = await db.dueFrom(`${household}/outbox`, 'sendAt', now + GRACE_MS, 50);
     if (due.length === 0) {
       return { checked: true, sent: 0, subscribed: Object.keys(subscriptions).length, schedulingMs, durationMs:Date.now()-startedAt };
@@ -223,12 +226,24 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
         vibrate: vibrationPattern(preferences.vibration)
       });
 
+      const pushStartedAt = Date.now();
       const result = await sendNotification(target.subscription, payload, vapid, {
         ttl: 86400,
-        urgency: ['reminder', 'list-reminder', 'list-nudge', 'help', 'arrival'].includes(message.kind) || message.urgent === true ? 'high' : 'normal'
+        // These are opted-in, visible personal notifications, not background
+        // sync. Normal priority permits power-saving delays on locked phones.
+        // Transport priority is NOT message.urgent: quiet hours, focus and
+        // category preferences were still enforced above.
+        urgency: 'high'
       });
 
       if (result.ok) {
+        const acceptedAt = Date.now();
+        // Acceptance by Apple/Google is not proof of display on the phone.
+        // No message bodies, endpoints, tokens or private IDs enter logs.
+        console.log(JSON.stringify({event:'push-accepted',kind:message.kind||'note',to:message.to,acceptedAt,
+          queuedForMs:Math.max(0,acceptedAt-Number(message.createdAt||message.sendAt||acceptedAt)),
+          dueDelayMs:Math.max(0,acceptedAt-Number(message.sendAt||acceptedAt)),
+          providerMs:acceptedAt-pushStartedAt}));
         await db.remove(message.path);
         sent += 1;
       } else if (result.status === 404 || result.status === 410) {

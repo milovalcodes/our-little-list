@@ -137,7 +137,7 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
     }
     if (options.method === 'PATCH' && url.includes('/outbox/')) { moved.push({url,sendAt:Number(JSON.parse(options.body).fields.sendAt.integerValue)});return moveStatus === 200 ? Response.json({}) : new Response('denied', { status: moveStatus }); }
     if (options.method === 'DELETE') { deleted.push(url.split('/documents/')[1]); return Response.json({}); }
-    if (url.startsWith('https://fcm.googleapis.com')) {
+    if (url.startsWith('https://fcm.googleapis.com') || url.startsWith('https://web.push.apple.com')) {
       pushes.push({ headers: options.headers, bytes: options.body.length });
       return new Response('', { status: pushStatus });
     }
@@ -180,7 +180,7 @@ const now = Date.now();
   console.log(' ok  a due message is sent, then cleared from the outbox');
 }
 
-// 2. reminders are marked urgent so Android does not batch them in doze
+// 2. Visible personal notes must not be batched by locked-phone power saving.
 {
   const h = harness({ outbox: [
     { id:'R1', to:'her', title:'⏰', body:'x', kind:'reminder', ref:'keep', sendAt: now-1000, createdAt: now-2000 },
@@ -188,8 +188,42 @@ const now = Date.now();
   ], reminders: { keep: true } });
   await deliver(ENV);
   assert.equal(h.pushes[0].headers.Urgency, 'high', 'reminder urgency');
-  assert.equal(h.pushes[1].headers.Urgency, 'normal', 'note urgency');
-  console.log(' ok  reminders go out as urgent, chatter does not');
+  assert.equal(h.pushes[1].headers.Urgency, 'high', 'notes request prompt locked-phone delivery too');
+  console.log(' ok  both reminders and personal notes request prompt delivery');
+}
+
+// 3. a reminder whose record was deleted does not fire
+{
+  const h = harness({outbox:[{id:'IPHONE',to:'her',kind:'note',body:'private-text-never-log',sendAt:now-1000,createdAt:now-2000}],
+    subs:{her:{...SUB,endpoint:'https://web.push.apple.com/QIPHONE'}}});
+  const log=console.log,events=[];
+  console.log=value=>events.push(String(value));
+  try {await deliver(ENV);} finally {console.log=log;}
+  assert.equal(h.pushes[0].headers.Urgency,'high','Apple receives the same prompt-delivery priority');
+  const receipt=events.map(value=>JSON.parse(value)).find(value=>value.event==='push-accepted');
+  assert.ok(receipt.acceptedAt>=now);
+  assert.ok(receipt.queuedForMs>=2000&&receipt.dueDelayMs>=1000&&receipt.providerMs>=0);
+  assert.ok(!events.join('').includes('private-text-never-log'));
+  assert.ok(!events.join('').includes('QIPHONE'));
+  console.log(' ok  Apple notes request immediate delivery; timing logs omit private content');
+}
+
+{
+  harness({outbox:[]});
+  const fetch=globalThis.fetch,clock=Date.now;
+  let current=now,cutoff=0;
+  Date.now=()=>current;
+  globalThis.fetch=async(url,options)=>{
+    if(String(url).includes('/pushSubs?'))current+=5000;
+    if(String(url).includes(':runQuery')){
+      const query=JSON.parse(options.body).structuredQuery;
+      if(query.from[0].collectionId==='outbox')cutoff=Number(query.where.fieldFilter.value.integerValue);
+    }
+    return fetch(url,options);
+  };
+  try {await deliver(ENV);} finally {Date.now=clock;globalThis.fetch=fetch;}
+  assert.equal(cutoff,now+5000,'queue query includes pings due during scheduling, not only at pass start');
+  console.log(' ok  scheduler work does not add an unnecessary extra-minute queue wait');
 }
 
 // 3. a reminder whose record was deleted does not fire
