@@ -14,7 +14,7 @@ export async function settleWordWeeks(db,household,now,{before='9999-12-31'}={})
     const body=fields.winners.length?names+' wins this week’s Little Word. See the scores.':'No words played this week. Fresh start at 9.';
     const writes=[{path:household+'/wordWeeks/'+score.week,fields}];
     if(ending)writes.push(ending);
-    if(fields.winners.length)for(const p of ['her','him'])writes.push(makePing('word-winner-'+score.week,p,title,body,'activities.html#scoreboard'));
+    if(fields.winners.length)for(const p of ['her','him'])writes.push(makePing('word-winner-'+score.week,p,title,body,'activities.html#scoreboard-'+score.week));
     await db.createMany(writes);
   }
   async function openDuel(score,round,ending=null){

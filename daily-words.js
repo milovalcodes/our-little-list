@@ -1,5 +1,6 @@
 import {activityWindow} from './activity-clock.js';
 import {wordTheme,CATALOG_VERSION} from './puzzle-catalog.js';
+import {puzzleSeason,seasonalWords,SEASONAL_WORDS} from './seasonal-puzzles.js';
 export const WORD_START_DAY='2026-10-08';
 // Original, hand-picked answer bank. Keep this order stable; daily documents
 // also retain their word, so future bank additions cannot rewrite a played day.
@@ -17,8 +18,15 @@ function shuffled(words,seed) {
   return bank;
 }
 const bank=shuffled(DAILY_WORDS,190819),sundays=shuffled(SUNDAY_WORDS,78123);
-export const LITTLE_WORD_CATALOG=[...DAILY_WORDS.map(word=>({word,difficulty:'normal'})),...SUNDAY_WORDS.map(word=>({word,difficulty:'hard'}))].map(entry=>({...entry,id:'word-'+entry.word,theme:wordTheme(entry.word,entry.difficulty==='hard')}));
+export const LITTLE_WORD_CATALOG=[...DAILY_WORDS.map(word=>({word,difficulty:'normal'})),...SUNDAY_WORDS.map(word=>({word,difficulty:'hard'}))].map(entry=>({...entry,id:'word-'+entry.word,theme:wordTheme(entry.word,entry.difficulty==='hard')})).concat(SEASONAL_WORDS);
 function metadata(word,hard){return {theme:wordTheme(word,hard),difficulty:hard?'hard':'normal',catalogVersion:CATALOG_VERSION,entryId:'word-'+word};}
+function seasonalAnswer(day,hard,position,now){
+ const season=puzzleSeason(day,now);
+ if(!season)return null;
+ const year=Number(day.slice(0,4)),entries=shuffled(seasonalWords(season,hard),year+(hard?78123:190819));
+ const entry=entries[((position%entries.length)+entries.length)%entries.length];
+ return {word:entry.word,theme:entry.theme,difficulty:entry.difficulty,catalogVersion:CATALOG_VERSION,entryId:entry.id};
+}
 export const WORD_BANK_SIZE=bank.length;
 export function wordForDay(day) {
   const window=activityWindow(day),index=Math.round((Date.parse(day+'T12:00:00Z')-Date.parse(WORD_START_DAY+'T12:00:00Z'))/86400000);
@@ -28,12 +36,16 @@ export function wordForDay(day) {
   const sundayCount=index<3?0:Math.floor((index-3)/7)+1;
   const position=sunday?sundayCount-1:index-sundayCount;
   const word=(sunday?sundays:bank)[position%(sunday?sundays:bank).length];
-  return {day,word,...metadata(word,sunday),...window};
+  // Separate weekday/Sunday positions avoid repeats within a seasonal month.
+  const monthDay=Number(day.slice(8,10)),firstWeekday=new Date(day.slice(0,7)+'-01T12:00Z').getUTCDay();
+  const firstSunday=1+(7-firstWeekday)%7,sundaysSoFar=monthDay<firstSunday?0:Math.floor((monthDay-firstSunday)/7)+1;
+  const seasonal=seasonalAnswer(day,sunday,sunday?sundaysSoFar-1:monthDay-sundaysSoFar-1);
+  return {day,word,...metadata(word,sunday),...seasonal,...window};
 }
 
-export function wordForTie(week,round,now){
+export function wordForTie(week,round,now=Date.now()){
   const id=week+'-tie-'+round;
   const index=Math.floor(Date.parse(week+'T12:00:00Z')/604800000);
   const word=sundays[(index*13+round*17)%sundays.length];
-  return {day:id,word,...metadata(word,true),opensAt:now,closesAt:4102444800000,week};
+  return {day:id,word,...metadata(word,true),...seasonalAnswer(id,true,index+round,now),opensAt:now,closesAt:4102444800000,week};
 }

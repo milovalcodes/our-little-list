@@ -32,6 +32,6 @@ function applyEverywhere() {
   if (viewer === 'her' || viewer === 'him') {
     const profile = cachedProfile();
     const name = viewer === 'her' ? (profile.sunName || 'Her') : (profile.moonName || 'Him');
-    document.title = `For ${name} · Our Little List`;
+    document.title = `For ${name} · Our Little App`;
   }
 }

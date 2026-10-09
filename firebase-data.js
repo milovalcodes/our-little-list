@@ -275,7 +275,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       try {
         await this.addTo(OUTBOX, {
           to: person === 'him' ? 'him' : 'her',
-          title: String(message?.title || 'Our Little List').slice(0, 120),
+          title: String(message?.title || 'Our Little App').slice(0, 120),
           body: String(message?.body || '').slice(0, 400),
           url: notificationUrl(message?.url),
           kind: String(message?.kind || 'note'),

@@ -41,40 +41,6 @@ try{
   await capture(moon,'little-profile-own.png');
   console.log('ok profiles preserve the viewer, hide partner controls, and send to the right person');
 
-  await moon.goto(base+'/today.html?as=him#game');
-  await sun.goto(base+'/today.html?as=her#game');
-  await moon.locator('[data-game="start"]').click();
-  await sun.waitForFunction(()=>document.querySelector('.game-status')?.textContent==='your turn');
-  assert.equal(await moon.locator('.couple-board button:not(:disabled)').count(),0);
-  const readGame=()=>moon.evaluate(()=>JSON.parse(localStorage.getItem('our-little-list-games-v1')).items[0]);
-  async function move(page,cell,ply,from){
-    await page.waitForFunction(()=>document.querySelector('.game-status')?.textContent==='your turn');
-    if(from!==undefined)await page.click(`[data-cell="${from}"]`);
-    await page.click(`[data-cell="${cell}"]`);
-    await page.waitForFunction(p=>JSON.parse(localStorage.getItem('our-little-list-games-v1')).items[0].ply===p,ply);
-  }
-  for(let round=1;round<=3;round++){
-    for(const [i,cell]of [0,3,1,4,2].entries())await move(i%2?moon:sun,cell,i+1);
-    await moon.waitForFunction(n=>JSON.parse(localStorage.getItem('our-little-list-games-v1')).items[0].score.her===n,round);
-    assert.equal((await readGame()).wins.her,round===3?1:0);
-    await capture(moon,`little-game-round-${round}.png`,'#game');
-    await moon.click('[data-game="start"]');
-    await sun.waitForFunction(()=>JSON.parse(localStorage.getItem('our-little-list-games-v1')).items[0].ply===0);
-  }
-  for(const [i,cell]of [0,1,5,2,7,6].entries())await move(i%2?moon:sun,cell,i+1);
-  await move(sun,4,7,5);
-  const shifted=await readGame();assert.equal(shifted.board['5'],undefined);assert.equal(shifted.board['4'],'her');
-  await moon.reload();await moon.waitForSelector('.couple-board');
-  assert.equal((await readGame()).ply,7);assert.equal((await readGame()).wins.her,1);
-  await capture(moon,'little-game-live.png','#game');
-  await context.setOffline(true);
-  assert.equal(await moon.locator('.couple-board button:not(:disabled)').count(),0);
-  await context.setOffline(false);
-  await moon.locator('.game-rules summary').click();await moon.click('[data-game="close"]');await moon.click('[data-game="close"]');
-  await sun.waitForFunction(()=>document.querySelector('.game-status')?.textContent==='put away for now');
-  assert.equal((await readGame()).score.her,0);
-  console.log('ok two-tab play: turns, 3-round match, rematch, moving pieces, reload, offline and ending');
-
   await moon.evaluate(()=>localStorage.setItem('our-little-list-items-v1',JSON.stringify({items:[{id:'old-task',title:'already finished',type:'task',done:true,createdAt:1,doneAt:2}]})));
   await moon.goto(base+'/tasks.html?as=him#item-old-task');
   await moon.waitForSelector('.task-row.is-deep-linked');

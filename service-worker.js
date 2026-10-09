@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v96';
+const CACHE = 'our-little-list-v97';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -19,9 +19,10 @@ const PAGES = [
 
 const ASSETS = [
   ...PAGES,
-  './timed-games.js','./timed-game.js','./daily-puzzles.js','./puzzle-catalog.js','./puzzle-bank.js','./league-scores.js',
-  './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './guide.js', './profile-store.js', './profile-route.js', './couple-game.js', './arcade-game.js', './game-panel.js', './profile-names.js',
-  './profiles.js', './status.js', './dates.js', './dashboard.js', './game-sync.js', './activities.js', './activity-clock.js', './daily-word.js', './daily-words.js', './word-game.js', './word-lexicon.js', './word-scores.js', './word-crowns.js', './word-tiebreaker.js', './word-celebration.js', './word-coronation.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
+  './appearance-boot.js',
+  './timed-games.js','./timed-game.js','./daily-puzzles.js','./memory-catalog.js','./weekly-report.js','./weekly-tracker.js','./puzzle-catalog.js', './seasonal-puzzles.js','./puzzle-bank.js','./league-scores.js',
+  './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './guide.js', './profile-store.js', './profile-route.js', './couple-game.js', './arcade-game.js', './profile-names.js',
+  './profiles.js', './status.js', './dates.js', './dashboard.js', './activities.js', './activity-clock.js', './daily-word.js', './daily-words.js', './word-game.js', './word-lexicon.js', './word-scores.js', './word-crowns.js', './word-tiebreaker.js', './word-celebration.js', './word-coronation.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
   './notification-policy.js', './notification-preferences.js',
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
   './push-config.js', './push-client.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',
@@ -167,7 +168,7 @@ const SHOWN_IN_PAGE = new Set(['note', 'item', 'date', 'help', 'help-answer', 's
 const PAGES_WITH_POPUPS = /\/(her|him|today|tasks|notes|dates|memories|status)\.html(?:[?#]|$)/;
 
 self.addEventListener('push', event => {
-  let payload = { title: 'Our Little List', body: 'a little something for you ♡', url: './index.html' };
+  let payload = { title: 'Our Little App', body: 'a little something for you ♡', url: './index.html' };
   try {
     payload = { ...payload, ...(event.data ? event.data.json() : {}) };
   } catch (_) {
@@ -220,7 +221,7 @@ self.addEventListener('push', event => {
       // Whatever else goes wrong with the options, a push has to show
       // something. The plainest possible notification still carries the words
       // and still opens the right page.
-      .catch(() => self.registration.showNotification(payload.title || 'Our Little List', {
+      .catch(() => self.registration.showNotification(payload.title || 'Our Little App', {
         body,
         tag,
         data: { url: target }

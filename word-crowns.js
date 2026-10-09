@@ -10,7 +10,7 @@ export function startWordCrowns(data,viewer){
     const images=[...document.querySelectorAll('img[src*="sun-profile"],img[src*="moon-profile"]')];
     const keep=new Set();
     for(const img of images){
-      if(img.closest('.word-coronation'))continue;
+      if(img.closest('.word-coronation,.score-avatar'))continue;
       const side=img.getAttribute('src').includes('sun-profile')?'her':'him',streak=crowns[side]||0;
       const box=img.getBoundingClientRect();
       if(!streak||!box.width||!box.height||box.bottom<0||box.top>innerHeight||(img.checkVisibility&&!img.checkVisibility({checkVisibilityCSS:true})))continue;
@@ -20,7 +20,7 @@ export function startWordCrowns(data,viewer){
       const size=Math.min(24,Math.max(16,box.width*.32))+Math.min(streak-1,4)*2;
       badge.innerHTML='♛'+(streak>1?'<small>'+streak+'</small>':'');
       badge.style.cssText=badge.classList.contains('is-anchored')?`left:50%;top:${-size*.5}px;font-size:${size}px`:`left:${box.left+box.width/2}px;top:${box.top-size*.5}px;font-size:${size}px`;
-      badge.title='Little Word champion · '+streak+' week'+(streak===1?'':'s')+' running';
+      badge.title='Weekly champion · '+streak+' week'+(streak===1?'':'s')+' running';
     }
     for(const [img,badge] of badges)if(!keep.has(img)){badge.remove();badges.delete(img);}
   }

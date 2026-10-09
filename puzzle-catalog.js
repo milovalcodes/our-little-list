@@ -1,8 +1,9 @@
 import {EASY_CLUES,HARD_CLUES} from './puzzle-bank.js';
+import {SEASONAL_POOLS} from './seasonal-puzzles.js';
 
 // Versioned, reviewed content. Persist a generated board before offering it:
 // catalog additions must never change a board somebody has already started.
-export const CATALOG_VERSION=1;
+export const CATALOG_VERSION=2;
 const groups=[
  ['normal','fruits','Fruit bowl',`APPLE GRAPE LEMON MANGO OLIVE PEACH CHERRY ORANGE PEAR AVOCADO BANANA KIWI PAPAYA PLUM GUAVA MELON LYCHEE APRICOT FIG LIME COCONUT DATE RAISIN POMELO QUINCE`],
  ['normal','ocean','By the ocean',`BEACH OCEAN WHALE WAVE ANCHOR SHIP CORAL SHARK SHELL CRAB SEAL TIDE SAND REEF KELP SQUID OCTOPUS LOBSTER SHRIMP DOLPHIN SEAGULL STARFISH SEAHORSE JELLYFISH SAIL BOAT`],
@@ -21,8 +22,8 @@ export const PUZZLE_CATALOG=[...EASY_CLUES.map(e=>({...e,difficulty:'normal'})),
  const group=category.get(e.difficulty+':'+e.word);
  if(!group)throw Error('Missing puzzle category: '+e.word);
  return Object.freeze({id:e.difficulty+'-'+e.word.toLowerCase(),...e,theme:group.theme,themeLabel:group.label});
-});
-export const PUZZLE_THEMES=groups.map(([difficulty,id,label])=>Object.freeze({difficulty,id,label}));
+}).concat(SEASONAL_POOLS.flatMap(p=>p.entries.map(e=>Object.freeze(e))));
+export const PUZZLE_THEMES=[...groups.map(([difficulty,id,label])=>Object.freeze({difficulty,id,label,season:''})),...SEASONAL_POOLS.map(({difficulty,id,label,season})=>Object.freeze({difficulty,id,label,season}))];
 export function catalogPool(difficulty,theme){return PUZZLE_CATALOG.filter(e=>e.difficulty===difficulty&&e.theme===theme);}
 
 // Specific hints take precedence over broader vocabulary hints. These are

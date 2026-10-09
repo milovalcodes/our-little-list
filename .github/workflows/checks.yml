@@ -28,7 +28,7 @@ jobs:
         run: node test/home-parity.test.mjs
 
       - name: Tutorial and patch notes match this release
-        run: node test/guide-contract.test.mjs
+        run: node test/guide-contract.test.mjs && node test/branding.test.mjs
 
       - name: Seasonal artwork, install identity and offline rollover
         run: |
@@ -40,6 +40,9 @@ jobs:
           node test/word-celebration.test.mjs
           node test/daily-word.test.mjs
           node test/daily-puzzles.test.mjs
+          node test/seasonal-puzzles.test.mjs
+          node test/weekly-report.test.mjs
+          node test/memory-catalog.test.mjs
           node test/couple-game.test.mjs
           node test/game-sync.test.mjs
           node test/notification-click.test.mjs
@@ -135,4 +138,4 @@ jobs:
           node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
           python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
           pnpm run test:browser
-          pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/word-realtime-browser.mjs && node test/game-realtime-browser.mjs"
+          pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/word-realtime-browser.mjs"

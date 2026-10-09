@@ -74,3 +74,10 @@ await write('him','questionAnswers/2026-10-06-him',{day:'2026-10-06',person:'him
 await write('him','questions/2026-10-06',{day:'2026-10-06',promptId:1,answers:{her:{at:2},him:{at:3}},openedAt:1});
 await read('him','questionAnswers/2026-10-06-her',200);
 console.log('FIRESTORE WORD: ownership, private guesses, atomic scores, immutable history, invalid wins, closed puzzles, closed duels and archived answer privacy pass');
+const memory={text:'a day worth keeping',memoryDate:'2025-05-18',addedBy:'him',createdAt:now,thumb:'',hasPhoto:false};
+await write('him','memories/backdated',memory);
+await read('her','memories/backdated',200);
+await write('him','memories/bad-date',{...memory,memoryDate:'yesterday'},false);
+await write('him','memories/bad-month',{...memory,memoryDate:'2025-99-18'},false);
+await write('stranger','memories/outsider',{...memory,addedBy:'stranger'},false);
+console.log('FIRESTORE MEMORIES: backdated entries share correctly; malformed dates and outsiders rejected');

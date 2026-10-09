@@ -11,13 +11,11 @@ import { escapeHtml, showFailure, toast } from './ui-helpers.js';
 import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
 import { dueRows, fairShare } from './needs-you.js';
 import { profileUrl } from './profile-route.js';
-import { gameResult, gameHref, GAME_CATALOG } from './couple-game.js';
-import { watchGames } from './game-sync.js';
 import {timedOver} from './timed-game.js';
 import {LEAGUE_START_DAY} from './daily-puzzles.js';
 
 const badge = document.getElementById('activity-badge');
-const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [], wordResults: [], timedResults: [], wordDuels: [], wordDuelEnds: [], wordWeeks: [], games: [] };
+const buckets = { items: [], notes: [], dates: [], statuses: [], help: [], memories: [], reactions: [], locations: [], presence: [], questions: [], wordResults: [], timedResults: [], wordDuels: [], wordDuelEnds: [], wordWeeks: [] };
 let dashboardFrame = 0;
 
 const data = await sharedLayer();
@@ -45,7 +43,6 @@ data.listenToQuery('items', { where: { field: 'done', value: false } }, items =>
 data.listenToQuery('items', { where: { field: 'doneAt', op: '>=', value: doneSince }, orderBy: { field: 'doneAt', direction: 'desc' }, limit: 50 }, items => { recentDone = items; updateItems(); });
 for (const name of Object.keys(buckets).filter(name => name !== 'items')) {
   const receive = items => { buckets[name] = items; scheduleDashboardRender(); };
-  if (name === 'games') { watchGames(data, receive); continue; }
   if(['wordResults','timedResults'].includes(name)){data.listenToQuery(name,{where:{field:'day',value:questionClock().day}},receive);continue;}
   if (name === 'questions') { data.listenToQuery('questions', { where:{field:'day', value:questionClock().day} }, receive); continue; }
   if (['notes', 'memories', 'reactions'].includes(name)) data.listenToQuery(name, recent, receive);
@@ -110,15 +107,12 @@ function renderNextUp() {
   const dailyLeft=Number(Boolean(answerNeeded))+Number(wordNeeded)+timedLeft;
   const tie=buckets.wordDuels.some(d=>!buckets.wordDuelEnds.some(e=>e.id===d.puzzleId)&&!buckets.wordWeeks.some(w=>w.week===d.week));
   const fresh = newActivityCount(buckets, viewer, other, Number(localStorage.getItem(seenKey) || 0));
-  const games=buckets.games.filter(item=>Object.hasOwn(GAME_CATALOG,item.id)&&!gameResult(item).over)
-    .sort((a,b)=>Number(b.turn===viewer)-Number(a.turn===viewer)||a.updatedAt-b.updatedAt);
   const rows = [
     ...fairShare(due, 3),
     due.length > 3 && { icon:'◎', title:`${due.length - 3} more due or waiting`, href:'today.html' },
     unread && { icon:'✉', title:`${unread} unread note${unread===1?'':'s'}`, href:'notes.html' },
     dailyLeft>0 && { icon:'◎', title:`daily activities · ${dailyLeft} left`, href:'activities.html#daily' },
     tie && {icon:'♛',title:'the crown is still up for grabs',href:'activities.html#tiebreaker'},
-    ...games.map(game=>({icon:GAME_CATALOG[game.id].icon,title:`${game.turn===viewer?'your turn':`waiting for ${personName(other)}`} · ${GAME_CATALOG[game.id].name}`,href:gameHref(game)})),
     fresh && { icon:'✦', title:`${fresh} new thing${fresh===1?'':'s'} since you looked`, href:'today.html#new' }
   ].filter(Boolean);
   target.innerHTML = rows.length ? rows.map(row=>inlineActionMarkup(row,'home-next-row')).join('') : '<p>nothing needs you right now ✦</p>';

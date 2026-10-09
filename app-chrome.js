@@ -350,7 +350,7 @@ function setupDeepLinkHighlight() {
   try { fragment=decodeURIComponent(location.hash.slice(1)); } catch (_) { return; }
   const match = /^(item|done|ask|note|date|memory)-([A-Za-z0-9_-]+)$/.exec(fragment);
   if (!match) {
-    const id=/^game(?:-[A-Za-z0-9_-]+)?$/.test(fragment)?'game':fragment;
+    const id=/^scoreboard-\d{4}-\d{2}-\d{2}$/.test(fragment)?'scoreboard':/^game(?:-[A-Za-z0-9_-]+)?$/.test(fragment)?'daily':fragment;
     if(['game','question','daily','wordle','search','crossword','scoreboard','tiebreaker','new','fridge-note'].includes(id))requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:'center'}));
     return;
   }

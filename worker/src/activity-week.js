@@ -18,7 +18,7 @@ export async function settleActivityWeeks(db,base,now){
   const winners=winner?[winner]:score.winners;
   const writes=[{path:base+'/wordWeeks/'+score.week,fields:{...score,scoreVersion:2,format:'trio',round,tieRound:round,winners,settledAt:now}}];
   if(ending)writes.push(ending);
-  for(const p of people)if(winners.length)writes.push(ping('word-winner-'+score.week,p,'The weekly crown has a home ♛',(winners[0]==='her'?'Sun':'Moon')+' takes the crown. Ceremony time.','scoreboard'));
+  for(const p of people)if(winners.length)writes.push(ping('word-winner-'+score.week,p,'The weekly crown has a home ♛',(winners[0]==='her'?'Sun':'Moon')+' takes the crown. Your weekly recap is ready.','scoreboard-'+score.week));
   await db.createMany(writes);
  }
  async function open(score,round,ending){
@@ -67,7 +67,7 @@ export async function notifyActivityResults(db,base,now){
   const event=both?'reveal':'waiting',id=`${day}-${type}-${event}`,path=base+'/activityEvents/'+id;
   if(await db.get(path))continue;
   const to=both?first.person:first.person==='her'?'him':'her';
-  const label=type==='word'?'Little Word':type==='search'?'Sopa de letras':'Mini crossword';
+  const label=type==='word'?'Little Word':type==='search'?'Word Search':'Mini crossword';
   await db.createMany([{path,fields:{day,createdAt:now}},{path:base+'/outbox/activity-'+id,fields:{to,title:both?'Both rounds are in':label+' · they finished',body:both?'You can peek at their process now.':'Your round is ready whenever you are.',kind:'activity-result',ref:'activities/'+id,url:'activities.html#'+(day.includes('-tie-')?'tiebreaker':type==='word'?'wordle':type),createdAt:now,sendAt:now}}]);
  }
  }

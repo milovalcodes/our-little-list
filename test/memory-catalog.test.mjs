@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {crownMemories,memoryCategory,memoryDateLabel,sortMemories,validMemoryDate} from '../memory-catalog.js';
+const name=p=>p==='her'?'Anely':'Emilio';
+const queen={week:'2026-09-21',scores:{her:50,him:20},winners:['her'],settledAt:Date.parse('2026-09-27T18:00Z')};
+const king={week:'2026-09-28',scores:{her:30,him:60},winners:['him'],settledAt:Date.parse('2026-10-04T18:00Z')};
+const memories=crownMemories([queen,king,queen,{week:'2026-10-05',winners:[]}],name);
+assert.equal(memories.length,2);assert.equal(memories[0].text,'Anely was crowned queen');assert.equal(memories[1].text,'Emilio was crowned king');
+assert.equal(memoryDateLabel(memories[1]),'Oct 4, 2026');assert.equal(memoryCategory(memories[0]),'app');
+assert.equal(memoryCategory({question:true}),'app');assert.equal(memoryCategory({dateId:'date-1'}),'app');assert.equal(memoryCategory({text:'message',hasPhoto:true}),'yours');
+assert.equal(validMemoryDate('2024-02-29'),true);assert.equal(validMemoryDate('2025-02-29'),false);assert.equal(validMemoryDate('tomorrow'),false);
+const old={id:'retro',memoryDate:'2024-06-01',createdAt:Date.now()},recent={id:'recent',memoryDate:'2026-10-09',createdAt:1};
+assert.deepEqual(sortMemories([old,recent]).map(m=>m.id),['recent','retro']);assert.equal(memoryDateLabel(old),'Jun 1, 2024');
+assert.equal(memoryDateLabel(crownMemories([{...queen,settledAt:null}],name)[0]),'Week of 2026-09-21','missing dates are not invented');
+console.log('MEMORIES: king/queen titles, exact dates, automatic/manual categories, duplicate prevention and historical sorting pass');

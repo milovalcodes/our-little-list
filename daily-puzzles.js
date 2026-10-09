@@ -1,7 +1,8 @@
 import {CATALOG_VERSION,PUZZLE_THEMES,catalogPool} from './puzzle-catalog.js';
 import {activityWindow} from './activity-clock.js';
+import {puzzleSeason} from './seasonal-puzzles.js';
 export const PUZZLE_TYPES=['search','crossword'];
-export const PUZZLE_NAMES={search:'Sopa de letras',crossword:'Mini crossword'};
+export const PUZZLE_NAMES={search:'Word Search',crossword:'Mini crossword'};
 export const PUZZLE_LIMIT_MS=120000;
 export const LEAGUE_START_DAY='2026-10-09';
 export function isHardDay(day){return day.includes('-tie-')||new Date(day+'T12:00:00Z').getUTCDay()===0;}
@@ -60,7 +61,8 @@ function crosswordGrid(bank,size,rng,target){
 export function timedPuzzle(day,type,now=Date.now()){
  if(!PUZZLE_TYPES.includes(type))throw Error('Unknown puzzle');
  const hard=isHardDay(day),difficulty=hard?'hard':'normal',rng=random(day+':'+type+':v1');
- const themes=PUZZLE_THEMES.filter(t=>t.difficulty===difficulty),theme=themes[Math.floor(rng()*themes.length)];
+ const season=puzzleSeason(day,now);
+ const themes=PUZZLE_THEMES.filter(t=>t.difficulty===difficulty&&t.season===season),theme=themes[Math.floor(rng()*themes.length)];
  const bank=catalogPool(difficulty,theme.id).map(({word,clue,id})=>({word,clue,id}));
  const layout=type==='search'?searchGrid(bank,hard?12:10,rng,hard):crosswordGrid(bank,hard?11:9,rng,hard?8:6);
  const window=day.includes('-tie-')?{opensAt:now,closesAt:4102444800000}:activityWindow(day);

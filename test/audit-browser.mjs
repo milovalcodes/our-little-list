@@ -66,21 +66,7 @@ try{
   await moon.waitForFunction(()=>JSON.parse(localStorage.getItem('our-little-list-notes-v1')).items.some(n=>n.id==='read-test-0'&&n.read));
   console.log('ok notes are read only in a visible tab and after scrolling into view');
 
-  await moon.goto(base+'/games.html?as=him#game-connect-four');await sun.goto(base+'/games.html?as=her#game-connect-four');
-  await moon.click('[data-game="start"]');
-  await sun.waitForFunction(()=>document.querySelector('.game-status')?.textContent==='your turn');
-  await sun.evaluate(async()=>{
-    const data=await (await import('./data-hub.js')).sharedLayer();const original=data.playGame.bind(data);
-    data.playGame=async(...args)=>{const next=await original(...args);await new Promise(resolve=>window.releaseMove=resolve);return next;};
-  });
-  await sun.click('[data-cell="0"]');
-  await moon.waitForFunction(()=>document.querySelector('.game-status')?.textContent==='your turn');
-  await moon.click('[data-cell="1"]');
-  await sun.waitForFunction(()=>document.querySelectorAll('.four-board .game-token').length===2);
-  await sun.evaluate(()=>window.releaseMove());
-  await sun.waitForFunction(()=>document.querySelector('.game-status')?.textContent==='your turn');
-  assert.equal(await sun.locator('.four-board .game-token').count(),2);
-  console.log('ok delayed move acknowledgement never rewinds a newer board');
+
 
   await moon.evaluate(async()=>{
     const data=await (await import('./data-hub.js')).sharedLayer();

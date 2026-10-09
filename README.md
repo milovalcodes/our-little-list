@@ -1,4 +1,4 @@
-# Our Little List
+# Our Little App
 
 A small shared website for two people. Lists, timed asks, notes, statuses, date
 ideas, memories, and an opt-in map — plain HTML, CSS and JavaScript on
@@ -15,7 +15,7 @@ Each thing lives in one place:
 - **The list** — repeatable tasks, groceries by aisle and requests; a timed request is also a reminder, for either person or yourself.
 - **Notes** — short notes, reactions and the option to pin one on both home screens.
 - **Profiles** — either Home avatar opens the same profile layout. Your own profile owns status editing and location controls; your partner's shows their status, recent notes and shared actions. Saved spots stay in Settings.
-- **Activities** — daily question + Little Word + Sopa de letras + Mini crossword, then the anytime games on `activities.html`, with Three to Move, Four in a Row and Dots & Boxes. Each keeps a shared live board and its own score. First to three rounds wins a match; match wins persist. Confirmed transactions and rules protect turns and scores, and create the turn ping atomically. Old pings are dropped by the delivery worker.
+- **Activities** — daily question, Little Word, Word Search and Mini crossword. The weekly tracker shows source-by-source points, daily details, historical recaps and the largest per-game winning margin. Crown pings deep-link to the correct week. The retired arcade is no longer loaded, linked or notified; its stored records and compatibility data methods remain intact.
 - **Date ideas** — ideas with optional details, filters and a random picker; completed dates can become memories.
 - **Memories** — photos and small things worth keeping.
 - **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
@@ -90,13 +90,19 @@ Weekly points: 100/40/30/20/10 for winning on guesses 1–5; otherwise 0. Sunday
 
 The game is friendly, not anti-cheat software: puzzle answers exist in the client-readable puzzle documents. Private guess rows are restricted by side. Like existing question scheduling, the Worker uses a household member credential rather than an admin key; this is not a public competitive ranking service.
 
-### Sopa, crossword and the puzzle catalog
+### Word Search, crossword and the puzzle catalog
+
+`weekly-report.js` reconciles game/day breakdowns with authoritative weekly finals. Tie timers are evaluated at `settledAt` so a timer expiring after an early clinch cannot invent more points. The first launch week’s tie IDs sort before the timed-game start date; they must still be included. Missing historic detail is disclosed instead of inventing a reason for the win. `weekly-tracker.js` loads only the selected week’s public summaries, never private guesses, and keeps expanded rows while scores update.
 
 Both new boards have a 120-second server-stamped timer. Scores are `round(found / total * 50)`; hard Sunday/tie boards double that rounded score. An untouched or zero-word board earns zero. Confirmed partial results still count when the timer expires with the browser closed. A refresh cannot reset a start timestamp. Timed private routes can only be read by a partner after both rounds have ended. New games count from October 9, 2026; past days are not fabricated.
 
-`puzzle-catalog.js` groups 332 original word/clue entries from `puzzle-bank.js` by theme and difficulty. `daily-words.js` retains the stable order of 905 answer words and exports their category/difficulty catalog. Add reviewed content to the appropriate pool, assign a theme, and run `node test/daily-puzzles.test.mjs`. The deterministic board generators validate word paths, crossings and theme membership. Firestore `wordPuzzles` and `timedPuzzles` are immutable daily records, including the theme, source entry IDs and catalog version; never regenerate or overwrite an existing daily document when expanding a bank. Individual crossword/search words can reappear in different boards. These are original puzzle data, not extracted APK assets.
+`puzzle-catalog.js` groups 332 year-round clues and 240 seasonal clues by theme and difficulty. `seasonal-puzzles.js` also adds 114 seasonal Little Word answer entries. October selects Halloween/horror/fall pools exclusively, December selects Christmas/winter pools exclusively, and other months select only regular pools. Daily puzzles follow the 9 a.m. Eastern activity day; new tie sets follow their actual Eastern opening date (not the month of the week ID). Existing rounds stay immutable across updates and month boundaries. Run `node test/seasonal-puzzles.test.mjs` to check month gating, hard pools, monthly word uniqueness, and old-round preservation. `daily-words.js` retains the stable order of 905 answer words and exports their category/difficulty catalog. Add reviewed content to the appropriate pool, assign a theme, and run `node test/daily-puzzles.test.mjs`. The deterministic board generators validate word paths, crossings and theme membership. Firestore `wordPuzzles` and `timedPuzzles` are immutable daily records, including the theme, source entry IDs and catalog version; never regenerate or overwrite an existing daily document when expanding a bank. Individual crossword/search words can reappear in different boards. These are original puzzle data, not extracted APK assets.
 
 `timedGames` contains owner-private word order/times; `timedResults` contains only shared counts and timestamps. Transactions write both. `activityEvents` deduplicates completion/reveal notifications. Daily activities share one 9 a.m. opening ping. All daily-game pings use the daily-activities preference and stale waiting pings are dropped. The weekly trio maximum is 1,600, plus at most 400 per hard tie set. Closed sets reject further moves. Run `test/timed-rules.test.mjs` only under the demo Firestore emulator, and `test/timed-browser.mjs` on the local test server; real-time two-account coverage lives in `test/word-realtime-browser.mjs`.
+
+### Memory categories and dates
+
+`memory-catalog.js` derives one crown memory per authoritative `wordWeeks` record, like the existing archived-question view. No duplicate collection or backfill is needed: previous wins appear immediately and survive reloads. Crown dates use `settledAt`; unknown old dates are shown as a week. Manual memories store an optional `memoryDate` civil date while retaining `createdAt` for sync/audit. Both profiles sort by the chosen event date. Questions, crown results and completed-date entries are App memories; authored text/photos are Your memories. Direct links select the appropriate category. No archived partner answer is copied into a public memory.
 
 ## One-time setup
 
@@ -188,16 +194,12 @@ whether permission was granted.
 
 ## Checking your work
 
-The Activities shelf shares one delivery/transaction layer. The original
-`games/sun-moon` board and scores are retained; `games/connect-four` and
-`games/dots-boxes` are independent. `arcade-game.js` contains original classic
-game implementations, not extracted APK code or assets. The supplied JindoBlu
-app was used only to identify suitable games. Separate-phone play is turn-based;
-no frame-by-frame Firestore writes or real-time arcade physics are involved.
-Game pings include the board ID, and bonus box turns don't notify the opponent
-until control passes (or the round ends). The rules recheck each move and score.
+The retired arcade's `games/sun-moon`, `games/connect-four` and `games/dots-boxes`
+records are retained. The compatibility data methods and rules remain tested,
+but the old UI module is removed and the Worker drops all old arcade pings.
+Their old links lead to daily Activities. No private game history is deleted.
 
-The app-wide regression pass also covers edited daily answers, delayed game
+The app-wide regression pass also covers edited daily answers, delayed daily-game
 acknowledgements, read receipts in background tabs, location pause/consent races,
 photo-selection races, and completing one date from both phones. Date completion
 and its memory use one online transaction; no partially saved pair or duplicate

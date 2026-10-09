@@ -56,7 +56,7 @@ try{
   await data.setTo('wordWeeks','2026-09-28',{week:'2026-09-28',winners:['him']});
   await data.setTo('wordWeeks','2026-10-05',{week:'2026-10-05',winners:['him']});
  });
- await page.goto(base+'/memories.html?as=him');await page.waitForSelector('[data-open="question-2026-10-06"]');
+ await page.goto(base+'/memories.html?as=him#app-memories');await page.waitForSelector('[data-open="question-2026-10-06"]');
  await page.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js'),d=await sharedLayer(),read=d.readDoc;window.reads=[];d.readDoc=async(n,id)=>{window.reads.push(n+'/'+id);return read(n,id);};});
  await page.click('[data-open="question-2026-10-07"]');assert.match(await page.locator('#memory-random').textContent(),/still sealed/);
  assert.ok(!(await page.evaluate(()=>window.reads)).includes('questionAnswers/2026-10-07-her'));

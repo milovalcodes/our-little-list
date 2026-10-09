@@ -145,7 +145,7 @@ function render(){
   const own=selected===viewer;
   document.body.dataset.profileOwner=String(own);
   $('profile-title').textContent=own?'Your profile':`${personName(selected)}’s profile`;
-  document.title=`${personName(selected)} · Our Little List`;
+  document.title=`${personName(selected)} · Our Little App`;
   $('profile-tabs').innerHTML=[viewer,other].map(person=>`<a href="${profileUrl(person).slice('status.html'.length)}" ${person===selected?'aria-current="page"':''}><img src="${person==='her'?'sun':'moon'}-profile.png" alt=""><span>${escapeHtml(personName(person))}${person===viewer?' <small>you</small>':''}</span></a>`).join('');
   $('status-pair').innerHTML=statusCard(selected,statuses.find(item=>item.id===selected||item.person===selected));
   document.querySelectorAll('[data-owner-control]').forEach(node=>{node.hidden=!own;});

@@ -8,7 +8,7 @@
       art: 'seasonal-spooky.svg',
       home: '🎃 our sky · spooky season',
       gameLine: 'a little spooky rivalry',
-      landingKicker: 'our little list · spooky season ☀︎☾',
+      landingKicker: 'our little app · spooky season ☀︎☾',
       landingLine: 'same two weirdos, now with bats ♡',
       pages: {
         tasks: 'spooky little errands',
@@ -39,7 +39,7 @@
       art: 'seasonal-christmas.svg',
       home: '🎄 our sky · december edition',
       gameLine: 'a little snow-day rivalry',
-      landingKicker: 'our little list · december edition ☀︎☾',
+      landingKicker: 'our little app · december edition ☀︎☾',
       landingLine: 'same two weirdos, now with lights ♡',
       pages: {
         tasks: 'winter errands and tiny plans',

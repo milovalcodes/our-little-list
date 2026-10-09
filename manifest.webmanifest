@@ -1,6 +1,6 @@
 {
-  "name": "Our Little List",
-  "short_name": "Little List",
+  "name": "Our Little App",
+  "short_name": "Little App",
   "description": "Our lists, reminders, notes, status, and little archive.",
   "start_url": "./index.html",
   "scope": "./",

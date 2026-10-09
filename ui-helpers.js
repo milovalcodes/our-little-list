@@ -1,4 +1,6 @@
 export function applyViewerTheme(viewer){
+  window.LittleAppearance?.setSide(viewer);
+  document.body.classList.remove('him-theme','her-theme');
   document.body.classList.add(viewer==='him'?'him-theme':'her-theme');
   const theme=document.querySelector('meta[name="theme-color"]')||document.head.appendChild(Object.assign(document.createElement('meta'),{name:'theme-color'}));
   theme.content=viewer==='him'?'#0d1730':'#f4c95d';

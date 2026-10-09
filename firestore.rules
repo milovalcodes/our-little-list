@@ -237,6 +237,7 @@ service cloud.firestore {
       allow create: if inHousehold(householdId)
         && request.resource.data.addedBy == mySide()
         && shortText(request.resource.data.text, 500)
+        && (!request.resource.data.keys().hasAny(['memoryDate']) || (request.resource.data.memoryDate is string && request.resource.data.memoryDate.matches('[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])')))
         && (!request.resource.data.keys().hasAny(['photo']) || shortText(request.resource.data.photo, 650000))
         && (!request.resource.data.keys().hasAny(['thumb']) || shortText(request.resource.data.thumb, 30000))
         && (!request.resource.data.keys().hasAny(['hasPhoto']) || request.resource.data.hasPhoto is bool)

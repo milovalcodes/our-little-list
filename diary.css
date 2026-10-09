@@ -700,6 +700,62 @@ body[data-app="activities"]:has(.timed-playing) #sync-chip { opacity:0; pointer-
 .timed-peek li { display:flex; justify-content:space-between; gap:12px; padding:8px; background:var(--diary-raised); border-radius:10px; }
 .trio-hint,.score-help p { font-size:.9rem; line-height:1.5; }
 .trio-score { font-size:1.35rem; font-weight:800; font-variant-numeric:tabular-nums; text-align:center; }
+.weekly-entry { border-color:color-mix(in srgb,var(--accent) 55%,var(--diary-rule)); }
+.weekly-entry>summary { flex-wrap:wrap; }
+.weekly-entry>summary #weekly-score { width:100%; font-size:1.25rem; font-weight:800; letter-spacing:.04em; color:var(--page-text); }
+#weekly-board { padding:4px 14px 18px; }
+.score-week-picker { display:flex; align-items:center; gap:12px; justify-content:space-between; margin:8px 0 20px; }
+.score-week-picker label { font-size:.95rem; font-weight:800; }
+.score-week-picker select { min-width:0; max-width:58%; min-height:44px; padding:8px; border:1px solid var(--diary-rule); border-radius:12px; background:var(--diary-raised); color:var(--page-text); font:inherit; font-size:.9rem; }
+.score-week-picker option { background:var(--diary-panel); color:var(--page-text); }
+.score-podium,.score-source-pair,.score-highlights { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
+.score-person { min-width:0; display:grid; justify-items:center; align-content:start; gap:8px; padding:18px 6px; border:1px solid var(--diary-rule); border-radius:24px; background:var(--diary-raised); text-align:center; }
+.score-person.is-winner { border-color:var(--word-party-3); box-shadow:0 0 18px color-mix(in srgb,var(--word-party-3) 18%,transparent); }
+.score-person>strong { max-width:100%; overflow-wrap:anywhere; font-size:1rem; }
+.score-avatar { display:block; position:relative; }
+.score-avatar img { width:54px; height:54px; display:block; border-radius:18px; }
+.score-avatar>span { position:absolute; top:-23px; left:13px; font:30px/1 serif; color:var(--word-party-3); }
+.score-number { font-size:clamp(1.8rem,9vw,2.8rem); line-height:1.05; font-variant-numeric:tabular-nums; }
+.score-number small { display:block; margin-top:5px; font-size:.85rem; font-weight:600; color:var(--page-muted); }
+.score-outcome { margin:14px 0 20px; text-align:center; font-weight:800; font-size:1rem; }
+.score-sources,.score-recap,.score-daily { margin-top:22px; }
+#weekly-board h3 { font-size:1.05rem; margin:0 0 12px; }
+.score-column-head { display:flex; justify-content:space-between; gap:16px; font-size:.9rem; margin:0; overflow-wrap:anywhere; }
+.score-column-head span { max-width:48%; }
+.score-source { --score-ink:var(--word-party-1); padding:12px 0; border-bottom:1px solid var(--diary-rule); }
+.score-source-search { --score-ink:var(--word-party-2); }
+.score-source-crossword { --score-ink:var(--word-party-3); }
+.score-source h4 { margin:0 0 8px; font-size:.95rem; }
+.score-source h4>span { display:inline-grid; place-items:center; width:24px; height:24px; border:1px solid var(--diary-rule); border-radius:7px; }
+.score-source-pair>div:last-child { text-align:right; }
+.score-source-pair b { font-size:1.2rem; font-variant-numeric:tabular-nums; }
+.score-source-pair small { font-size:.85rem; font-weight:600; }
+.score-bar { display:block; height:8px; margin-top:7px; background:var(--diary-raised); border-radius:10px; overflow:hidden; }
+.score-bar i { display:block; width:var(--fill); height:100%; border-radius:inherit; background:var(--score-ink); }
+.score-highlights article { min-width:0; padding:12px; border-radius:16px; background:var(--diary-raised); }
+.score-highlights h4 { margin:0; overflow-wrap:anywhere; }
+.score-highlights p,.score-winning-edge { font-size:.9rem; line-height:1.5; }
+.score-highlights small { font-size:.8rem; color:var(--page-muted); line-height:1.4; display:block; }
+.score-winning-edge { padding:12px; border:1px dashed var(--accent); border-radius:14px; }
+.score-day { border-top:1px solid var(--diary-rule); }
+.score-day>summary { min-height:52px; padding:10px 0; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:.95rem; cursor:pointer; }
+.score-day>summary small { padding:3px 6px; border:1px solid var(--diary-rule); border-radius:6px; font-size:.8rem; }
+.score-day>summary>span { white-space:nowrap; font-weight:800; font-variant-numeric:tabular-nums; }
+.score-day i { font-style:normal; opacity:.6; }
+.score-day>summary { scroll-margin-block:90px; }
+.score-footnote { font-size:.85rem; line-height:1.5; color:var(--page-muted); }
+.score-day-rows { padding:0 0 12px; display:grid; gap:8px; }
+.score-day-rows>div { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; background:var(--diary-raised); padding:12px; border-radius:12px; font-size:.9rem; }
+.score-day-rows>div>b { grid-column:1/-1; }
+.score-day-rows span { display:grid; gap:4px; overflow-wrap:anywhere; }
+.score-day-rows small { font-size:.85rem; color:var(--page-muted); }
+.memory-tabs { display:flex; gap:8px; margin:0 0 14px; }
+.memory-tabs button { flex:1; min-height:44px; font-size:.95rem; }
+.memory-crown { display:block; color:var(--word-party-3,var(--accent)); font:2.5rem/1.2 serif; margin-bottom:8px; }
+.crown-memory { border:1px solid color-mix(in srgb,var(--accent) 65%,var(--diary-rule)); }
+#memory-form label[for] { display:block; font-weight:700; margin:12px 0 6px; }
+#memory-date { box-sizing:border-box; max-width:100%; min-height:44px; font:inherit; }
+@media(prefers-reduced-motion:no-preference) { .weekly-entry[open] .score-bar i { animation:score-fill .6s ease-out both; } @keyframes score-fill { from { width:0; } to { width:var(--fill); } } }
 .score-help { margin:12px 0; }
 .score-help summary { min-height:44px; cursor:pointer; }
 @media (prefers-reduced-motion:no-preference) {

@@ -10,8 +10,7 @@ export const NOTIFICATION_GROUPS = [
   { id: 'arrivals', label: 'arrivals & on my way', kinds: ['arrival'] },
   { id: 'status', label: 'status & focus', kinds: ['status', 'focus'] },
   { id: 'keepsakes', label: 'date ideas & memories', kinds: ['date', 'memory'] },
-  { id: 'questions', label: 'daily activities', kinds: ['word-week', 'activity-result', 'activities-open', 'question-open', 'question-answered', 'question-reveal'] },
-  { id: 'games', label: 'game invites & turns', kinds: ['game'] }
+  { id: 'questions', label: 'daily activities', kinds: ['word-week', 'activity-result', 'activities-open', 'question-open', 'question-answered', 'question-reveal'] }
 ];
 
 // Switches saved before groups were merged or split keep meaning what they
@@ -72,6 +71,7 @@ export function quietHoursEndUtc(now, quietHours, utcOffsetMinutes) {
 }
 
 export function notificationKindEnabled(kind, preferences = DEFAULT_NOTIFICATION_PREFERENCES) {
+  if(kind==='game')return false; // Retired arcade invites must never ring again.
   const group = GROUP_FOR_KIND[String(kind || 'note')] || 'notes';
   return normalizeNotificationPreferences(preferences).categories[group] !== false;
 }

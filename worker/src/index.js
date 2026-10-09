@@ -17,7 +17,6 @@ import { focusDelivery } from '../../delivery-policy.js';
 import { questionClock, questionForDay } from '../../question-prompts.js';
 import { wordForDay } from '../../daily-words.js';
 import { activityWindow } from '../../activity-clock.js';
-import { gamePingCurrent, messageGameId } from '../../couple-game.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
 const STALE_MS = 3 * 60 * 60_000;    // older than 3h: still send, but say it is late
@@ -135,7 +134,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
         }
       }
 
-      if (message.kind === 'game' && (!messageGameId(message) || !gamePingCurrent(message, await db.get(`${household}/games/${messageGameId(message)}`)))) {
+      if (message.kind === 'game') {
         await db.remove(message.path);
         dropped += 1;
         continue;
@@ -187,7 +186,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
       }
 
       const payload = JSON.stringify({
-        title: message.title || 'Our Little List',
+        title: message.title || 'Our Little App',
         body: message.body || '',
         url: message.url || 'index.html',
         tag: `${message.kind || 'note'}-${message.id}`,
@@ -312,7 +311,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname !== '/run') {
-      return new Response('our little list delivery. POST /run with the shared secret to trigger a pass.', { status: 200 });
+      return new Response('our little app delivery. POST /run with the shared secret to trigger a pass.', { status: 200 });
     }
     if (request.method !== 'POST') {
       return new Response('POST only', { status: 405, headers: { Allow: 'POST' } });

@@ -3,11 +3,12 @@ import { promptFor } from './question-prompts.js';
 import { escapeHtml, toast, setButtonBusy, showFailure } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
-import { timeAgo } from './time-format.js';
+import {crownMemories,memoryCategory,memoryDateLabel,sortMemories,validMemoryDate} from './memory-catalog.js';
 import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
 const $ = id => document.getElementById(id);
 let memories = [];
+let weeks=[],category=location.hash==='#app-memories'?'app':'yours',routedHash='';
 let pastQuestions=[];
 const archivedAnswers=new Map();
 const answerReads=new Set();
@@ -21,10 +22,16 @@ const fullPhotos = new Map();
 const loadingPhotos = new Set();
 
 const { data, viewer, other } = await bootPage();
+const resetMemoryDate=()=>{$('memory-date').value=activityClock().calendarDay;$('memory-date').max=activityClock().calendarDay;};
+resetMemoryDate();
+data.listenTo('wordWeeks',items=>{weeks=items;render();});
+window.addEventListener('littlelist:profile',render);
+document.querySelectorAll('[data-memory-category]').forEach(button=>button.addEventListener('click',()=>{category=button.dataset.memoryCategory;history.replaceState(null,'',location.pathname+location.search+(category==='app'?'#app-memories':'#your-memories'));featuredId='';document.body.classList.remove('memory-open');render();}));
+addEventListener('hashchange',()=>{if(location.hash==='#app-memories')category='app';if(location.hash==='#your-memories')category='yours';render();});
 
 data.listenTo('questions',items=>{pastQuestions=items;render();if(featuredId.startsWith('question-'))void loadArchivedAnswers(featuredId);});
 setInterval(()=>{if(activityClock().day!==archiveDay){archiveDay=activityClock().day;render();}},30000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){archiveDay=activityClock().day;render();if(featuredId.startsWith('question-'))void loadArchivedAnswers(featuredId);}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){archiveDay=activityClock().day;$('memory-date').max=activityClock().calendarDay;render();if(featuredId.startsWith('question-'))void loadArchivedAnswers(featuredId);}});
 data.listenTo('memories', items => {
   memories = items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   render();
@@ -56,13 +63,15 @@ $('memory-form').addEventListener('submit', async event => {
   const text = $('memory-text').value.trim();
   const button = $('memory-save');
   if (button.disabled) return;
+  const memoryDate=$('memory-date').value;
+  if(!validMemoryDate(memoryDate)||memoryDate>activityClock().calendarDay){showFailure('that date needs a second look.', 'choose today or a date in the past.');return;}
   setButtonBusy(button, true, 'jarring…');
   $('memory-photo').disabled = true;
   await photoPending;
   try {
     const createdAt = Date.now();
     const saved = await data.addTo('memories', {
-      text, thumb: photo?.thumb || '', hasPhoto: false, addedBy: viewer, createdAt
+      text, memoryDate, thumb: photo?.thumb || '', hasPhoto: false, addedBy: viewer, createdAt
     });
     if (photo) {
       try {
@@ -75,6 +84,7 @@ $('memory-form').addEventListener('submit', async event => {
     }
     void data.notify(other, { title: `${personName(viewer)} added to the memory jar`, body: text.slice(0, 120), url: `memories.html#memory-${saved.id}`, kind: 'memory' });
     event.target.reset();
+    resetMemoryDate();category='yours';history.replaceState(null,'',location.pathname+location.search+'#your-memories');render();
     photo = null;
     photoVersion++;
     photoPending = Promise.resolve();
@@ -108,6 +118,7 @@ $('memory-pick').addEventListener('click', () => {
 });
 
 function feature(id) {
+  const item=allMemories().find(item=>item.id===id);if(item)category=memoryCategory(item);
   featuredId = id;
   render();
   document.body.classList.add('memory-open');
@@ -120,15 +131,19 @@ $('memory-random').addEventListener('click', event => {
 document.addEventListener('keydown', event => { if (event.key === 'Escape' && featuredId) closeMemory(); });
 function closeMemory() { featuredId=''; document.body.classList.remove('memory-open'); render(); }
 
-function visibleMemories() {
+function allMemories() {
   const questions=pastQuestions.filter(q=>q.day<archiveDay&&(q.answers?.her?.at||q.answers?.him?.at)).map(q=>({
     ...q,id:'question-'+q.day,question:true,text:promptFor(q.day,q.promptId),createdAt:activityWindow(q.day).closesAt
   }));
-  return [...memories.filter(item=>!isPendingDelete('memories',item.id)),...questions].sort((a,b)=>b.createdAt-a.createdAt);
+  return sortMemories([...memories.filter(item=>!isPendingDelete('memories',item.id)),...questions,...crownMemories(weeks,personName)]);
 }
+function visibleMemories(){return allMemories().filter(item=>memoryCategory(item)===category);}
 
 function render() {
+  if(location.hash!==routedHash){const id=/^#memory-([A-Za-z0-9_-]+)$/.exec(location.hash)?.[1],item=id&&allMemories().find(m=>m.id===id);if(item){category=memoryCategory(item);routedHash=location.hash;}}
+  document.querySelectorAll('[data-memory-category]').forEach(button=>{const active=button.dataset.memoryCategory===category;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});
   const visible = visibleMemories();
+  $('memory-empty').querySelector('strong').textContent=category==='app'?'No app memories yet':'No memories here yet';
   $('memory-empty').hidden = visible.length > 0;
   $('memory-pick').hidden = visible.length === 0;
   $('memory-list').innerHTML = visible.map(item => memoryMarkup(item)).join('');
@@ -140,11 +155,12 @@ function render() {
 
 function memoryMarkup(item, featured = false) {
   if(item.question)return questionMemoryMarkup(item,featured);
+  if(item.crown)return `<article class="memory-card crown-memory text-only${featured?' featured':''}" data-id="${escapeHtml(item.id)}">${featured?'':`<button class="memory-open" type="button" data-open="${escapeHtml(item.id)}" aria-label="Open crown memory">`}<div><span class="memory-crown" aria-hidden="true">♛</span><small>${escapeHtml(memoryDateLabel(item))}</small><p>${escapeHtml(item.text)}</p><small>☀ ${item.scores.her} · ☾ ${item.scores.him}</small>${featured?`<p><a href="activities.html#scoreboard-${item.week}">see the week →</a></p>`:''}</div>${featured?'':'</button>'}</article>`;
   const image = safePhoto(featured ? fullPhotos.get(item.id) || item.thumb || item.photo : item.thumb || item.photo);
   return `<article class="memory-card${featured ? ' featured' : ''}${image ? ' has-photo' : ' text-only'}" data-id="${escapeHtml(item.id)}">
     ${featured ? '' : `<button class="memory-open" type="button" data-open="${escapeHtml(item.id)}" aria-label="Open memory">`}
     ${image ? `<img src="${image}" alt="">` : ''}
-    <div><p>${escapeHtml(item.text || '')}</p><small>${escapeHtml(personName(item.addedBy))} · ${timeAgo(item.createdAt)}</small></div>
+    <div><p>${escapeHtml(item.text || '')}</p><small>${escapeHtml(memoryDateLabel(item))} · ${escapeHtml(personName(item.addedBy))}</small></div>
     ${featured ? '' : '</button>'}
     ${featured ? '' : `<button class="memory-delete" type="button" data-delete="${escapeHtml(item.id)}" aria-label="Delete memory">×</button>`}
   </article>`;
