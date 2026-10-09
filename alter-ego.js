@@ -20,11 +20,14 @@ export async function prepareAlterEgo(file){
 let started=false;
 export function startAlterEgos(data,viewer){
   if(started)return;started=true;
-  let photos={},loaded=false,frame=0,draft='',selection=0,busy=false,loadFailed=false;
+  let photos={},loaded=false,frame=0,draft='',selection=0,busy=false,preparing=false,loadFailed=false;
   const timers=new Map(),settings=document.getElementById('alter-ego-settings');
   const $=id=>document.getElementById(id);
   function closeFlip(button){clearTimeout(timers.get(button));timers.delete(button);button.classList.remove('is-flipped');button.setAttribute('aria-pressed','false');}
   function schedule(){if(!frame)frame=requestAnimationFrame(paint);}
+  function openEditor(){if(!settings||document.body.dataset.profileOwner!=='true')return;paint();if(!settings.open)settings.showModal();}
+  function closeEditor(){if(busy)return;selection++;draft='';preparing=false;if(settings){$('alter-ego-file').value='';settings.close();}paint();}
+  function choosePhoto(){if(!settings||busy||!loaded||document.body.dataset.profileOwner!=='true')return;$('alter-ego-file').click();}
   function paint(){
     frame=0;
     for(const button of document.querySelectorAll('.alter-ego-trigger')){
@@ -39,6 +42,17 @@ export function startAlterEgos(data,viewer){
       button.setAttribute('aria-label',label);button.title=label;
       if(!button.hasAttribute('aria-pressed'))button.setAttribute('aria-pressed','false');
       button.disabled=!photo&&!button.dataset.profileUrl&&person!==viewer;
+      if(settings&&person===viewer&&button.classList.contains('status-avatar')){
+        let wrapper=button.closest('.profile-photo-control');
+        if(!wrapper){
+          wrapper=document.createElement('div');wrapper.className='profile-photo-control';button.before(wrapper);wrapper.append(button);
+          const edit=document.createElement('button');edit.type='button';edit.className='profile-photo-edit';
+          edit.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h4l2-3h4l2 3h4a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="4"/></svg>';
+          wrapper.append(edit);
+        }
+        const edit=wrapper.querySelector('.profile-photo-edit');edit.disabled=busy||!loaded;
+        edit.setAttribute('aria-label',photo?'Edit profile photo':'Add profile photo');edit.title=photo?'Edit profile photo':'Add profile photo';
+      }
     }
     for(const button of timers.keys())if(!button.isConnected)closeFlip(button);
     if(settings){
@@ -47,9 +61,11 @@ export function startAlterEgos(data,viewer){
       if(!source)$('alter-ego-preview').removeAttribute('src');
       $('alter-ego-save').hidden=!draft;$('alter-ego-cancel').hidden=!draft;
       $('alter-ego-remove').hidden=!photos[viewer];
-      $('alter-ego-remove').disabled=busy||!loaded;$('alter-ego-file').disabled=busy||!loaded;
-      $('alter-ego-save').disabled=busy||!loaded;
-      $('alter-ego-state').textContent=busy?'saving…':loadFailed?'Couldn’t load your photo. Reopen this page to try again.':!loaded?'getting your photo…':draft?'Preview first. Save if you like it.':photos[viewer]?'Tap a portrait to peek. It flips back on its own.':'The sun and moon stay. A photo goes on the other side.';
+      $('alter-ego-remove').disabled=busy||preparing||!loaded;$('alter-ego-file').disabled=busy||!loaded;
+      $('alter-ego-save').disabled=busy||preparing||!loaded;
+      $('alter-ego-choose').disabled=busy||!loaded;$('alter-ego-choose').textContent=source?'Change photo':'Choose photo';
+      $('alter-ego-cancel').disabled=busy;$('alter-ego-close').disabled=busy;
+      $('alter-ego-state').textContent=busy?'saving…':preparing?'making it portrait-sized…':loadFailed?'Couldn’t load your photo. Reopen this page to try again.':!loaded?'getting your photo…':draft?'Looking good? Save it below.':photos[viewer]?'Your alter ego. Tap your portrait to flip.':'The sun and moon stay. Your photo lives on the flip side.';
     }
   }
   data.listenTo('profilePhotos',items=>{loaded=true;loadFailed=false;photos=Object.fromEntries(items.filter(p=>['her','him'].includes(p.id)).map(p=>[p.id,safeAlterEgo(p.photo)]));schedule();},{onError:()=>{loadFailed=true;schedule();}});
@@ -58,9 +74,10 @@ export function startAlterEgos(data,viewer){
   observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['src']});
   window.addEventListener('littlelist:profile',schedule);
   document.addEventListener('click',event=>{
+    if(event.target.closest('.profile-photo-edit')){if(photos[viewer])openEditor();else choosePhoto();return;}
     const button=event.target.closest('.alter-ego-trigger');if(!button)return;
     const person=button.dataset.person;
-    if(!photos[person]){if(button.dataset.profileUrl)location.href=button.dataset.profileUrl;else if(person===viewer&&settings){settings.open=true;settings.scrollIntoView({block:'center'});$('alter-ego-file').focus();}return;}
+    if(!photos[person]){if(button.dataset.profileUrl)location.href=button.dataset.profileUrl;else if(person===viewer&&settings)choosePhoto();return;}
     if(button.classList.contains('is-flipped')){closeFlip(button);return;}
     button.classList.add('is-flipped');button.setAttribute('aria-pressed','true');
     timers.set(button,setTimeout(()=>closeFlip(button),2600));
@@ -68,18 +85,23 @@ export function startAlterEgos(data,viewer){
   const resetFlips=()=>{for(const button of [...timers.keys()])closeFlip(button);};
   document.addEventListener('visibilitychange',()=>{if(document.hidden)resetFlips();});window.addEventListener('pagehide',resetFlips);
   if(settings){
+    $('alter-ego-choose').addEventListener('click',choosePhoto);
+    $('alter-ego-close').addEventListener('click',closeEditor);
+    settings.addEventListener('cancel',event=>{event.preventDefault();closeEditor();});
+    settings.addEventListener('click',event=>{if(event.target===settings){const box=settings.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)closeEditor();}});
+    window.addEventListener('hashchange',()=>{selection++;draft='';preparing=false;$('alter-ego-file').value='';settings.close();paint();});
     $('alter-ego-file').addEventListener('change',async event=>{
       const version=++selection,file=event.target.files?.[0];draft='';if(!file){paint();return;}
-      $('alter-ego-state').textContent='making it portrait-sized…';
+      preparing=true;openEditor();
       try{const photo=await prepareAlterEgo(file);if(version===selection)draft=photo;}
       catch(_){if(version===selection)showFailure('that photo did not open.','try a JPG, PNG or a screenshot under 20 MB.');}
-      finally{if(version===selection){event.target.value='';paint();}}
+      finally{if(version===selection){preparing=false;event.target.value='';paint();}}
     });
-    $('alter-ego-cancel').addEventListener('click',()=>{selection++;draft='';paint();});
+    $('alter-ego-cancel').addEventListener('click',closeEditor);
     async function save(remove=false){
-      if(busy||!loaded||(!remove&&!draft))return;
+      if(busy||preparing||!loaded||document.body.dataset.profileOwner!=='true'||(!remove&&!draft))return;
       const next=draft;busy=true;selection++;paint();const button=$(remove?'alter-ego-remove':'alter-ego-save');setButtonBusy(button,true,'saving…');
-      try{await settleQuickly(remove?data.removeFrom('profilePhotos',viewer):data.setTo('profilePhotos',viewer,{person:viewer,photo:next,updatedAt:Date.now()}),'Your photo has not confirmed yet.');draft='';toast(remove?'alter ego removed':'alter ego saved ♡');}
+      try{await settleQuickly(remove?data.removeFrom('profilePhotos',viewer):data.setTo('profilePhotos',viewer,{person:viewer,photo:next,updatedAt:Date.now()}),'Your photo has not confirmed yet.');draft='';settings.close();toast(remove?'photo removed':'photo saved ♡');}
       catch(_){showFailure('the photo change did not confirm.','check the connection and try again.');}
       finally{busy=false;setButtonBusy(button,false);paint();}
     }
