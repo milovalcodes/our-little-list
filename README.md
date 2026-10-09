@@ -43,6 +43,13 @@ UID or a decoded token. Only the configured site origin is accepted, and the
 request cannot supply a recipient, message, endpoint or send time. CORS is not
 the auth boundary: Firebase rules are. No admin/send secret ships to the client.
 
+App-shell upgrades must bypass the HTTP cache: install uses `Request` with
+`cache: 'reload'`, and registration uses `updateViaCache: 'none'`. Otherwise a
+new shell can precache old JavaScript despite reporting the new cache version.
+`node test/update-freshness-browser.mjs` checks a real installed-app upgrade
+with a warm one-hour HTTP cache; set `GAME_BROWSER=webkit` for WebKit too.
+Do not replace this with a clean-context test or clear users' storage to update.
+
 Immediate delivery skips scheduled housekeeping for ordinary actions. It and
 the minute backstop share a CAS-protected lease, bounded busy retries, and the
 same validation/filtering/send code. A tiny `deliveryLocks/sent-{outboxId}`

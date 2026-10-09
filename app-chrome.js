@@ -584,16 +584,25 @@ function setupUpdateCheck() {
   });
 }
 
-// The shell's cache is named after the deployed version, so this is what the
-// phone is really running. A version constant in its own file had to be bumped
-// by hand on every deploy and would quietly start telling you the wrong thing.
+// Ask the worker actually controlling this page. A candidate cache appears
+// before install finishes (and can survive a failed install), so its highest
+// number is not proof the phone is running that release.
 async function showVersion() {
+  let channel,timer;
   try {
-    const shells = (await caches.keys())
-      .map(key => Number(/^our-little-list-v(\d+)$/.exec(key)?.[1]))
-      .filter(Number.isFinite);
-    if (shells.length) document.getElementById('app-version').textContent = `app version ${Math.max(...shells)}`;
-  } catch (_) { /* no cache access: leave the plain label */ }
+    const controller=navigator.serviceWorker?.controller;if(!controller)return;
+    channel=new MessageChannel();
+    const version=await new Promise(resolve=>{
+      timer=setTimeout(()=>resolve(null),2000);
+      channel.port1.onmessage=event=>resolve(event.data?.version);
+      controller.postMessage('littlelist:get-version',[channel.port2]);
+    });
+    if(Number.isInteger(version)&&version>0){
+      const label=document.getElementById('app-version');
+      if(label)label.textContent=`app version ${version}`;
+    }
+  } catch (_) { /* no active worker reply: leave the plain label */ }
+  finally{clearTimeout(timer);channel?.port1.close();channel?.port2.close();}
 }
 
 function markReturningVisit() {

@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v105';
+const CACHE = 'our-little-list-v106';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -46,7 +46,10 @@ self.addEventListener('install', event => {
     caches.open(CACHE)
       // Do not activate a half-cached shell. The repository check verifies each
       // entry exists, and a transient network failure can safely retry later.
-      .then(cache => cache.addAll(ASSETS))
+      // A new cache name does not bypass the browser's HTTP cache. GitHub's
+      // still-fresh old JS could otherwise get copied into the new release,
+      // making the version say "updated" while the old sender kept running.
+      .then(cache => cache.addAll(ASSETS.map(url => new Request(url, {cache:'reload'}))))
       .then(() => self.skipWaiting())
   );
 });
@@ -64,6 +67,9 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('message', event => {
   if (event.data === 'skip-waiting') self.skipWaiting();
+  if (event.data === 'littlelist:get-version') {
+    event.ports?.[0]?.postMessage({version:Number(CACHE.match(/-v(\d+)$/)[1])});
+  }
 });
 
 // The app cannot start without these: firebase-data.js imports the SDK at
