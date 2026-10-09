@@ -18,7 +18,7 @@ export function createWordCoronation(person) {
   function key(week){return `our-little-list-coronation-v1:${person}:${week}`;}
   function alreadySeen(week){try{return seen.has(key(week))||Boolean(localStorage.getItem(key(week)));}catch(_){return seen.has(key(week));}}
   function schedule(){clearTimeout(checkTimer);if(!disposed)checkTimer=setTimeout(check,1200);}
-  function occupied(){return document.activeElement?.matches('input,textarea,select,[contenteditable="true"]')||document.querySelector('dialog[open],.app-sheet:not([hidden]),.word-finale');}
+  function occupied(){return document.activeElement?.matches('input,textarea,select,[contenteditable="true"]')||document.activeElement?.closest('.word-keyboard')||document.querySelector('dialog[open],.app-sheet:not([hidden]),.word-finale');}
   function check(){
     const week=coronationCandidate(records);
     if(disposed||!['her','him'].includes(person)||!week||alreadySeen(week.week)||dialog)return;

@@ -134,6 +134,7 @@ export function startDailyWord({data,viewer,other},options={}){
   host.addEventListener('click',event=>{const button=event.target.closest('[data-key]');if(button)void key(button.dataset.key);if(event.target.closest('[data-word-retry]'))read();if(event.target.closest('[data-word-peek]'))void peek();if(event.target.closest('[data-word-peek-retry]'))void peek(true);});
   const keydown=event=>{
     if(activeBoard!==host)return;
+    if([...document.querySelectorAll('dialog[open],[role="dialog"]')].some(dialog=>dialog.getClientRects().length))return;
     if(!(options.disclosure||document.getElementById('wordle')).open||document.getElementById('daily').hidden||event.ctrlKey||event.metaKey||event.altKey||event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
     // Let focused buttons keep their ordinary Enter behavior.
     if(event.key==='Enter'&&event.target.closest('button,summary,a'))return;

@@ -89,6 +89,12 @@ try{
  assert.match(await reduced.page.locator('.coronation-portrait img').getAttribute('src'),/christmas/);
  await reduced.page.screenshot({path:join(tmpdir(),'word-coronation-sun-christmas.png')});
  await reduced.page.click('.coronation-close');await reduced.context.close();
+ const guarded=await phone('reduce');await settle(guarded.page);await guarded.page.waitForSelector('.word-coronation[open]');
+ await guarded.page.keyboard.type('grape');
+ assert.equal(await guarded.page.locator('#word-game .word-grid .word-row').first().textContent(),'','modal keystrokes never edit the game underneath');
+ await guarded.page.click('.coronation-close');await guarded.page.keyboard.type('grape');
+ assert.equal(await guarded.page.locator('#word-game .word-grid .word-row').first().textContent(),'grape','normal keyboard play resumes after closing');
+ await guarded.context.close();
  assert.deepEqual(errors,[]);
  console.log('WORD CELEBRATIONS UI: all six results, nonblocking layers, no redraw/reload replay, settled tie ceremony, crown streak, score reveal, skip, focus cleanup, 320px layout and reduced motion pass');
 }finally{await browser.close();}
