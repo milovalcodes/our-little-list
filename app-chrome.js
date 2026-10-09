@@ -369,13 +369,15 @@ function setupRowMenus() {
   };
   const kindOf = row => row.matches('.task-row') ? 'task' : row.matches('.note-thread-row') ? 'note' : 'activity';
   const close = () => document.querySelectorAll(`${rowSelector.split(',').join('.menu-open,')}.menu-open`).forEach(row => {
-    row.classList.remove('menu-open'); row.querySelector('.row-context-menu')?.remove();
+    row.classList.remove('menu-open'); row.querySelector('.row-context-menu')?.remove();row.querySelector('.row-more')?.setAttribute('aria-expanded','false');
   });
   const show = row => {
+    if(row.classList.contains('menu-open'))return;
     close();
     const actions = menus[kindOf(row)].filter(([,selector]) => row.querySelector(selector));
     if (!actions.length) return;
     row.classList.add('menu-open');
+    row.querySelector('.row-more')?.setAttribute('aria-expanded','true');
     // The pin button already says "pin" or "unpin"; the menu uses its words.
     const labelOf = ([label, selector]) => label === 'pin / unpin' ? (row.querySelector(selector)?.textContent.replace(/[^a-z ]/gi, '').trim() || 'pin') : label;
     row.insertAdjacentHTML('beforeend', `<div class="row-context-menu" role="menu">${actions.map((action,index) => `<button type="button" role="menuitem" data-menu-index="${index}">${escapeHtml(labelOf(action))}</button>`).join('')}</div>`);
@@ -384,15 +386,16 @@ function setupRowMenus() {
   };
   const ensure = () => document.querySelectorAll(rowSelector).forEach(row => {
     if (row.querySelector(':scope > .row-more')) return;
-    row.insertAdjacentHTML('beforeend', '<button class="row-more" type="button" aria-label="More options" data-toggle-row-menu>⋯</button>');
+    row.insertAdjacentHTML('beforeend', '<button class="row-more" type="button" aria-label="More options" aria-haspopup="menu" aria-expanded="false" data-toggle-row-menu>⋯</button>');
   });
   ensure();
   const observer = new MutationObserver(ensure);
   observer.observe(document.body, { childList:true, subtree:true });
   let hold = 0, point = null, suppressUntil = 0;
   document.addEventListener('pointerdown', event => {
+    window.clearTimeout(hold);hold=0;point=null;
     const row = event.target.closest(rowSelector);
-    if (!row || event.target.closest('input,textarea,select,form')) return;
+    if (!event.isPrimary || event.button!==0 || !row || event.target.closest('button,a,input,textarea,select,form,[contenteditable="true"]')) return;
     point = { x:event.clientX, y:event.clientY };
     hold = window.setTimeout(() => { show(row); suppressUntil=Date.now()+450; hold=0; }, 550);
   });
@@ -401,8 +404,20 @@ function setupRowMenus() {
   });
   for (const type of ['pointerup','pointercancel']) document.addEventListener(type, () => { window.clearTimeout(hold); hold=0; point=null; });
   document.addEventListener('contextmenu', event => {
+    if(event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
     const row=event.target.closest(rowSelector);
     if (row) { event.preventDefault(); show(row); }
+  });
+  window.addEventListener('blur',()=>{window.clearTimeout(hold);hold=0;point=null;});
+  document.addEventListener('scroll',()=>{window.clearTimeout(hold);hold=0;point=null;},{capture:true,passive:true});
+  document.addEventListener('keydown',event=>{
+    const menu=event.target.closest('.row-context-menu');
+    const row=event.target.closest(rowSelector);
+    if(event.key==='Escape'&&row?.classList.contains('menu-open')){event.preventDefault();close();row.querySelector('.row-more')?.focus();}
+    if(menu&&['ArrowDown','ArrowUp'].includes(event.key)){
+      event.preventDefault();const choices=[...menu.querySelectorAll('button')],at=choices.indexOf(document.activeElement);
+      choices[(at+(event.key==='ArrowDown'?1:choices.length-1))%choices.length]?.focus();
+    }
   });
   document.addEventListener('click', event => {
     if (Date.now()<suppressUntil && !event.target.closest('.row-context-menu,.row-more')) { event.preventDefault(); event.stopImmediatePropagation(); return; }
@@ -415,7 +430,7 @@ function setupRowMenus() {
       return;
     }
     const more = event.target.closest('[data-toggle-row-menu]');
-    if (more) { const row=more.closest(rowSelector); row?.classList.contains('menu-open') ? close() : show(row); return; }
+    if (more) { const row=more.closest(rowSelector); row?.classList.contains('menu-open') ? close() : show(row);if(event.detail===0)row?.querySelector('.row-context-menu button')?.focus();return; }
     if (!event.target.closest('.row-context-menu')) close();
   });
 }

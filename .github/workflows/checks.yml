@@ -104,6 +104,7 @@ jobs:
         run: |
           node test/webpush.test.mjs
           node test/delivery-worker.test.mjs
+          node test/immediate-delivery.test.mjs
 
       - name: Every page the service worker precaches exists
         run: |
@@ -156,5 +157,6 @@ jobs:
           node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
           python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
           pnpm run test:browser
+          node test/touch-polish-browser.mjs
           pnpm run test:visual
-          pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/routines-realtime-browser.mjs && node test/word-realtime-browser.mjs"
+          pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/immediate-emulator.mjs && node test/routines-realtime-browser.mjs && node test/word-realtime-browser.mjs"

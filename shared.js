@@ -1,3 +1,9 @@
+// Decorative/control images should not turn a tap/drag into the browser's
+// image ghost. Personal memory photos and editable content keep their defaults.
+document.addEventListener('dragstart',event=>{
+  if(event.target.closest('.app-topbar,.app-dock,.sky-person,.sky-launch,.feature-hero,.alter-ego-trigger'))event.preventDefault();
+});
+
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   const alreadyControlled = Boolean(navigator.serviceWorker.controller);
   let refreshingForUpdate = false;

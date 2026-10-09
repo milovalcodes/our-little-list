@@ -67,21 +67,28 @@ const deliver = env => realDeliver(env, { scheduleQuestions: false });
   console.log(' ok  question pings are written with names Firestore accepts');
 }
 
-function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, questions = {}, content = {}, game = null, pushStatus = 201, lockHeld = false, moveStatus = 200 }) {
+function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, questions = {}, content = {}, receipts = [], game = null, pushStatus = 201, lockHeld = false, moveStatus = 200 }) {
   const deleted = [];
   const pushes = [];
   const moved = [];
+  let lock=null;
   globalThis.fetch = async (url, options = {}) => {
     url = String(url);
     if (url.includes('signInWithPassword')) return Response.json({ idToken: 'tok', localId: 'HOUSE' });
     if (url.includes('/deliveryLocks?documentId=active')) {
+      lock=JSON.parse(options.body).fields;
       return lockHeld ? new Response('', { status: 409 }) : Response.json({});
     }
     if (url.endsWith('/deliveryLocks/active') && options.method !== 'DELETE') {
-      return Response.json({ name: 'p/documents/households/HOUSE/deliveryLocks/active', fields: {
+      return Response.json({ name: 'p/documents/households/HOUSE/deliveryLocks/active', updateTime:'2026-10-09T00:00:00Z', fields: lock||{
         acquiredAt: { integerValue: String(Date.now()) }
       } });
     }
+    if(url.includes('/deliveryLocks/sent-')&&options.method!=='DELETE'){
+      const id=url.split('/deliveryLocks/sent-')[1];
+      return receipts.includes(id)?Response.json({name:url,fields:{acceptedAt:{integerValue:String(Date.now())}}}):new Response('',{status:404});
+    }
+    if(url.includes('/deliveryLocks?documentId=sent-'))return Response.json({});
     if (url.includes('/pushSubs?')) return Response.json({ documents: Object.entries(subs).map(([id, raw]) => {
       const s = raw.subscription || raw;
       const preferences = raw.preferences;
@@ -147,6 +154,14 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
 }
 
 const now = Date.now();
+
+{
+  const h=harness({outbox:[{id:'ALREADY',to:'her',kind:'note',sendAt:now,createdAt:now}],receipts:['ALREADY']});
+  const result=await deliver(ENV);
+  assert.equal(result.sent,0);assert.equal(result.dropped,1);assert.equal(h.pushes.length,0);
+  assert.ok(h.deleted.some(path=>path.endsWith('/outbox/ALREADY')));
+  console.log(' ok  accepted-push receipt prevents resending after failed outbox cleanup');
+}
 
 // Deleted, already-read or completed content must not reappear after quiet hours.
 {

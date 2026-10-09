@@ -27,6 +27,20 @@ a { color: inherit; }
 button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { touch-action:manipulation; }
+/* App chrome isn't copyable prose. Keep forms and meaningful content editable,
+   and retain pinch zoom; do not disable selection or touch handling globally. */
+:where(h1,h2,h3,h4,h5,h6,button,summary,[role="button"],label,
+  .app-topbar,.app-dock,.tiny-kicker,.mini-brand,.season-banner,
+  .seasonal-banner,.seasonal-whisper,.sky-person,.sky-launch,.feature-icon,.tab-bar) {
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+}
+:where(a,button,summary,[role="button"]) { touch-action:manipulation; }
+:where(.app-topbar,.app-dock,.sky-person,.sky-launch,.feature-hero,.alter-ego-trigger) :where(img,svg) {
+  -webkit-user-drag:none; -webkit-user-select:none; user-select:none;
+}
+:where(input,textarea,[contenteditable="true"],[data-selectable]) {
+  -webkit-user-select:text; user-select:text; -webkit-touch-callout:default;
+}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid color-mix(in srgb,var(--accent,#73506a) 55%,white); outline-offset:3px; }
 
 .landing {

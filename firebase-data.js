@@ -4,6 +4,7 @@ import {timedPuzzle} from './daily-puzzles.js';
 import {newTimedGame,advanceTimedGame,timedSummary} from './timed-game.js';
 import { firebaseConfig } from './firebase-config.js';
 import { OUTBOX } from './push-config.js';
+import { createDeliveryWake } from './delivery-wake.js';
 import { HOUSEHOLD_ID, configured as householdConfigured } from './household.js';
 import { GAME_ID, nextGame, gameMessage, selectedGameId, gameNeedsPing } from './couple-game.js';
 
@@ -65,6 +66,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
 
   const named = name => collection(db, 'households', HOUSEHOLD_ID, name);
   const signedIn = () => Boolean(auth.currentUser);
+  const wakeDelivery = createDeliveryWake({getToken:()=>auth.currentUser?.getIdToken?.()});
   const liveCollections = new Map();
 
   const layer = {
@@ -164,7 +166,9 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       // reminder created with no signal still knows its own id — which is what
       // its scheduled notification is filed against.
       const entry = doc(named(name));
-      await applied(setDoc(entry, item), name);
+      const work=setDoc(entry, item);
+      if(name===OUTBOX)work.then(()=>{if(Number(item.sendAt)<=Date.now())wakeDelivery();},()=>{});
+      await applied(work, name);
       return { id: entry.id };
     },
     setTo: (name, id, item) => applied(setDoc(doc(named(name), id), item, { merge: true }), name),
@@ -209,14 +213,14 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
     async submitWordGuess(options) {
       if (!signedIn() || navigator.onLine === false) throw new Error('Reconnect to save a guess. Your letters are still here.');
       const ref = doc(named('wordGames'), `${options.day}-${options.person}`);
-      try { return await runTransaction(db, async transaction => {
+      try { const saved = await runTransaction(db, async transaction => {
         const puzzle = await transaction.get(doc(named('wordPuzzles'), options.day));
         const current = await transaction.get(ref);
         const next = nextWordAttempt(current.exists() ? current.data() : null, puzzle.exists() ? puzzle.data() : null, options);
         transaction.set(ref, next);
         transaction.set(doc(named('wordResults'), `${options.day}-${options.person}`), wordSummary(next));
         return next;
-      }); } catch(problem) {
+      }); if(saved.done)wakeDelivery({activities:true});return saved; } catch(problem) {
         // Rules can reject a stale concurrent write before the transaction
         // runner retries it. Distinguish that from a connection failure.
         if(problem?.code==='permission-denied'){
@@ -257,13 +261,16 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         transaction.set(doc(named('timedResults'),id),timedSummary(game));
       });
       const saved=await getDocFromServer(ref);
+      if(saved.exists()&&saved.data().done)wakeDelivery({activities:true});
       return saved.exists()?{id:saved.id,...saved.data()}:null;
     },
     answerQuestion(day, person, text, at) {
       const batch = writeBatch(db);
       batch.set(doc(named('questionAnswers'), `${day}-${person}`), { day, person, text, at });
       batch.set(doc(named('questions'), day), { answers:{ [person]:{ at } } }, { merge:true });
-      return applied(batch.commit(), 'questions');
+      const work=batch.commit();
+      work.then(()=>wakeDelivery({activities:true}),()=>{});
+      return applied(work, 'questions');
     },
     updateIn: (name, id, changes) => applied(updateDoc(doc(named(name), id), changes), name),
     removeFrom: (name, id) => applied(deleteDoc(doc(named(name), id)), name),

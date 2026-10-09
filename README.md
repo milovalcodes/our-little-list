@@ -35,7 +35,27 @@ and focus preferences apply before display. Exact same-page taps reuse the
 notification router without reloading drafts. Local preview keeps mock feed
 listeners; never use that mode to prove phone delivery.
 
-Delivery runs every minute. Every opted-in visible ping requests high Web Push
+Confirmed outbox saves wake `POST /dispatch` with the member's short-lived
+Firebase ID token; completed puzzle/answer saves wake `/dispatch/activities`.
+The Worker authorizes a bounded Firestore profile LIST under the existing
+household rules (including when no profile exists), never by trusting a client
+UID or a decoded token. Only the configured site origin is accepted, and the
+request cannot supply a recipient, message, endpoint or send time. CORS is not
+the auth boundary: Firebase rules are. No admin/send secret ships to the client.
+
+Immediate delivery skips scheduled housekeeping for ordinary actions. It and
+the minute backstop share a CAS-protected lease, bounded busy retries, and the
+same validation/filtering/send code. A tiny `deliveryLocks/sent-{outboxId}`
+acceptance receipt prevents resending after failed queue cleanup. These receipts
+contain only timestamps; retain them while a corresponding outbox row may exist.
+Provider acceptance followed by a crash before saving a receipt is an ambiguous
+network failure, so this is not a claim of distributed exactly-once delivery.
+Stable notification tags and event IDs also prevent ordinary duplicate UI alerts.
+Offline writes wake only after server acknowledgement; a failed wake leaves the
+queue intact for the backstop. Scheduled reminders and daily openings still use
+the minute checker. Normal action delivery targets seconds, not guaranteed time.
+
+Every opted-in visible ping requests high Web Push
 transport priority on Apple and Android; this does not bypass focus, quiet hours
 or category choices. Logs separate queue wait from push-provider acceptance time,
 alongside scheduling and total duration, without message bodies or endpoints.

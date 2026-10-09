@@ -12,6 +12,8 @@ import {timedPuzzle,PUZZLE_TYPES,LEAGUE_START_DAY} from '../../daily-puzzles.js'
 import {timedOver} from '../../timed-game.js';
 import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
+import { authorizeWake, wakeDelivery } from './immediate.js';
+import { acquireDeliveryLock, releaseDeliveryLock } from './delivery-lock.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../../notification-policy.js';
 import { focusDelivery,contentSourcePath,contentStillWanted } from '../../delivery-policy.js';
 import { questionClock, questionForDay } from '../../question-prompts.js';
@@ -31,7 +33,7 @@ function required(env, name) {
   return value;
 }
 
-export async function deliver(env, { scheduleQuestions = true } = {}) {
+export async function deliver(env, { scheduleQuestions = true, scheduleReminders = true } = {}) {
   const startedAt=Date.now();
   const apiKey = required(env, 'FIREBASE_API_KEY');
   const projectId = required(env, 'FIREBASE_PROJECT_ID');
@@ -51,7 +53,8 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
   const lockPath = `${household}/deliveryLocks/active`;
   const lockAt = Date.now();
 
-  if (!await acquireDeliveryLock(db, lockPath, lockAt)) {
+  const lease=await acquireDeliveryLock(db,lockPath,lockAt,LOCK_STALE_MS);
+  if (!lease) {
     return { checked: false, skipped: 'already-running' };
   }
 
@@ -63,7 +66,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
     // Independent schedulers can fetch concurrently. Crown settlement stays
     // before activity-result pings, so a closed tie never queues another turn.
     await Promise.all([
-      scheduleListReminders(db,household,now).catch(problem=>console.error(`list reminders skipped: ${problem?.message||problem}`)),
+      ...(scheduleReminders?[scheduleListReminders(db,household,now).catch(problem=>console.error(`list reminders skipped: ${problem?.message||problem}`))]:[]),
       ...(scheduleQuestions?[
         ensureQuestionOfDay(db,household,now).catch(problem=>console.error(`daily question skipped: ${problem?.message||problem}`)),
         (async()=>{await settleWordWeeks(db,household,now,{before:LEAGUE_WEEK});await settleActivityWeeks(db,household,now);await notifyActivityResults(db,household,now);})().catch(problem=>console.error(`weekly word skipped: ${problem?.message||problem}`))
@@ -92,6 +95,13 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
     const statusCache = new Map();
 
     for (const message of due) {
+      // Leave enough time for the bounded push request before a crashed-pass
+      // lease becomes reclaimable. Never keep sending on an expired lease.
+      if(Date.now()>lease.expiresAt-30000){left+=1;break;}
+      const receiptPath=`${household}/deliveryLocks/sent-${message.id}`;
+      if(await db.get(receiptPath)){
+        await db.remove(message.path);dropped+=1;continue;
+      }
       if(message.kind==='list-nudge'&&!await listNudgeWanted(db,household,message,now)){
         await db.remove(message.path);dropped+=1;continue;
       }
@@ -219,6 +229,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
         body: message.body || '',
         url: message.url || 'index.html',
         tag: `${message.kind || 'note'}-${message.id}`,
+        eventId: message.id,
         kind: message.kind || 'note',
         urgent: message.urgent === true,
         late: dueAge > STALE_MS,
@@ -227,6 +238,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
       });
 
       const pushStartedAt = Date.now();
+      if(pushStartedAt>lease.expiresAt-30000){left+=1;break;}
       const result = await sendNotification(target.subscription, payload, vapid, {
         ttl: 86400,
         // These are opted-in, visible personal notifications, not background
@@ -238,6 +250,9 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
 
       if (result.ok) {
         const acceptedAt = Date.now();
+        // Keep a tiny persistent receipt. If queue cleanup fails, the next
+        // pass cleans it up without sending a second push. No private text.
+        await db.create(receiptPath,{acceptedAt});
         // Acceptance by Apple/Google is not proof of display on the phone.
         // No message bodies, endpoints, tokens or private IDs enter logs.
         console.log(JSON.stringify({event:'push-accepted',kind:message.kind||'note',to:message.to,acceptedAt,
@@ -261,7 +276,7 @@ export async function deliver(env, { scheduleQuestions = true } = {}) {
 
     return { checked: true, sent, left, dropped, muted, held, subscribed: Object.keys(subscriptions).length, schedulingMs, durationMs:Date.now()-startedAt };
   } finally {
-    await db.remove(lockPath).catch(problem => console.error(`could not release delivery lock: ${problem.message || problem}`));
+    await releaseDeliveryLock(db,lockPath,lease).catch(problem => console.error(`could not release delivery lock: ${problem.message || problem}`));
   }
 }
 
@@ -332,14 +347,6 @@ async function tokenFor(credentials) {
   return signed.idToken;
 }
 
-async function acquireDeliveryLock(db, path, now) {
-  if (await db.create(path, { acquiredAt: now })) return true;
-  const existing = await db.get(path);
-  if (existing && now - Number(existing.acquiredAt || 0) < LOCK_STALE_MS) return false;
-  await db.remove(path);
-  return db.create(path, { acquiredAt: now });
-}
-
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(
@@ -350,8 +357,16 @@ export default {
   },
 
   // Lets you run it by hand while setting up, and gives a health check.
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if(['/dispatch','/dispatch/activities'].includes(url.pathname)){
+      const auth=await authorizeWake(request,env);
+      if(auth.response)return auth.response;
+      ctx.waitUntil(wakeDelivery(env,deliver,{activities:url.pathname.endsWith('/activities')})
+        .then(result=>console.log(JSON.stringify({trigger:'immediate',...result})))
+        .catch(()=>console.error('Immediate delivery failed; queued messages remain for the scheduled backstop.')));
+      return Response.json({accepted:true},{status:202,headers:auth.headers});
+    }
     if (url.pathname !== '/run') {
       return new Response('our little app delivery. POST /run with the shared secret to trigger a pass.', { status: 200 });
     }

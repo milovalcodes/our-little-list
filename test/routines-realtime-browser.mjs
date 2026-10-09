@@ -9,7 +9,7 @@ const isWebKit=process.env.GAME_BROWSER==='webkit';
 const project='demo-little-list',base='http://127.0.0.1:8777',sdk='https://www.gstatic.com/firebasejs/12.19.0';
 const cleared=await fetch(`http://${host}/emulator/v1/projects/${project}/databases/(default)/documents`,{method:'DELETE'});
 assert.ok(cleared.ok,'clear demo fixtures');
-const browser=await (isWebKit?webkit:chromium).launch(),errors=[],transportWarnings=[];
+const browser=await (isWebKit?webkit:chromium).launch(),errors=[],transportWarnings=[],wakeRequests=[];
 async function phone(side) {
   const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block',reducedMotion:'reduce'});
   // These contexts stand for two foreground phones, not two tabs competing
@@ -23,8 +23,12 @@ async function phone(side) {
     return url.origin===base||url.origin===`http://${host}`||url.href.startsWith(sdk+'/')?route.fallback():route.abort();
   });
   await context.route('**/firebase-config.js',route=>route.fulfill({contentType:'text/javascript',body:`export const firebaseConfig={apiKey:'demo-key',projectId:'${project}',appId:'demo-app'};`}));
+  await context.route('https://our-little-list-delivery.emijosevalle.workers.dev/dispatch**',route=>{
+    wakeRequests.push({side,url:route.request().url(),method:route.request().method(),body:route.request().postData()});
+    return route.fulfill({status:202,contentType:'application/json',body:'{"accepted":true}',headers:{'Access-Control-Allow-Origin':base}});
+  });
   await context.route(sdk+'/firebase-auth.js',route=>route.fulfill({contentType:'text/javascript',body:`
-    const auth={currentUser:{uid:'${uid}',email:'${side}@example.test'}};
+    const auth={currentUser:{uid:'${uid}',email:'${side}@example.test',getIdToken:async()=>'demo-browser-token-${side}'}};
     export const getAuth=()=>auth,browserLocalPersistence={};
     export const setPersistence=async()=>{},signInWithEmailAndPassword=async()=>auth.currentUser,signOut=async()=>{};
     export const onAuthStateChanged=(_,callback)=>{queueMicrotask(()=>callback(auth.currentUser));return()=>{};};
@@ -146,5 +150,16 @@ try {
   await sun.locator('.incoming-note-close').click();
  }
  console.log('REAL FOREGROUND: all 14 notification kinds arrive on Activities with exact destinations, without refreshing');
+ for(let i=0;i<2;i++){
+  await moon.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();await d.notify('her',{kind:'note',url:'notes.html',body:'identical but separate',title:'note'});});
+  await sun.waitForFunction(()=>document.querySelector('.incoming-note p')?.textContent==='identical but separate');
+  await sun.locator('.incoming-note-close').click();
+ }
+ await sun.evaluate(()=>navigator.serviceWorker.dispatchEvent(new MessageEvent('message',{data:{type:'littlelist:present-ping',payload:{kind:'note',eventId:'push-first',title:'note',body:'push before snapshot',url:'notes.html'}}})));
+ await sun.waitForSelector('.incoming-note');await sun.locator('.incoming-note-close').click();
+ await moon.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();await d.setTo('outbox','push-first',{to:'her',kind:'note',title:'note',body:'push before snapshot',url:'notes.html',createdAt:Date.now(),sendAt:Date.now()});});
+ await sun.waitForTimeout(350);assert.equal(await sun.locator('.incoming-note').count(),0,'push-first and database-first copies share an event identity');
+ assert.ok(wakeRequests.some(r=>r.side==='him'&&r.method==='POST'&&r.body===null),'real confirmed writes wake delivery without sending a second message body');
+ console.log('REAL FOREGROUND: identical separate notes both show; push/snapshot race deduplicates; confirmed SDK saves wake immediate delivery');
  console.log('REAL ROUTINES: two authenticated phones share completion/undo, real nudge outbox, schedule validation, check ownership and worker marker permissions pass');
 } finally {await browser.close();}

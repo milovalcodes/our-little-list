@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v104';
+const CACHE = 'our-little-list-v105';
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -29,7 +29,7 @@ const ASSETS = [
   './profiles.js', './status.js', './dates.js', './dashboard.js', './activities.js', './activity-clock.js', './daily-word.js', './daily-words.js', './word-game.js', './word-lexicon.js', './word-scores.js', './word-crowns.js', './word-tiebreaker.js', './word-celebration.js', './word-coronation.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
   './notification-policy.js', './notification-preferences.js',
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
-  './push-config.js', './push-client.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',
+  './push-config.js', './push-client.js', './delivery-wake.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',
   './household.js', './viewer.js', './entry.js', './place-presets.js', './location-tags.js',
   './moment-picker.js', './records.js', './recurrence.js', './needs-you.js', './journey.js', './trip.js', './status-presets.js', './activity-feed.js', './activity-summary.js', './availability.js', './fridge.js', './pings-settings.js', './undo-delete.js', './settings-account.js', './setup-nudge.js', './daily-question.js', './question-prompts.js', './page-boot.js', './device-mode.js', './focus-ask.js', './delivery-policy.js', './inline-actions.js',
   './sun-moon-personalized.png', './sun-profile.png', './moon-profile.png', './seasonal-spooky.svg', './seasonal-christmas.svg', './icon-192.png',

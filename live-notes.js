@@ -17,7 +17,7 @@ const displayedPings=new Map();
 function pingUrl(message){
   try{const url=new URL(message.url||'index.html',location.href),root=new URL('.',location.href);return url.origin===root.origin&&url.pathname.startsWith(root.pathname)&&url.pathname.endsWith('.html')?url.href:new URL('index.html',root).href;}catch(_){return new URL('index.html',location.href).href;}
 }
-const pingKey=message=>JSON.stringify([message.kind,pingUrl(message),message.body||'']);
+const pingKey=message=>message.eventId||message.id?`event:${message.eventId||message.id}`:JSON.stringify([message.kind,pingUrl(message),message.body||'']);
 navigator.serviceWorker?.addEventListener('message',event=>{
   if(!['littlelist:was-ping-shown','littlelist:present-ping'].includes(event.data?.type))return;
   const at=displayedPings.get(pingKey(event.data.payload));

@@ -8,3 +8,6 @@ export const VAPID_PUBLIC_KEY = 'BJeV-0cnT_CgN9jL29iIZqS8Q3EVaBB7qY4F9e3gsbtHIY5
 // Collection names shared by the website and the delivery workflow.
 export const PUSH_SUBS = 'pushSubs';
 export const OUTBOX = 'outbox';
+// Public endpoint, authenticated with the signed-in member's Firebase ID token.
+// Never put RUN_SECRET or the VAPID private key in browser code.
+export const DELIVERY_URL = 'https://our-little-list-delivery.emijosevalle.workers.dev/dispatch';

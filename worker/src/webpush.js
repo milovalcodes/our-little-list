@@ -117,6 +117,7 @@ export async function sendNotification(subscription, payload, vapid, options = {
 
   const response = await fetch(subscription.endpoint, {
     method: 'POST',
+    signal: AbortSignal.timeout(10000),
     headers: {
       Authorization: authorization,
       'Content-Encoding': 'aes128gcm',

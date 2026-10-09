@@ -8,6 +8,7 @@ const FIRESTORE = 'https://firestore.googleapis.com/v1';
 export async function signIn({ apiKey, email, password }) {
   const response = await fetch(`${IDENTITY}?key=${apiKey}`, {
     method: 'POST',
+    signal: AbortSignal.timeout(10000),
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, returnSecureToken: true })
   });
@@ -25,7 +26,7 @@ export function createClient({ projectId, idToken }) {
   const headers = { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' };
 
   async function call(path, options = {}) {
-    const response = await fetch(path.startsWith('http') ? path : `${root}${path}`, { ...options, headers });
+    const response = await fetch(path.startsWith('http') ? path : `${root}${path}`, { ...options, headers, signal:AbortSignal.timeout(10000) });
     if (response.status === 404) return { missing: true };
     const text = await response.text();
     if (!response.ok) throw new Error(`firestore ${response.status}: ${text.slice(0, 300)}`);
@@ -47,6 +48,18 @@ export function createClient({ projectId, idToken }) {
       const payload = await call(`/${documentPath}`);
       return payload.missing ? null : readDocument(payload);
     },
+    async getVersioned(documentPath) {
+      const payload=await call(`/${documentPath}`);
+      return payload.missing?null:{record:readDocument(payload),updateTime:payload.updateTime};
+    },
+    async removeIfUnchanged(documentPath, updateTime) {
+      if(!updateTime)return false;
+      const response=await fetch(`${root}:commit`,{method:'POST',headers,signal:AbortSignal.timeout(10000),
+        body:JSON.stringify({writes:[{delete:`${resourceRoot}/${documentPath}`,currentDocument:{updateTime}}]})});
+      if([404,409,412].includes(response.status))return false;
+      if(!response.ok){const text=await response.text();if(text.includes('FAILED_PRECONDITION'))return false;throw new Error(`conditional delete failed: ${response.status}`);}
+      return true;
+    },
     async withReminders(collectionPath) {
       const parent=collectionPath.split('/').slice(0,-1).join('/');
       const payload=await call(`/${parent}:runQuery`,{method:'POST',body:JSON.stringify({structuredQuery:{from:[{collectionId:'items'}],where:{fieldFilter:{field:{fieldPath:'reminderTime'},op:'GREATER_THAN',value:{stringValue:''}}}}})});
@@ -60,6 +73,7 @@ export function createClient({ projectId, idToken }) {
       const collectionPath = parts.join('/');
       const response = await fetch(`${root}/${collectionPath}?documentId=${encodeURIComponent(documentId)}`, {
         method: 'POST',
+        signal: AbortSignal.timeout(10000),
         headers,
         body: JSON.stringify({ fields: writeMap(fields) })
       });
@@ -81,7 +95,7 @@ export function createClient({ projectId, idToken }) {
         currentDocument: { exists: false }
       }));
       const response = await fetch(`${root}:commit`, {
-        method: 'POST', headers, body: JSON.stringify({ writes })
+        method: 'POST', headers, body: JSON.stringify({ writes }), signal:AbortSignal.timeout(10000)
       });
       const result = await response.text();
       if (response.status === 409 || (!response.ok && (result.includes('ALREADY_EXISTS') || result.includes('FAILED_PRECONDITION')))) return false;

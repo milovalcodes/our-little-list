@@ -11,6 +11,7 @@ crons = ["* * * * *"]
 # VAPID public key is meant to be handed out; the Firestore rules are what
 # protect the data.
 [vars]
+APP_ORIGIN = "https://milovalcodes.github.io"
 FIREBASE_API_KEY = "AIzaSyAFUncHYGmf5j2O7DGm9PL53qPNsM8HkgE"
 FIREBASE_PROJECT_ID = "our-little-list-5ea59"
 HOUSEHOLD_ID = "oLSxADOwjqS04hSS2aHGOcvozmz2"
