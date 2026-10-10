@@ -3,6 +3,7 @@ import {activityClock,activityWindow} from '../activity-clock.js';
 import {DAILY_WORDS,SUNDAY_WORDS,wordForDay,wordForTie} from '../daily-words.js';
 import {WORD_LEXICON} from '../word-lexicon.js';
 import {puzzleSeason,seasonalWords} from '../seasonal-puzzles.js';
+import {usesNewEdition,editionWordPool} from '../puzzle-edition.js';
 import {scoreGuess,nextWordAttempt,wordSummary} from '../word-game.js';
 import {wordPoints,scoreWeek,weekForDay,reigningCrowns,duelOutcome} from '../word-scores.js';
 import {settleWordWeeks} from '../worker/src/word-week.js';
@@ -17,7 +18,7 @@ for(const [day,hours] of [['2026-10-31',25],['2027-03-13',23],['2026-10-08',24]]
 assert.equal(new Set([...DAILY_WORDS,...SUNDAY_WORDS]).size,DAILY_WORDS.length+SUNDAY_WORDS.length);
 assert.ok(DAILY_WORDS.length>500&&SUNDAY_WORDS.length>300&&WORD_LEXICON.size>15000);
 assert.ok([...DAILY_WORDS,...SUNDAY_WORDS].every(w=>/^[a-z]{5}$/.test(w)));
-for(let i=0;i<365;i++){const day=new Date(Date.UTC(2026,9,8+i)).toISOString().slice(0,10),hard=new Date(day+'T12:00Z').getUTCDay()===0,season=puzzleSeason(day);assert.ok((season?seasonalWords(season,hard).map(e=>e.word):(hard?SUNDAY_WORDS:DAILY_WORDS)).includes(wordForDay(day).word));}
+for(let i=0;i<365;i++){const day=new Date(Date.UTC(2026,9,8+i)).toISOString().slice(0,10),hard=new Date(day+'T12:00Z').getUTCDay()===0,season=puzzleSeason(day);assert.ok((usesNewEdition(day)?editionWordPool(hard,season).map(e=>e.word):season?seasonalWords(season,hard).map(e=>e.word):(hard?SUNDAY_WORDS:DAILY_WORDS)).includes(wordForDay(day).word));}
 assert.deepEqual(scoreGuess('allee','apple'),['correct','present','absent','absent','correct']);
 assert.deepEqual(scoreGuess('sassy','sissy'),['correct','absent','correct','correct','correct']);
 const puzzle={day:'2026-10-08',word:'apple',opensAt:0,closesAt:10000};

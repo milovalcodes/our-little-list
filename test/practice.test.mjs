@@ -2,17 +2,22 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {practicePuzzle,PRACTICE_WORDS,PRACTICE_COUNTS} from '../practice-catalog.js';
-import {PRACTICE_BANK,PRACTICE_BOARD_EXTRAS} from '../practice-bank.js';
+import {PRACTICE_EDITION_WORDS as PRACTICE_BANK,PRACTICE_EDITION_EXTRAS as PRACTICE_BOARD_EXTRAS} from '../practice-edition-bank.js';
+import {EDITION_WORDS} from '../puzzle-edition.js';
 import {practiceStore} from '../practice-store.js';
 import {DAILY_WORDS,SUNDAY_WORDS,wordForDay} from '../daily-words.js';
 import {WORD_LEXICON} from '../word-lexicon.js';
 import {entryCells,selectedSearchWord,timedPuzzle} from '../daily-puzzles.js';
 assert.deepEqual(PRACTICE_COUNTS,{word:200,search:100,crossword:100});
+// Any future layout/content change needs a new edition, not silently reused saves.
+const editionHash=createHash('sha256');
+for(const [type,count]of Object.entries(PRACTICE_COUNTS))for(let i=0;i<count;i++)editionHash.update(JSON.stringify(practicePuzzle(type,i)));
+assert.equal(editionHash.digest('hex'),'78c3ebcafdee7309d3640d017ab0e238199c2a79cfd5930250aa85f62555cd56','v2 practice boards must stay stable');
 const bank=[...PRACTICE_BANK,...PRACTICE_BOARD_EXTRAS];
 assert.equal(new Set(bank.map(e=>e.word)).size,bank.length);
-assert.ok(bank.every(e=>/^[A-Z]{3,9}$/.test(e.word)&&e.clue.length>8));
+assert.ok(bank.every(e=>/^[A-Z]{3,12}$/.test(e.word)&&e.clue.length>8));
 assert.equal(new Set(PRACTICE_WORDS.map(e=>e.word)).size,200);
-const daily=new Set([...DAILY_WORDS,...SUNDAY_WORDS]);
+const daily=new Set(EDITION_WORDS.map(e=>e.word));
 assert.ok(PRACTICE_WORDS.filter(e=>!daily.has(e.word.toLowerCase())).length>=180);
 assert.ok(PRACTICE_WORDS.every(e=>WORD_LEXICON.has(e.word.toLowerCase())));
 assert.ok(WORD_LEXICON.size>=20148);
@@ -20,7 +25,7 @@ for(const type of ['search','crossword']){
  const signatures=new Set();
  for(let i=0;i<100;i++){
   const p=practicePuzzle(type,i);signatures.add(p.grid);
-  assert.equal(p.entries.length,type==='search'?10:6);
+  assert.equal(p.entries.length,type==='search'?10:i<50?6:8);
   assert.ok(!('closesAt' in p)&&!('opensAt' in p));
   for(let n=0;n<p.entries.length;n++){
    const cells=entryCells(p,n);
@@ -42,19 +47,16 @@ const a=practiceStore('house:him',storage),b=practiceStore('house:her',storage);
 a.save('word',0,{guesses:['abcde'],completed:true});a.move('word',8);
 assert.equal(a.completed('word'),1);assert.equal(b.completed('word'),0);
 assert.equal(practiceStore('house:him',storage).cursor('word'),8);
-assert.ok([...docs.keys()].every(k=>k.startsWith('our-little-app-practice-v1:')));
+assert.ok([...docs.keys()].every(k=>k.startsWith('our-little-app-practice-v2:')));
 const blocked=practiceStore('blocked',{getItem(){throw Error();},setItem(){throw Error();}});
 blocked.save('word',0,{guesses:['abcde']});assert.equal(blocked.load('word',0).guesses.length,1);assert.match(blocked.warning,/can’t save/);
 for(const name of ['practice.js','practice-store.js','practice-catalog.js']){
  const code=readFileSync(new URL('../'+name,import.meta.url),'utf8');
  assert.doesNotMatch(code,/playTimedPuzzle|playWord|data\.(?:setTo|addTo|notify|updateIn)|setInterval/);
 }
-// Frozen daily puzzles: practice and dictionary expansion must not move the schedule.
+// The previous edition's last day remains byte-for-byte unchanged.
 for(const [day,word,search,crossword] of [
  ['2026-10-09','cloak','d46bc48b03354a3e4cfcd561347970c9589494b56cff77912a046829799fb52c','08d6037232b954c2037f305550fd9116dfa7fc56cd9f0fdd62a90ac7287ecf7c'],
- ['2026-10-11','ghoul','b79282cf3d2f6ea871b3ff1997ea60c832be86ed3cc18c0cb123f538c5cbe016','967ea09bec8a29dda4e94ce34991ea0341154ddf41bab41d7ada9e29ea51ba16'],
- ['2026-11-04','acorn','dc7d73d54fead2ea2a05f3fc6467aac599f31297bf6094d38c2597c08040fac2','e0914cac3f7e62c6c299fac436762c0013e258fcf50b218161a3982aeaa37e51'],
- ['2026-12-06','hoary','c62b416f6d8559d045ec6c82d1e58b0f030b55c7fc921b6a5e30aa7c23bffbeb','cadd3e6d3ffc99588a17cfd614260f98e923e4463516307b0d94169e00b754d3']
 ]){
  assert.equal(wordForDay(day).word,word);
  for(const [type,hash] of [['search',search],['crossword',crossword]])assert.equal(createHash('sha256').update(JSON.stringify(timedPuzzle(day,type))).digest('hex'),hash);

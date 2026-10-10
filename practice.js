@@ -17,8 +17,8 @@ const isDone=()=>type==='word'?state.guesses.includes(puzzle.word.toLowerCase())
 function save(){state.selected=selected;store.save(type,index,state);document.getElementById('practice-warning').textContent=store.warning;}
 function progress(){
  document.getElementById('practice-progress').textContent=type==='word'
-  ?`${store.completed(type)} finished · 5 tries, then retry anytime`
-  :`${store.completed(type)} finished · take your time`;
+  ?`${puzzle.difficulty} · ${store.completed(type)} finished · 5 tries, retry anytime`
+  :`${puzzle.difficulty} · ${store.completed(type)} finished · take your time`;
 }
 function open(){
  const asked=location.hash.slice(1);type=Object.hasOwn(PRACTICE_COUNTS,asked)?asked:'word';
@@ -35,7 +35,7 @@ function load(){
  // Practice celebrations never create score/result documents.
  celebration=createWordCelebration(host,viewer,'practice-'+type+'-'+index);
  document.getElementById('practice-title').textContent=PRACTICE_NAMES[type];
- picker.innerHTML=Array.from({length:PRACTICE_COUNTS[type]},(_,i)=>`<option value="${i}">${i+1} / ${PRACTICE_COUNTS[type]}</option>`).join('');
+ picker.innerHTML=Array.from({length:PRACTICE_COUNTS[type]},(_,i)=>`<option value="${i}">${i+1} / ${PRACTICE_COUNTS[type]} · ${i<PRACTICE_COUNTS[type]/2?'normal':'hard'}</option>`).join('');
  picker.value=index;render();host.setAttribute('aria-busy','false');
 }
 function feedback(text){message=text;const node=host.querySelector('[data-feedback]');if(node)node.textContent=text;}

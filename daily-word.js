@@ -8,9 +8,10 @@ import { personName } from './profile-store.js';
 import { createWordCelebration, wordFinish } from './word-celebration.js';
 import {wordTheme} from './puzzle-catalog.js';
 import {SEASONAL_WORDS} from './seasonal-puzzles.js';
+import {EDITION_WORDS} from './puzzle-edition.js';
 
 let activeBoard=null;
-const accepted=new Set([...WORD_LEXICON,...DAILY_WORDS,...SUNDAY_WORDS,...SEASONAL_WORDS.map(e=>e.word)]);
+const accepted=new Set([...WORD_LEXICON,...DAILY_WORDS,...SUNDAY_WORDS,...SEASONAL_WORDS.map(e=>e.word),...EDITION_WORDS.map(e=>e.word)]);
 export function startDailyWord({data,viewer,other},options={}){
   const openedDay=activityClock().day,day=options.day||openedDay,host=options.host||document.getElementById('word-game');
   const tie=day.includes('-tie-');

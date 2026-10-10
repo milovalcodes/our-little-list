@@ -1,6 +1,7 @@
 import {CATALOG_VERSION,PUZZLE_THEMES,catalogPool} from './puzzle-catalog.js';
 import {activityWindow} from './activity-clock.js';
 import {puzzleSeason} from './seasonal-puzzles.js';
+import {usesNewEdition,DIFFICULTY_VERSION} from './puzzle-edition.js';
 export const PUZZLE_TYPES=['search','crossword'];
 export const PUZZLE_NAMES={search:'Word Search',crossword:'Mini crossword'};
 export const PUZZLE_LIMIT_MS=120000;
@@ -26,9 +27,9 @@ export function searchGrid(bank,size,rng,hard){
  if(entries.length!==10)throw Error('Could not make a full word search');
  return {size,grid:cells.map(c=>c||String.fromCharCode(65+Math.floor(rng()*26))).join(''),entries};
 }
-export function crosswordGrid(bank,size,rng,target){
+export function crosswordGrid(bank,size,rng,target,attempts=24){
  let best=null;
- for(let attempt=0;attempt<24;attempt++){
+ for(let attempt=0;attempt<attempts;attempt++){
   const grid=Array(size*size).fill('#'),used=Array(size*size).fill(0),entries=[];
   const candidates=shuffled(bank.filter(e=>e.word.length>=3&&e.word.length<=size-2),rng);
   const first=candidates.shift(),r=Math.floor(size/2),c=Math.floor((size-first.word.length)/2);
@@ -60,13 +61,16 @@ export function crosswordGrid(bank,size,rng,target){
 }
 export function timedPuzzle(day,type,now=Date.now()){
  if(!PUZZLE_TYPES.includes(type))throw Error('Unknown puzzle');
- const hard=isHardDay(day),difficulty=hard?'hard':'normal',rng=random(day+':'+type+':v1');
+ const modern=usesNewEdition(day,now),hard=isHardDay(day),difficulty=hard?'hard':'normal',rng=random(day+':'+type+(modern?':v3':':v1'));
  const season=puzzleSeason(day,now);
- const themes=PUZZLE_THEMES.filter(t=>t.difficulty===difficulty&&t.season===season),theme=themes[Math.floor(rng()*themes.length)];
+ const themes=PUZZLE_THEMES.filter(t=>t.difficulty===difficulty&&t.season===season&&(modern?t.edition===DIFFICULTY_VERSION:!t.edition)),theme=themes[Math.floor(rng()*themes.length)];
  const bank=catalogPool(difficulty,theme.id).map(({word,clue,id})=>({word,clue,id}));
- const layout=type==='search'?searchGrid(bank,hard?12:10,rng,hard):crosswordGrid(bank,hard?11:9,rng,hard?8:6);
+ // Keep the two-minute round compact; use stronger clues, not more answers.
+ const layout=modern
+  ?(type==='search'?searchGrid(bank,hard?12:11,rng,true):crosswordGrid(bank,hard?12:11,rng,hard?8:6,80))
+  :(type==='search'?searchGrid(bank,hard?12:10,rng,hard):crosswordGrid(bank,hard?11:9,rng,hard?8:6));
  const window=day.includes('-tie-')?{opensAt:now,closesAt:4102444800000}:activityWindow(day);
- return {day,type,hard,difficulty,theme:theme.label,themeId:theme.id,catalogVersion:CATALOG_VERSION,...layout,...window};
+ return {day,type,hard,difficulty,theme:theme.label,themeId:theme.id,catalogVersion:modern?DIFFICULTY_VERSION:CATALOG_VERSION,...layout,...window};
 }
 export function entryCells(puzzle,index){const e=puzzle.entries[index];return e?[...e.word].map((_,i)=>e.start+i*e.step):[];}
 export function selectedSearchWord(puzzle,start,end){

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {SEASONAL_POOLS,SEASONAL_WORDS,puzzleSeason,seasonalWords} from '../seasonal-puzzles.js';
+import {EDITION_WORDS,usesNewEdition} from '../puzzle-edition.js';
 import {PUZZLE_THEMES,catalogPool} from '../puzzle-catalog.js';
 import {wordForDay,wordForTie} from '../daily-words.js';
 import {timedPuzzle} from '../daily-puzzles.js';
@@ -25,7 +26,7 @@ for(let year=2026;year<=2033;year++)for(const month of ['10','12']){
  for(let date=1;date<=31;date++){
   const day=`${year}-${month}-${String(date).padStart(2,'0')}`,p=wordForDay(day);
   if(!p)continue;
-  assert.ok(SEASONAL_WORDS.some(e=>e.id===p.entryId&&e.season===season&&e.word===p.word&&e.theme===p.theme));
+  assert.ok((usesNewEdition(day)?EDITION_WORDS:SEASONAL_WORDS).some(e=>e.id===p.entryId&&e.season===season&&e.word===p.word&&e.theme===p.theme));
   assert.ok(!seen.has(p.word),'no repeated Little Word within a seasonal month');seen.add(p.word);
   for(const type of ['search','crossword']){
    const board=timedPuzzle(day,type);
@@ -53,7 +54,7 @@ for(const [time,day,season]of [
 for(const [time,season]of [['2026-11-01T03:59Z','october'],['2026-11-01T04:00Z',''],['2026-12-01T05:00Z','december'],['2027-01-01T05:00Z','']]){
  const now=Date.parse(time),id='2026-09-28-tie-1';
  assert.equal(puzzleSeason(id,now),season);
- assert.equal(wordForTie('2026-09-28',1,now).entryId.includes(season+'-hard-'),Boolean(season));
+ assert.equal(EDITION_WORDS.find(e=>e.id===wordForTie('2026-09-28',1,now).entryId).season,season);
  for(const type of ['search','crossword']){
   const p=timedPuzzle(id,type,now);
   assert.equal(PUZZLE_THEMES.find(t=>t.id===p.themeId&&t.difficulty==='hard').season,season);

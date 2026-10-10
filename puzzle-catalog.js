@@ -23,7 +23,9 @@ export const PUZZLE_CATALOG=[...EASY_CLUES.map(e=>({...e,difficulty:'normal'})),
  if(!group)throw Error('Missing puzzle category: '+e.word);
  return Object.freeze({id:e.difficulty+'-'+e.word.toLowerCase(),...e,theme:group.theme,themeLabel:group.label});
 }).concat(SEASONAL_POOLS.flatMap(p=>p.entries.map(e=>Object.freeze(e))));
-export const PUZZLE_THEMES=[...groups.map(([difficulty,id,label])=>Object.freeze({difficulty,id,label,season:''})),...SEASONAL_POOLS.map(({difficulty,id,label,season})=>Object.freeze({difficulty,id,label,season}))];
+import {NEW_POOLS} from './puzzle-edition.js';
+PUZZLE_CATALOG.push(...NEW_POOLS.flatMap(p=>p.entries.map(e=>Object.freeze(e))));
+export const PUZZLE_THEMES=[...groups.map(([difficulty,id,label])=>Object.freeze({difficulty,id,label,season:''})),...SEASONAL_POOLS.map(({difficulty,id,label,season})=>Object.freeze({difficulty,id,label,season})),...NEW_POOLS.map(({difficulty,id,label,season,edition})=>Object.freeze({difficulty,id,label,season,edition}))];
 export function catalogPool(difficulty,theme){return PUZZLE_CATALOG.filter(e=>e.difficulty===difficulty&&e.theme===theme);}
 
 // Specific hints take precedence over broader vocabulary hints. These are

@@ -1,4 +1,5 @@
 import {activityWindow} from './activity-clock.js';
+import {usesNewEdition,editionWordForDay,editionWordForTie,EDITION_WORDS} from './puzzle-edition.js';
 import {wordTheme,CATALOG_VERSION} from './puzzle-catalog.js';
 import {puzzleSeason,seasonalWords,SEASONAL_WORDS} from './seasonal-puzzles.js';
 export const WORD_START_DAY='2026-10-08';
@@ -18,7 +19,7 @@ function shuffled(words,seed) {
   return bank;
 }
 const bank=shuffled(DAILY_WORDS,190819),sundays=shuffled(SUNDAY_WORDS,78123);
-export const LITTLE_WORD_CATALOG=[...DAILY_WORDS.map(word=>({word,difficulty:'normal'})),...SUNDAY_WORDS.map(word=>({word,difficulty:'hard'}))].map(entry=>({...entry,id:'word-'+entry.word,theme:wordTheme(entry.word,entry.difficulty==='hard')})).concat(SEASONAL_WORDS);
+export const LITTLE_WORD_CATALOG=[...DAILY_WORDS.map(word=>({word,difficulty:'normal'})),...SUNDAY_WORDS.map(word=>({word,difficulty:'hard'}))].map(entry=>({...entry,id:'word-'+entry.word,theme:wordTheme(entry.word,entry.difficulty==='hard')})).concat(SEASONAL_WORDS,EDITION_WORDS);
 function metadata(word,hard){return {theme:wordTheme(word,hard),difficulty:hard?'hard':'normal',catalogVersion:CATALOG_VERSION,entryId:'word-'+word};}
 function seasonalAnswer(day,hard,position,now){
  const season=puzzleSeason(day,now);
@@ -29,6 +30,7 @@ function seasonalAnswer(day,hard,position,now){
 }
 export const WORD_BANK_SIZE=bank.length;
 export function wordForDay(day) {
+  if(usesNewEdition(day))return editionWordForDay(day);
   const window=activityWindow(day),index=Math.round((Date.parse(day+'T12:00:00Z')-Date.parse(WORD_START_DAY+'T12:00:00Z'))/86400000);
   if(index<0)return null;
   const sunday=new Date(day+'T12:00:00Z').getUTCDay()===0;
@@ -44,6 +46,7 @@ export function wordForDay(day) {
 }
 
 export function wordForTie(week,round,now=Date.now()){
+  if(usesNewEdition(week+'-tie-'+round,now))return editionWordForTie(week,round,now);
   const id=week+'-tie-'+round;
   const index=Math.floor(Date.parse(week+'T12:00:00Z')/604800000);
   const word=sundays[(index*13+round*17)%sundays.length];
