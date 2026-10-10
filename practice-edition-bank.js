@@ -1,343 +1,373 @@
-// Original, assorted practice. No seasonal scheduling and no competitive writes.
+// Original assorted practice clues. No seasonal gating, timers or competitive writes.
+// Order is fixed within this edition. Hard means trickier familiar words, not jargon.
 const entries=(difficulty,text)=>text.trim().split('\n').map(line=>{const [word,clue]=line.split('|');return {word,clue,difficulty};});
 export const PRACTICE_EDITION_WORDS=[
  ...entries('normal',`
-ABACK|Taken this way, someone was caught by surprise
-ABASE|Lower someone's dignity or standing
-ABASH|Make someone lose their self-confidence through embarrassment
-ABIDE|Accept a decision even when it is not the one you wanted
-ABODE|A dwelling, in a more literary register
-ACRID|Sharp and irritating to the nose or taste
-ADAGE|A compact saying passed along as practical wisdom
-ADDLE|Confuse a mind that was previously clear
-ADIEU|A farewell borrowed into English from French
-ADOBE|Sun-dried earth used as a building material
-ADORN|Add ornament without changing the underlying object
-AFOUL|In conflict with a rule: running ___ of it
-AGAPE|Open-mouthed, especially from astonishment
-AGATE|A banded variety of chalcedony
-AGAVE|A succulent whose stored sugars can be fermented
-AISLE|The passage between rows rather than either row itself
-ALGAE|Photosynthetic aquatic organisms, many of them microscopic
-ALIAS|An alternative identity under which someone is known
-ALIGN|Bring positions or purposes into agreement
-ALLAY|Reduce a fear without necessarily removing its cause
-ALLOT|Assign a share of a limited resource
-ALOFT|Above the ground, in a more literary expression
-ALTER|Change without necessarily replacing
-AMASS|Accumulate into a substantial quantity
-AMBLE|Walk at an unhurried, relaxed pace
-AMITY|A state of friendly relations
-ANNEX|Add territory to an existing political unit
-ANTIC|A deliberately odd or playful action
-APHID|A small sap-feeding insect often attended by ants
-AORTA|The main artery carrying blood away from the heart
-APNEA|A temporary interruption of breathing
-APTLY|In a manner well suited to the circumstances
-ARBOR|A shaded garden structure formed with climbing plants
-ARDOR|Strong enthusiasm rather than mild interest
-ARENA|A setting for competition, literal or figurative
-ASIDE|Words addressed to the audience but not heard by other characters
-ASKEW|At an angle rather than in the expected alignment
-ATOLL|A coral formation enclosing a lagoon
-AVAIL|Be of use, often after the word no
-AWASH|Flooded with water or figuratively overwhelmed with something
-BALMY|Pleasantly mild, as weather can be
-BANAL|Unoriginal to the point of being dull
-BELIE|Give a false impression of the truth beneath
-BERTH|A designated place for a vessel to lie
-BESET|Trouble persistently from several directions
-BEZEL|The rim holding a gemstone or watch face
-BLASE|Unimpressed through overfamiliarity
-BLEAK|Without much promise or encouragement
-BRIAR|A thorny shrub or tangled growth
-BRINE|Water with a high concentration of dissolved salt
-BRUNT|The main force of an unpleasant impact
-CACHE|A stored reserve, including one kept by a browser
-CADET|Someone training for a military or similar service
-CAIRN|A pile of stones used as a marker
-CANON|An accepted body of works or principles
-CARAT|A unit of gemstone mass, not gold purity
-CHASM|A deep gap, also used for a major disagreement
-CHIDE|Reproach someone for their conduct
-CLEFT|Split or divided, as a rock face might be
-CLOUT|Influence that makes others take someone seriously
-DEBIT|An accounting entry on the left side of an account
-DEBUT|A first public appearance
-DECOR|The combined furnishing and decoration of a space
-DECOY|A substitute intended to draw attention away from the real target
-DEPOT|A place where supplies are stored or vehicles are based
-DETER|Discourage an action by making its consequences unattractive
-DIRGE|A solemn piece associated with mourning
-DOWEL|A cylindrical peg used to align or join pieces
-DRONE|A sustained low sound without much variation
-DUSKY|Dim or shadowed rather than fully dark
-DWELL|Remain mentally focused on a subject, sometimes excessively
-EBONY|A dense dark wood traditionally used for ornamental work
-EDICT|An authoritative proclamation
-EJECT|Force something out of a position or enclosure
-ELATE|Make someone feel intensely pleased
-ENSUE|Happen as a result of what came before
-EPOCH|A period marked by a distinctive development
-ERODE|Wear away gradually, physically or figuratively
-ESSAY|Attempt something; also a familiar form of prose
-EXALT|Raise in rank, status or praise
-EXTOL|Praise enthusiastically
-FARCE|Comedy relying on exaggerated and improbable situations
-FERAL|Wild after escape from domestication
-FETID|Having an intensely unpleasant smell
-FJORD|A narrow sea inlet in a valley carved by a glacier
-FLAIR|A distinctive natural aptitude
-FLINT|A hard variety of silica once widely used for cutting tools
-FORTE|The activity in which someone is especially strong
-FORUM|A setting for public discussion
-FOYER|The entrance space before the main interior
-FRAIL|Easily damaged or weakened
-GAFFE|A conspicuous social mistake
-GAUNT|Unusually thin and drawn in appearance
-GUISE|An outward appearance that may conceal identity or intent
-HASTE|Speed adopted at the possible expense of care
-HAVOC|Widespread confusion or destruction
-HEDGE|Reduce exposure to risk by taking an offsetting position
-HOARD|Accumulate and keep a reserve instead of using it
-IDYLL|A scene or account of peaceful, idealized life
-INEPT|Lacking the skill needed for a situation
-JAUNT|A short excursion undertaken for pleasure
-JUROR|A person selected to help determine a verdict
-KNACK|A particular skill that seems to come naturally
-LATHE|A machine that rotates material while it is shaped
-LEERY|Cautious because of suspicion
-LOFTY|Elevated in position or in ambition
-LURID|Sensationally vivid, especially about disturbing material
-MAXIM|A short statement expressing a general rule
-MIRED|Stuck in mud or in a difficult situation
-MIRTH|Amusement expressed through enjoyment or laughter
-MOGUL|An influential and powerful person in an industry
-MOULT|Shed an outer covering as part of growth or renewal
-NOTCH|A cut marking a position, or a step in a scale
-ODIUM|Widespread hatred or disgust directed toward someone
-ONSET|The beginning of a process, especially an unwelcome one
-PARRY|Deflect a blow or an inconvenient question
-PITHY|Brief but carrying a substantial point
-PLUMB|Exactly vertical, or to investigate to the depth
-PROWL|Move about stealthily in search of something
-RALLY|Recover strength after a setback
-RAVEL|Entangle threads, or in another sense disentangle them
-ROGUE|Operating outside accepted rules or control
-ROUSE|Bring from inactivity into awareness or action
-SCOUR|Search an area thoroughly
-SCOWL|An expression showing displeasure through contracted brows
-SHIRK|Avoid a responsibility that properly belongs to you
-SKEIN|A loose coil of yarn, or a tangled sequence of events
-SMELT|Extract metal from ore through heating and chemical reduction
-STAKE|An interest exposed to gain or loss
-STINT|A limited period spent performing a particular job
-STRUT|A supporting member resisting compression
-SWATH|A broad strip cut or affected in one pass
-TEPID|Neither strongly enthusiastic nor notably warm
-THROE|A sharp pang, usually encountered in the plural
-TRITE|Worn out through excessive repetition
-TRUSS|A rigid framework distributing a structural load
-VENAL|Willing to act dishonestly in exchange for money
-VEXED|Troubled, or much disputed
-VOGUE|The prevailing fashion for a time
-WRACK|Severely torment, as with pain or doubt
-YEARN|Feel a sustained and intense longing`),
+ABOUT|The word between a story and its subject
+ABOVE|On a higher floor, relative to yours
+ABIDE|Go along with the rules even when you dislike them
+ABORT|End a mission before it reaches its goal
+ADAPT|Change your approach to fit new conditions
+ADEPT|Skilled enough to make a difficult job look easy
+ADORE|Love with more than a little enthusiasm
+ADORN|Make something prettier by adding decorations
+AFTER|The opposite of before on a timeline
+AGAIN|The request that gives a favorite song another turn
+AGILE|Quick on your feet and able to change direction
+AGING|What birthdays keep reminding you is happening
+AHEAD|In front of the person trying to catch you
+ALIBI|An explanation that puts a suspect somewhere else
+ALIGN|Arrange things so they follow the same line
+ALIKE|Similar enough to invite a comparison
+ALIVE|Still part of the living rather than the dead
+ALOFT|Up in the air, as a flag or a kite might be
+ALOOF|Keeping a cool distance from other people
+ALOUD|Said where other people can hear, not just thought
+ALTER|Make a change without replacing the whole thing
+AMAZE|Surprise someone enough to leave them impressed
+AMONG|Surrounded by members of a group
+AMPLE|More than enough to meet the need
+AMUSE|Keep someone entertained or make them laugh
+ANNOY|Get on someone's nerves without leaving the room
+APPLY|Put yourself forward for a job or a place
+ARENA|A performance space surrounded by spectators
+ARISE|Come up, as an unexpected problem might
+ARMOR|Protection worn rather than carried as a shield
+ASIDE|Out of the way, or a quiet comment to an audience
+ASSET|Something valuable that helps rather than hurts you
+AUDIT|A careful check of an organization's accounts
+AVERT|Prevent trouble before it arrives
+AWAIT|Stay ready for something that has not arrived
+AWAKE|No longer asleep, even if you wish you were
+BACON|Breakfast strips that often share a plate with eggs
+BARGE|A flat-bottomed cargo boat, or push in rudely
+BATON|The object one relay runner hands to the next
+BELOW|On the lower side of a line or a limit
+BLAND|In need of flavor or a little personality
+BLANK|A space waiting for someone to fill it
+BLAST|A sudden explosion, or an exceptionally good time
+BLEAK|Offering very little hope or warmth
+BLEND|Mix separate ingredients until they work together
+BLUNT|Not sharp, either at the edge or in the wording
+BOXER|An athlete whose gloves are not for keeping warm
+BRACE|Support something, or prepare yourself for an impact
+BRAID|Hair arranged in strands that repeatedly cross
+BRAKE|The part you use to slow down a bicycle
+BRAWN|Physical strength rather than mental cleverness
+BRINK|The very edge before a major change or drop
+BROAD|Wide enough to cover a lot of ground
+BROKE|Out of money, or the past of break
+BROTH|A savory liquid that can start a bowl of soup
+BRUNT|The heaviest part of an unpleasant impact
+BUDGE|Move even a little, especially after resisting
+BUGLE|A brass instrument used to sound military calls
+BULGE|A rounded swelling pushing outward
+BULKY|Taking up more space than is convenient to carry
+BURNT|Cooked past golden and into regret
+BUYER|The person on the paying side of a sale
+CATER|Provide the food for someone else's event
+CHANT|Repeat words to a rhythm rather than ordinary speech
+CHEAP|Low in price, not necessarily low in quality
+CHEAT|Take an advantage the rules do not permit
+CHILD|A young person, or someone's offspring at any age
+CHORD|Several musical notes sounding at the same time
+CHUCK|Throw something without much ceremony
+CHUMP|Someone who has been easily fooled
+CHUNK|A thick piece rather than a thin slice
+CHURN|Work cream until it becomes butter
+CLAIM|Say something belongs to you, or state it is true
+CLAMP|A tool that holds two pieces firmly together
+CLANG|A loud metallic sound after a collision
+CLASH|A collision of people, ideas, or colors
+CLASP|A small fastener that keeps a necklace on
+CLASS|A group learning together, or a category
+CLEAR|Easy to see through or easy to understand
+CLERK|Someone helping customers at a shop counter
+CLING|Hold tightly rather than let go
+CLONE|An exact copy rather than an original
+CLOTH|Woven material before it becomes a garment
+CLUMP|A dense little bunch stuck together
+COBRA|A snake famous for spreading a hood
+COMET|A space traveler that can leave a bright tail
+CRACK|A narrow break that has not split the whole object
+CRANK|A handle that works by being turned
+CRAWL|Move with your hands and knees close to the ground
+CRAZE|A burst of popularity that may not last
+CREST|The top of a wave just before it breaks
+CRUDE|Rough and unrefined rather than polished
+CRUMB|The smallest souvenir left by a slice of toast
+CRUSH|Press hard enough to destroy the shape
+CRUST|The outside of bread that is firmer than the middle
+DEALT|Distributed the cards before a game
+DEBIT|Money taken out rather than put into an account
+DEBUG|Find and fix what is making a program misbehave
+DECAF|Coffee with most of its caffeine removed
+DECAY|Slowly break down rather than remain preserved`),
  ...entries('hard',`
-ABACI|Counting frames, in the Latin-derived plural
-ABUTS|Shares a boundary without an intervening gap
-ACTIN|A protein forming thin filaments in muscle and the cytoskeleton
-ACUTE|An angle smaller than a right angle
-ADZES|Cutting tools with blades set across their handles
-AEONS|Immensely long periods, in the British spelling
-AGLET|The protective tip at the end of a lace
-ALGAL|Relating to photosynthetic organisms such as kelp
-ALOES|Succulents whose leaves may yield a soothing gel
-AMBIT|The scope or bounds of an activity
-AMINO|Describes the group containing nitrogen characteristic of amino acids
-ANGST|Anxiety with an existential undertone
-ANISE|A plant whose seeds supply a licorice-like flavor
-APACE|At a rapid rate, in literary usage
-APRES|The French-derived word in the social activity apres-ski
-AREAL|Relating to an area rather than to a length
-ASCUS|A fungal sac in which spores develop
-ASPIC|A savory jelly used to enclose chilled food
-AUGER|A tool whose spiral form helps bore a hole
-AVERS|States a claim as true
-AXIAL|Situated along or relating to a central line
-AZIDE|A compound containing the three-nitrogen anion
-BAIZE|A woolen fabric used on some gaming tables
-BASAL|Located at the base, or representing a resting level
-BATIK|A textile-dyeing method using wax to resist color
-BEGET|Bring into existence, in a formal or archaic register
-BIGHT|A bend in a coastline or a loop in a rope
-BILGE|The lowest internal part of a ship's hull
-BOLUS|A rounded mass of chewed food ready to be swallowed
-BRACT|A modified leaf associated with a flower or inflorescence
-BURET|A graduated laboratory tube used to dispense measured liquid
-CALYX|The collective sepals of a flower
-CANID|A member of the mammal family containing dogs and foxes
-CAPON|A castrated male chicken raised for meat
-CAULK|Fill a joint to make it watertight
-CHERT|A fine-grained sedimentary rock composed largely of silica
-CIRRI|Slender appendages or high wispy clouds, in plural form
-COCCI|Spherical bacteria, in plural form
-CROFT|A small enclosed farm, especially in Scotland
-CUBIT|An ancient length based on the forearm
-CURIE|A historical unit of radioactivity
-DATUM|A single given fact used as a basis for reasoning
-DEBAR|Exclude someone officially from an activity
-DEISM|Belief in a creator who does not intervene through revelation
-DELFT|Blue-and-white tin-glazed earthenware named for a Dutch city
-DIMER|A molecule formed from two associated subunits
-DINGO|A wild canine associated with Australia
-DOYEN|The senior or most respected member of a field
-DRUPE|A fleshy fruit surrounding a hard stone containing the seed
-DUCAL|Relating to the rank or domain of a duke
-DUPLE|Describes a musical meter organized in groups of two
-DYADS|Groups or relationships consisting of two members
-ECLAT|Conspicuous brilliance or acclaim
-EIDER|A sea duck known for its insulating down
-ELUTE|Wash an adsorbed substance out with a solvent
-EMEND|Correct errors in a text
-EMERY|An abrasive material containing corundum
-ERGOT|A fungus affecting grasses, especially rye
-EVICT|Remove an occupant through legal process
-EWERS|Wide-mouthed pitchers with handles
-FEMUR|The long bone between hip and knee
-FOLIO|A sheet folded once to produce two leaves
-FOSSA|A depression or hollow in an anatomical structure
-FOVEA|A small retinal region responsible for especially sharp central vision
-FUGAL|Written in the contrapuntal manner of a fugue
-GEODE|A rock cavity lined with crystals
-GESSO|A ground coating prepared beneath painting or gilding
-GLANS|The rounded end of an anatomical structure
-GLUME|One of the bracts surrounding a grass spikelet
-GNOME|A concise maxim, in its literary sense
-GONAD|An organ producing reproductive cells
-GYRUS|A ridge of the cerebral cortex
-HADAL|Relating to the ocean's deepest trenches
-HAPAX|A word occurring only once in a particular body of text
-HELIX|A curve winding around an axis while moving along it
-HILUM|The region where vessels enter or leave an organ
-HYOID|The neck bone that supports the tongue without articulating with another bone
-ILEAL|Relating specifically to the final portion of the small intestine
-IMINE|A compound characterized by a carbon-nitrogen double bond
-INCUS|The anvil-shaped middle-ear bone
-INDRI|A large lemur native to Madagascar
-IONIC|Relating to charged atoms, or to a classical architectural order
-KOINE|A shared dialect developing between speakers of different varieties
-LAMIA|A female monster of classical mythology
-LARVA|An immature stage preceding metamorphosis
-LAVER|An edible seaweed, traditionally used in Welsh cooking
-LEMUR|A primate from a group native to Madagascar
-LIMEN|A threshold of sensation or awareness
-LINAC|An accelerator that speeds charged particles along a straight path
-LORIS|A slow-moving primate of tropical Africa or Asia
-LYSIS|The breakdown or rupture of a cell
-MANSE|A house traditionally occupied by a minister
-METED|Measured out an allotted quantity
-MOIRE|A rippled visual pattern produced by overlapping regular patterns
-MUCIN|A glycoprotein contributing to the properties of mucus
-NACRE|The layered shell material also called mother-of-pearl
-NARES|The openings of the nostrils, plural
-NISEI|A US-born child of Japanese immigrants
-OCHER|The American variant spelling of an earthy mineral pigment
-ODEON|An ancient Greek or Roman building for musical performances
-OLEIC|Describes a common monounsaturated fatty acid
-OPERA|The plural of opus, as well as a theatrical art form
-OSIER|A willow cultivated for flexible shoots used in basketry
-OVOID|Egg-shaped rather than perfectly spherical
-OXBOW|A curved lake formed when a river meander is cut off
-PARSE|Analyze a sentence into its grammatical components
-PAYEE|The party to whom a payment is made
-PINNA|The visible outer part of the ear
-PODIA|Platforms for speakers, in the Latin-derived plural
-PRATE|Talk at length without saying much of value
-PYLON|A monumental gateway or a tall supporting structure
-RAJAH|An Indian ruler or prince, in an English variant spelling
-REBUS|A puzzle using pictures to stand for words or sounds
-RENAL|Relating to the kidneys
-SEPAL|One of the outer floral parts enclosing a developing bud
-SITAR|A long-necked plucked instrument associated with Indian classical music
-SPIEL|A rehearsed persuasive speech
-SPOOR|Tracks or other signs left by an animal
-STILE|Steps allowing people to cross a fence without opening a gate
-STROP|A strip used to finish the edge of a razor
-SUTRA|A concise teaching text in certain Indian religious traditions
-SWARD|An expanse of short grass, in literary usage
-THANE|A historical rank of landholding noble in Scotland
-THYME|An aromatic herb of the mint family
-TORUS|The surface formed by rotating a circle around an outside coplanar axis
-TUPLE|An ordered collection of a specified number of elements
-USURY|Lending at an unlawfully or excessively high rate of interest
-UVULA|The small projection hanging from the soft palate
-VILLI|Small projections increasing the absorptive surface of the intestine
-VITAE|The second word in the Latin phrase abbreviated CV
-WHELK|A marine gastropod with a spiral shell
-ZONAL|Arranged in or relating to distinct regions`),
+ALGAE|Green pond growth whose name ends in two vowels
+ANNUL|Declare an agreement invalid rather than merely end it
+BINGO|A winning shout that doubles as a way to say exactly right
+BISON|A shaggy grazer often mistaken in name for a buffalo
+BLEAT|A sheep's complaint, with no words attached
+BLESS|Offer good wishes, especially after a sneeze
+BLISS|Happiness without much room for anything else
+BLITZ|A fast, concentrated attack rather than a slow campaign
+BLOAT|Swell with air or fluid, like software with too many features
+BLOWN|Moved by wind, or completely lost as an opportunity
+BOOTH|A small enclosed seat or stall, not quite a room
+BOUND|Tied up, headed somewhere, or a single big leap
+BREED|A type of dog, or cause something to develop
+BROOD|A family of chicks, or dwell unhappily on a thought
+BROOK|A little stream, or tolerate in the phrase brook no delay
+BUSHY|Thick and full, whether eyebrows or a shrub
+CACHE|A hidden store with the same sound as money
+CADDY|A golfer's helper who carries rather than swings the clubs
+CAPER|A mischievous adventure or a small pickled cooking ingredient
+CHECK|Look for errors, or put a chess king under threat
+CHICK|A bird before it earns its adult name
+CHILI|A pepper or a spicy stew, depending on the menu
+CLICK|A mouse's command, or the moment an idea makes sense
+CLIFF|A rock face whose edge demands a careful step
+CLUNG|Held on tightly, with the holding now in the past
+CONCH|A large spiral shell that can be blown like a horn
+COULD|Was able to, without saying that it actually happened
+CRAZY|Wildly unreasonable, as in an idea that just might work
+CROAK|A frog's voice, or a rough human one
+CROCK|An earthenware pot rather than a metal pan
+CROOK|A dishonest person, or the bend in an arm
+CROSS|Go over to the other side, or be mildly angry
+CURRY|A spiced dish, or seek favor by flattering someone
+CYCLE|A sequence that gets back to where it began
+DECOR|A room's furnishing style, not its floor plan
+DEFER|Put something off, or yield to another person's judgment
+DENSE|Packed closely together rather than spread thin
+DEPTH|Distance downward, or the quality of a thoughtful answer
+DERBY|A famous sort of horse race that is also a rounded hat
+DETER|Discourage an action before it happens
+DIGIT|A number symbol that can also mean a finger
+DINER|A person eating or the restaurant they eat in
+DITCH|A dug channel, or abandon a plan
+DITTO|A compact way to say the same thing again
+DIVER|Someone whose sightseeing happens underwater
+DONOR|Someone who gives without being the seller
+DOUBT|The hesitation between believing and rejecting
+DOZEN|A bakery's ordinary count before the extra one
+DRAFT|A first attempt at writing, or an indoor breeze
+DRAPE|Let fabric hang in loose folds
+DRAWL|A way of speaking that gives vowels extra time
+DREAD|Fear that arrives before the thing you fear
+DRIED|What fruit becomes after much of its water is removed
+DRILL|A hole-making tool, or a repeated practice exercise
+DROVE|Steered a car, or a large moving group of animals
+DRYER|The laundry appliance after the washer
+DWELL|Live somewhere, or keep returning to the same thought
+FABLE|A short tale whose ending teaches a lesson
+FAINT|Barely detectable, or briefly lose consciousness
+FAULT|A mistake or a break in Earth's crust
+FIBER|A cloth's threadlike ingredient that food labels also mention
+FILMY|Thin and nearly transparent, like a light veil
+FINCH|A small songbird with a seed-cracking beak
+FIZZY|Bubbly enough for a drink to make a little noise
+FLAKY|Breaking into thin pieces, or unreliable about plans
+FLEET|A group of ships, or unusually quick
+FLICK|A quick movement of a finger, or an informal movie
+FLOCK|A gathering of birds, or move somewhere in a crowd
+FLUID|Able to flow, or gracefully changing rather than fixed
+FOCAL|At the center, as in a point of attention
+FOLLY|A foolish plan, even when it sounds grand
+FORTE|Your strong suit, without requiring a deck of cards
+FORUM|A place for discussion rather than a single speech
+FUDGE|A soft sweet, or adjust facts a little dishonestly
+FUNKY|Unconventionally stylish, or carrying a strong odor
+GAVEL|A judge's small hammer with no nails to hit
+GIDDY|Dizzy with excitement rather than calmly pleased
+GIZMO|A handy thing whose proper name escapes you
+GLEAM|A brief shine, or a hopeful look in someone's eye
+GLOAT|Enjoy a victory a little too visibly
+GRIPE|A complaint rather than a congratulations
+GROUT|The filler between tiles, not the tiles themselves
+GUPPY|A little aquarium fish with a double consonant
+HILLY|Full of rises and dips rather than level ground
+HIKER|A walker whose route is more trail than sidewalk
+HONOR|Respect that can be earned but not simply demanded
+HYPER|More energetic than the room may be ready for
+IDEAL|The perfect version, even when reality falls short
+INBOX|A digital arrival hall for messages
+INDEX|A book's lookup guide that usually lives at the back
+INTRO|The bit before a song gets properly underway
+JERKY|Dried meat, or movements that are not smooth
+JUMPY|Quick to startle even before a real threat appears
+JUROR|A courtroom listener who helps decide the verdict
+KEBAB|Food cooked on a skewer rather than loose in a pan
+LANKY|Tall and thin with rather long limbs
+LEDGE|A narrow natural shelf on a rock face
+LEVER|A bar that gives a small effort a bigger lifting effect
+LIVER|An organ whose name sounds like a person who lives
+MOLAR|A grinding tooth near the back rather than a cutting front one`),
+ ...entries('normal',`
+MANGO|A tropical fruit with orange flesh and a large flat pit
+MAYOR|The elected leader of a city rather than a country
+METER|A device that measures use, as with water or electricity
+MIGHT|A word that leaves the outcome possible but uncertain
+MIXER|A kitchen machine that combines ingredients by beating them
+MOTOR|The part that turns energy into movement
+MOUNT|Climb onto a horse or fix a picture on a wall
+MOUTH|The opening used for eating and speaking
+MOVIE|A story watched on a screen rather than read on a page
+NASTY|Unpleasant enough to make you want to avoid it
+NERVE|The courage you work up before a difficult conversation
+NEWLY|Recently, as in a pair who have just married
+NOISE|Sound that may be less welcome than music
+NURSE|A healthcare worker who tends to patients
+OASIS|A watered green place surrounded by desert
+OPALS|Gemstones whose colors can seem to shift as they catch the light
+ORBIT|The path one object takes around another in space
+OTTER|A playful water-loving mammal with dense fur
+OUNCE|A small unit of weight, sixteen of which make a pound
+OUTER|Farther from the middle rather than closer to it
+PAUSE|A temporary stop before carrying on
+PERCH|A bird's resting place above the ground
+PERKY|Cheerfully energetic rather than sleepy or flat
+PLAZA|An open public square surrounded by buildings
+PLUCK|Pull a string to make it sound
+PLUMB|A vertical line's quality, or install water pipes
+PROOF|Evidence strong enough to support a conclusion
+PULSE|The beat you can feel at your wrist
+PURSE|A small bag carried for money and personal items
+RANCH|A large farm mainly raising livestock
+RATIO|A comparison of one amount with another
+RINSE|Use clean water to remove soap or loose dirt
+RIVAL|Someone competing for the same thing you want
+RUGBY|A team sport with an oval ball and no forward passes
+RULER|A measuring stick, or someone who governs
+SAUCE|The flavorful liquid spooned over a dish
+SCENT|A smell that can linger after its source has gone
+SHRUG|A shoulder movement that can mean you do not know
+SOLAR|Powered by or connected with the sun
+SPARK|A tiny fiery start that can lead to something bigger
+SWING|A playground seat suspended to move back and forth
+THICK|Not thin, whether a wall, a book, or a sauce
+THIRD|The place after second and before fourth
+TIDAL|Rising and falling with the sea's regular movement
+VALID|Acceptable under the rules, as with a current ticket
+VITAL|Important enough that you cannot safely do without it
+WATER|The clear liquid you can drink without adding anything
+WOMAN|An adult female person
+YOUNG|Early in life rather than near its end
+ZEBRA|An African grazer wearing natural black-and-white stripes`),
+ ...entries('hard',`
+MAMBO|A lively Cuban dance with a repeated opening consonant
+MESSY|Untidy enough to make finding your keys a small adventure
+MOTTO|A short phrase that sums up a guiding belief
+MUSHY|Too soft on the plate, or extremely sentimental in a note
+NANNY|A person paid to care for children in their home
+NEEDY|Requiring more help or reassurance than usual
+NIFTY|Cleverly useful in a small but pleasing way
+NINJA|A stealthy martial-arts figure that became a word for an expert
+NOBLE|Honorable in character, or belonging to the aristocracy
+NOMAD|Someone whose home moves rather than stays in one place
+NOISY|Making enough sound to be hard to ignore
+NUTTY|Tasting of nuts, or a little eccentric
+ODDLY|In a way that feels unusual or unexpected
+OPERA|A stage drama in which much of the story is sung
+ORGAN|A part of a body or a keyboard instrument with pipes
+OVERT|Out in the open rather than deliberately hidden
+PANDA|A bamboo-eating bear whose coat is mostly black and white
+PAPAL|Relating to the pope rather than clergy in general
+PASTA|Noodles, tubes, or ribbons that start from dough
+PENNY|A small coin that can drop when something finally makes sense
+PESTO|A basil-based sauce that turns pasta green
+PHOTO|An instant you can keep without keeping time still
+PLUSH|Luxuriously soft, like a stuffed toy's surface
+POPPY|A flower whose name repeats its first letter twice
+PUPIL|A student, or the dark opening at the center of an eye
+QUACK|A duck's sound or a fraudulent medical practitioner
+QUOTA|An assigned share or a target amount to reach
+RERUN|An old episode getting another turn on screen
+RESET|Start over without necessarily replacing the device
+RETRO|Newly made but deliberately dressed like the past
+REVEL|Enjoy yourself enthusiastically, often with others
+ROOST|A bird's nighttime resting place, or settle there
+RUMMY|A card game built around matching sets and sequences
+SALSA|A dance that shares its name with a spicy sauce
+SATIN|A smooth fabric with one particularly shiny face
+SAUNA|A hot little room entered on purpose to sweat
+SIEVE|A mesh tool that keeps lumps but lets finer material pass
+SCOOP|A rounded serving of ice cream, or a reporter's exclusive story
+SONAR|Sound used to locate objects underwater
+SPOOF|A humorous imitation rather than the genuine thing
+TABOO|Something a culture treats as forbidden
+TAFFY|A chewy sweet made by pulling and stretching
+TENET|A belief treated as a basic principle
+TUTOR|A teacher who works with one learner or a small group
+UNZIP|Open something by separating its interlocking teeth
+VENUE|The place an event happens, rather than the event itself
+VILLA|A large country house or a holiday home
+VODKA|A clear distilled spirit often used in cocktails
+WEARY|Tired in body or spirit after too much effort
+YUMMY|An informal verdict that something tastes very good`),
 ];
 export const PRACTICE_EDITION_EXTRAS=[
  ...entries('normal',`
-IMPART|Communicate knowledge or a quality to someone else
-ELICIT|Draw out a response without directly supplying it
-ASSERT|State a position with confidence
-DEBATE|Examine opposing positions through structured argument
-QUALIFY|Limit a statement so that it does not claim too much
-RESOLVE|Find a solution to a disagreement or uncertainty
-COHERENT|Fitting together in a logically consistent way
-TENTATIVE|Offered provisionally rather than as a final conclusion
-EXPLICIT|Stated directly rather than left to inference
-SKEPTICAL|Inclined to question a claim before accepting it
-VERSATILE|Able to perform well in several different roles
-RESILIENT|Able to recover after disruption
-PRUDENT|Showing care for likely consequences
-FRUGAL|Avoiding unnecessary expenditure
-TENACIOUS|Persistent despite resistance or difficulty
-IMPARTIAL|Not favoring either side of a dispute
-CREDIBLE|Deserving to be believed on the available grounds
-FEASIBLE|Possible within the relevant constraints
-TANGIBLE|Capable of being physically touched or clearly demonstrated
-RELUCTANT|Not eager to undertake an action
-ANOMALY|A case departing from the expected pattern
-DILEMMA|A choice between competing difficult alternatives
-PRECEDENT|An earlier case used to guide a later decision
-CONSENSUS|Broad agreement within a group
-SCRUTINY|Close and critical examination
-INSIGHT|An understanding that reveals a less obvious relationship
-JUSTIFY|Supply adequate reasons for a claim or action
-CONCEDE|Acknowledge a point made by the opposing side
-INTEGRITY|Consistency between professed principles and conduct
-DISCREET|Careful not to draw unnecessary attention`),
+ALMOND|A nut often turned into a milk alternative
+ANCHOR|A ship's heavy way of staying put
+APRICOT|A small orange fruit with a stone in the middle
+BALLET|A dance form whose performers may rise onto their toes
+BAMBOO|A hollow-stemmed grass on a panda's menu
+BANANA|A curved fruit that comes with its own peel-away wrapper
+BEACON|A guiding light for someone finding their way
+BEAVER|A rodent whose building projects can block a stream
+BISCUIT|A small bread in America or a cookie in Britain
+BOUQUET|Flowers arranged to be given together
+BUBBLE|A pocket of air wearing a very thin liquid coat
+CACTUS|A water-storing plant that often comes with sharp defenses
+CANVAS|A painter's surface before the picture appears
+CASHEW|A curved nut shaped a little like a kidney
+CEREAL|A breakfast food that usually shares its bowl with milk
+CHERRY|A small red fruit that can sit on top of a sundae
+COCONUT|A tropical fruit with a hard shell and white flesh
+COMEDY|A story whose main job is to make you laugh
+COTTON|A soft plant fiber turned into shirts and sheets
+CRAYON|A colorful drawing tool made from wax
+CUSHION|A chair's removable layer of softness
+DOODLE|A drawing made while your mind is somewhere else
+DUMPLING|A small parcel of dough, sometimes hiding a filling
+FABRIC|The material a tailor starts with
+FALCON|A fast-flying bird that hunts other animals
+GARLIC|A strong-flavored bulb divided into individual cloves
+GUITAR|A stringed instrument that can be strummed or picked
+HAMMOCK|A bed whose whole job is hanging around
+LIZARD|A scaly reptile often found warming itself in the sun
+MEADOW|An open grassy area that may fill with wildflowers`),
  ...entries('hard',`
-ABEYANCE|A state of temporary suspension
-ADUMBRATE|Outline a plan or idea without developing its details
-APOCRYPHAL|Of doubtful authenticity despite frequent repetition
-ASSIDUOUS|Showing persistent and careful effort
-ATTENUATE|Reduce the force or magnitude of something
-COGENT|Clear, convincing and logically forceful
-COMITY|Mutual courtesy between institutions or states
-CONFLATE|Treat distinct things as though they were the same
-CONTINGENT|Dependent on conditions rather than necessary in itself
-DEFERENCE|Respectful yielding to another's judgment
-DISSONANCE|A lack of agreement, including a clash between beliefs
-EQUIVOCAL|Open to different interpretations rather than unambiguous
-EXIGENT|Demanding immediate attention or action
-EXOGENOUS|Originating outside the system being considered
-ENDOGENOUS|Originating within the system being considered
-FECUND|Highly productive of offspring or ideas
-GERMANE|Directly relevant to the matter being discussed
-INCHOATE|Only partly formed or organized
-INIMICAL|Hostile to an interest or development
-LACONIC|Expressing much in very few words
-MENDACIOUS|Given to lying rather than merely mistaken
-NOETIC|Relating to intellectual apprehension
-OBVIATE|Remove the need for something
-PARSIMONY|Preference for economy of assumptions in an explanation
-PERFIDY|A deliberate breach of trust
-PROBITY|Strong adherence to honesty and moral principle
-PROLEPSIS|Anticipating an objection or narrating an event in advance
-RECONDITE|Not readily understood without specialized knowledge
-SALIENCE|The quality of standing out from surrounding information
-VITIATE|Impair the validity or effectiveness of something`),
+COBBLER|A shoe repairer who shares a name with a fruit dessert
+COFFEE|A brewed drink whose bean is actually a seed
+DAZZLE|Impress so brightly that looking becomes difficult
+ESPRESSO|A concentrated coffee with no X in its spelling
+FERRET|A long-bodied pet, or search persistently for hidden facts
+FIDDLE|A violin's informal name, or fidget with something
+HICCUP|A small involuntary gasp, or a temporary hitch in a plan
+HUMMUS|A chickpea dip whose name contains a doubled consonant
+JIGSAW|A cutting tool that also names a pieced-together puzzle
+JUGGLE|Keep objects in the air, or manage competing demands
+LAGOON|Shallow water partly cut off from the open sea
+LASAGNA|A pasta dish built in layers rather than twirled
+MARBLE|A small glass toy that shares its name with a stone
+MOSAIC|A whole picture assembled from many small pieces
+MUFFIN|A small baked item often sold as breakfast rather than dessert
+NOODLE|A strip of pasta, or an informal word for your head
+ORIGAMI|Paper turned into shapes without scissors or glue
+PALETTE|An artist's mixing board or a chosen set of colors
+PAPAYA|An orange-fleshed tropical fruit with a crowd of black seeds
+PEBBLE|A small stone whose rough edges have been worn away
+PIGEON|A familiar city bird that once carried important messages
+POPCORN|A cinema snack that expands dramatically when heated
+PRETZEL|A salty snack whose shape ties itself in a knot
+RIPPLE|A small wave that lends its name to a spreading effect
+ROCKET|A space vehicle, or rise exceptionally quickly
+SANDAL|Footwear that leaves much of the foot uncovered
+SEQUIN|A tiny shiny clothing decoration rather than a button
+SKETCH|A rough drawing or a short comic scene
+WAFFLE|A breakfast with little pockets, or avoid a firm decision
+WIGGLE|A small side-to-side movement or room to negotiate`),
 ];

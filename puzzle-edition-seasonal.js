@@ -1,283 +1,283 @@
 import {editionPool} from './puzzle-edition-bank.js';
-// Seasonal knowledge and atmosphere, without elementary object-label clues.
+// Seasonal content stays in its month; every clue is written for this app.
 export const EDITION_SEASONAL_POOLS=[
- editionPool('normal','halloween','Masks & folklore',`
-DISGUISE|An appearance designed to conceal an identity
-RITUAL|An action whose repeated form carries symbolic meaning
-FOLKLORE|Traditions transmitted through a community rather than one author
-LEGEND|A traditional account that hovers between history and invention
-OMEN|An event interpreted as a sign of what is coming
-AMULET|An object worn for supposed protection
-TALISMAN|An object believed to confer a particular power
-ILLUSION|A perception that misrepresents what is actually there
-SPECTER|A ghostly appearance, or a fear that keeps returning
-PHANTOM|An apparent presence without a physical body
-CAULDRON|A brewing vessel also used as a metaphor for intense turmoil
-ALCHEMY|A historical pursuit of transforming base metals into gold
-ENCHANT|Place under a spell, or captivate completely
-CONJURE|Call something into existence through magic or imagination
-INCANT|Chant words as a magical formula
-ORACLE|A source of prophetic responses in ancient tradition
-PROPHECY|A declaration claiming to reveal a future event
-PORTENT|An ominous indication of a coming event
-HEX|A spell intended to cause misfortune
-CHARM|A spoken spell as well as an appealing personal quality
-EFFIGY|A representation of a person sometimes burned symbolically
-MASQUERADE|A disguise adopted in appearance or behavior
-MACABRE|Preoccupied with death in a disturbing way
-GROTESQUE|Distorted into a strange or unsettling form
-LANTERN|A portable light whose enclosure shields its flame
-PUMPKIN|The North American replacement for older turnip lanterns
-VIGIL|An intentional period of wakefulness through the night
-THRESHOLD|A doorway's crossing point, literally or symbolically
-COVEN|A gathering of witches in folklore
-APPARITION|A seemingly supernatural appearance`,'october'),
- editionPool('normal','horror','Suspense & shadows',`
-SUSPENSE|Tension sustained by uncertainty about what happens next
-FORESHADOW|Hint at a later event before it occurs
-DREAD|Fear directed toward something not yet encountered
-UNEASE|Discomfort before a danger has become clear
-ISOLATION|Separation that leaves a horror protagonist without help
-UNRELIABLE|A narrator whose account the reader cannot safely trust
-ATMOSPHERE|The emotional climate a setting creates
-GOTHIC|A literary tradition of haunted spaces and troubled histories
-OBSESSION|A persistent fixation that can drive a character's downfall
-DELUSION|A false belief held despite contrary evidence
-PARANOIA|A pattern of unfounded suspicion or perceived threat
-MENACE|A threatening presence, even before it acts
-SINISTER|Suggesting an evil purpose
-UNCANNY|Disturbingly strange in a way that can feel almost familiar
-FOREBODING|An apprehension that something bad is approaching
-REVENANT|Someone who returns, especially as a ghost
-VAMPIRE|A folklore figure whose life depends on another's blood
-CURSE|A spoken wish of harm imagined to have supernatural force
-CRYPT|An underground burial chamber
-EPITAPH|Words commemorating someone on a tomb
-MORTAL|Subject to death rather than exempt from it
-DECAY|The gradual breakdown that horror settings often display
-ABYSS|An immeasurably deep gulf, literal or figurative
-VEIL|A covering that can conceal what a story will later reveal
-SHROUD|A burial wrapping, or anything that obscures
-EERIE|Strange in a way that suggests unseen danger
-MOROSE|Gloomily withdrawn in mood
-GRIMACE|A facial expression of pain or disgust
-RAVEN|The bird repeating Nevermore in Poe's poem
-CLIMAX|The point where a story's accumulated tension turns`,'october'),
- editionPool('normal','autumn','Autumn changes',`
-EQUINOX|The September solar crossing that marks astronomical autumn
-HARVEST|The gathering that follows a season of cultivation
-DORMANCY|A temporary suspension of growth during unfavorable conditions
-MIGRATION|Seasonal movement that can shift a whole bird population
-DECIDUOUS|Describes trees that shed their leaves seasonally
-PIGMENT|A substance responsible for a leaf's visible color
-CHLOROPHYLL|The green pigment whose decline reveals other leaf colors
-CANOPY|A forest's upper layer formed by branches and leaves
-UNDERSTORY|Vegetation growing beneath the main forest canopy
-HUMUS|Dark organic material remaining after substantial decomposition
-COMPOST|Organic waste deliberately decomposed for use in soil
-FERTILE|Able to support vigorous growth
-DISPERSE|Scatter seeds away from their source
-FORAGE|Search widely for food in the environment
-TORPOR|A temporary reduction in activity and metabolism
-INSULATE|Reduce heat transfer through a protective layer
-AMBER|A fossil resin whose color echoes many autumn leaves
-RUSSET|A reddish-brown shade associated with autumn
-OCHRE|An earthy yellow-to-brown mineral pigment
-UMBER|A dark earth pigment used by painters
-COPSE|A small group of trees
-THICKET|A dense growth of shrubs or small trees
-GLEAN|Gather what remains after the main harvest
-WINNOW|Separate grain from lighter chaff using moving air
-SHEAF|Cut stalks bound into a bundle
-STUBBLE|Short stalks left standing after a crop is cut
-CREPUSCULAR|Most active around dawn and dusk
-FALLOW|Left unplanted for a growing period
-LOAM|Soil containing a mixture of sand, silt and clay
-LITTER|Dead leaves and other organic debris on the forest floor`,'october'),
- editionPool('hard','horror','Gothic & the uncanny',`
-LIMINAL|Occupying the threshold between established states
-NUMINOUS|Evoking a mysterious sacred presence and awe
-SUBLIME|Overwhelming in grandeur, sometimes with an element of terror
-ABJECTION|The disturbing rejection of what threatens boundaries of the self
-MEMENTO|The first word in the reminder memento mori
-MORI|The second word in the reminder memento mori
-CHTHONIC|Associated with the underworld or powers beneath the earth
-SPECTRAL|Ghostlike, rather than physically substantial
-EIDOLON|An idealized image or a phantom
-SIMULACRUM|A likeness or representation that can stand in for an original
-ANIMISM|Attributing spiritual agency to nonhuman beings or things
-ATAVISM|The reappearance of an ancestral trait
-THEODICY|An attempt to reconcile divine goodness with the existence of evil
-ESOTERIC|Intended for a small circle with specialized knowledge
-OCCULT|Hidden knowledge associated with supernatural practices
-ARCANE|Understood by few, as secret rites might be
-APOTROPAIC|Intended to ward off evil
-GRIMOIRE|A book of magical instructions
-FATALISM|The belief that events are fixed regardless of human choices
-ONEIRIC|Pertaining to dreams
-HYPNAGOGIC|Occurring during the transition from wakefulness to sleep
-FUNEREAL|Suggestive of a funeral in tone or appearance
-SEPULCHRAL|Tomb-like in sound or atmosphere
-OSSUARY|A repository for human bones
-CENOTAPH|A memorial tomb that does not contain the person's remains
-LACUNA|A missing portion in a text or record
-ELLIPSIS|A narrative omission that can leave an unsettling gap
-REPRESSED|Pushed out of conscious awareness in a psychoanalytic reading
-MIMESIS|Representation that can make an imitation feel disturbingly real
-SUBLIMATE|Redirect an impulse into a socially acceptable expression`,'october'),
- editionPool('hard','autumn','Autumn ecology',`
-ABSCISSION|The regulated shedding of a leaf or other plant part
-SENESCENCE|Biological aging, including the final stage of a leaf's life
-PHENOLOGY|The study of seasonal timing in living organisms
-DIAPAUSE|A programmed developmental pause in response to seasonal cues
-DETRITUS|Dead organic material serving as an ecological resource
-SAPROTROPH|An organism obtaining nutrients from dead organic matter
-MYCELIUM|The branching network forming a fungus's vegetative body
-HYPHA|A single threadlike filament in that fungal network
-MYCORRHIZA|A symbiotic association between a fungus and plant roots
-CAROTENE|An orange pigment that can remain visible as green fades
-XANTHOPHYLL|A class of yellow oxygen-containing carotenoid pigments
-ANTHOCYANIN|A pigment class responsible for many red and purple leaf colors
-TANNIN|A plant polyphenol associated with astringency
-SUBERIN|A waxy cell-wall material helping form protective barriers
-LIGNIN|A structural polymer reinforcing woody cell walls
-XYLEM|The water-conducting vascular tissue in a tree
-PHLOEM|The vascular tissue distributing photosynthetic products
-STOMA|A leaf pore bordered by guard cells
-LENTICEL|A porous region in bark allowing gas exchange
-CUTICLE|The protective outer waxy layer of a leaf
-ABIOTIC|Describing the nonliving components of an ecosystem
-ECOTONE|A transition between adjacent ecological communities
-EDAPHIC|Relating to the influence of soil on organisms
-MESIC|Characterized by a moderate supply of moisture
-XERIC|Characterized by very dry conditions
-RIPARIAN|Situated along the banks of a river
-SUCCESSION|The change in an ecological community over time
-MASTING|Synchronized heavy seed production across a plant population
-COPPICE|Manage trees by cutting them back to stimulate multiple shoots
-QUADRAT|A bounded sampling area used to survey vegetation`,'october'),
- editionPool('normal','christmas','Christmas stories & traditions',`
-ADVENT|A season of anticipation before Christmas in many churches
-NATIVITY|The birth represented in a traditional Christmas scene
-EPIPHANY|A January feast associated in Western tradition with the Magi
-CAROL|A song that can carry a seasonal story from door to door
-REFRAIN|The repeated section joining the verses of a carol
-HARMONY|Different musical notes sounding together
-CHORAL|Written for a group of singers
-NOEL|A French-derived name for Christmas or a Christmas song
-PAGEANT|A public dramatic presentation, often of a traditional story
-PARABLE|A short narrative used to convey a moral or spiritual lesson
-CHARITY|Giving intended to help others rather than receive a return
-GOODWILL|A friendly disposition extending beyond formal obligation
-RECONCILE|Restore a relationship after a disagreement
-REDEMPTION|The moral recovery central to Scrooge's transformation
-AVARICE|The excessive love of wealth Scrooge must overcome
-HUMILITY|A modest view of one's importance
-GENEROSITY|Willingness to give more than strict obligation requires
-SOLIDARITY|Unity built around shared concerns or responsibilities
-FRAGRANCE|The quality that makes a resin or spice valued for its scent
-INCENSE|Aromatic material burned to release a scent
-GARLAND|Greenery arranged as a decorative chain
-EVERGREEN|Retaining foliage through the season when others lose it
-MISTLETOE|A partly parasitic plant incorporated into a kissing tradition
-WASSAIL|A festive toast, or the spiced drink accompanying it
-MARZIPAN|An almond-and-sugar paste used in festive sweets
-STOLLEN|A German fruit bread often dusted with sugar
-PRALINE|A confection built around nuts and sugar
-TRUCE|A temporary suspension of hostilities
-CUSTOM|A practice maintained by repeated communal use
-HEIRLOOM|A possession passed down through a family`,'december'),
- editionPool('normal','winter','Winter science',`
-SOLSTICE|The annual turning point in the Sun's apparent north-south motion
-ALBEDO|The fraction of incoming radiation a surface reflects
-CRYSTAL|A solid whose constituents form a repeating ordered structure
-HEXAGON|The six-sided geometry associated with a snowflake's symmetry
-NUCLEUS|The initial center around which a crystal can grow
-CONDENSE|Change from vapor into liquid droplets
-SUBLIME|Pass directly from solid into gas
-DEPOSIT|In a phase change, pass directly from gas into solid
-INSULATOR|A material that slows heat transfer
-CONDUCT|Transfer heat through a material by microscopic interactions
-CONVECTION|Heat transfer through the bulk movement of a fluid
-RADIATION|Energy transfer that needs no material medium
-LATENT|Describes heat exchanged during a phase change without temperature change
-FREEZING|The phase change during which liquid becomes solid
-SALINITY|Dissolved salt content, which affects water's freezing point
-DENSITY|The property that makes ordinary ice float on liquid water
-FRICTION|The resisting force relevant to traction on an icy road
-TUNDRA|A largely treeless biome associated with cold conditions
-TAIGA|The broad northern belt of coniferous forest
-GLACIER|A persistent ice mass flowing under its own weight
-CREVASSE|A deep fracture in glacial ice
-MORAINE|Rock material accumulated by a glacier
-AVALANCHE|A rapidly moving mass of snow down a slope
-LEEWARD|Sheltered on the side away from the prevailing wind
-WINDWARD|Facing the direction from which the wind arrives
-ALTITUDE|Height above a reference level, often sea level
-PRESSURE|The quantity that falls as one climbs through the atmosphere
-BLIZZARD|A winter storm characterized by strong wind and severely reduced visibility
-DORMANT|Alive but temporarily inactive
-HIBERNATE|Enter a prolonged seasonal reduction of metabolic activity`,'december'),
- editionPool('hard','christmas','Music, ritual & midwinter',`
-ANTIPHON|A liturgical response sung alternately by two groups
-POLYPHONY|Musical texture with multiple independent melodic lines
-COUNTERPOINT|The combination of distinct melodic lines according to musical relationships
-CADENCE|A harmonic or melodic progression creating a sense of closure
-PLAGAL|Describes the IV-to-I cadence associated with many Amens
-MELISMA|Several notes sung on one syllable
-RECITATIVE|Speechlike vocal writing advancing an oratorio's narrative
-ORATORIO|A large narrative composition for voices and orchestra without staging
-CANTATA|A vocal work combining multiple movements and instruments
-LIBRETTO|The verbal text of an opera or oratorio
-HOMOPHONY|Texture in which a leading melody has subordinate accompaniment
-LITURGY|An established form of public religious worship
-INCARNATION|The embodiment doctrine central to the Christian Nativity
-EXEGESIS|Close interpretation of a religious or other authoritative text
-TYPOLOGY|Interpreting earlier figures or events as prefigurations of later ones
-SYMBOLISM|The use of objects or images to carry meanings beyond themselves
-DOCTRINE|A body of beliefs formally taught by a religious tradition
-ALLELUIA|An acclamation of praise often set as a choral refrain
-VESPERS|An evening prayer service
-MATINS|A traditional night or early-morning prayer office
-COLLECT|A short formal prayer gathering a congregation's petitions
-EPIPHANY|A manifestation or revelation, also a Christian feast
-MAGNIFICAT|The canticle named for its Latin opening meaning magnifies
-ICON|A sacred image, especially in Eastern Christian traditions
-GESSO|A ground coating used beneath paint or gilding
-GILDING|Applying a thin layer of gold to a surface
-TRIPTYCH|An artwork divided into three hinged or associated panels
-RETABLE|A decorated structure behind or above an altar
-FILIAL|Relating to the relationship of a child to a parent
-CANONICAL|Accepted as belonging to an authoritative body of texts`,'december'),
- editionPool('hard','winter','Ice, atmosphere & climate',`
-CRYOSPHERE|The Earth's frozen-water systems considered together
-ISOTHERM|A line connecting locations with equal temperature
-ISOBAR|A line connecting locations with equal atmospheric pressure
-ADIABATIC|Involving no heat exchange with the surroundings
-KATABATIC|Describing downslope winds driven by dense cold air
-INVERSION|An atmospheric layer in which temperature increases with height
-BAROCLINIC|Having density surfaces that do not align with pressure surfaces
-VORTICITY|A measure of local rotation in a fluid
-ADVECTION|Transport of a property by bulk fluid motion
-GRAUPEL|Snow particles coated with accreted supercooled droplets
-RIME|Ice deposited when supercooled droplets freeze onto a surface
-FIRN|Compacted old snow transitioning toward glacial ice
-NEVE|Granular snow accumulating in a glacier's upper region
-SERAC|A tower of fractured glacial ice
-ARETE|A sharp ridge separating glacially eroded valleys
-CIRQUE|A bowl-shaped hollow carved at a glacier's head
-DRUMLIN|An elongated hill shaped beneath moving ice
-ESKER|A winding ridge deposited by meltwater within or beneath ice
-TARN|A small lake occupying a glacially formed hollow
-TILL|Unsorted material deposited directly by glacial ice
-ABLATION|Loss of glacier mass through processes such as melting and sublimation
-FRAZIL|Loose ice crystals suspended in turbulent supercooled water
-PACKICE|Floating sea ice compressed into an extensive mass (two words)
-POLYNYA|An area of open water surrounded by sea ice
-PERMAFROST|Ground remaining frozen for at least two consecutive years
-SOLIFLUXION|Slow downslope movement of water-saturated soil
-NIVATION|Weathering and erosion associated with persistent snow patches
-NIVAL|Relating to snow or the zone of permanent snow
-PERIGLACIAL|Describing cold-climate processes involving repeated freezing and thawing
-LOESS|Wind-deposited sediment dominated by silt`,'december'),
+ editionPool('normal','halloween','Costumes after dark',`
+COSTUME|An outfit that lets you be someone else for a night
+DISGUISE|A changed appearance meant to hide who you are
+MASK|A face covering that can complete a costume
+CAPE|A dramatic layer behind a vampire's shoulders
+WIG|Borrowed hair for a different look
+MAKEUP|Color applied to a face to change its appearance
+CANDY|The usual payment for a successful trick-or-treat stop
+TREAT|The sweet half of Halloween's doorstep demand
+TRICK|The mischievous alternative to a treat
+BUCKET|A handled container that fills up on a candy walk
+PORCH|The covered entrance where trick-or-treaters wait
+DOORBELL|The button that announces another candy customer
+LANTERN|A portable light, sometimes carved from a pumpkin
+PUMPKIN|A round orange fruit that can become a glowing face
+CARVE|Cut a face into a Halloween pumpkin
+SEED|The small part scooped from a pumpkin and sometimes roasted
+CANDLE|A small flame that can light a carved grin
+FLAME|The dancing part of a candle's light
+WITCH|A spell-casting costume with a pointed hat
+BROOM|A witch's ride that also sweeps the floor
+CAULDRON|A large pot for a bubbling witch's brew
+POTION|A bottled mixture with supposed magical effects
+SPELL|Magic put into words
+WAND|A magician's small handheld tool
+GHOST|A spirit that may be played by someone under a sheet
+VAMPIRE|A fictional visitor with fangs and a dislike of sunlight
+FANG|A pointed tooth in a vampire's smile
+MUMMY|An ancient body wrapped for burial
+SKELETON|The body's framework with none of the skin
+COBWEB|An abandoned spider's work in a dusty corner`,'october'),
+ editionPool('normal','horror','A good little scare',`
+SHADOW|A dark shape cast by something blocking the light
+WHISPER|A voice kept low enough to make you lean closer
+CREAK|The sound of an old floorboard giving you away
+SQUEAK|A high little noise from an uncooperative hinge
+FOOTSTEP|A sound behind you on an otherwise empty path
+ECHO|Your own call coming back from the dark
+SCREAM|A fear-filled sound that needs no translation
+SHIVER|A small shake caused by cold or fear
+CHILL|A cold feeling that a scary story can send down your spine
+DREAD|Fear of something that has not happened yet
+PANIC|Sudden fear that can scatter your thoughts
+FRIGHT|A sharp burst of fear after a surprise
+HAUNT|Return as a ghost, or keep troubling someone's thoughts
+CURSE|A magical wish for someone else's misfortune
+CRYPT|A burial chamber, often beneath a church
+TOMB|A burial place built from stone
+GRAVE|The resting place marked by a headstone
+RUINS|What remains after a building loses its battle with time
+ATTIC|The room above the ceiling in a creaky old house
+CELLAR|The below-ground room you might hesitate to enter
+MIRROR|A reflection-maker that scary stories rarely leave alone
+SHUTTER|A hinged window cover that can bang in the wind
+RAVEN|A large black bird often cast in spooky stories
+OWL|A nighttime hunter whose call is a hoot
+WOLF|A wild relative of the dog with a famous howl
+HOWL|A wolf's long-distance nighttime call
+BEAST|A large animal, especially a frightening one
+MONSTER|The creature a scary story saves for its big reveal
+SECRET|Something the locked room has not given up yet
+ALIBI|A suspect's account of being somewhere else`,'october'),
+ editionPool('normal','autumn','Fall afternoons',`
+HARVEST|The gathering of crops once they are ready
+ORCHARD|A place where fruit grows in rows of trees
+APPLE|An orchard fruit that can become cider or pie
+CIDER|A drink made from pressed apples
+CINNAMON|The warm spice often paired with apples
+CLOVE|A small dried flower bud used as a warm spice
+NUTMEG|A grated spice often sprinkled into a fall bake
+CRUST|The pastry border around a pie's filling
+MAPLE|A tree known for colorful leaves and sweet syrup
+LEAF|A tree's flat green part that may turn gold in fall
+ACORN|An oak's small seed with its own little cap
+SQUIRREL|A tree-climbing animal that hides nuts for later
+BURROW|An animal's underground home
+BRANCH|A tree limb left bare after the leaves fall
+BARK|The protective outer layer around a tree trunk
+RAKE|A garden tool that gathers scattered leaves
+PILE|What fallen leaves become after some raking
+CRUNCH|The sound dry leaves make under your shoes
+AMBER|A golden-brown color that suits a fall afternoon
+RUSSET|A reddish-brown shade seen in autumn leaves
+GOLDEN|The color of many leaves just before they fall
+BRISK|Pleasantly sharp and cool, like a fall morning
+SCARF|A neck-warming strip that comes out as the air cools
+SWEATER|A knitted layer for a cooler afternoon
+FLANNEL|Soft woven fabric often found in checked fall shirts
+BOOT|Footwear that reaches above the ankle
+BONFIRE|A large outdoor fire for a cool evening gathering
+EMBER|A glowing bit left after the flames calm down
+SMOKE|What rises from a fire and lingers on your jacket
+SUNSET|The day's final light, arriving earlier in autumn`,'october'),
+ editionPool('hard','horror','Spooky second meanings',`
+SPIRIT|A ghost, or the courage needed to face one
+GRAVE|A resting place, or a very serious expression
+SPELL|A witch's work, or a short stretch of time
+CHARM|A magical trinket, or the quality that wins people over
+HEX|A curse with only three letters
+BOO|A ghost's greeting that can also criticize a performer
+BAT|A cave-dweller that shares its name with a hitter's tool
+HOWL|A wolf's call that can also describe roaring laughter
+SHROUD|A burial cloth, or hide something from view
+POSSESS|Own something, or take over a body in a horror film
+MEDIUM|A spirit's messenger, or a size between small and large
+COLD|A ghostly chill, or a case with no fresh leads
+FRIGHT|What a jump scare delivers in one sudden dose
+CHILLER|A scary story, or equipment that makes things cold
+DEADPAN|A straight-faced delivery with a lifeless-sounding name
+GHOST|A haunting visitor, or leave someone without replying
+HAUNT|A ghost's activity, or a place you visit often
+FANG|A vampire's point of contact
+MUMMY|A wrapped-up character whose story is ancient
+COFFIN|A box with an occupant who will not unpack
+SKELETON|A framework, or the secret hiding in someone's closet
+RATTLE|A skeleton's noise, or shake someone's confidence
+SHADOW|A dark outline, or follow someone without being noticed
+NIGHTMARE|A bad dream that lends its name to a dreadful situation
+REMAINS|What is left, with an especially grim meaning in a tomb
+STAKE|A vampire hunter's tool, or something you risk in a bet
+WEREWOLF|A character whose bad nights follow a lunar schedule
+MOONLIGHT|A werewolf's stage lighting, or work a second job
+UNEARTH|Dig something up, including a long-hidden secret
+UNDEAD|Not alive, but still inconveniently moving in a horror story`,'october'),
+ editionPool('hard','autumn','Fall, read another way',`
+FALL|The season that doubles as a downward movement
+LEAVES|Tree parts, or goes away
+RAKE|A leaf-gathering tool that can also pull in profits
+SHED|Lose leaves, or a small building for garden tools
+RUSTLE|A leaf's sound, or steal cattle
+CRISP|A sharp autumn morning and a well-baked chip share this quality
+NUTS|A squirrel's supplies, or a word for wildly unreasonable
+CROP|A harvest, or trim the edges of a photo
+YIELD|A field's output, or give way to someone else
+STALK|A corn stem, or follow someone stealthily
+EAR|A corn-bearing structure with a listening name
+KERNEL|A corn seed, or the small central truth in a story
+PATCH|A pumpkin-growing plot, or a small repair
+CLEAR|Free of clouds, or remove leaves from a path
+RING|A tree's yearly record with a jewelry name
+TRUNK|A tree's middle, or a traveler's large case
+ROOT|An underground anchor, or cheer for a team
+BRANCH|A tree's division, or a business's local office
+GRAIN|A harvest seed, or a wood surface's natural pattern
+GOURD|A squash relative that may become a dried decoration
+HUSK|Corn's wrapper after the edible part is gone
+SHELL|A nut's outside, or remove that outside
+CHESTNUT|A roasting nut, or a story told too many times
+TURNOVER|An apple pastry, or a change in who possesses the ball
+PEEL|An apple's outside, or remove it
+CORE|An apple's middle, or the central part of a problem
+PRESS|A cider-making machine, or urge someone strongly
+STEEP|Soak tea, or describe a sharp hillside
+COOL|Autumn's temperature, or impressively unbothered
+LAYER|An extra piece of clothing, or one level in a stack`,'october'),
+ editionPool('normal','christmas','A little holiday glow',`
+RIBBON|A strip tied around a gift before the bow
+WRAP|Cover a present so the contents stay a surprise
+BOW|A knot with loops on top of a gift
+TAG|The small label that tells a gift who it belongs to
+PRESENT|A package given rather than bought for yourself
+SURPRISE|The part of a wrapped gift you cannot see yet
+WREATH|A ring of greenery hung on a door
+GARLAND|A long decorative strand draped around a room
+TINSEL|Shiny strands that give a tree some sparkle
+ORNAMENT|A decoration hung from a tree branch
+BAUBLE|A small decorative ball on a holiday tree
+STAR|A pointed shape often placed at the top of the tree
+ANGEL|A winged figure that may watch from a tree's top
+CANDLE|A small flame that adds a warm glow
+GLOW|A soft light rather than a sharp glare
+TWINKLE|What tiny lights seem to do as they shine
+CAROL|A song especially associated with Christmas
+CHOIR|A group that sings together rather than takes turns
+CHIME|The clear ringing sound of a small bell
+SLEIGH|A winter vehicle that glides instead of rolls
+REINDEER|An antlered animal in a famous flying team
+STOCKING|A sock promoted to a holiday gift container
+MANTEL|The shelf above a fireplace where stockings may hang
+CHIMNEY|The fireplace's exit route, or Santa's unusual entrance
+COOKIE|A small baked thank-you sometimes left for Santa
+GINGER|The warming spice in many shaped holiday cookies
+ICING|A sweet coating that can decorate a cookie
+COCOA|A warm chocolate drink for a cold evening
+FEAST|A meal large enough to feel like a celebration
+TOAST|A celebratory message delivered with a raised glass`,'december'),
+ editionPool('normal','winter','Cold days, warm corners',`
+FROST|A thin icy coating left on a cold morning
+SLEET|Rain that arrives as small ice pellets
+SNOW|Frozen weather that falls in flakes
+FLAKE|One small piece of a snowfall
+DRIFT|A bank of snow piled up by the wind
+ICICLE|A pointed piece of ice hanging from an edge
+THAW|The change that turns frozen ground soft again
+SLUSH|Snow after it has partly turned to water
+FREEZE|Turn a liquid solid by making it cold
+CHILL|A cold feeling that calls for another layer
+SHIVER|The body's small shakes when it gets too cold
+SCARF|A long strip wrapped around your neck for warmth
+MITTEN|A hand warmer that keeps four fingers together
+GLOVE|A hand covering with a separate space for each finger
+BEANIE|A snug knitted hat without a brim
+COAT|The outer layer grabbed before stepping into the cold
+SOCK|A foot's first soft layer inside a winter boot
+FLEECE|A soft warm fabric named after a sheep's coat
+FLANNEL|A soft woven fabric used for cozy pajamas
+HEATER|A device that makes a chilly room less chilly
+BLANKET|A portable layer of warmth for the couch
+QUILT|A stitched bed covering made from joined fabric pieces
+THERMOS|An insulated container that keeps your drink warm
+STEAM|The rising sign that your drink may be too hot to sip
+SKATE|A blade fitted under a boot for gliding on ice
+SLED|A small downhill vehicle without wheels
+SLOPE|The downhill part that makes sledding possible
+TRACK|A mark left behind in fresh snow
+SNOWMAN|A temporary person assembled from packed snow
+SNOWBALL|A handful of winter packed into a sphere`,'december'),
+ editionPool('hard','christmas','Holiday double takes',`
+PRESENT|A gift, or here rather than absent
+BOW|A gift-top knot that shares its spelling with a polite bend
+WRAP|Finish filming, or hide a gift's contents
+SPIRIT|Holiday cheer, with a ghostly second meaning
+STOCKING|A gift-filled sock, or filling shelves with goods
+STAR|A tree-top shape or the main performer
+LIGHT|A tree decoration that is not necessarily heavy
+TINSEL|Tree sparkle whose appeal is all on the surface
+TRIM|Decorate the tree, or cut something down in size
+BRANCH|An ornament's support or a bank's local office
+NEEDLE|A tree's pointy leaf, or a sewing tool
+FIR|An evergreen whose name sounds like an animal's coat
+SPRUCE|An evergreen, or neat and well dressed
+PINE|A needle-bearing tree, or long for someone
+SAP|A tree's sticky fluid, or drain someone's energy
+CONE|An evergreen's seed holder with an ice-cream shape
+YULE|A holiday season that sounds like a promise beginning with you
+SLEIGH|A festive ride whose name sounds like a dramatic defeat
+REIN|A sleigh driver's strap with a royal-sounding name
+CLAUS|Santa's surname, sounding like a piece of a sentence
+ELF|A workshop helper whose job title is only three letters
+CAROL|A seasonal song that is also a person's name
+BELLE|A celebrated beauty whose name sounds like holiday ringing
+MERRY|Cheerful, sounding like a wedding-day verb
+CHEER|Holiday happiness, or a shout for your team
+TOAST|A raised-glass tribute that shares its name with breakfast
+CRACKER|A snap-open holiday table favor, or a crisp snack
+DATE|A sweet fruit on a festive platter, or a calendar entry
+NUTCRACKER|A shell-breaking tool that also names a holiday ballet
+SNAP|The sound inside a party cracker, or take a quick photo`,'december'),
+ editionPool('hard','winter','Winter with a twist',`
+FLURRY|A brief snowfall, or a burst of activity
+DRIFT|A bank of snow, or the general meaning you catch
+FREEZE|Turn to ice, or stop moving on command
+CHILL|Winter's bite, or relax after a long day
+COOL|A low temperature, or a calm response under pressure
+COLD|Winter weather, or a trail that has lost its clues
+FROSTY|Covered in ice, or unfriendly in manner
+BITTER|Intensely cold, or the taste opposite sweet
+BLANKET|A bed covering that snow is often compared to
+COAT|A winter garment, or one layer of paint
+FLEECE|A warm fabric, or cheat someone out of money
+MITTEN|A hand's shared bedroom for four fingers
+SOLE|The bottom of a winter boot, or the only one
+HEEL|The rear of a boot, or a command for a dog to follow
+TREAD|A boot's grip pattern, or step carefully
+TRACK|A mark in snow, or follow a moving subject
+POLE|A skier's support, or either end of Earth's axis
+SKI|A runner that carries a person without taking any steps
+SKATE|Glide on ice, or a flat-bodied fish
+SLEDGE|A heavy sled, also the first half of a hammer's name
+SLOPE|A skier's downhill route with a mathematical steepness
+FLAKE|A tiny snow piece, or someone who repeatedly cancels
+SNOWBALL|A packed winter sphere, or grow rapidly in size
+AVALANCHE|A rush of snow that lends its name to an overwhelming amount
+THAW|Melt winter's grip, or soften a tense relationship
+SLUSH|Half-melted snow with a drink-like texture
+STORM|Violent weather, or move away in anger
+GUST|A brief push from the wind rather than a steady breeze
+STEAM|A hot mug's rising signal, or the energy you run out of
+STILL|A quiet winter night is this; a photograph is too`,'december'),
 ];

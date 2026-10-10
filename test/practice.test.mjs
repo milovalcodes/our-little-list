@@ -12,11 +12,17 @@ assert.deepEqual(PRACTICE_COUNTS,{word:200,search:100,crossword:100});
 // Any future layout/content change needs a new edition, not silently reused saves.
 const editionHash=createHash('sha256');
 for(const [type,count]of Object.entries(PRACTICE_COUNTS))for(let i=0;i<count;i++)editionHash.update(JSON.stringify(practicePuzzle(type,i)));
-assert.equal(editionHash.digest('hex'),'78c3ebcafdee7309d3640d017ab0e238199c2a79cfd5930250aa85f62555cd56','v2 practice boards must stay stable');
+assert.equal(editionHash.digest('hex'),'09f70c1137f9e249c0e7a8199d559e5c153713b4becd2bfcdabeab5d225b4143','v3 practice boards must stay stable');
 const bank=[...PRACTICE_BANK,...PRACTICE_BOARD_EXTRAS];
 assert.equal(new Set(bank.map(e=>e.word)).size,bank.length);
 assert.ok(bank.every(e=>/^[A-Z]{3,12}$/.test(e.word)&&e.clue.length>8));
 assert.equal(new Set(PRACTICE_WORDS.map(e=>e.word)).size,200);
+for(const difficulty of ['normal','hard']){
+ const words=PRACTICE_WORDS.filter(e=>e.difficulty===difficulty).map(e=>e.word);
+ assert.equal(words.length,100);
+ assert.ok(new Set(words.map(w=>w[0])).size>=15,'assorted practice should not be dominated by the start of the alphabet');
+ assert.notDeepEqual(words,[...words].sort(),'alphabetical ordering gives away a Little Word hint');
+}
 const daily=new Set(EDITION_WORDS.map(e=>e.word));
 assert.ok(PRACTICE_WORDS.filter(e=>!daily.has(e.word.toLowerCase())).length>=180);
 assert.ok(PRACTICE_WORDS.every(e=>WORD_LEXICON.has(e.word.toLowerCase())));
@@ -47,7 +53,7 @@ const a=practiceStore('house:him',storage),b=practiceStore('house:her',storage);
 a.save('word',0,{guesses:['abcde'],completed:true});a.move('word',8);
 assert.equal(a.completed('word'),1);assert.equal(b.completed('word'),0);
 assert.equal(practiceStore('house:him',storage).cursor('word'),8);
-assert.ok([...docs.keys()].every(k=>k.startsWith('our-little-app-practice-v2:')));
+assert.ok([...docs.keys()].every(k=>k.startsWith('our-little-app-practice-v3:')));
 const blocked=practiceStore('blocked',{getItem(){throw Error();},setItem(){throw Error();}});
 blocked.save('word',0,{guesses:['abcde']});assert.equal(blocked.load('word',0).guesses.length,1);assert.match(blocked.warning,/can’t save/);
 for(const name of ['practice.js','practice-store.js','practice-catalog.js']){

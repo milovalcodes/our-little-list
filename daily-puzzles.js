@@ -61,7 +61,7 @@ export function crosswordGrid(bank,size,rng,target,attempts=24){
 }
 export function timedPuzzle(day,type,now=Date.now()){
  if(!PUZZLE_TYPES.includes(type))throw Error('Unknown puzzle');
- const modern=usesNewEdition(day,now),hard=isHardDay(day),difficulty=hard?'hard':'normal',rng=random(day+':'+type+(modern?':v3':':v1'));
+ const modern=usesNewEdition(day,now),hard=isHardDay(day),difficulty=hard?'hard':'normal',rng=random(day+':'+type+(modern?':v4':':v1'));
  const season=puzzleSeason(day,now);
  const themes=PUZZLE_THEMES.filter(t=>t.difficulty===difficulty&&t.season===season&&(modern?t.edition===DIFFICULTY_VERSION:!t.edition)),theme=themes[Math.floor(rng()*themes.length)];
  const bank=catalogPool(difficulty,theme.id).map(({word,clue,id})=>({word,clue,id}));

@@ -44,7 +44,7 @@ try{
   for(const letter of word.word)await page.locator('#wordle [data-key="'+letter+'"]').click();
   await page.locator('#wordle [data-key="↵"]').click();
   await page.waitForFunction(()=>document.querySelector('#wordle').textContent.includes('100 points')||document.querySelector('#wordle').textContent.includes('200 points'));
-  if(day==='2026-10-11')await page.screenshot({path:join(tmpdir(),'little-puzzles-v107.png'),fullPage:true});
+  if(day==='2026-10-11')await page.screenshot({path:join(tmpdir(),'little-puzzles-v108.png'),fullPage:true});
   await context.close();
  }
  assert.deepEqual(errors,[]);console.log('New edition mobile: both profiles, normal/Sunday, all seasons, all three games, two-minute completion mechanics and 320px layout pass');

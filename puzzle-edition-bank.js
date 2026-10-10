@@ -1,262 +1,259 @@
-// Original clues. Level labels are editorial targets, not grade certifications.
-// Freshman high-school: inference and general academic vocabulary. Introductory
-// university: precise terminology, less literal clues, no unexplained trivia.
+// Original clues: familiar answers, difficulty through interpretation rather than trivia.
+// Hard clues use fair double meanings; these are not academic grade levels.
 export function editionPool(difficulty,theme,label,text,season=''){
- const id=(season?season+'-':'')+'v3-'+theme;
- return {id,label,difficulty,season,edition:3,entries:text.trim().split('\n').map(row=>{
+ const id=(season?season+'-':'')+'v4-'+theme;
+ return {id,label,difficulty,season,edition:4,entries:text.trim().split('\n').map(row=>{
   const [word,clue]=row.split('|');
   return {id:id+'-'+difficulty+'-'+word.toLowerCase(),word,clue,difficulty,theme:id,themeLabel:label,season};
  })};
 }
 export const EDITION_POOLS=[
- editionPool('normal','language','Between the lines',`
-METAPHOR|A comparison that skips the word like
-IRONY|The fire station burning down would illustrate this
-SATIRE|Criticism wearing the disguise of comedy
-MOTIF|A recurring image that earns its repetition
-ALLUSION|A borrowed reference the reader must recognize
-CONTEXT|What an isolated quotation is missing
-INFERENCE|A conclusion assembled from clues rather than stated
-CONTRAST|The relationship between a palace and a shack in one scene
-SUBTEXT|What a character means but never actually says
-SYMBOL|An object carrying meaning beyond itself
-THESIS|The claim an essay spends its paragraphs defending
-EVIDENCE|A claim needs this more than confidence
-ANALOGY|Explaining an unfamiliar relationship through a familiar one
-TONE|An author's attitude heard through the wording
-DICTION|A writer's choices at the level of individual words
-NUANCE|A small distinction that can change an interpretation
-PARADOX|A seemingly impossible statement with a defensible truth
-BIAS|A preference that can tilt the presentation of facts
-PREMISE|The starting assumption an argument rests on
-REBUTTAL|An answer aimed at an opposing argument
-RHETORIC|Language used with persuasion in mind
-GENRE|The category that sets a reader's expectations
-NARRATOR|The voice telling a story, not necessarily its author
-CONFLICT|The struggle that keeps a plot from standing still
-CLIMAX|The plot's decisive turning point
-ALLEGORY|A narrative whose figures also represent abstract ideas
-FABLE|A short invented tale built to deliver a moral
-AMBIGUITY|Room for more than one reasonable interpretation
-CONCISE|Brief without leaving the important part out
-IMPLICIT|Present in the meaning without being directly stated`),
- editionPool('normal','science','Patterns in nature',`
-ADAPT|Change in response to conditions
-HABITAT|The address of a species, ecologically speaking
-ECOSYSTEM|Organisms and their nonliving surroundings considered together
-EROSION|Landscape removal, one grain at a time
-SEDIMENT|Particles that settle after being carried by water
-DENSITY|Mass divided by the space it occupies
-INERTIA|Why a moving object resists a change in motion
-FRICTION|The contact force that can turn motion into heat
-ISOTOPE|Same element, different neutron count
-MOLECULE|Atoms bonded into a single chemical unit
-SOLVENT|The dissolving partner in a solution
-SOLUTE|The dissolved partner in a solution
-DIFFUSION|Particles spreading from a crowded region into a less crowded one
-OSMOSIS|Water crossing a selectively permeable membrane
-ENZYME|A biological catalyst
-GENETICS|The study of how traits are inherited
-RECESSIVE|An allele masked by a dominant one in a heterozygote
-PREDATOR|An organism that obtains food by hunting another
-MUTATION|A change in the sequence of genetic material
-VARIABLE|The quantity a controlled experiment deliberately changes
-CONTROL|The comparison group not given the treatment
-REFRACT|Bend light as it crosses between materials
-SPECTRUM|The range revealed when white light is separated
-ORBIT|A path maintained by gravity and forward motion
-GRAVITY|The attraction that gives falling objects their direction
-FUSION|Joining light nuclei to release stellar energy
-CURRENT|Rate of flow of electric charge
-CIRCUIT|An electrical route that must close for sustained flow
-PRESSURE|Force distributed over area
-EQUINOX|The twice-yearly moment when the Sun crosses the celestial equator`),
- editionPool('normal','society','People & systems',`
-CIVIC|Relating to the duties of citizenship
-DEMOCRACY|A political system grounded in rule by the people
-REPUBLIC|A state without a hereditary monarch as its head
-SOVEREIGN|Independent of another state's authority
-FEDERAL|Sharing power between national and regional governments
-REFORM|Change intended to improve an existing institution
-TREATY|A formal agreement between states
-EMBARGO|A government ban on trade with a particular country
-TARIFF|A tax collected on imported goods
-SCARCITY|The economic problem of limited resources and competing wants
-INCENTIVE|A reason that makes a choice more attractive
-REVENUE|Money received before expenses are subtracted
-DEFICIT|The amount by which spending exceeds income
-SURPLUS|What remains when supply exceeds what is required
-INFLATION|A sustained rise in the general price level
-MONOPOLY|A market with a single seller
-LABOR|Human effort treated as a factor of production
-CAPITAL|Equipment and other produced resources used to make goods
-MIGRATION|Movement from one region to settle in another
-CULTURE|Shared practices and meanings learned within a group
-PRIMARY|A source made by someone directly involved is this kind
-CHRONICLE|A record arranged in the order events occurred
-LEGACY|An influence that outlives the person who left it
-ETHICS|Reasoning about what people ought to do
-CONSENT|Permission given voluntarily
-EQUITY|Fairness that takes differing circumstances into account
-DISSENT|Disagreement with an official or majority position
-ADVOCATE|Speak publicly in support of a cause
-JUDICIAL|Belonging to the branch that interprets laws
-STATUTE|A law enacted by a legislature`),
- editionPool('normal','reason','Reason & design',`
-DEDUCE|Reach a conclusion from stated premises
-INFER|Read the evidence beyond its literal statement
-VALID|Describes an argument whose premises guarantee its conclusion
-REFUTE|Show that a claim is false
-ASSESS|Judge quality using relevant criteria
-REVISE|Reconsider and alter a first attempt
-CRITERION|One standard against which a choice is judged
-PATTERN|A regularity that can suggest what comes next
-RATIO|A comparison expressed by dividing two quantities
-MEDIAN|The middle value after the data are ordered
-MODE|The value that occurs most often in a data set
-RANGE|The largest value minus the smallest
-FACTOR|A whole number that divides another without a remainder
-EXPONENT|The raised number that tells how many factors to multiply
-FUNCTION|A rule assigning exactly one output to each input
-LINEAR|Describes a graph with a constant rate of change
-SLOPE|Rise divided by run
-VECTOR|A quantity with both magnitude and direction
-SCALAR|A quantity with magnitude but no direction
-SYMMETRY|An arrangement preserved by a transformation
-TANGENT|A line meeting a circle at exactly one point
-CHORD|A segment whose endpoints lie on a circle
-ARC|Part of the circumference, not a straight shortcut
-AXIS|A reference line in a coordinate system
-PROOF|A chain of reasoning that establishes a mathematical claim
-ESTIMATE|An informed approximation rather than an exact count
-SCALE|The ratio connecting a drawing to its real object
-ALGORITHM|A finite sequence of instructions for solving a problem
-ITERATE|Repeat a procedure using the previous result
-ABSTRACT|Concerned with an idea rather than a particular object`),
- editionPool('hard','letters','Language & interpretation',`
-METONYMY|The crown standing for the monarchy exemplifies this
-SYNECDOCHE|All hands on deck uses a part for a whole: this figure
-ANAPHORA|Repeated openings that give successive clauses their rhythm
-CHIASMUS|A verbal arrangement that crosses from AB to BA
-ZEUGMA|One governing word yoked to two unlike senses
-APORIA|An expression of doubt, sometimes used deliberately in argument
-LITOTES|An understatement built by denying the opposite
-TROPE|A figurative turn rather than a literal use of language
-DIERESIS|Two adjacent vowels pronounced in separate syllables
-CAESURA|A pause inside a line of verse
-ENJAMBMENT|A sentence crossing a verse boundary without a syntactic stop
-SCANSION|The analysis of a poem's metrical pattern
-SYNTAX|The rules for arranging words into structures
-MORPHEME|The smallest unit of language that carries meaning
-PHONEME|A sound distinction capable of distinguishing words
-PRAGMATICS|Meaning examined in its social and situational context
-SEMANTICS|The study of linguistic meaning
-DEIXIS|Language whose reference depends on who speaks, where or when
-REGISTER|A variety of language selected for a social situation
-PARATAXIS|Placing clauses side by side without explicit subordination
-PALIMPSEST|A reused manuscript retaining traces of its earlier text
-EKPHRASIS|Writing that describes a work of visual art
-PASTICHE|An imitation of another style without necessarily mocking it
-DIEGESIS|The narrative world within which a story's events occur
-MIMESIS|Art understood as representation or imitation
-HAMARTIA|An error or failing contributing to a tragic downfall
-CATHARSIS|The emotional purgation associated with tragedy
-HUBRIS|Overreaching pride in a tragic framework
-PERIPETEIA|A dramatic reversal of fortune
-APOSTROPHE|Addressing an absent person or abstraction as if present`),
- editionPool('hard','systems','Matter & living systems',`
-ENTROPY|A state function related to the number of accessible microstates
-ENTHALPY|Internal energy plus pressure multiplied by volume
-ISOMER|Same molecular formula, different arrangement
-CHIRAL|Not superimposable on its mirror image
-POLARITY|Unequal charge distribution across a chemical bond or molecule
-ORBITAL|A quantum state describing an electron's spatial distribution
-VALENCE|An atom's combining capacity
-CATALYST|Changes reaction rate without being consumed overall
-TITRATION|Finding concentration through a measured reaction with a standard
-BUFFER|A solution that resists a change in pH
-ALLELE|An alternative form of a gene at a given locus
-LOCUS|A gene's particular position on a chromosome
-GENOTYPE|Genetic constitution rather than its outward expression
-PHENOTYPE|Observable traits produced through genotype and environment
-MEIOSIS|Cell division that reduces chromosome number for sexual reproduction
-MITOSIS|Nuclear division generally preserving chromosome number
-HAPLOID|Having one complete set of chromosomes
-DIPLOID|Having two complete sets of chromosomes
-OPERON|A group of genes transcribed under shared regulatory control
-INTRON|A sequence removed from a pre-mRNA during splicing
-CODON|Three RNA bases specifying an amino acid or a stop
-TAXON|A named group in biological classification
-CLADE|An ancestor and all of its descendants
-NICHE|A species' ecological role rather than merely its location
-BIOME|A broad ecological region defined by climate and communities
-SYMBIOSIS|A close, sustained association between different species
-TROPISM|Directional growth in response to a stimulus
-XYLEM|Vascular tissue carrying water from roots
-PHLOEM|Vascular tissue transporting sugars from sources to sinks
-STASIS|Evolutionary stability over a prolonged interval`),
- editionPool('hard','logic','Logic, data & knowledge',`
-AXIOM|A starting proposition accepted without proof within a system
-LEMMA|A proved result serving as a stepping stone to another
-COROLLARY|A result following readily from an established theorem
-INDUCTION|A proof method with a base case and a successor step
-DEDUCTION|Reasoning in which true premises force the conclusion
-ABDUCTION|Inference to a proposed best explanation
-FALLACY|A defect in reasoning despite an apparently persuasive form
-TAUTOLOGY|A proposition true under every assignment of truth values
-MODAL|Concerning possibility or necessity in logic
-ONTOLOGY|Inquiry into what kinds of things exist
-EPISTEMIC|Relating to knowledge or justified belief
-APRIORI|Justifiable independently of particular observations
-EMPIRICAL|Grounded in observation rather than reasoning alone
-HEURISTIC|A useful shortcut that does not guarantee an optimal answer
-RECURSION|A procedure defined partly through smaller instances of itself
-INVARIANT|A property preserved by the relevant transformation
-BIJECTION|A mapping that is both one-to-one and onto
-INJECTIVE|A function that never sends distinct inputs to the same output
-GRADIENT|The vector pointing toward steepest local increase
-INTEGRAL|The calculus quantity representing accumulated change
-ASYMPTOTE|A line a curve approaches in an appropriate limit
-VARIANCE|The mean squared deviation from the mean
-RESIDUAL|An observed value minus its fitted prediction
-QUANTILE|A cut point partitioning an ordered distribution
-MEDIATOR|A variable through which an explanatory effect may operate
-COVARIATE|An additional measured variable included in a model
-LIKELIHOOD|A model's probability of observed data viewed as a function of parameters
-POSTERIOR|The updated distribution after conditioning on evidence
-PRIOR|A distribution assigned before the current evidence is incorporated
-NULL|The default hypothesis tested against an alternative
-ROBUST|Relatively insensitive to departures from assumptions`),
- editionPool('hard','humanities','Art, thought & society',`
-HEGEMONY|Dominance maintained partly through accepted cultural norms
-ANOMIE|A condition of weakened social norms
-PRAXIS|Theory put into reflective action
-TELOS|An end or purpose in philosophical explanation
-ETHOS|Persuasive credibility based on the speaker's character
-PATHOS|Persuasion appealing to an audience's emotions
-LOGOS|Persuasion through reasoning and argument
-ALTERITY|Otherness considered as a philosophical concept
-HABITUS|Durable learned dispositions shaping perception and action
-AGENCY|The capacity to act rather than merely be acted upon
-REIFY|Treat an abstraction as though it were a concrete thing
-DIALECTIC|Inquiry developing through conflicting positions
-DUALISM|A view explaining a domain through two fundamental kinds
-MONISM|A view grounding reality in one fundamental kind
-STOICISM|A philosophy emphasizing virtue and judgment over external fortune
-HEDONISM|A view giving pleasure a central role in value
-MIMETIC|Characterized by imitation or representation
-LIMINAL|Situated on a threshold between established states
-NUMINOUS|Evoking a sense of sacred mystery and awe
-SUBLIME|Aesthetically overwhelming rather than merely pretty
-APSE|A vaulted recess often found at the end of a church
-NAVE|A church's main longitudinal interior space
-FRIEZE|A horizontal decorative band in architecture
-PEDIMENT|The triangular upper part of a classical building front
-PILASTER|A shallow rectangular projection resembling an attached column
-RELIEF|Sculpture projecting from a supporting background
-INTAGLIO|Printmaking from ink held in incised lines
-IMPASTO|Paint applied thickly enough to leave a raised texture
-FRESCO|Painting applied to freshly laid wet plaster
-PENTIMENTO|A visible trace of a painter's earlier alteration
-ICONOGRAPHY|The study of images and their conventional meanings`),
+ editionPool('normal','everyday','Small daily mysteries',`
+ALARM|It interrupts a dream on purpose
+POCKET|A place to keep change without a bank
+MIRROR|It returns your look without judging it
+BUTTON|A shirt fastener that can pop
+ZIPPER|Its teeth close a jacket rather than chew
+DRAWER|Pull-out home for socks or silverware
+CURTAIN|Fabric that gives a window some privacy
+PILLOW|The soft landing at the end of your day
+BLANKET|Something to pull up when the temperature drops
+LADDER|A way to gain height one rung at a time
+HANDLE|The part of a suitcase that does the heavy lifting
+HINGE|The joint that lets a door change its angle
+SOCKET|A wall opening that supplies power
+CABLE|The connection a wireless device does without
+SCREEN|It can show a film or keep bugs out
+SHELF|A resting place for books above the floor
+FRAME|The border that helps a picture hang together
+TOWEL|It gets wetter while making you drier
+SPONGE|A kitchen helper that soaks up its work
+BROOM|Its job is to give dust the brush-off
+BUCKET|A container carried by a swinging handle
+FAUCET|Turn it to make water arrive
+DRAIN|The exit route for bathwater
+KETTLE|A water heater that may announce itself with a whistle
+TOASTER|A breakfast appliance with pop-up results
+FREEZER|The place where leftovers wait below zero
+RECEIPT|Paper proof that the shopping happened
+WALLET|A pocket-sized home for cards and cash
+PASSWORD|A secret that opens a digital door
+CALENDAR|A collection of dates you can hang on a wall`),
+ editionPool('normal','outdoors','Out and about',`
+BRIDGE|A crossing that keeps your feet above the water
+TUNNEL|A route that goes through rather than over
+CORNER|Where two streets or two walls meet
+SIGNAL|A traffic light gives drivers this instruction
+STATION|A place to catch a train rather than chase it
+TICKET|Proof you have paid for a journey or a show
+PLATFORM|Where passengers wait beside the tracks
+LUGGAGE|The bags that go on holiday with you
+COMPASS|It points north even when you are lost
+MAP|A folded guide that shows the bigger picture
+TRAIL|A path that hikers follow through the countryside
+SUMMIT|A mountain's highest meeting point
+VALLEY|Low ground with higher land on both sides
+STREAM|Running water smaller than a river
+ISLAND|Land with water on every side
+SHORE|The meeting place of land and water
+HORIZON|The distant line where sky seems to meet earth
+SHADOW|It follows you when the light is right
+RAINBOW|A wet-weather arc that separates sunlight into colors
+THUNDER|The sound that usually follows a flash
+FORECAST|A prediction that helps you pack an umbrella
+PUDDLE|A small bit of yesterday's rain underfoot
+SHELTER|A place to escape the rain or wind
+BENCH|A park seat long enough to share
+FOUNTAIN|A water feature that sends its water upward
+GARDEN|A patch of ground with a growing collection
+ROOT|The plant part that keeps a low profile underground
+BRANCH|A tree limb or a smaller office
+SEED|A tiny starting point for a much bigger plant
+PETAL|One piece of a flower's colorful display`),
+ editionPool('normal','play','A little downtime',`
+PUZZLE|A problem you solve for fun
+RIDDLE|A question whose answer takes a sideways thought
+CLUE|A small piece of help toward a bigger answer
+GUESS|An answer offered before you are sure
+PATTERN|A repeat that helps you predict what comes next
+STRATEGY|A plan for winning rather than just hoping
+SCORE|The numbers that say how the game is going
+DRAW|A game result with nobody ahead
+REPLAY|A chance to watch that moment again
+REMATCH|Another game against the same opponent
+SHUFFLE|Mix the deck before dealing
+JOKER|The wild one in a deck of cards
+DICE|Small cubes that leave the next move to chance
+TOKEN|A small object that stands in for a player
+PAWN|The chess piece that dreams of becoming a queen
+KNIGHT|The chess piece that jumps in an L shape
+CASTLE|A rook's familiar nickname
+ARCADE|A place where games line up to take your coins
+LEVEL|A stage to clear before the next challenge
+BONUS|An extra reward beyond the regular score
+TROPHY|A prize you can put on a shelf
+CHAMPION|The person everyone else is trying to beat
+COMIC|A story told through panels and speech bubbles
+CHAPTER|A book's built-in stopping point
+BOOKMARK|It remembers your place while you do something else
+SEQUEL|A story that picks up after an earlier one
+TRAILER|A movie's preview rather than its full story
+ACTOR|Someone paid to be someone else
+MELODY|The part of a song you are likely to hum
+CHORUS|The part of a song that keeps coming back`),
+ editionPool('normal','together','People and little plans',`
+PROMISE|A commitment made with words rather than a contract
+SECRET|Something shared with a request not to share it
+TRUST|What lets you believe someone will keep their word
+FAVOR|A helpful act someone does for you
+ADVICE|A suggestion you may take without taking an object
+APOLOGY|Words meant to repair a hurt
+COMFORT|What a hug can offer without solving the problem
+COURAGE|What helps you act even when you are scared
+PATIENCE|The ability to wait without losing your cool
+HABIT|Something repetition turns into second nature
+CHOICE|What you make when there is more than one option
+CHANCE|An opportunity or a matter of luck
+CHANGE|It can be a fresh start or coins in your pocket
+EFFORT|The work you put in even before a result
+PROGRESS|Movement closer to where you want to be
+BALANCE|What keeps both a tightrope walker and a budget steady
+MEMORY|A moment kept after the moment is gone
+SURPRISE|Something you did not see coming
+INVITE|Ask someone to join the plan
+GUEST|Someone welcomed into another person's home
+HOST|The person who welcomes the guests
+PARTNER|Someone on your side of a shared project or life
+NEIGHBOR|Someone whose home is close to yours
+TEAM|People working toward the same result
+CHEER|A shout meant to lift someone else's spirits
+LAUGH|A sound that can make a joke contagious
+SMILE|A happy expression that needs no words
+WAVE|A greeting you can send across a room
+TOAST|Words raised with a glass in celebration
+PICNIC|A meal taken outside with a blanket as the table`),
+ editionPool('hard','double','Two ways to read it',`
+BARK|A dog's complaint or a tree's coat
+BANK|A place for savings or a river's edge
+BAT|A flying mammal or a hitter's tool
+BEAM|A ray of light or a very wide smile
+BOLT|A metal fastener or a sudden dash
+BOUND|Tied up, or headed somewhere
+CHARGE|A battery needs it; a customer may dispute it
+COACH|A team trainer or a long-distance bus
+CRANE|A long-necked bird or a heavy lifter
+CURRENT|Flowing through a wire, or happening right now
+DRAFT|An unfinished version or a breeze indoors
+FAIR|Even-handed, or a place with rides
+FILE|A folder's contents or a nail-smoothing tool
+FINE|Excellent, unless it is a parking penalty
+GRAIN|A cereal seed or the lines in wood
+ISSUE|A magazine edition or a problem to address
+JAM|A fruit spread or traffic going nowhere
+LEAF|A tree's page or a book's, so to speak
+MATCH|A close contest or a tiny fire starter
+MINT|A place that makes coins or a breath freshener
+NOVEL|New and unusual, or a long work of fiction
+PITCH|A sales proposal or the height of a note
+PLANE|A flying vehicle or a flat surface in geometry
+RACKET|A tennis tool or a terrible noise
+SEAL|A flippered swimmer or a tight closure
+SOLE|The bottom of a shoe, or the only one
+SPRING|A season, a coil, or a leap
+STABLE|Steady, or housing for horses
+TENDER|Gentle to the touch, or an offer to buy
+WELL|In good health, or a source of water`),
+ editionPool('hard','sideways','Think sideways',`
+ECHO|It has your voice but never starts the conversation
+HOLE|It gets bigger as you take material away
+SILENCE|You break it just by saying its name aloud
+FOOTPRINT|A mark you leave behind while moving ahead
+AGE|It keeps increasing without needing your permission
+TOMORROW|Always one day away until its name changes
+QUEUE|A line whose first letter says its whole name
+KEYBOARD|It has keys and a space, but no lock or room
+CLOCK|Its hands travel all day without leaving its face
+NEEDLE|It has an eye but needs your help to see the thread
+COMB|Its teeth tidy up rather than bite down
+TEAPOT|It has a spout, a handle, and a steeping job
+ENVELOPE|A paper traveler that may carry a stamp
+SPIRAL|A curve that keeps circling without closing
+KNOT|A problem in a shoelace, solved by pulling the right way
+REFLECTION|A version of you that reverses every wave
+CHECKMATE|The end of a chase in which the king cannot escape
+SHORTCUT|A route chosen to make the journey smaller
+BACKSPACE|The key that makes your last character disappear
+BOOKEND|One of a pair that keeps a row of stories upright
+DOORBELL|It announces a visitor before you see one
+ESCALATOR|Stairs that do part of the climbing for you
+TRADEOFF|Getting one benefit by giving another one up
+LOOPHOLE|A gap in a rule rather than in a fence
+DETOUR|The longer way that avoids a blocked short way
+DEADLINE|A line you cross by being late, not by walking
+OUTLINE|A plan with the details still missing
+OVERLAP|The shared part of two things that partly cover each other
+AFTERLIFE|A second existence imagined beyond the first one
+DAYDREAM|A waking escape that never leaves your chair`),
+ editionPool('hard','expressions','Hidden in plain speech',`
+ICE|What a friendly first joke might break
+BEANS|What a secret-spiller is said to spill
+BUCKET|What a very small contribution is a drop in
+ROPE|What you reach the end of when patience runs out
+TOWEL|What you throw in when you finally give up
+FENCE|What an undecided person sits on, figuratively
+WATER|The hot stuff you are in when you are in trouble
+BRIDGE|What you cross when you come to it, in advice
+GROUND|What you stand when refusing to back down
+FOOT|The body part you put down when setting a firm limit
+SHOE|The other one you wait for someone to drop
+SLEEVE|Where an openhearted person wears their heart
+THUMB|The green digit of a successful gardener
+LIP|The body part you bite to keep a comment in
+TEETH|What a narrow escape is by the skin of
+NECK|What you stick out when taking a risk for someone
+SHOULDER|The cold body part that means you are being ignored
+HEART|What you take when encouraged, or lose when discouraged
+HEAD|What you keep when everyone else is panicking
+TAIL|The side of a coin opposite heads
+TABLE|Where an offer sits while it is available
+CARPET|Where trouble may be swept if someone hides it
+CORNER|What you turn when things start getting better
+LOOP|What you are kept in when you receive the updates
+BALL|What you drop when you neglect a responsibility
+COURT|Where the ball is when it is your turn to decide
+CHAIN|What someone pulls when they are teasing you
+STRING|One of the things you pull to call in influential favors
+NUTSHELL|A tiny container for a very brief explanation
+ROOFTOP|A place to shout news you want everyone to hear`),
+ editionPool('hard','twists','Familiar things, tricky angles',`
+ADDRESS|It can locate a home or begin a speech
+APPEAL|A request to reconsider, or the quality of being attractive
+BOARD|A plank, a panel of directors, or a place to play chess
+BRIGHT|Full of light, or quick to understand
+CAPITAL|A country's main city or money put into a business
+CELL|A prisoner's room or a living body's tiny building block
+DATE|A calendar entry, a romantic meeting, or a sweet fruit
+DECK|A ship's floor or a pack of cards
+EXPRESS|Say what you feel, or travel with fewer stops
+FAN|An admirer that may not move any air
+FILTER|It removes grounds from coffee or distractions from a search
+GLASSES|You can see through them or drink from them
+GROOM|One half of a wedding pair, or tidy an animal's coat
+HATCH|An opening in a roof, or emerge from an egg
+IRON|A metal that also smooths your shirt
+LAP|A circuit of a track or a seat for a cat
+LIGHT|Not heavy, unless you mean the opposite of dark
+MODEL|A small replica or a person displaying clothes
+NOTE|A short message or one sound in a tune
+ORDER|A restaurant request or the opposite of chaos
+PALM|A tropical tree or the inside of your hand
+PARK|Leave a car, or visit a green space
+POUND|A unit of weight or strike repeatedly
+RING|A piece of jewelry or the sound of a call
+ROCK|A stone, a music genre, or a gentle back-and-forth movement
+SINK|A kitchen basin or what a leaking boat might do
+STICK|A piece of wood, or stay attached
+TIE|Neckwear, a knot, or an even score
+TRAIN|A line of carriages or practice to improve
+WATCH|A timepiece, or keep your eyes on something`),
 ];
