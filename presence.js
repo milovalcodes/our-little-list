@@ -12,6 +12,7 @@ export function startPresence(data, viewer, page = 'somewhere') {
   // means "here in the last two minutes".
   let lastBeatAt = 0;
   const beat = () => {
+    if (document.hidden) return;
     if (Date.now() - lastBeatAt < 10000) return;
     lastBeatAt = Date.now();
     void data.setTo('presence', viewer, {

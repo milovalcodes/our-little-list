@@ -12,6 +12,7 @@ import { profileUrl } from './profile-route.js';
 
 const buckets = { items: [], statuses: [], help: [], reactions: [], locations: [], presence: [], wordDuels: [], wordDuelEnds: [], wordWeeks: [] };
 let dashboardFrame = 0;
+let routinesReady = false;
 
 const data = await sharedLayer();
 onAuthChange(user => setupAuthUI(data, user));
@@ -35,7 +36,7 @@ let openItems = [], recentDone = [];
 const updateItems = () => { buckets.items = [...openItems, ...recentDone]; scheduleDashboardRender(); };
 data.listenToQuery('items', { where: { field: 'done', value: false } }, items => { openItems = items; updateItems(); });
 data.listenToQuery('items', { where: { field: 'doneAt', op: '>=', value: doneSince }, orderBy: { field: 'doneAt', direction: 'desc' }, limit: 50 }, items => { recentDone = items; updateItems(); });
-watchRoutineChecks(data,checks=>{buckets.routineChecks=checks;scheduleDashboardRender();});
+watchRoutineChecks(data,(checks,meta)=>{buckets.routineChecks=checks;routinesReady=meta.ready;scheduleDashboardRender();});
 for (const name of Object.keys(buckets).filter(name => !['items','routineChecks'].includes(name))) {
   const receive = items => { buckets[name] = items; scheduleDashboardRender(); };
   if (name === 'reactions') data.listenToQuery(name, recent, receive);
@@ -63,7 +64,7 @@ function renderDashboard() {
 function renderNextUp() {
   const target = document.getElementById('home-next-up');
   if (!target) return;
-  const due = dueRows(buckets, viewer);
+  const due = dueRows({...buckets,routinesReady}, viewer);
   const tie=buckets.wordDuels.some(d=>!buckets.wordDuelEnds.some(e=>e.id===d.puzzleId)&&!buckets.wordWeeks.some(w=>w.week===d.week));
   const rows = [
     ...fairShare(due, 12),

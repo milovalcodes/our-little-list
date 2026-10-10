@@ -16,14 +16,14 @@ let when = 'whenever';
 let recurrence = 'once';
 let editingTaskId = '';
 let recentGroceryOptions = [];
-let checks=[],legacy=[];
+let checks=[],legacy=[],routinesReady=false;
 const pending=new Set();
 
 const { data, viewer, other } = await bootPage();
 byId('task-list-card').querySelector('.list-heading').after(byId('recent-groceries'));
 byId('routine-days').querySelector('.routine-days').innerHTML=daysFields();
 byId('task-reminders').innerHTML=reminderFields();
-watchRoutineChecks(data,next=>{checks=next;render();});
+watchRoutineChecks(data,(next,meta)=>{checks=next;routinesReady=meta.ready;render();});
 // Old asks stay in their original records, but are now ordinary checklist
 // rows. No copying, lost history, or duplicate scheduled notifications.
 data.listenTo('help',next=>{legacy=next;if(location.hash.startsWith('#ask-')&&tab!==tabFromHash())selectTab(tabFromHash());else render();});
@@ -95,6 +95,7 @@ byId('task-list').addEventListener('click', async event => {
   const item = allItems().find(entry => entry.id === row?.dataset.id);
   if (!item || pending.has(item.id)) return;
   const routine=isRoutine(item),day=row.dataset.day||listDay();
+  if(routine&&!routinesReady&&['toggle','nudge','help'].includes(button.dataset.action))return;
   const done=routine?checkedToday(item,checks,day):item.done;
   if (button.dataset.action === 'edit') {
     editingTaskId = item.id;
@@ -226,7 +227,7 @@ function visibleItems() {
 
 function render() {
   const list = visibleItems();
-  byId('item-count').textContent = tab === 'routines'?`${list.filter(i=>routineDue(i)&&!checkedToday(i,checks)).length} left today`:tab === 'done' ? `${list.length} done` : `${list.length} left`;
+  byId('item-count').textContent = tab === 'routines'?(routinesReady?`${list.filter(i=>routineDue(i)&&!checkedToday(i,checks)).length} left today`:'syncing checkmarks…'):tab === 'done' ? `${list.length} done` : `${list.length} left`;
   byId('empty-state').hidden = list.length > 0;
   // "0 left" next to "Nothing here" said the same thing twice.
   byId('item-count').hidden = list.length === 0;
@@ -320,10 +321,10 @@ function taskMarkup(item) {
     <div class="inline-edit-actions"><button type="submit">save</button><button type="button" data-action="cancel-edit">cancel</button></div>
   </form>` : item.legacyId?`<strong>${escapeHtml(item.title)}</strong>`:`<button class="task-title" data-action="edit" type="button" aria-label="Edit ${escapeHtml(item.title)}">${escapeHtml(item.title)}</button>`;
   return `<li class="task-row${doneClass}" data-id="${escapeHtml(item.id)}" data-day="${day}" ${item.legacyId?`data-legacy-id="${escapeHtml(item.legacyId)}"`:''}>
-    <button class="task-check" data-action="toggle" ${!scheduled||pending.has(item.id)?'disabled':''} aria-label="Mark ${escapeHtml(item.title)} ${item.done ? 'not done' : 'done'}">${check}</button>
+    <button class="task-check" data-action="toggle" ${!scheduled||pending.has(item.id)||(routine&&!routinesReady)?'disabled':''} aria-label="${routine&&!routinesReady?'Syncing '+escapeHtml(item.title):'Mark '+escapeHtml(item.title)+' '+(item.done?'not done':'done')}">${routine&&!routinesReady?'…':check}</button>
     <div>${title}${due||aisle||repeat||addedBy||finished?`<div class="task-meta">${due}${aisle}${repeat}${addedBy}${finished}</div>`:''}${item.done&&item.type==='grocery'?'<button class="readd-task" data-action="readd" type="button">put back</button>':''}${rolledBack}</div>
     <button class="delete-task" data-action="delete" aria-label="Delete ${escapeHtml(item.title)}">×</button>
-    ${!item.done&&scheduled?`<div class="routine-actions"><button type="button" data-action="nudge" ${pending.has(item.id)?'disabled':''}>nudge</button><button type="button" data-action="help" ${pending.has(item.id)?'disabled':''}>need a hand?</button>${item.reminderTime?`<small>◷ ${escapeHtml(item.reminderTime)} ET</small>`:''}</div>`:''}
+    ${!item.done&&scheduled&&(!routine||routinesReady)?`<div class="routine-actions"><button type="button" data-action="nudge" ${pending.has(item.id)?'disabled':''}>nudge</button><button type="button" data-action="help" ${pending.has(item.id)?'disabled':''}>need a hand?</button>${item.reminderTime?`<small>◷ ${escapeHtml(item.reminderTime)} ET</small>`:''}</div>`:''}
   </li>`;
 }
 

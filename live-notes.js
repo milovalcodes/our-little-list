@@ -37,7 +37,10 @@ async function boot(viewer) {
   const data = await sharedLayer();
   const recent = { orderBy: { field: 'createdAt', direction: 'desc' }, limit: 50 };
   const openedAt=Date.now();
-  if(data.mode!=='local'){
+  let outboxStarted=false;
+  function startOutbox(){
+    if(data.mode==='local'||outboxStarted)return;
+    outboxStarted=true;
     // One real-time source for every kind, rather than a second partial list
     // of actions to maintain. Future reminders wait for validated worker push.
     const seenIds=new Set();
@@ -85,6 +88,9 @@ async function boot(viewer) {
   data.listenTo('statuses',items=>{
     ownFocusUntil=Number(items.find(entry=>entry.id===viewer||entry.person===viewer)?.focusUntil)||0;
     foregroundReady=true;
+    // Attach only once the focus policy is known. Otherwise an early outbox
+    // snapshot was marked seen and discarded before announce could show it.
+    startOutbox();
     if(data.mode==='local')watchStatus(items);
   });
   if(!document.body.dataset.viewer)startPresence(data,viewer,document.body.dataset.app||'somewhere');

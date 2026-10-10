@@ -8,7 +8,7 @@ export function watchRoutineChecks(data, receive, {onError}={}) {
     receive([],{ready:false,day});
     stop=data.listenToQuery('routineChecks',{where:{field:'day',value:day}},rows=>{
       if(current===version)receive(rows,{ready:true,day});
-    },onError?{onError:problem=>{if(current!==version)return;failed=true;receive([],{ready:false,day});onError(problem);}}:{});
+    },{onError:problem=>{if(current!==version)return;failed=true;receive([],{ready:false,day});onError?.(problem);}});
   };
   const timer=setInterval(refresh,30000);
   document.addEventListener('visibilitychange',refresh);

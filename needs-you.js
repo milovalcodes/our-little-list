@@ -10,11 +10,11 @@ import {isRoutine,routineDue,checkedToday,listDay} from './list-schedule.js';
 // reminders are now) belongs to its day: "Friday" does not crowd Monday, and it
 // stays until it is done even once answered. Asks without a time wait here until
 // they are answered.
-export function dueRows({ items = [], help = [], routineChecks = [] }, viewer, now = new Date()) {
+export function dueRows({ items = [], help = [], routineChecks = [], routinesReady = true }, viewer, now = new Date()) {
   const today = dateKey(now);
   const end = new Date(now); end.setHours(23, 59, 59, 999);
   const due = items
-    .filter(item => isRoutine(item)?routineDue(item,listDay(now))&&!checkedToday(item,routineChecks,listDay(now)):!item.done && item.due && item.due <= today)
+    .filter(item => isRoutine(item)?routinesReady&&routineDue(item,listDay(now))&&!checkedToday(item,routineChecks,listDay(now)):!item.done && item.due && item.due <= today)
     .sort((a, b) => (a.due || '').localeCompare(b.due || ''))
     .map(item => ({ id: item.id, kind: 'item', icon: item.type === 'grocery' ? '🛒' : '✓', title: item.title, meta: isRoutine(item)?'routine · today':item.due < today ? 'overdue' : 'today', href: `tasks.html#item-${item.id}` }));
   const asks = help
