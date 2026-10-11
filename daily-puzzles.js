@@ -61,7 +61,7 @@ export function crosswordGrid(bank,size,rng,target,attempts=24){
 }
 export function timedPuzzle(day,type,now=Date.now()){
  if(!PUZZLE_TYPES.includes(type))throw Error('Unknown puzzle');
- const modern=usesNewEdition(day,now),hard=isHardDay(day),difficulty=hard?'hard':'normal',rng=random(day+':'+type+(modern?':v4':':v1'));
+ const modern=usesNewEdition(day,now),hard=isHardDay(day),difficulty=hard?'hard':'normal',rng=random(day+':'+type+(day==='2026-10-11'?':v110-replacement':modern?':v4':':v1'));
  const season=puzzleSeason(day,now);
  const themes=PUZZLE_THEMES.filter(t=>t.difficulty===difficulty&&t.season===season&&(modern?t.edition===DIFFICULTY_VERSION:!t.edition)),theme=themes[Math.floor(rng()*themes.length)];
  const bank=catalogPool(difficulty,theme.id).map(({word,clue,id})=>({word,clue,id}));
@@ -70,7 +70,8 @@ export function timedPuzzle(day,type,now=Date.now()){
   ?(type==='search'?searchGrid(bank,hard?12:11,rng,true):crosswordGrid(bank,hard?12:11,rng,hard?8:6,80))
   :(type==='search'?searchGrid(bank,hard?12:10,rng,hard):crosswordGrid(bank,hard?11:9,rng,hard?8:6));
  const window=day.includes('-tie-')?{opensAt:now,closesAt:4102444800000}:activityWindow(day);
- return {day,type,hard,difficulty,theme:theme.label,themeId:theme.id,catalogVersion:modern?DIFFICULTY_VERSION:CATALOG_VERSION,...layout,...window};
+ const durationMs=hard?(type==='search'?150000:180000):120000;
+ return {day,type,hard,difficulty,theme:theme.label,themeId:theme.id,catalogVersion:modern?DIFFICULTY_VERSION:CATALOG_VERSION,...layout,...window,...((day.includes('-tie-')?new Date(now).toISOString().slice(0,10):day)>='2026-10-11'?{durationMs}:{})};
 }
 export function entryCells(puzzle,index){const e=puzzle.entries[index];return e?[...e.word].map((_,i)=>e.start+i*e.step):[];}
 export function selectedSearchWord(puzzle,start,end){

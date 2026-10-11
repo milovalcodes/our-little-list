@@ -8,7 +8,7 @@ export const NEW_POOLS=[...EDITION_POOLS,...EDITION_SEASONAL_POOLS];
 export function usesNewEdition(day,now=Date.now()){
  return (day.includes('-tie-')?activityClock(new Date(now)).day:day)>=DIFFICULTY_START_DAY;
 }
-const words=(difficulty,theme,text,season='')=>text.trim().split(/\s+/).map(word=>({word,theme,difficulty,season,id:'word-v4-'+(season||'regular')+'-'+difficulty+'-'+word}));
+const words=(difficulty,theme,text,season='')=>text.trim().split(/\s+/).map(word=>({word,theme:season==='october'?'Halloween & autumn':season==='december'?'Christmas & winter':difficulty==='hard'?'Everyday words':theme,difficulty,season,id:'word-v4-'+(season||'regular')+'-'+difficulty+'-'+word}));
 // Five-letter format retained. Broad themes help without defining the answer.
 // Recognizable answers; hard favors repeated letters, silent letters and unusual
 // arrangements rather than rare terminology. Themes guide without defining.
@@ -40,7 +40,9 @@ export function editionWordForDay(day){
  const d=Number(day.slice(8,10)),firstSunday=1+(7-new Date(day.slice(0,7)+'-01T12:00Z').getUTCDay())%7;
  const monthSundays=d<firstSunday?0:Math.floor((d-firstSunday)/7)+1;
  const position=puzzleSeason(day)?(hard?monthSundays-1:d-monthSundays-1):(hard?sundays-1:elapsed-sundays);
- return {day,...selectWord(day,hard,position),...activityWindow(day)};
+ // Retire the original Oct 11 answer for this month, including later Sundays.
+ const replacementOffset=hard&&day.startsWith('2026-10-')&&day>='2026-10-11'?1:0;
+ return {day,...selectWord(day,hard,position+replacementOffset),...activityWindow(day)};
 }
 export function editionWordForTie(week,round,now){
  const day=week+'-tie-'+round,index=Math.floor(Date.parse(week+'T12:00Z')/604800000);

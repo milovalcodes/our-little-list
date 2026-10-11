@@ -17,12 +17,16 @@ try{
   for(const type of ['search','crossword']){
    const p=timedPuzzle(day,type);
    if(type==='crossword')await page.locator('#crossword>summary').click();
+   const seconds=(p.durationMs||120000)/1000,limit=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+   await page.waitForFunction(({type,limit})=>document.querySelector('#'+type).textContent.includes(limit),{type,limit});
+   const started=await page.evaluate(()=>Date.now());
    await page.locator('#'+type+' [data-start]:not([disabled])').click();
    await page.locator('#'+type+' .puzzle-cell').first().waitFor();
-   const started=type==='search'?now:now+100000;
    for(let n=0;n<p.entries.length;n++){
-    // Allow ten seconds per find/clue. This is an input/timer test, not a human benchmark.
-    await page.clock.setFixedTime(started+(n+1)*10000);
+    // Hard boards exercise the new time beyond 2:00, not just their labels.
+    // This is an input/deadline test, not a human difficulty benchmark.
+    const step=p.durationMs>120000?(p.durationMs-10000)/p.entries.length:10000;
+    await page.clock.setFixedTime(started+(n+1)*step);
     const e=p.entries[n];
     if(type==='search'){
      await page.locator('#search [data-cell="'+e.start+'"]').click();
@@ -47,5 +51,5 @@ try{
   if(day==='2026-10-11')await page.screenshot({path:join(tmpdir(),'little-puzzles-v108.png'),fullPage:true});
   await context.close();
  }
- assert.deepEqual(errors,[]);console.log('New edition mobile: both profiles, normal/Sunday, all seasons, all three games, two-minute completion mechanics and 320px layout pass');
+ assert.deepEqual(errors,[]);console.log('New edition mobile: both profiles, all seasons, normal/hard timers, completion past two minutes, all games and 320px layout pass');
 }finally{await browser.close();}

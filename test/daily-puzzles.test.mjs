@@ -38,7 +38,7 @@ for(const day of ['2026-10-09','2026-10-11','2026-10-05-tie-1'])for(const type o
  for(let n=0;n<=p.entries.length;n++){
   let g=newTimedGame(p,'her',now);
   for(let i=0;i<n;i++)g=advanceTimedGame(g,p,{index:i,expectedCount:i,now:now+i*1000});
-  if(!g.done)g=advanceTimedGame(g,p,{index:null,expectedCount:n,now:now+120000});
+  if(!g.done)g=advanceTimedGame(g,p,{index:null,expectedCount:n,now:now+(p.durationMs||120000)});
   const expected=Math.round(n/p.entries.length*50)*(p.hard?2:1);
   assert.equal(timedPoints(g),expected);assert.equal(timedPoints(timedSummary(g)),expected);
  }
@@ -46,8 +46,8 @@ for(const day of ['2026-10-09','2026-10-11','2026-10-05-tie-1'])for(const type o
  assert.throws(()=>advanceTimedGame(g,p,{index:1,expectedCount:0,now:now+2000}),/other screen/);
  assert.throws(()=>advanceTimedGame(g,p,{index:0,expectedCount:1,now:now+2000}),/Already/);
  assert.equal(timedPoints(g,now+119999),0);
- assert.equal(timedPoints(g,now+120000),Math.round(50/p.entries.length)*(p.hard?2:1),'closing a tab cannot lose already saved partial credit');
- assert.equal(timedOver(g,now+120000),true);
+ assert.equal(timedPoints(g,now+(p.durationMs||120000)),Math.round(50/p.entries.length)*(p.hard?2:1),'closing a tab cannot lose already saved partial credit');
+ assert.equal(timedOver(g,now+(p.durationMs||120000)),true);
 }
 const day='2026-10-05-tie-1',now=Date.parse('2026-10-11T18:00Z');
 const word=(person,attempts=1,done=true,won=true)=>({day,person,attempts,done,won,updatedAt:now});

@@ -25,12 +25,13 @@ export function startDailyWord({data,viewer,other},options={}){
   function read(){
     unsub.forEach(stop=>stop());unsub=[];loaded=new Set();error='';syncFailure=false;clearTimeout(timer);
     const fail=()=>{syncFailure=true;error='Couldn’t sync the word. Check your connection, then retry.';render();};
-    const listen=(name,options,handle)=>unsub.push(data.listenToQuery(name,options,items=>{loaded.add(name);handle(items);render();},{onError:fail}));
+    const listen=(name,options,handle)=>unsub.push(data.listenToQuery(name,options,(items,meta)=>{loaded.add(name);handle(items,meta);render();},{onError:fail}));
     listen('wordPuzzles',{where:{field:'day',value:day}},items=>{puzzle=items.find(p=>p.day===day)||(data.mode==='local'&&!tie?wordForDay(day):null);});
-    listen('wordGames',{where:[{field:'person',value:viewer},{field:'day',value:day}]},items=>{
+    listen('wordGames',{where:[{field:'person',value:viewer},{field:'day',value:day}]},(items,meta)=>{
       const incoming=items.find(p=>p.person===viewer&&p.day===day)||null;
       // A cached snapshot must not rewind a guess already acknowledged by the server.
-      if(!mine||(incoming?.guesses.length||0)>=mine.guesses.length)mine=incoming;
+      if(!incoming&&meta?.fromCache===false){mine=null;draft='';pendingGuess=null;peekGame=null;peekOpen=false;completionToCelebrate=null;}
+      else if(!mine||(incoming?.guesses.length||0)>=mine.guesses.length)mine=incoming;
       if(pendingGuess&&incoming?.guesses[pendingGuess.index]===pendingGuess.word){
         if(incoming.done)completionToCelebrate=incoming;
         if(draft===pendingGuess.word)draft='';

@@ -6,7 +6,7 @@ export function startPracticeLinks(viewer){
  if(!host)return;
  const refresh=()=>{
   const store=practiceStore(HOUSEHOLD_ID+':'+viewer);
-  host.innerHTML=Object.entries(PRACTICE_COUNTS).map(([type,total])=>`<a class="practice-link" href="practice.html#${type}"><span><strong>${PRACTICE_NAMES[type]}</strong><small>${store.completed(type)} finished</small></span><span class="practice-count">${store.cursor(type)+1} / ${total} <i aria-hidden="true">›</i></span></a>`).join('');
+  host.innerHTML=['normal','hard'].map(level=>`<section><h3>${level==='hard'?'Hard practice':'Normal practice'}</h3>${Object.entries(PRACTICE_COUNTS).map(([type,total])=>`<a class="practice-link" href="practice.html#${type}-${level}"><span><strong>${PRACTICE_NAMES[type]}</strong><small>${store.completed(type,level)} finished</small></span><span class="practice-count">${store.cursor(type,level)-(level==='hard'?total/2:0)+1} / ${total/2} <i aria-hidden="true">›</i></span></a>`).join('')}</section>`).join('');
  };
  refresh();addEventListener('pageshow',refresh);addEventListener('storage',refresh);
 }

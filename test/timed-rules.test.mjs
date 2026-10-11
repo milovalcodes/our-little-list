@@ -56,4 +56,23 @@ await commit('him',advanceTimedGame(tieGame,tie,{index:0,expectedCount:0}),{ok:f
 const final={week:'2026-10-19',format:'trio',scoreVersion:2,round:1,scores:{her:1900,him:1500},winners:['her'],settledAt:now};
 await write('him','wordWeeks/'+final.week,{...final,scores:{her:2001,him:1500}},false);
 await write('him','wordWeeks/'+final.week,final);
-console.log('TIMED RULES: server start times, private routes, no resets, atomic counts, expired attempts, closed ties and scaled weekly bounds pass');
+for(const type of ['search','crossword']){
+ const p={...timedPuzzle('2026-10-25',type),opensAt:now-86400000,closesAt:now+86400000};
+ await write('him','timedPuzzles/'+p.day+'-'+type,p);
+ await commit('her',{...newTimedGame(p,'her'),durationMs:999000},{start:true,ok:false});
+ const started=await commit('her',newTimedGame(p,'her'),{start:true});
+ await commit('her',{...started,durationMs:999000,solved:[0],foundAt:[0]},{ok:false});
+ const active={...newTimedGame(p,'her',Date.now()-125000)};
+ await write('admin',`timedGames/${p.day}-${type}-her`,active);
+ await write('admin',`timedResults/${p.day}-${type}-her`,timedSummary(active));
+ const moonDone={...newTimedGame(p,'him',Date.now()-125000),done:true,complete:true,finishedAt:Date.now(),solved:p.entries.map((_,i)=>i),foundAt:p.entries.map((_,i)=>i*1000)};
+ await write('admin',`timedGames/${p.day}-${type}-him`,moonDone);
+ await read('him',`timedGames/${p.day}-${type}-her`,403);
+ await commit('her',advanceTimedGame(active,p,{index:0,expectedCount:0}));
+ const expired={...active,startedAt:Date.now()-p.durationMs-1000};
+ await write('admin',`timedGames/${p.day}-${type}-her`,expired);
+ await commit('her',{...expired,solved:[0],foundAt:[125000]},{ok:false});
+ await commit('her',advanceTimedGame(expired,p,{index:null,expectedCount:0}));
+ await read('him',`timedGames/${p.day}-${type}-her`);
+}
+console.log('TIMED RULES: server deadlines including hard 2:30/3:00, no forged extension, private routes, no resets, atomic counts, closed ties and scoring pass');

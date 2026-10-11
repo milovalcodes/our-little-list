@@ -12,17 +12,19 @@ const {viewer}=await bootPage();
 const store=practiceStore(HOUSEHOLD_ID+':'+viewer);
 const host=document.getElementById('practice-game'),picker=document.getElementById('practice-picker');
 host.tabIndex=-1;
-let type,index,puzzle,state,selected=0,message='',tapStart=null,drag=null,celebration,flashTimer;
+let type,index,puzzle,state,selected=0,message='',tapStart=null,drag=null,celebration,flashTimer,difficulty='normal';
 const isDone=()=>type==='word'?state.guesses.includes(puzzle.word.toLowerCase())||state.guesses.length>=5:state.solved.length===puzzle.entries.length;
 function save(){state.selected=selected;store.save(type,index,state);document.getElementById('practice-warning').textContent=store.warning;}
 function progress(){
  document.getElementById('practice-progress').textContent=type==='word'
-  ?`${puzzle.difficulty} · ${store.completed(type)} finished · 5 tries, retry anytime`
-  :`${puzzle.difficulty} · ${store.completed(type)} finished · take your time`;
+  ?`${puzzle.difficulty} · ${store.completed(type,difficulty)} finished · 5 tries, retry anytime`
+  :`${puzzle.difficulty} · ${store.completed(type,difficulty)} finished · take your time`;
 }
 function open(){
- const asked=location.hash.slice(1);type=Object.hasOwn(PRACTICE_COUNTS,asked)?asked:'word';
- index=store.cursor(type);load();
+ const [asked,level]=location.hash.slice(1).split('-');type=Object.hasOwn(PRACTICE_COUNTS,asked)?asked:'word';
+ difficulty=level==='hard'?'hard':'normal';index=store.cursor(type,difficulty);load();
+ document.querySelectorAll('[data-practice-level]').forEach(a=>{a.href='#'+type+'-'+a.dataset.practiceLevel;a.setAttribute('aria-current',a.dataset.practiceLevel===difficulty?'page':'false');});
+ document.querySelectorAll('[data-practice-tab]').forEach(a=>a.href='#'+a.dataset.practiceTab+'-'+difficulty);
  document.querySelectorAll('[data-practice-tab]').forEach(a=>{if(a.dataset.practiceTab===type)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
 }
 function load(){
@@ -35,7 +37,8 @@ function load(){
  // Practice celebrations never create score/result documents.
  celebration=createWordCelebration(host,viewer,'practice-'+type+'-'+index);
  document.getElementById('practice-title').textContent=PRACTICE_NAMES[type];
- picker.innerHTML=Array.from({length:PRACTICE_COUNTS[type]},(_,i)=>`<option value="${i}">${i+1} / ${PRACTICE_COUNTS[type]} · ${i<PRACTICE_COUNTS[type]/2?'normal':'hard'}</option>`).join('');
+ const half=PRACTICE_COUNTS[type]/2,offset=difficulty==='hard'?half:0;
+ picker.innerHTML=Array.from({length:half},(_,n)=>`<option value="${n+offset}">${n+1} / ${half} · ${difficulty}</option>`).join('');
  picker.value=index;render();host.setAttribute('aria-busy','false');
 }
 function feedback(text){message=text;const node=host.querySelector('[data-feedback]');if(node)node.textContent=text;}
@@ -168,8 +171,8 @@ document.addEventListener('keydown',e=>{
  const key=e.key==='Enter'?'↵':e.key==='Backspace'?'⌫':e.key.toLowerCase();
  if(key==='↵'||key==='⌫'||/^[a-z]$/.test(key)){e.preventDefault();wordKey(key);}
 });
-picker.addEventListener('change',()=>{index=Number(picker.value);store.move(type,index);load();});
-document.getElementById('practice-next').addEventListener('click',()=>{index=(index+1)%PRACTICE_COUNTS[type];store.move(type,index);load();host.focus({preventScroll:true});});
+picker.addEventListener('change',()=>{index=Number(picker.value);store.move(type,index,difficulty);load();});
+document.getElementById('practice-next').addEventListener('click',()=>{const half=PRACTICE_COUNTS[type]/2,offset=difficulty==='hard'?half:0;index=offset+(index-offset+1)%half;store.move(type,index,difficulty);load();host.focus({preventScroll:true});});
 document.getElementById('practice-restart').addEventListener('click',()=>{
  if(!confirm('Start this puzzle over? Your other practice puzzles stay saved.'))return;
  selected=0;state={guesses:[],solved:[],hints:0,draft:'',completed:state.completed,selected:0};save();load();host.focus({preventScroll:true});

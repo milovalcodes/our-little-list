@@ -42,9 +42,15 @@ try{
   await page.locator('[data-clue="'+i+'"]').click();await page.fill('#practice-answer',crossword.entries[i].word);await page.locator('.crossword-answer button').click();
  }
  assert.match(await page.locator('[data-feedback]').textContent(),/all found/);
- await page.selectOption('#practice-picker','99');await page.click('#practice-next');assert.equal(await page.locator('#practice-picker').inputValue(),'0');
+ await page.selectOption('#practice-picker','49');await page.click('#practice-next');assert.equal(await page.locator('#practice-picker').inputValue(),'0');
+ await page.click('[data-practice-level=hard]');await page.waitForFunction(()=>document.querySelector('#practice-picker').value==='50');
+ assert.equal(await page.locator('#practice-picker option').count(),50);
+ await page.selectOption('#practice-picker','99');await page.click('#practice-next');assert.equal(await page.locator('#practice-picker').inputValue(),'50');
+ await page.click('[data-practice-tab=search]');assert.match(page.url(),/#search-hard$/);
+ await page.waitForFunction(()=>document.querySelector('#practice-progress').textContent.includes('hard'));
  await page.goto(base+'/activities.html?as=him#practice');await page.waitForSelector('#practice-links a');
  assert.match(await page.locator('#practice-links').textContent(),/1 finished/);
+ assert.equal(await page.locator('#practice-links a').count(),6);
  const competitive=await page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();return Promise.all(['wordGames','wordResults','timedGames','timedResults'].map(k=>d.readOnce(k)));});
  assert.ok(competitive.every(rows=>rows.length===0));
  await page.goto(base+'/practice.html?as=her#word');await page.waitForSelector('[data-key]');assert.match(await page.locator('#practice-progress').textContent(),/0 finished/);

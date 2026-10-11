@@ -9,8 +9,8 @@ export function practiceStore(scope,storage){
  function write(key,value){memory.set(key,value);try{storage.setItem(prefix+key,JSON.stringify(value));problem='';}catch(_){problem='Practice can’t save on this phone right now. Keep this tab open, or free some browser storage.';}}
  return {
   get warning(){return problem;},
-  cursor(type){const n=read('cursor:'+type).index;return Number.isInteger(n)&&n>=0&&n<PRACTICE_COUNTS[type]?n:0;},
-  move(type,index){write('cursor:'+type,{index});},
+  cursor(type,difficulty){const start=difficulty==='hard'?PRACTICE_COUNTS[type]/2:0,end=difficulty==='normal'?PRACTICE_COUNTS[type]/2:PRACTICE_COUNTS[type];const n=read('cursor:'+type+(difficulty?':'+difficulty:'')).index;return Number.isInteger(n)&&n>=start&&n<end?n:start;},
+  move(type,index,difficulty){write('cursor:'+type,{index});if(difficulty)write('cursor:'+type+':'+difficulty,{index});},
   load(type,index){
    const raw=read(type+':'+index);
    return {guesses:Array.isArray(raw.guesses)?raw.guesses.filter(w=>/^[a-z]{5}$/.test(w)).slice(0,5):[],
@@ -20,6 +20,6 @@ export function practiceStore(scope,storage){
     draft:typeof raw.draft==='string'?raw.draft.slice(0,12):'',completed:raw.completed===true};
   },
   save(type,index,state){write(type+':'+index,state);},
-  completed(type){let total=0;for(let i=0;i<PRACTICE_COUNTS[type];i++)if(read(type+':'+i).completed===true)total++;return total;}
+  completed(type,difficulty){let total=0;const start=difficulty==='hard'?PRACTICE_COUNTS[type]/2:0,end=difficulty==='normal'?PRACTICE_COUNTS[type]/2:PRACTICE_COUNTS[type];for(let i=start;i<end;i++)if(read(type+':'+i).completed===true)total++;return total;}
  };
 }

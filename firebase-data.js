@@ -122,12 +122,13 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         ];
         live = { callbacks: new Set(), failures:new Map(), latest: null, unsubscribe: null };
         const confirmedPuzzle=['timedGames','timedResults'].includes(name);
-        live.unsubscribe = onSnapshot(query(named(name), ...constraints), {includeMetadataChanges:confirmedPuzzle}, snapshot => {
+        live.unsubscribe = onSnapshot(query(named(name), ...constraints), {includeMetadataChanges:confirmedPuzzle||name==='wordGames'}, snapshot => {
           // Never turn an optimistic cache write into timed-game credit. The
           // metadata-only acknowledgement must still deliver the saved row.
           if(confirmedPuzzle&&snapshot.metadata.hasPendingWrites)return;
           live.latest = snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
-          live.callbacks.forEach(handler => safelyCall(handler, [...live.latest]));
+          live.metadata = {fromCache:snapshot.metadata.fromCache};
+          live.callbacks.forEach(handler => safelyCall(handler, [...live.latest],live.metadata));
         }, problem => {
           if(liveCollections.get(key)===live)liveCollections.delete(key);
           if(live.failures.size)live.failures.forEach(handler=>safelyCall(handler,problem));else announceError(problem,'listen');
@@ -136,7 +137,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       }
       live.callbacks.add(callback);
       if(onError)live.failures.set(callback,onError);
-      if (live.latest) queueMicrotask(() => {if(live.callbacks.has(callback))safelyCall(callback, [...live.latest]);});
+      if (live.latest) queueMicrotask(() => {if(live.callbacks.has(callback))safelyCall(callback, [...live.latest],live.metadata);});
       return () => {
         live.callbacks.delete(callback);
         live.failures.delete(callback);

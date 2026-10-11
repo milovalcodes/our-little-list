@@ -140,4 +140,15 @@ try {
  await moon.reload();await moon.waitForFunction(points=>document.querySelector('#search-summary').textContent.includes(points+' points'),50*multiplier);
  assert.deepEqual(errors,[]);
  console.log('REAL FIREBASE TIMED: server timestamps, independent attempts, simultaneous-tab protection, live total scores, private routes, live reveal and saved reload verified');
+ // An explicitly authorized server reset must clear the old finished UI,
+ // unlike an empty offline cache snapshot which must never rewind a round.
+ const docs=`projects/${project}/databases/(default)/documents`;
+ const resetPaths=['her','him'].flatMap(person=>['wordGames/'+puzzle.day+'-'+person,'wordResults/'+puzzle.day+'-'+person,'timedGames/'+puzzle.day+'-search-'+person,'timedResults/'+puzzle.day+'-search-'+person]);
+ const reset=await fetch(`http://${host}/v1/${docs}:commit`,{method:'POST',headers:{authorization:'Bearer owner','content-type':'application/json'},body:JSON.stringify({writes:resetPaths.map(path=>({delete:docs+'/households/oLSxADOwjqS04hSS2aHGOcvozmz2/'+path}))})});
+ assert.ok(reset.ok,await reset.text());
+ await Promise.all([moon,sun,secondMoon].map(p=>p.waitForFunction(()=>document.querySelectorAll('#word-game .word-row.played').length===0&&document.querySelector('#word-game .word-keyboard'))));
+ await moon.locator('#search').evaluate(el=>{el.open=true;});
+ await moon.waitForSelector('#search [data-start]:not([disabled])');
+ assert.deepEqual(errors,[]);
+ console.log('REAL RESET: server-confirmed reset clears both phones and reopens rounds without refreshing');
 }finally{await browser.close();}

@@ -1,6 +1,7 @@
 // Original clues: familiar answers, difficulty through interpretation rather than trivia.
 // Hard clues use fair double meanings; these are not academic grade levels.
 export function editionPool(difficulty,theme,label,text,season=''){
+ label=season==='october'?'Halloween & autumn':season==='december'?'Christmas & winter':difficulty==='hard'?'Everyday words & expressions':({everyday:'Everyday life',outdoors:'Nature & the outdoors',play:'Hobbies & entertainment',together:'People & everyday life'}[theme]||label);
  const id=(season?season+'-':'')+'v4-'+theme;
  return {id,label,difficulty,season,edition:4,entries:text.trim().split('\n').map(row=>{
   const [word,clue]=row.split('|');
