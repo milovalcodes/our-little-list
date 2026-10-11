@@ -12,7 +12,7 @@ assert.deepEqual(PRACTICE_COUNTS,{word:200,search:100,crossword:100});
 // Any future layout/content change needs a new edition, not silently reused saves.
 const editionHash=createHash('sha256');
 for(const [type,count]of Object.entries(PRACTICE_COUNTS))for(let i=0;i<count;i++)editionHash.update(JSON.stringify(practicePuzzle(type,i)));
-assert.equal(editionHash.digest('hex'),'09f70c1137f9e249c0e7a8199d559e5c153713b4becd2bfcdabeab5d225b4143','v3 practice boards must stay stable');
+assert.equal(editionHash.digest('hex'),'dfbcc7f31c32e90153f747351df0ba11088d353366c964061e2926f6ff900f0b','practice layout versions must stay stable');
 const bank=[...PRACTICE_BANK,...PRACTICE_BOARD_EXTRAS];
 assert.equal(new Set(bank.map(e=>e.word)).size,bank.length);
 assert.ok(bank.every(e=>/^[A-Z]{3,12}$/.test(e.word)&&e.clue.length>8));
@@ -31,7 +31,7 @@ for(const type of ['search','crossword']){
  const signatures=new Set();
  for(let i=0;i<100;i++){
   const p=practicePuzzle(type,i);signatures.add(p.grid);
-  assert.equal(p.entries.length,type==='search'?10:i<50?6:8);
+  assert.equal(p.entries.length,type==='search'?10:i<50?10:20);
   assert.ok(!('closesAt' in p)&&!('opensAt' in p));
   for(let n=0;n<p.entries.length;n++){
    const cells=entryCells(p,n);

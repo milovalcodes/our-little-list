@@ -49,10 +49,10 @@ for(const type of ['word','search','crossword'])for(const i of [0,49,50,99]){
 for(const month of [9,10,11])for(let i=0;i<60;i++){
  const day=new Date(Date.UTC(2026,month,10+i)).toISOString().slice(0,10);
  for(const type of ['search','crossword']){
-  const p=timedPuzzle(day,type),target=type==='search'?10:p.hard?8:6;
-  assert.equal(p.catalogVersion,4);assert.equal(p.entries.length,target);
-  assert.equal(p.size,p.hard?12:11);
-  if(type==='crossword')assert.ok(p.entries.reduce((n,e)=>n+e.word.length,0)<=80);
+  const p=timedPuzzle(day,type),expanded=type==='crossword'&&day>='2026-10-12',target=type==='search'?10:expanded?(p.hard?20:10):p.hard?8:6;
+  assert.equal(p.catalogVersion,expanded?5:4);assert.equal(p.entries.length,target);
+  if(expanded)assert.ok(p.size>=9&&p.size<=(p.hard?21:15));else assert.equal(p.size,p.hard?12:11);
+  if(type==='crossword')assert.ok(p.entries.reduce((n,e)=>n+e.word.length,0)<=(expanded?240:80));
   // Exercise each saved move below the deadline; this checks mechanics, not human solve speed.
   let g=newTimedGame(p,'him',p.opensAt+1000);
   for(let n=0;n<target;n++)g=advanceTimedGame(g,p,{index:n,expectedCount:n,now:g.startedAt+(n+1)*10000});

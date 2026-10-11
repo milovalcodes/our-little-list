@@ -1,8 +1,10 @@
 import {PRACTICE_EDITION_WORDS,PRACTICE_EDITION_EXTRAS} from './practice-edition-bank.js';
-import {random,searchGrid,crosswordGrid} from './daily-puzzles.js';
+import {random,searchGrid} from './daily-puzzles.js';
+import {connectedCrossword} from './connected-crossword.js';
 
 // Changed answers need a separate save namespace; keep old progress intact.
 export const PRACTICE_VERSION=3;
+export const PRACTICE_VERSIONS={word:3,search:3,crossword:4};
 export const PRACTICE_COUNTS={word:200,search:100,crossword:100};
 export const PRACTICE_NAMES={word:'Little Word',search:'Word Search',crossword:'Mini crossword'};
 // Spread practice across starting letters, then freeze a shuffled order within
@@ -35,7 +37,7 @@ export function practicePuzzle(type,index){
  const bank=boardBank.filter(e=>e.difficulty===difficulty),size=hard?12:11,rng=random('practice-v3:'+key);
  const layout=type==='word'?PRACTICE_WORDS[index]:type==='search'
   ?searchGrid(bank,size,rng,true)
-  :crosswordGrid(bank,size,rng,hard?8:6,80);
- const puzzle={...layout,type,index,difficulty,id:'practice-v3-'+key,theme:'A little of everything'};
+  :connectedCrossword(bank,hard?21:15,random('practice-crossword-v4:'+index),hard?20:10);
+ const puzzle={...layout,type,index,difficulty,id:'practice-v'+PRACTICE_VERSIONS[type]+'-'+key,theme:'A little of everything'};
  cache.set(key,puzzle);return puzzle;
 }

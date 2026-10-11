@@ -20,6 +20,8 @@ async function commit(p,game,{start=false,ok=true,summary=timedSummary(game)}={}
  if(ok)return read(p,`timedGames/${game.day}-${game.type}-${game.person}`);
 }
 const now=Date.now(),day='2026-10-21',puzzle={...timedPuzzle(day,'crossword'),opensAt:now-1000,closesAt:now+86400000};
+const staleClient={...timedPuzzle('2026-10-11','crossword'),day:'2026-10-12',opensAt:Date.parse('2026-10-12T13:00Z'),closesAt:Date.parse('2026-10-13T13:00Z')};
+await write('him','timedPuzzles/2026-10-12-crossword',staleClient,false);
 await write('him','timedPuzzles/'+day+'-crossword',puzzle);
 await write('him','timedPuzzles/'+day+'-crossword',{...puzzle,theme:'changed'},false);
 let g=newTimedGame(puzzle,'her',now);
@@ -62,7 +64,7 @@ for(const type of ['search','crossword']){
  await commit('her',{...newTimedGame(p,'her'),durationMs:999000},{start:true,ok:false});
  const started=await commit('her',newTimedGame(p,'her'),{start:true});
  await commit('her',{...started,durationMs:999000,solved:[0],foundAt:[0]},{ok:false});
- const active={...newTimedGame(p,'her',Date.now()-125000)};
+ const active={...newTimedGame(p,'her',Date.now()-p.durationMs+25000)};
  await write('admin',`timedGames/${p.day}-${type}-her`,active);
  await write('admin',`timedResults/${p.day}-${type}-her`,timedSummary(active));
  const moonDone={...newTimedGame(p,'him',Date.now()-125000),done:true,complete:true,finishedAt:Date.now(),solved:p.entries.map((_,i)=>i),foundAt:p.entries.map((_,i)=>i*1000)};
@@ -75,4 +77,15 @@ for(const type of ['search','crossword']){
  await commit('her',advanceTimedGame(expired,p,{index:null,expectedCount:0}));
  await read('him',`timedGames/${p.day}-${type}-her`);
 }
-console.log('TIMED RULES: server deadlines including hard 2:30/3:00, no forged extension, private routes, no resets, atomic counts, closed ties and scoring pass');
+// All twenty answers can commit, and immutable prefixes remain enforced beyond
+// the tenth entry (where the previous rule's explicit checks stopped).
+const large={...timedPuzzle('2026-11-08','crossword'),opensAt:Date.now()-1000,closesAt:Date.now()+86400000};
+await write('him','timedPuzzles/'+large.day+'-crossword',large);
+let twenty=await commit('her',newTimedGame(large,'her'),{start:true});
+for(let i=0;i<20;i++){
+ const next=advanceTimedGame(twenty,large,{index:i,expectedCount:i});
+ if(i===12){const swapped=[...next.solved];[swapped[10],swapped[11]]=[swapped[11],swapped[10]];await commit('her',{...next,solved:swapped},{ok:false});const foundAt=[...next.foundAt];foundAt[11]++;await commit('her',{...next,foundAt},{ok:false});}
+ twenty=await commit('her',next);
+}
+assert.ok(twenty.complete);assert.equal(twenty.solved.length,20);
+console.log('TIMED RULES: server deadlines including normal 3:00 and hard 2:30/5:00, no forged extension, private routes, no resets, atomic counts, closed ties and scoring pass');

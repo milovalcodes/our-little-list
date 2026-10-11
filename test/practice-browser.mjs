@@ -45,6 +45,12 @@ try{
  await page.selectOption('#practice-picker','49');await page.click('#practice-next');assert.equal(await page.locator('#practice-picker').inputValue(),'0');
  await page.click('[data-practice-level=hard]');await page.waitForFunction(()=>document.querySelector('#practice-picker').value==='50');
  assert.equal(await page.locator('#practice-picker option').count(),50);
+ const hard=practicePuzzle('crossword',50);
+ await page.locator('[data-clue="19"]').click();await page.fill('#practice-answer',hard.entries[19].word);await page.locator('.crossword-answer button').click();
+ await page.reload();await page.waitForSelector('[data-clue="19"].found');
+ const crossing=hard.entries.findIndex((_,i)=>i!==19&&entryCells(hard,i).some(c=>entryCells(hard,19).includes(c)));
+ await page.locator('[data-clue="'+crossing+'"]').click();
+ assert.ok(await page.locator('.crossword-pattern .known').count(),'crossing letters help solve another clue');
  await page.selectOption('#practice-picker','99');await page.click('#practice-next');assert.equal(await page.locator('#practice-picker').inputValue(),'50');
  await page.click('[data-practice-tab=search]');assert.match(page.url(),/#search-hard$/);
  await page.waitForFunction(()=>document.querySelector('#practice-progress').textContent.includes('hard'));

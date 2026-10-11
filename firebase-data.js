@@ -1,7 +1,7 @@
 import { nextWordAttempt, wordSummary } from './word-game.js';
 import { wordForDay } from './daily-words.js';
 import {timedPuzzle} from './daily-puzzles.js';
-import {newTimedGame,advanceTimedGame,timedSummary} from './timed-game.js';
+import {newTimedGame,advanceTimedGame,timedSummary,millis} from './timed-game.js';
 import { firebaseConfig } from './firebase-config.js';
 import { OUTBOX } from './push-config.js';
 import { createDeliveryWake } from './delivery-wake.js';
@@ -261,7 +261,14 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         transaction.set(ref,game);
         transaction.set(doc(named('timedResults'),id),timedSummary(game));
       });
-      const saved=await getDocFromServer(ref);
+      // The committed snapshot often already arrived through our listener.
+      // Reuse it only with resolved timestamps and no pending writes; otherwise
+      // ask the server. This avoids a second network trip on every quick find.
+      let saved;
+      try{const cached=await getDocFromCache(ref),g=cached.exists()?cached.data():null;
+        if(g&&!cached.metadata.hasPendingWrites&&millis(g.startedAt)&&(!g.done||millis(g.finishedAt))&&(options.start||(Number.isInteger(options.index)?g.solved.includes(options.index):g.done)))saved=cached;
+      }catch(_){}
+      if(!saved)saved=await getDocFromServer(ref);
       if(saved.exists()&&saved.data().done)wakeDelivery({activities:true});
       return saved.exists()?{id:saved.id,...saved.data()}:null;
     },

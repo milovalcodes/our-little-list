@@ -1,11 +1,13 @@
 import {CATALOG_VERSION,PUZZLE_THEMES,catalogPool} from './puzzle-catalog.js';
-import {activityWindow} from './activity-clock.js';
+import {activityWindow,activityClock} from './activity-clock.js';
+import {connectedCrossword} from './connected-crossword.js';
 import {puzzleSeason} from './seasonal-puzzles.js';
 import {usesNewEdition,DIFFICULTY_VERSION} from './puzzle-edition.js';
 export const PUZZLE_TYPES=['search','crossword'];
 export const PUZZLE_NAMES={search:'Word Search',crossword:'Mini crossword'};
 export const PUZZLE_LIMIT_MS=120000;
 export const LEAGUE_START_DAY='2026-10-09';
+export const CONNECTED_CROSSWORD_START='2026-10-12';
 export function isHardDay(day){return day.includes('-tie-')||new Date(day+'T12:00:00Z').getUTCDay()===0;}
 export function random(seed){let n=2166136261;for(const c of seed)n=Math.imul(n^c.charCodeAt(0),16777619);return()=>{n+=0x6D2B79F5;let t=Math.imul(n^n>>>15,1|n);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296;};}
 function shuffled(items,rng){const result=[...items];for(let i=result.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;}
@@ -65,13 +67,14 @@ export function timedPuzzle(day,type,now=Date.now()){
  const season=puzzleSeason(day,now);
  const themes=PUZZLE_THEMES.filter(t=>t.difficulty===difficulty&&t.season===season&&(modern?t.edition===DIFFICULTY_VERSION:!t.edition)),theme=themes[Math.floor(rng()*themes.length)];
  const bank=catalogPool(difficulty,theme.id).map(({word,clue,id})=>({word,clue,id}));
- // Keep the two-minute round compact; use stronger clues, not more answers.
- const layout=modern
+ const expanded=type==='crossword'&&(day.includes('-tie-')?activityClock(new Date(now)).day:day)>=CONNECTED_CROSSWORD_START;
+ // Only future crosswords change. Already-published rounds retain their layout.
+ const layout=expanded?connectedCrossword(bank,hard?21:15,random(day+':crossword:v5'),hard?20:10):modern
   ?(type==='search'?searchGrid(bank,hard?12:11,rng,true):crosswordGrid(bank,hard?12:11,rng,hard?8:6,80))
   :(type==='search'?searchGrid(bank,hard?12:10,rng,hard):crosswordGrid(bank,hard?11:9,rng,hard?8:6));
  const window=day.includes('-tie-')?{opensAt:now,closesAt:4102444800000}:activityWindow(day);
- const durationMs=hard?(type==='search'?150000:180000):120000;
- return {day,type,hard,difficulty,theme:theme.label,themeId:theme.id,catalogVersion:modern?DIFFICULTY_VERSION:CATALOG_VERSION,...layout,...window,...((day.includes('-tie-')?new Date(now).toISOString().slice(0,10):day)>='2026-10-11'?{durationMs}:{})};
+ const durationMs=expanded?(hard?300000:180000):hard?(type==='search'?150000:180000):120000;
+ return {day,type,hard,difficulty,theme:theme.label,themeId:theme.id,catalogVersion:expanded?5:modern?DIFFICULTY_VERSION:CATALOG_VERSION,...layout,...window,...((day.includes('-tie-')?activityClock(new Date(now)).day:day)>='2026-10-11'?{durationMs}:{})};
 }
 export function entryCells(puzzle,index){const e=puzzle.entries[index];return e?[...e.word].map((_,i)=>e.start+i*e.step):[];}
 export function selectedSearchWord(puzzle,start,end){

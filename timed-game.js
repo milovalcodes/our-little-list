@@ -1,6 +1,6 @@
 import {PUZZLE_LIMIT_MS,PUZZLE_TYPES,isHardDay} from './daily-puzzles.js';
 export function millis(value){return typeof value==='number'?value:value?.toMillis?.()??(value?.seconds!=null?value.seconds*1000+Math.floor((value.nanoseconds||0)/1e6):0);}
-export function timedLimit(type,round={}){return PUZZLE_TYPES.includes(type)?([120000,150000,180000].includes(round?.durationMs)?round.durationMs:PUZZLE_LIMIT_MS):0;}
+export function timedLimit(type,round={}){return PUZZLE_TYPES.includes(type)?([120000,150000,180000,300000].includes(round?.durationMs)?round.durationMs:PUZZLE_LIMIT_MS):0;}
 export function timedPoints(game,now=Date.now()){
  if(!timedOver(game,now))return 0;
  const count=game.count??game.solved?.length??0,multiplier=isHardDay(game.day)?2:1;

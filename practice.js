@@ -13,6 +13,7 @@ const store=practiceStore(HOUSEHOLD_ID+':'+viewer);
 const host=document.getElementById('practice-game'),picker=document.getElementById('practice-picker');
 host.tabIndex=-1;
 let type,index,puzzle,state,selected=0,message='',tapStart=null,drag=null,celebration,flashTimer,difficulty='normal';
+let renderedClue=-1;
 const isDone=()=>type==='word'?state.guesses.includes(puzzle.word.toLowerCase())||state.guesses.length>=5:state.solved.length===puzzle.entries.length;
 function save(){state.selected=selected;store.save(type,index,state);document.getElementById('practice-warning').textContent=store.warning;}
 function progress(){
@@ -87,16 +88,22 @@ function wordKey(key){
  feedback('');save();
 }
 function renderBoard(){
+ const previousScroll=host.querySelector('.puzzle-scroll')?.scrollLeft||0;
  const done=isDone(),solved=new Set(state.solved),known=new Set(state.solved.flatMap(i=>entryCells(puzzle,i))),active=new Set(type==='crossword'?entryCells(puzzle,selected):[]);
  const numbers=new Map([...new Set(puzzle.entries.map(e=>e.start))].sort((a,b)=>a-b).map((p,i)=>[p,i+1]));
- host.innerHTML=`<div class="timed-toolbar"><span>A little of everything</span><strong>${solved.size} / ${puzzle.entries.length}</strong></div><div class="puzzle-grid ${type==='search'?'search-grid':'crossword-grid'}" style="--grid-size:${puzzle.size}" aria-label="Practice puzzle grid">${[...puzzle.grid].map((letter,i)=>{
+ host.innerHTML=`<div class="timed-toolbar"><span>A little of everything</span><strong>${solved.size} / ${puzzle.entries.length}</strong></div><div class="puzzle-scroll"><div class="puzzle-grid ${type==='search'?'search-grid':'crossword-grid'}" style="--grid-size:${puzzle.size}" aria-label="Practice puzzle grid">${[...puzzle.grid].map((letter,i)=>{
  if(letter==='#')return '<span class="puzzle-wall" aria-hidden="true"></span>';
  const visible=type==='search'||known.has(i);
  return `<button type="button" class="puzzle-cell ${known.has(i)?'found':''} ${active.has(i)?'chosen':''}" data-cell="${i}" aria-label="${visible?letter:'empty'}, row ${Math.floor(i/puzzle.size)+1}, column ${i%puzzle.size+1}" tabindex="${i===puzzle.grid.search(/[A-Z]/)?0:-1}">${type==='crossword'&&numbers.has(i)?`<small>${numbers.get(i)}</small>`:''}<span>${visible?letter:''}</span></button>`;
- }).join('')}</div>${type==='search'?`<div class="search-words">${puzzle.entries.map((e,i)=>`<span class="${solved.has(i)?'found':''}">${e.word}</span>`).join('')}</div><p class="practice-caption">Drag across a word, or tap its first and last letter.</p>`:`
- ${!done?`<form class="crossword-answer"><label for="practice-answer">${numbers.get(puzzle.entries[selected].start)} ${puzzle.entries[selected].step===1?'across':'down'} · ${esc(puzzle.entries[selected].clue)} (${puzzle.entries[selected].word.length})</label><div><input id="practice-answer" maxlength="${puzzle.entries[selected].word.length}" value="${esc(state.draft)}" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Answer to selected clue" ${solved.has(selected)?'disabled':''}><button type="submit" ${solved.has(selected)?'disabled':''}>check</button></div></form>`:''}
+ }).join('')}</div></div>${type==='search'?`<div class="search-words">${puzzle.entries.map((e,i)=>`<span class="${solved.has(i)?'found':''}">${e.word}</span>`).join('')}</div><p class="practice-caption">Drag across a word, or tap its first and last letter.</p>`:`
+ ${!done?`<form class="crossword-answer"><label for="practice-answer">${numbers.get(puzzle.entries[selected].start)} ${puzzle.entries[selected].step===1?'across':'down'} · ${esc(puzzle.entries[selected].clue)} (${puzzle.entries[selected].word.length})</label><div class="crossword-pattern" aria-label="Letters revealed by crossings">${entryCells(puzzle,selected).map(p=>`<span class="${known.has(p)?'known':''}">${known.has(p)?puzzle.grid[p]:'·'}</span>`).join('')}</div><div><input id="practice-answer" maxlength="${puzzle.entries[selected].word.length}" value="${esc(state.draft)}" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Answer to selected clue" ${solved.has(selected)?'disabled':''}><button type="submit" ${solved.has(selected)?'disabled':''}>check</button></div></form>`:''}
  <div class="crossword-clues">${puzzle.entries.map((e,i)=>`<button type="button" data-clue="${i}" aria-pressed="${i===selected}" class="${solved.has(i)?'found':''}"><b>${numbers.get(e.start)}${e.step===1?'→':'↓'}</b> ${esc(e.clue)} <small>(${e.word.length})${solved.has(i)?' ✓':''}</small></button>`).join('')}</div>`}
  <p class="timed-feedback ${done?'practice-done':''}" data-feedback role="status">${esc(done?'all found ♡':message)}</p>`;
+ const pane=host.querySelector('.puzzle-scroll');
+ if(pane&&type==='crossword'){
+  const cell=host.querySelector(`[data-cell="${puzzle.entries[selected].start}"]`);
+  pane.scrollLeft=renderedClue!==selected&&cell?cell.getBoundingClientRect().left-pane.getBoundingClientRect().left-pane.clientWidth/2:previousScroll;renderedClue=selected;
+ }
 }
 function solve(i){
  if(isDone())return;
@@ -137,8 +144,9 @@ host.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;c
 host.addEventListener('pointerup',e=>{
  if(!drag||e.pointerId!==drag.id)return;
  const start=drag.start,end=cellAt(e);drag=null;
+ const grid=host.querySelector('.puzzle-grid');if(grid?.hasPointerCapture?.(e.pointerId))grid.releasePointerCapture(e.pointerId);
  if(end===null){cancelTrace();return;}
- if(start===end){tapStart=start;trace(start,start);}else search(start,end);
+ if(start===end){if(tapStart===start)cancelTrace();else{tapStart=start;trace(start,start);}}else search(start,end);
 });
 host.addEventListener('pointercancel',cancelTrace);
 host.addEventListener('click',e=>{
