@@ -46,7 +46,7 @@ else{
   const replacement=replacements.find(([path])=>d.name===root+'/'+path);
   return replacement?{update:{name:d.name,fields:fields(replacement[1])},currentDocument:{updateTime:d.updateTime}}:{delete:d.name,currentDocument:{updateTime:d.updateTime}};
  });
- assert.ok(writes.length<450);await client.post('/'+db+':commit',{body:{writes}});
+ assert.ok(writes.length<450);await client.post('/'+db+':commit',{writes});
  const after=await snapshot();
  assert.equal(after.question?.updateTime,backup.question?.updateTime,'Question must remain untouched');
  assert.equal(after.documents.filter(d=>/\/(wordGames|wordResults|timedGames|timedResults)\//.test(d.name)).length,0);
