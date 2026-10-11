@@ -78,7 +78,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  }
  async function play(options){
   if(busy||disposed||closed)return;
-  if(!navigator.onLine){message='Reconnect to save. The clock keeps going.';render();return;}
+  if(!navigator.onLine){pendingSearch.clear();message='Reconnect to save. The clock keeps going.';render();return;}
   const resumeAnswer=type==='crossword'&&Boolean(document.activeElement?.closest('.crossword-answer'));
   busy=true;message='';const current=++action;render();let timer;
   try{

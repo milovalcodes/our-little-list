@@ -1,4 +1,5 @@
 const CACHE = 'our-little-list-v111';
+// v111 build 2: clear queued search highlights when connectivity drops.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
