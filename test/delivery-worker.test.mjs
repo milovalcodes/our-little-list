@@ -89,6 +89,11 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
       return receipts.includes(id)?Response.json({name:url,fields:{acceptedAt:{integerValue:String(Date.now())}}}):new Response('',{status:404});
     }
     if(url.includes('/deliveryLocks?documentId=sent-'))return Response.json({});
+    if(/\/pushSubs\/(her|him)$/.test(url)&&options.method!=='DELETE'){
+      const person=url.split('/pushSubs/')[1],s=subs[person]?.subscription||subs[person];
+      return s?Response.json({name:url,updateTime:'2026-10-09T00:00:00Z',fields:{subscription:{mapValue:{fields:{endpoint:{stringValue:s.endpoint}}}}}}):new Response('',{status:404});
+    }
+    if(url.endsWith(':commit')&&JSON.parse(options.body).writes?.[0]?.delete){deleted.push(JSON.parse(options.body).writes[0].delete.split('/documents/')[1]);return Response.json({});}
     if (url.includes('/pushSubs?')) return Response.json({ documents: Object.entries(subs).map(([id, raw]) => {
       const s = raw.subscription || raw;
       const preferences = raw.preferences;
@@ -224,7 +229,7 @@ const now = Date.now();
 }
 
 {
-  harness({outbox:[]});
+  harness({outbox:[{id:'CLOCK',to:'her',kind:'note',sendAt:now,createdAt:now}]});
   const fetch=globalThis.fetch,clock=Date.now;
   let current=now,cutoff=0;
   Date.now=()=>current;
@@ -332,8 +337,9 @@ const now = Date.now();
   const r = await deliver(ENV);
   assert.equal(r.sent, 0);
   assert.equal(h.pushes.length, 0);
-  assert.equal(r.subscribed, 1);
-  console.log(' ok  an idle minute sends nothing and reports who is subscribed');
+  assert.equal(r.checked, true);
+  assert.equal(r.subscribed, undefined, 'idle checks skip subscription and lease work');
+  console.log(' ok  an idle minute sends nothing and skips delivery lease work');
 }
 
 // 10. A muted category is dropped before Web Push. Receiving a push and then
@@ -515,5 +521,54 @@ for(const mode of ['connect-four','dots-boxes']){
   const h=harness({game,outbox:[message,{...message,id:'STALE',ref:`${mode}/new-round/6/open`},{...message,id:'OTHER',ref:'sun-moon/new-round/7/open'}]});
   const result=await deliver(ENV);assert.equal(result.sent,0);assert.equal(result.dropped,3);assert.equal(h.pushes.length,0);
   console.log(` ok  ${mode} retired pings never reach a phone`);
+}
+// A blocked housekeeping query must not hold the note-delivery lease.
+{
+ const h=harness({outbox:[{id:'QUICK',kind:'note',to:'her',sendAt:Date.now(),createdAt:Date.now()}]});
+ const fetch=globalThis.fetch;let release,entered,locks=0,delivered=false;
+ const gate=new Promise(r=>release=r),started=new Promise(r=>entered=r);
+ globalThis.fetch=async(url,options={})=>{
+  if(String(url).includes('/deliveryLocks?documentId=active'))locks++;
+  if(String(url).endsWith(':runQuery')){
+   const collection=JSON.parse(options.body).structuredQuery.from[0].collectionId;
+   if(collection==='items'){entered();await gate;return Response.json([]);}
+   if(delivered&&collection==='outbox')return Response.json([]);
+  }
+  return fetch(url,options);
+ };
+ const slow=realDeliver(ENV,{scheduleQuestions:false,scheduleReminders:true});await started;
+ assert.equal(locks,0,'scheduler has not acquired the sender lease');
+ try{assert.equal((await realDeliver(ENV,{scheduleQuestions:false,scheduleReminders:false})).sent,1);delivered=true;assert.equal(h.pushes.length,1);}
+ finally{release();await slow;}
+ console.log(' ok  notes send while housekeeping is blocked, without sharing its lease');
+}
+// The second phone can send before a slow first phone finishes; failure leaves
+// only the failed row for the backstop, not a broken whole queue.
+{
+ const h=harness({subs:{her:SUB,him:{...SUB,endpoint:'https://fcm.googleapis.com/fcm/send/HIM-DEVICE'}},outbox:[
+  {id:'SLOW',to:'her',kind:'note',sendAt:Date.now(),createdAt:Date.now()},
+  {id:'FAST',to:'him',kind:'note',sendAt:Date.now(),createdAt:Date.now()}
+ ]});
+ const fetch=globalThis.fetch;let release,fast,started;
+ const gate=new Promise(r=>release=r),second=new Promise(r=>fast=r),first=new Promise(r=>started=r);
+ globalThis.fetch=async(url,options)=>{
+  if(String(url).endsWith('/HER-DEVICE')){started();await gate;throw Error('provider unavailable');}
+  if(String(url).endsWith('/HIM-DEVICE'))fast();
+  return fetch(url,options);
+ };
+ const work=realDeliver(ENV,{scheduleQuestions:false,scheduleReminders:false});await first;
+ let timer;try{await Promise.race([second,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('other phone was blocked')),1000))]);}
+ finally{clearTimeout(timer);release();}
+ const result=await work;assert.equal(result.sent,1);assert.equal(result.left,1);
+ assert.ok(h.moved.some(r=>r.url.endsWith('/outbox/SLOW?updateMask.fieldPaths=sendAt&currentDocument.exists=true')));
+ console.log(' ok  slow/failed phone delivery does not block the other phone');
+}
+// A dead old endpoint must not delete a new registration made mid-send.
+{
+ const h=harness({outbox:[{id:'ROTATED',to:'her',kind:'note',sendAt:Date.now(),createdAt:Date.now()}],pushStatus:410});
+ const fetch=globalThis.fetch;
+ globalThis.fetch=async(url,options)=>String(url).endsWith('/pushSubs/her')?Response.json({name:url,updateTime:'new',fields:{subscription:{mapValue:{fields:{endpoint:{stringValue:'https://fcm.googleapis.com/new-phone'}}}}}}):fetch(url,options);
+ assert.equal((await deliver(ENV)).left,1);assert.ok(!h.deleted.includes('households/HOUSE/pushSubs/her'));
+ console.log(' ok  expired endpoint cleanup preserves a concurrently registered phone');
 }
 console.log('\nDELIVERY WORKER CLEAN');

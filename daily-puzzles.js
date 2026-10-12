@@ -61,7 +61,7 @@ export function crosswordGrid(bank,size,rng,target,attempts=24){
  if(best.entries.length<4)throw Error('Could not make a connected crossword');
  return best;
 }
-export function timedPuzzle(day,type,now=Date.now()){
+export function timedPuzzle(day,type,now=Date.now(),layoutFor){
  if(!PUZZLE_TYPES.includes(type))throw Error('Unknown puzzle');
  const modern=usesNewEdition(day,now),hard=isHardDay(day),difficulty=hard?'hard':'normal',rng=random(day+':'+type+(day==='2026-10-11'?':v110-replacement':modern?':v4':':v1'));
  const season=puzzleSeason(day,now);
@@ -69,7 +69,7 @@ export function timedPuzzle(day,type,now=Date.now()){
  const bank=catalogPool(difficulty,theme.id).map(({word,clue,id})=>({word,clue,id}));
  const expanded=type==='crossword'&&(day.includes('-tie-')?activityClock(new Date(now)).day:day)>=CONNECTED_CROSSWORD_START;
  // Only future crosswords change. Already-published rounds retain their layout.
- const layout=expanded?connectedCrossword(bank,hard?21:15,random(day+':crossword:v5'),hard?20:10):modern
+ const layout=expanded?(layoutFor?.({day,themeId:theme.id,hard})||connectedCrossword(bank,hard?21:15,random(day+':crossword:v5'),hard?20:10)):modern
   ?(type==='search'?searchGrid(bank,hard?12:11,rng,true):crosswordGrid(bank,hard?12:11,rng,hard?8:6,80))
   :(type==='search'?searchGrid(bank,hard?12:10,rng,hard):crosswordGrid(bank,hard?11:9,rng,hard?8:6));
  const window=day.includes('-tie-')?{opensAt:now,closesAt:4102444800000}:activityWindow(day);

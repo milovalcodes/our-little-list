@@ -10,7 +10,7 @@
     "test:visual": "node test/diary-visual.mjs && node test/seasonal-visual.mjs",
     "test:immediate": "node test/immediate-delivery.test.mjs",
     "test:touch": "node test/touch-polish-browser.mjs",
-    "test": "pnpm run check:syntax && pnpm run test:unit && pnpm run test:immediate"
+    "test": "pnpm run check:syntax && node test/clock-budget.test.mjs && node test/worker-puzzles.test.mjs && pnpm run test:unit && pnpm run test:immediate"
   },
   "devDependencies": {
     "http_ece": "1.2.1",

@@ -1,7 +1,8 @@
 import {activityClock,activityWindow} from '../../activity-clock.js';
 import {weekForDay,shiftDay} from '../../word-scores.js';
 import {wordForTie} from '../../daily-words.js';
-import {timedPuzzle,PUZZLE_TYPES,LEAGUE_START_DAY} from '../../daily-puzzles.js';
+import {PUZZLE_TYPES,LEAGUE_START_DAY} from '../../daily-puzzles.js';
+import {workerTimedPuzzle as timedPuzzle} from './puzzles.js';
 import {timedOver} from '../../timed-game.js';
 import {leagueWeek,trioProgress,LEAGUE_WEEK} from '../../league-scores.js';
 

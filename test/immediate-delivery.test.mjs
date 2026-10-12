@@ -93,6 +93,21 @@ try{
 }
 
 const data=readFileSync(new URL('../firebase-data.js',import.meta.url),'utf8');
+// Firestore contention is not evidence of an existing lock/event marker.
+{
+ const {createClient}=await import('../worker/src/firestore.js');
+ const db=createClient({projectId:'demo-test',idToken:token});
+ for(const method of ['create','createMany']){
+  let attempts=0;
+  globalThis.fetch=async()=>++attempts===1?Response.json({error:{status:'ABORTED'}},{status:409}):Response.json({});
+  try{assert.equal(await(method==='create'?db.create('locks/a',{a:1}):db.createMany([{path:'events/a',fields:{a:1}}])),true);assert.equal(attempts,2);}
+  finally{globalThis.fetch=realFetch;}
+ }
+ globalThis.fetch=async()=>Response.json({error:{status:'ABORTED'}},{status:409});
+ try{await assert.rejects(db.create('locks/a',{a:1}),/contention/);}finally{globalThis.fetch=realFetch;}
+ let creates=0;
+ assert.ok(await acquireDeliveryLock({create:async()=>++creates===2,getVersioned:async()=>null},'released',1000),'lease released between create and read can be acquired without waiting a minute');
+}
 assert.match(data,/work\.then\(\(\)=>\{if\(Number\(item.sendAt\)<=Date.now\(\)\)wakeDelivery\(\);\}/,'wake follows Firestore confirmation');
 assert.match(data,/if\(saved.done\)wakeDelivery\(\{activities:true\}\)/);
 assert.match(data,/work\.then\(\(\)=>wakeDelivery\(\{activities:true\}\),\(\)=>\{\}\)/);

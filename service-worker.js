@@ -1,5 +1,5 @@
-const CACHE = 'our-little-list-v111';
-// v111 build 2: clear queued search highlights when connectivity drops.
+const CACHE = 'our-little-list-v112';
+// v112: lower-cost clocks and isolated, CPU-safe notification delivery.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE

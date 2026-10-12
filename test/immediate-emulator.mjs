@@ -21,7 +21,7 @@ globalThis.fetch=async(url,options={})=>{
   assert.ok(target.startsWith(`https://firestore.googleapis.com/v1/projects/${project}/`),'no production backend access: '+target);
   if(failCleanup&&options.method==='DELETE'&&target.endsWith('/outbox/cleanup')){failCleanup=false;return new Response('test cleanup failure',{status:503});}
   const response=await original(target.replace('https://firestore.googleapis.com','http://'+host),options);
-  if(target.includes('currentDocument.updateTime')&&!response.ok)conditionalFailures.push(await response.clone().text());
+  if(target.endsWith(':commit')&&!response.ok)conditionalFailures.push(await response.clone().text());
   return response;
 };
 try{
@@ -49,9 +49,11 @@ try{
   assert.equal(await db.get(base+'/outbox/race'),null);
   assert.ok(await db.get(base+'/deliveryLocks/sent-race'));
   await queue('cleanup');failCleanup=true;
-  await assert.rejects(deliver(env,{scheduleQuestions:false}),/503/);
+  assert.equal((await deliver(env,{scheduleQuestions:false})).left,1,'failed cleanup is isolated for recovery');
   assert.equal(pushes,2);assert.ok(await db.get(base+'/outbox/cleanup'));
-  await deliver(env,{scheduleQuestions:false});
+  const realNow=Date.now;
+  Date.now=()=>realNow()+61000;
+  try{await deliver(env,{scheduleQuestions:false});}finally{Date.now=realNow;}
   assert.equal(pushes,2,'saved receipt prevents resend after actual failed DELETE');
   assert.equal(await db.get(base+'/outbox/cleanup'),null);
   await queue('distinct-same-text');await deliver(env,{scheduleQuestions:false});

@@ -4,7 +4,9 @@ export async function acquireDeliveryLock(db,path,now,staleMs=120000){
   const owner=crypto.randomUUID(),fields={acquiredAt:now,owner};
   if(await db.create(path,fields))return {owner,expiresAt:now+staleMs};
   const current=await db.getVersioned(path);
-  if(!current||now-Number(current.record.acquiredAt||0)<staleMs)return null;
+  // Another sender can finish between our failed create and this read.
+  if(!current)return await db.create(path,fields)?{owner,expiresAt:now+staleMs}:null;
+  if(now-Number(current.record.acquiredAt||0)<staleMs)return null;
   if(!await db.removeIfUnchanged(path,current.updateTime))return null;
   return await db.create(path,fields)?{owner,expiresAt:now+staleMs}:null;
 }

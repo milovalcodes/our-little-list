@@ -58,6 +58,10 @@ contain only timestamps; retain them while a corresponding outbox row may exist.
 Provider acceptance followed by a crash before saving a receipt is an ambiguous
 network failure, so this is not a claim of distributed exactly-once delivery.
 Stable notification tags and event IDs also prevent ordinary duplicate UI alerts.
+Housekeeping runs before acquiring the sender lease, and phones use independent
+send lanes. A failed row stays queued for recovery without blocking the other
+recipient. Expired endpoint cleanup uses a version-checked delete so it cannot
+erase a concurrent registration. ABORTED writes retry with bounded backoff.
 Offline writes wake only after server acknowledgement; a failed wake leaves the
 queue intact for the backstop. Scheduled reminders and daily openings still use
 the minute checker. Normal action delivery targets seconds, not guaranteed time.
@@ -72,6 +76,17 @@ reactions, memories and routine nudges are checked before sending. Sign-out
 removes only the current browser endpoint, with a Firestore transaction to
 preserve a concurrent registration. Keep observability explicitly enabled in
 Wrangler ([Cloudflare logging configuration](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)).
+
+The Worker uses precompiled connected-crossword layouts through October 2028
+instead of running the dense generator inside its request CPU allowance. Daily
+layouts match the normal generator exactly; new hard tie sets use a bank of 512
+compiled boards. Existing saved sets remain immutable. After changing puzzle
+banks/generation, rebuild with `node scripts/compile-worker-crosswords.mjs --write`
+and run `node test/worker-puzzles.test.mjs`; it checks the source fingerprint and
+fails when the deployment horizon is below six months. Compile dates must be
+extended before then. Timezone formatters are reused without changing DST rules.
+`node scripts/delivery-health.mjs` reads registration, queue and current-round
+metadata without sending a test notification or printing private content.
 
 Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 

@@ -8,7 +8,8 @@
 import { settleWordWeeks } from './word-week.js';
 import {settleActivityWeeks,notifyActivityResults} from './activity-week.js';
 import {LEAGUE_WEEK} from '../../league-scores.js';
-import {timedPuzzle,PUZZLE_TYPES,LEAGUE_START_DAY} from '../../daily-puzzles.js';
+import {PUZZLE_TYPES,LEAGUE_START_DAY} from '../../daily-puzzles.js';
+import {workerTimedPuzzle as timedPuzzle} from './puzzles.js';
 import {timedOver} from '../../timed-game.js';
 import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
@@ -51,28 +52,30 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
   const db = createClient({ projectId, idToken });
   const household = `households/${householdId}`;
   const lockPath = `${household}/deliveryLocks/active`;
-  const lockAt = Date.now();
+  let now = Date.now();
+  // A failed scheduler must not stop ordinary notes going out. Independent
+  // schedulers fetch concurrently; settlement stays before result pings so a
+  // closed tie never queues another turn. Atomic create-only markers let these
+  // writers overlap without holding the sender lease during slow checks.
+  await Promise.all([
+    ...(scheduleReminders?[scheduleListReminders(db,household,now).catch(problem=>console.error(`list reminders skipped: ${problem?.message||problem}`))]:[]),
+    ...(scheduleQuestions?[
+      ensureQuestionOfDay(db,household,now).catch(problem=>console.error(`daily question skipped: ${problem?.message||problem}`)),
+      (async()=>{await settleWordWeeks(db,household,now,{before:LEAGUE_WEEK});await settleActivityWeeks(db,household,now);await notifyActivityResults(db,household,now);})().catch(problem=>console.error(`weekly word skipped: ${problem?.message||problem}`))
+    ]:[])
+  ]);
+  const schedulingMs=Date.now()-now;
 
-  const lease=await acquireDeliveryLock(db,lockPath,lockAt,LOCK_STALE_MS);
-  if (!lease) {
-    return { checked: false, skipped: 'already-running' };
-  }
+  // Most minutes have nothing to send. Don't spend a lease, subscription read
+  // and conditional release on an empty queue (or leave a lease if an idle
+  // invocation runs out of CPU). Active senders requery after acquiring it.
+  if(!(await db.dueFrom(`${household}/outbox`,'sendAt',Date.now()+GRACE_MS,1)).length)
+    return {checked:true,sent:0,schedulingMs,durationMs:Date.now()-startedAt};
+
+  const lease=await acquireDeliveryLock(db,lockPath,Date.now(),LOCK_STALE_MS);
+  if (!lease) return { checked:false, skipped:'already-running', schedulingMs };
 
   try {
-
-    let now = Date.now();
-    // The daily question is a nicety; a failure there (a 5xx, or rules not
-    // deployed yet) must not stop reminders, asks and notes going out.
-    // Independent schedulers can fetch concurrently. Crown settlement stays
-    // before activity-result pings, so a closed tie never queues another turn.
-    await Promise.all([
-      ...(scheduleReminders?[scheduleListReminders(db,household,now).catch(problem=>console.error(`list reminders skipped: ${problem?.message||problem}`))]:[]),
-      ...(scheduleQuestions?[
-        ensureQuestionOfDay(db,household,now).catch(problem=>console.error(`daily question skipped: ${problem?.message||problem}`)),
-        (async()=>{await settleWordWeeks(db,household,now,{before:LEAGUE_WEEK});await settleActivityWeeks(db,household,now);await notifyActivityResults(db,household,now);})().catch(problem=>console.error(`weekly word skipped: ${problem?.message||problem}`))
-      ]:[])
-    ]);
-    const schedulingMs=Date.now()-now;
 
     const subscriptions = {};
     for (const record of await db.list(`${household}/pushSubs`)) {
@@ -94,10 +97,14 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
     let held = 0;
     const statusCache = new Map();
 
-    for (const message of due) {
+    // Independent phones get independent lanes. A slow provider request for
+    // one recipient must not make the other wait behind its ten-second timeout.
+    await Promise.all([due.filter(m=>m.to==='her'),due.filter(m=>m.to!=='her')].map(async lane=>{
+    for (const [position,message] of lane.entries()) {
       // Leave enough time for the bounded push request before a crashed-pass
       // lease becomes reclaimable. Never keep sending on an expired lease.
-      if(Date.now()>lease.expiresAt-30000){left+=1;break;}
+      if(Date.now()>lease.expiresAt-30000){left+=lane.length-position;break;}
+      try {
       const receiptPath=`${household}/deliveryLocks/sent-${message.id}`;
       if(await db.get(receiptPath)){
         await db.remove(message.path);dropped+=1;continue;
@@ -238,7 +245,7 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
       });
 
       const pushStartedAt = Date.now();
-      if(pushStartedAt>lease.expiresAt-30000){left+=1;break;}
+      if(pushStartedAt>lease.expiresAt-30000){left+=lane.length-position;break;}
       const result = await sendNotification(target.subscription, payload, vapid, {
         ttl: 86400,
         // These are opted-in, visible personal notifications, not background
@@ -265,14 +272,26 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
       // The browser threw the subscription away. Clear it so that phone
       // re-registers next time it opens the site.
       console.log(`subscription for ${message.to} is gone (${result.status}); clearing it`);
-        await db.remove(`${household}/pushSubs/${message.to}`);
-        delete subscriptions[message.to];
+        const path=`${household}/pushSubs/${message.to}`,fresh=await db.getVersioned(path);
+        if(fresh?.record.subscription?.endpoint===target.subscription.endpoint){
+          if(await db.removeIfUnchanged(path,fresh.updateTime))delete subscriptions[message.to];
+        }else if(fresh?.record.subscription?.endpoint)subscriptions[message.to]=fresh.record;
         left += 1;
       } else {
-        console.error(`could not send ${message.id}: ${result.status} ${result.text.slice(0, 200)}`);
+        console.error(JSON.stringify({event:'push-retry',kind:message.kind||'note',status:result.status}));
+        await db.moveSendAt(message.path,Date.now()+60000);
         left += 1;
       }
+      } catch (_) {
+        // One failed source read, push request or cleanup must not block the
+        // other phone. Keep the row for recovery; an acceptance receipt still
+        // prevents a resend if only cleanup failed. Never log private bodies.
+        left += 1;
+        console.error(JSON.stringify({event:'delivery-row-retry',kind:message.kind||'note'}));
+        await db.moveSendAt(message.path,Date.now()+60000).catch(()=>{});
+      }
     }
+    }));
 
     return { checked: true, sent, left, dropped, muted, held, subscribed: Object.keys(subscriptions).length, schedulingMs, durationMs:Date.now()-startedAt };
   } finally {

@@ -1,8 +1,10 @@
 // The two phones share a calendar even when one is travelling.
 export const LIST_ZONE = 'America/New_York';
 export const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+let dayFormat,instantFormat;
 export function listDay(now = Date.now()) {
-  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone:LIST_ZONE, year:'numeric',month:'2-digit',day:'2-digit' }).formatToParts(new Date(now)).map(x=>[x.type,x.value]));
+  dayFormat??=new Intl.DateTimeFormat('en-US', { timeZone:LIST_ZONE, year:'numeric',month:'2-digit',day:'2-digit' });
+  const p = Object.fromEntries(dayFormat.formatToParts(new Date(now)).map(x=>[x.type,x.value]));
   return `${p.year}-${p.month}-${p.day}`;
 }
 export function isRoutine(item) { return Array.isArray(item?.routineDays) && item.routineDays.length > 0; }
@@ -17,9 +19,9 @@ export function listInstant(day, time) {
   const target = Date.parse(`${day}T${time}:00Z`);
   if (!Number.isFinite(target)||new Date(target).toISOString().slice(0,10)!==day) return 0;
   let instant = target;
-  const format = new Intl.DateTimeFormat('sv-SE',{timeZone:LIST_ZONE,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+  instantFormat??=new Intl.DateTimeFormat('sv-SE',{timeZone:LIST_ZONE,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
   for(let i=0;i<4;i++) {
-    const wall = format.format(new Date(instant)).replace(' ','T');
+    const wall = instantFormat.format(new Date(instant)).replace(' ','T');
     const delta = target - Date.parse(wall+'Z');
     if (!delta) return instant;
     instant += delta;

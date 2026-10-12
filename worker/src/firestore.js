@@ -24,6 +24,23 @@ export function createClient({ projectId, idToken }) {
   // Batch writes name documents by resource name, without the https host.
   const resourceRoot = `projects/${projectId}/databases/(default)/documents`;
   const headers = { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' };
+  const lists=new Map();
+  const invalidate=path=>lists.delete(path.split('/').slice(0,-1).join('/'));
+
+  async function createCall(url,options) {
+    for(let attempt=0;;attempt++) {
+      const response=await fetch(url,{...options,headers,signal:AbortSignal.timeout(10000)});
+      const text=await response.text();
+      // ABORTED also uses HTTP 409. It is contention, not ALREADY_EXISTS;
+      // treating it as an existing lock can leave no sender owning the queue.
+      if(!response.ok&&text.includes('ABORTED')&&attempt<3){
+        await new Promise(resolve=>setTimeout(resolve,50*(attempt+1)));
+        continue;
+      }
+      if(!response.ok&&text.includes('ABORTED'))throw Error('firestore contention retry exhausted');
+      return {response,text};
+    }
+  }
 
   async function call(path, options = {}) {
     const response = await fetch(path.startsWith('http') ? path : `${root}${path}`, { ...options, headers, signal:AbortSignal.timeout(10000) });
@@ -36,6 +53,8 @@ export function createClient({ projectId, idToken }) {
   return {
     root,
     async list(collectionPath) {
+      if(lists.has(collectionPath))return lists.get(collectionPath);
+      const pending=(async()=>{
       const records=[];let token='';
       do {
         const payload=await call(`/${collectionPath}?pageSize=300${token?'&pageToken='+encodeURIComponent(token):''}`);
@@ -43,6 +62,9 @@ export function createClient({ projectId, idToken }) {
         records.push(...(payload.documents||[]).map(readDocument));token=payload.nextPageToken||'';
       }while(token);
       return records;
+      })();
+      lists.set(collectionPath,pending);
+      try{return await pending;}catch(error){if(lists.get(collectionPath)===pending)lists.delete(collectionPath);throw error;}
     },
     async get(documentPath) {
       const payload = await call(`/${documentPath}`);
@@ -58,6 +80,7 @@ export function createClient({ projectId, idToken }) {
         body:JSON.stringify({writes:[{delete:`${resourceRoot}/${documentPath}`,currentDocument:{updateTime}}]})});
       if([404,409,412].includes(response.status))return false;
       if(!response.ok){const text=await response.text();if(text.includes('FAILED_PRECONDITION'))return false;throw new Error(`conditional delete failed: ${response.status}`);}
+      invalidate(documentPath);
       return true;
     },
     async withReminders(collectionPath) {
@@ -71,13 +94,11 @@ export function createClient({ projectId, idToken }) {
       const parts = documentPath.split('/');
       const documentId = parts.pop();
       const collectionPath = parts.join('/');
-      const response = await fetch(`${root}/${collectionPath}?documentId=${encodeURIComponent(documentId)}`, {
+      const {response,text} = await createCall(`${root}/${collectionPath}?documentId=${encodeURIComponent(documentId)}`, {
         method: 'POST',
-        signal: AbortSignal.timeout(10000),
-        headers,
         body: JSON.stringify({ fields: writeMap(fields) })
       });
-      const text = await response.text();
+      invalidate(documentPath);
       // Firestore answers 409 for an existing document id, but a 400 carrying
       // ALREADY_EXISTS means the same thing. Treating that as a hard failure
       // would throw out of the whole delivery pass and send nothing at all.
@@ -94,10 +115,10 @@ export function createClient({ projectId, idToken }) {
         update: { name: `${resourceRoot}/${path}`, fields: writeMap(fields) },
         currentDocument: { exists: false }
       }));
-      const response = await fetch(`${root}:commit`, {
-        method: 'POST', headers, body: JSON.stringify({ writes }), signal:AbortSignal.timeout(10000)
+      const {response,text:result} = await createCall(`${root}:commit`, {
+        method: 'POST', body: JSON.stringify({ writes })
       });
-      const result = await response.text();
+      documents.forEach(d=>invalidate(d.path));
       if (response.status === 409 || (!response.ok && (result.includes('ALREADY_EXISTS') || result.includes('FAILED_PRECONDITION')))) return false;
       if (!response.ok) throw new Error(`firestore ${response.status}: ${result.slice(0, 300)}`);
       return true;
@@ -137,6 +158,7 @@ export function createClient({ projectId, idToken }) {
     },
     async remove(documentPath) {
       await call(`/${documentPath}`, { method: 'DELETE' });
+      invalidate(documentPath);
     },
     async moveSendAt(documentPath, when) {
       // currentDocument.exists: a message deleted since the query must not be
@@ -145,6 +167,7 @@ export function createClient({ projectId, idToken }) {
         method: 'PATCH',
         body: JSON.stringify({ fields: { sendAt: { integerValue: String(when) } } })
       });
+      invalidate(documentPath);
     }
   };
 }

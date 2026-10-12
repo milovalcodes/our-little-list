@@ -47,6 +47,19 @@ assert.equal(subs[0].subscription.endpoint, 'https://push.example/abc');
 assert.equal(subs[0].subscription.keys.p256dh, 'KEY');
 console.log(' ok  nested subscription map decodes back into a usable object');
 
+const collection=`households/${uid}/pushSubs`;
+const listCalls=()=>calls.filter(c=>c.url.includes('/pushSubs?')&&c.method==='GET').length;
+const before=listCalls();
+await Promise.all([db.list(collection),db.list(collection)]);
+assert.equal(listCalls(),before,'duplicate scheduler reads share one request within a pass');
+await db.remove(collection+'/him');
+await db.list(collection);
+assert.equal(listCalls(),before+1,'writes invalidate the per-pass snapshot');
+const fresh=createClient({projectId:'proj',idToken});
+await fresh.list(collection);
+assert.equal(listCalls(),before+2,'a new delivery pass never reuses an old snapshot');
+console.log(' ok  per-pass list reuse is invalidated by writes and never crosses delivery passes');
+
 const due = await db.dueFrom(`households/${uid}/outbox`, 'sendAt', Date.now(), 50);
 assert.equal(due.length, 1, 'the readTime-only row must be skipped');
 assert.equal(due[0].id, 'A1');
