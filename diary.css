@@ -854,6 +854,9 @@ html[data-season="christmas"] .attention-badge { width:20px; height:20px; top:-3
 .admin-games { margin: 0 0 12px; font-size: .9rem; }
 .admin-games[hidden] { display: none; }
 .admin-games > summary { padding: 10px 0; cursor: pointer; }
-.admin-games > div { display: grid; gap: 10px; padding: 12px; border: 1px solid currentColor; border-radius: 18px; }
+.admin-games > div { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--diary-rule); border-radius: 18px; background: var(--diary-panel); }
 .admin-games select, .admin-games button { min-height: 44px; font: inherit; }
+.profile-page #admin-games select { appearance: none; -webkit-appearance: none; background: var(--diary-raised); color: var(--page-text); border: 1px solid var(--diary-rule); font-size: 16px; padding-right: 36px; background-image: linear-gradient(45deg,transparent 50%,var(--page-text) 50%),linear-gradient(135deg,var(--page-text) 50%,transparent 50%); background-position: right 18px center,right 13px center; background-size: 5px 5px; background-repeat: no-repeat; }
+.admin-games button { font-weight: 800; }
+.admin-games :disabled { opacity: .6; }
 .admin-games [role="status"]:empty { display: none; }

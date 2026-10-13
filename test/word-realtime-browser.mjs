@@ -169,6 +169,8 @@ try {
  const resetGame=(page,scope,requestId)=>page.evaluate(async({scope,requestId})=>{const d=await(await import('./data-hub.js')).sharedLayer(),{activityClock}=await import('./activity-clock.js');try{return {ok:true,result:await d.resetDailyGames({day:activityClock().day,scope,requestId})};}catch(e){return {ok:false,error:e.message};}},{scope,requestId});
  assert.equal((await resetGame(sun,'all','unauthorized-reset-123456789')).ok,false);
  await moon.locator('#admin-games>summary').click();
+ assert.equal(await moon.locator('#reset-game').evaluate(el=>getComputedStyle(el).appearance),'none','native WebKit dropdown paint must not hide the selected option on the moon side');
+ assert.equal(await moon.locator('#admin-games button').evaluate(el=>el.classList.contains('primary-action')),true);
  await moon.locator('#reset-game').selectOption('word');
  moon.once('dialog',dialog=>dialog.accept());await moon.locator('#admin-games button').click();
  await moon.waitForFunction(()=>document.querySelector('#admin-games [role="status"]').textContent.startsWith('Fresh rounds'));

@@ -1,5 +1,5 @@
 const CACHE = 'our-little-list-v113';
-// v113: safe admin resets and a shared, no-repeat weekly round library.
+// v113: safe admin resets, readable controls and a shared, no-repeat weekly round library.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
