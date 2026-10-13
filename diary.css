@@ -850,3 +850,10 @@ html[data-season="christmas"] .attention-badge { width:20px; height:20px; top:-3
 .home-updates .activity-card { border:0; box-shadow:none; margin:0; padding-top:0; }
 .home-updates .activity-heading .tiny-kicker { display:none; }
 .compact-dashboard .focus-card:not(.app-sheet) { display:none; }
+/* Quiet, account-gated maintenance controls, not another game tile. */
+.admin-games { margin: 0 0 12px; font-size: .9rem; }
+.admin-games[hidden] { display: none; }
+.admin-games > summary { padding: 10px 0; cursor: pointer; }
+.admin-games > div { display: grid; gap: 10px; padding: 12px; border: 1px solid currentColor; border-radius: 18px; }
+.admin-games select, .admin-games button { min-height: 44px; font: inherit; }
+.admin-games [role="status"]:empty { display: none; }

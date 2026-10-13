@@ -3,6 +3,9 @@ import {chromium,webkit} from 'playwright';
 import assert from 'node:assert/strict';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {activityClock} from '../activity-clock.js';
+import {wordForDay} from '../daily-words.js';
+import {timedPuzzle as makeTimedPuzzle} from '../daily-puzzles.js';
 const host=process.env.FIRESTORE_EMULATOR_HOST;
 assert.match(host||'',/^(127\.0\.0\.1|localhost):8089$/,'emulator required; never run against production');
 const isWebKit=process.env.GAME_BROWSER==='webkit';
@@ -10,6 +13,11 @@ const project='demo-little-list',base='http://127.0.0.1:8777',sdk='https://www.g
 const cleared=await fetch(`http://${host}/emulator/v1/projects/${project}/databases/(default)/documents`,{method:'DELETE'});
 assert.ok(cleared.ok,'clear demo fixtures');
 const browser=await (isWebKit?webkit:chromium).launch(),errors=[],transportWarnings=[];
+async function seedPuzzle(collection,id,data){
+ const value=v=>Array.isArray(v)?{arrayValue:{values:v.map(value)}}:typeof v==='string'?{stringValue:v}:typeof v==='number'?{integerValue:String(v)}:typeof v==='boolean'?{booleanValue:v}:{mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,x])=>[k,value(x)]))}};
+ const r=await fetch(`http://${host}/v1/projects/${project}/databases/(default)/documents/households/oLSxADOwjqS04hSS2aHGOcvozmz2/${collection}/${id}`,{method:'PATCH',headers:{authorization:'Bearer owner','content-type':'application/json'},body:JSON.stringify({fields:value(data).mapValue.fields})});
+ assert.ok(r.ok,await r.text());
+}
 async function phone(side) {
   const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block',reducedMotion:'reduce'});
   // These contexts stand for two foreground phones, not two tabs competing
@@ -74,12 +82,9 @@ async function phone(side) {
 
 try {
  const {page:moon}=await phone('him'),{page:sun}=await phone('her'),{page:secondMoon}=await phone('him');
- const deadline=setTimeout(()=>{console.error('word real-time test exceeded 120 seconds');process.exit(1);},120000);deadline.unref();
+ const deadline=setTimeout(()=>{console.error('word real-time test exceeded 180 seconds');process.exit(1);},180000);deadline.unref();
+ const puzzle=wordForDay(activityClock().day);await seedPuzzle('wordPuzzles',puzzle.day,puzzle);
  await moon.goto(base+'/activities.html#wordle');
- const puzzle=await moon.evaluate(async()=>{
-   const {sharedLayer}=await import('./data-hub.js'),{activityClock}=await import('./activity-clock.js'),{wordForDay}=await import('./daily-words.js');
-   const p=wordForDay(activityClock().day);await(await sharedLayer()).setTo('wordPuzzles',p.day,p);return p;
- });
  await sun.goto(base+'/activities.html#wordle');await secondMoon.goto(base+'/activities.html#wordle');
  await Promise.all([moon,sun,secondMoon].map(p=>p.waitForSelector('.word-keyboard button:not([disabled])')));
  const submit=(page,guess,count)=>page.evaluate(async({guess,count,day})=>{
@@ -112,7 +117,14 @@ try {
  await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),100*multiplier);
  await Promise.all([moon,sun].map(p=>p.waitForSelector('[data-word-peek]')));
  await moon.click('[data-word-peek]');await sun.click('[data-word-peek]');
- await moon.waitForSelector('.word-peek-board .word-row');await sun.waitForSelector('.word-peek-board .word-row');
+ for(const page of [moon,sun]){
+  for(let retry=0;retry<3;retry++){
+   await page.waitForFunction(()=>document.querySelector('.word-peek-board .word-row')||document.querySelector('[data-word-peek-retry]'));
+   if(await page.locator('.word-peek-board .word-row').count())break;
+   await page.click('[data-word-peek-retry]');
+  }
+  await page.waitForSelector('.word-peek-board .word-row');
+ }
  assert.equal(await moon.locator('.word-peek-board .word-row').count(),1);
  assert.equal(await sun.locator('.word-peek-board .word-row').count(),3);
  assert.equal(await moon.locator('.word-peek-board .word-row').textContent(),puzzle.word);
@@ -122,7 +134,7 @@ try {
  // Confirm the explicit query used for a private board is accepted by rules.
  assert.deepEqual(errors,[]);
  console.log('REAL FIREBASE WORD: two private boards, live partner scores, simultaneous-screen conflict, saved progress after reload and ownership verified');
- const timedPuzzle=await moon.evaluate(async()=>{const {sharedLayer}=await import('./data-hub.js'),{activityClock}=await import('./activity-clock.js'),{timedPuzzle}=await import('./daily-puzzles.js');const p=timedPuzzle(activityClock().day,'search');await(await sharedLayer()).setTo('timedPuzzles',p.day+'-search',p);return p;});
+ const timedPuzzle=makeTimedPuzzle(activityClock().day,'search');await seedPuzzle('timedPuzzles',timedPuzzle.day+'-search',timedPuzzle);
  const play=(page,person,options)=>page.evaluate(async({p,person,options})=>{try{const d=await(await import('./data-hub.js')).sharedLayer();return {ok:true,game:await d.playTimedPuzzle({day:p.day,type:p.type,person,...options})};}catch(e){return{ok:false,error:e.message};}},{p:timedPuzzle,person,options});
  const start=await play(moon,'him',{start:true});assert.ok(start.ok,JSON.stringify(start));
  const again=await play(secondMoon,'him',{start:true});assert.ok(again.ok);assert.deepEqual(again.game.startedAt,start.game.startedAt,'start is idempotent across screens');
@@ -151,4 +163,31 @@ try {
  await moon.waitForSelector('#search [data-start]:not([disabled])');
  assert.deepEqual(errors,[]);
  console.log('REAL RESET: server-confirmed reset clears both phones and reopens rounds without refreshing');
+ assert.equal(await moon.locator('#admin-games').isVisible(),true);
+ assert.equal(await sun.locator('#admin-games').isVisible(),false,'admin comes from the account, never the page side');
+ const crossword=makeTimedPuzzle(activityClock().day,'crossword');await seedPuzzle('timedPuzzles',crossword.day+'-crossword',crossword);
+ const resetGame=(page,scope,requestId)=>page.evaluate(async({scope,requestId})=>{const d=await(await import('./data-hub.js')).sharedLayer(),{activityClock}=await import('./activity-clock.js');try{return {ok:true,result:await d.resetDailyGames({day:activityClock().day,scope,requestId})};}catch(e){return {ok:false,error:e.message};}},{scope,requestId});
+ assert.equal((await resetGame(sun,'all','unauthorized-reset-123456789')).ok,false);
+ await moon.locator('#admin-games>summary').click();
+ await moon.locator('#reset-game').selectOption('word');
+ moon.once('dialog',dialog=>dialog.accept());await moon.locator('#admin-games button').click();
+ await moon.waitForFunction(()=>document.querySelector('#admin-games [role="status"]').textContent.startsWith('Fresh rounds'));
+ const newWord=await moon.evaluate(async day=>await(await(await import('./data-hub.js')).sharedLayer()).readDoc('wordPuzzles',day),puzzle.day);
+ assert.equal(newWord.revision,1);assert.notEqual(newWord.word,puzzle.word);
+ assert.equal((await submit(moon,puzzle.word,0)).ok,false,'old page submission cannot consume a fresh try');
+ const freshWin=await moon.evaluate(async p=>(await(await import('./data-hub.js')).sharedLayer()).submitWordGuess({day:p.day,person:'him',guess:p.word,expectedCount:0,expectedRevision:p.revision}),newWord);
+ assert.equal(freshWin.won,true);await moon.waitForFunction(()=>document.querySelector('#word-summary').textContent.includes('solved'));
+ const id='browser-reset-all-1234567890',all=await resetGame(moon,'all',id);assert.ok(all.ok,JSON.stringify(all));
+ const repeat=await resetGame(moon,'all',id);assert.ok(repeat.ok);assert.deepEqual(repeat.result,all.result,'retry receipt is idempotent');
+ await Promise.all([moon,sun,secondMoon].map(p=>p.waitForFunction(()=>document.querySelectorAll('#word-game .word-row .correct,#word-game .word-row .present,#word-game .word-row .absent').length===0&&document.querySelector('#word-game .word-keyboard'))));
+ await moon.waitForSelector('#search [data-start]:not([disabled])');
+ const before=await moon.evaluate(async day=>{const d=await(await import('./data-hub.js')).sharedLayer();return Promise.all([d.readDoc('wordPuzzles',day),d.readDoc('timedPuzzles',day+'-crossword')]);},puzzle.day);
+ const individual=await resetGame(moon,'search','browser-reset-search-123456789');assert.ok(individual.ok,JSON.stringify(individual));
+ const after=await moon.evaluate(async day=>{const d=await(await import('./data-hub.js')).sharedLayer();return Promise.all([d.readDoc('wordPuzzles',day),d.readDoc('timedPuzzles',day+'-crossword')]);},puzzle.day);
+ assert.deepEqual(after,before,'individual reset never changes the other rounds');
+ const week=await moon.evaluate(async day=>(await import('./round-engine.js')).weekDays(day)[0],puzzle.day);
+ const settled=await fetch(`http://${host}/v1/${docs}/households/oLSxADOwjqS04hSS2aHGOcvozmz2/wordWeeks/${week}`,{method:'PATCH',headers:{authorization:'Bearer owner','content-type':'application/json'},body:JSON.stringify({fields:{week:{stringValue:week}}})});
+ assert.ok(settled.ok);const refused=await resetGame(moon,'all','browser-reset-settled-123456789');assert.equal(refused.ok,false);assert.match(refused.error,/crowned/);
+ assert.deepEqual(errors,[]);
+ console.log('ADMIN UI: account-gated controls, confirmation, atomic fresh boards, live reset on three screens, stale tries rejected, retry-safe all reset and isolated individual resets pass');
 }finally{await browser.close();}

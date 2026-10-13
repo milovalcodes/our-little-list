@@ -62,10 +62,13 @@ export async function notifyActivityResults(db,base,now){
  for(const day of days){
  const {words,timed}=await rounds(db,base,day);
  for(const type of ['word',...PUZZLE_TYPES]){
-  const records=type==='word'?words:timed.filter(r=>r.type===type),finished=records.filter(r=>type==='word'?r.done:timedOver(r,now));
+  const records=type==='word'?words:timed.filter(r=>r.type===type);
+  if(!records.some(r=>type==='word'?r.done:timedOver(r,now)))continue;
+  const puzzle=await db.get(`${base}/${type==='word'?'wordPuzzles':'timedPuzzles'}/${day}${type==='word'?'':'-'+type}`),revision=puzzle?.revision||0;
+  const finished=records.filter(r=>(r.revision||0)===revision&&(type==='word'?r.done:timedOver(r,now)));
   if(!finished.length)continue;
   const both=finished.length===2,first=both?[...finished].sort((a,b)=>(a.finishedAt||a.updatedAt||a.startedAt)-(b.finishedAt||b.updatedAt||b.startedAt))[0]:finished[0];
-  const event=both?'reveal':'waiting',id=`${day}-${type}-${event}`,path=base+'/activityEvents/'+id;
+  const event=both?'reveal':'waiting',id=`${day}-${type}${revision?'-r'+revision:''}-${event}`,path=base+'/activityEvents/'+id;
   if(await db.get(path))continue;
   const to=both?first.person:first.person==='her'?'him':'her';
   const label=type==='word'?'Little Word':type==='search'?'Word Search':'Mini crossword';

@@ -67,7 +67,7 @@ const deliver = env => realDeliver(env, { scheduleQuestions: false });
   console.log(' ok  question pings are written with names Firestore accepts');
 }
 
-function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, questions = {}, content = {}, receipts = [], game = null, pushStatus = 201, lockHeld = false, moveStatus = 200 }) {
+function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, statuses = {}, questions = {}, content = {}, records = {}, receipts = [], game = null, pushStatus = 201, lockHeld = false, moveStatus = 200 }) {
   const deleted = [];
   const pushes = [];
   const moved = [];
@@ -123,6 +123,12 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
       const status = statuses[url.split('/statuses/')[1]];
       return status ? Response.json({ name:url, fields:{ focusUntil:{ integerValue:String(status.focusUntil || 0) } } }) : new Response('', { status:404 });
     }
+    const recordPath=url.split('/documents/households/HOUSE/')[1];
+    if(recordPath&&Object.hasOwn(records,recordPath)&&options.method!=='DELETE'){
+      const value=v=>v===null?{nullValue:null}:Array.isArray(v)?{arrayValue:{values:v.map(value)}}:typeof v==='number'?{integerValue:String(v)}:typeof v==='boolean'?{booleanValue:v}:typeof v==='string'?{stringValue:v}:{mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,x])=>[k,value(x)]))}};
+      return Response.json({name:url,fields:value(records[recordPath]).mapValue.fields});
+    }
+    if(/^(wordPuzzles|timedPuzzles|wordResults|timedResults|gameResets)\//.test(recordPath||'')&&options.method!=='DELETE')return new Response('',{status:404});
     const source=/\/documents\/households\/HOUSE\/(notes|items|dates|memories|reactions)\/([A-Za-z0-9_-]+)$/.exec(url);
     if(source&&options.method!=='DELETE'){
       const record=content[source[1]+'/'+source[2]];
@@ -159,6 +165,19 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
 }
 
 const now = Date.now();
+{
+ const {activityClock}=await import('../activity-clock.js'),day=activityClock().day;
+ const messages=[{id:'old-result',ref:`activities/${day}-word-waiting`},{id:'fresh-result',ref:`activities/${day}-word-r1-waiting`}].map(m=>({...m,to:'her',kind:'activity-result',title:'finished',body:'ready',url:'activities.html#wordle',createdAt:now,sendAt:now}));
+ const h=harness({outbox:messages,records:{['wordPuzzles/'+day]:{revision:1}}});
+ const result=await deliver(ENV);assert.equal(result.sent,1);assert.equal(result.dropped,1);assert.equal(h.pushes.length,1);
+ console.log(' ok  reset revisions drop old completion pings but deliver the fresh round once');
+ const id='delivery-reset-1234567890',reset={day,before:[{day,word:'apple',revision:0}]};
+ for(const revision of [1,2]){
+  const h=harness({outbox:[{id:'reset-'+id,to:'her',kind:'activity-reset',ref:'gameResets/'+id,title:'Fresh rounds',body:'new boards',url:'activities.html#daily',createdAt:now,sendAt:now}],records:{['gameResets/'+id]:reset,['wordPuzzles/'+day]:{revision}}});
+  const r=await deliver(ENV);assert.equal(r.sent,revision===1?1:0);assert.equal(h.pushes.length,revision===1?1:0);
+ }
+ console.log(' ok  reset pings respect the current round and cannot resurrect superseded resets');
+}
 
 {
   const h=harness({outbox:[{id:'ALREADY',to:'her',kind:'note',sendAt:now,createdAt:now}],receipts:['ALREADY']});

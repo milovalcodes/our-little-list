@@ -5,7 +5,9 @@ import {newTimedGame,advanceTimedGame,timedSummary,millis} from './timed-game.js
 import { firebaseConfig } from './firebase-config.js';
 import { OUTBOX } from './push-config.js';
 import { createDeliveryWake } from './delivery-wake.js';
-import { HOUSEHOLD_ID, configured as householdConfigured } from './household.js';
+import { HOUSEHOLD_ID, ADMIN_UID, configured as householdConfigured } from './household.js';
+import {activityClock} from './activity-clock.js';
+import {revisionOf,assertRevision} from './round-revision.js';
 import { GAME_ID, nextGame, gameMessage, selectedGameId, gameNeedsPing } from './couple-game.js';
 
 const configured = firebaseConfig?.apiKey && !firebaseConfig.apiKey.startsWith('REPLACE_');
@@ -250,6 +252,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         }
         const puzzle=p.exists()?p.data():null;
         let game=current.exists()?current.data():null;
+        assertRevision(puzzle,options.expectedRevision||0,game);
         if(options.start){if(game)return;game={...newTimedGame(puzzle,options.person),startedAt:serverTimestamp()};}
         else {
           if(!game||game.person!==options.person)throw Error('Start your round first.');
@@ -266,11 +269,45 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       // ask the server. This avoids a second network trip on every quick find.
       let saved;
       try{const cached=await getDocFromCache(ref),g=cached.exists()?cached.data():null;
-        if(g&&!cached.metadata.hasPendingWrites&&millis(g.startedAt)&&(!g.done||millis(g.finishedAt))&&(options.start||(Number.isInteger(options.index)?g.solved.includes(options.index):g.done)))saved=cached;
+        if(g&&revisionOf(g)===(options.expectedRevision||0)&&!cached.metadata.hasPendingWrites&&millis(g.startedAt)&&(!g.done||millis(g.finishedAt))&&(options.start||(Number.isInteger(options.index)?g.solved.includes(options.index):g.done)))saved=cached;
       }catch(_){}
       if(!saved)saved=await getDocFromServer(ref);
       if(saved.exists()&&saved.data().done)wakeDelivery({activities:true});
       return saved.exists()?{id:saved.id,...saved.data()}:null;
+    },
+    isGameAdmin:()=>auth.currentUser?.uid===ADMIN_UID,
+    async resetDailyGames({day,scope,requestId}){
+      if(auth.currentUser?.uid!==ADMIN_UID)throw Error('Only the admin can reset rounds.');
+      if(navigator.onLine===false)throw Error('Reconnect before resetting games.');
+      if(day!==activityClock().day)throw Error('The day changed. Reopen Activities.');
+      const {prepareReset}=await import('./game-reset.js');
+      const {weekDays,weeklyRounds}=await import('./round-engine.js');
+      const week=weekDays(day)[0],ledger=doc(named('gameResetWeeks'),week),receipt=doc(named('gameResets'),requestId),planRef=doc(named('gamePlans'),week);
+      const saved=await runTransaction(db,async transaction=>{
+        const prior=await transaction.get(receipt);
+        if(prior.exists())return prior.data(); // lost-response retry is not another reset
+        const settled=await transaction.get(doc(named('wordWeeks'),week));
+        if(settled.exists())throw Error('This week has already been crowned. A reset cannot rewrite a finished week.');
+        const history=await transaction.get(ledger);
+        const plan=await transaction.get(planRef),planned=plan.exists()?plan.data().days:weeklyRounds(day);
+        const refs=weekDays(day).flatMap(d=>[doc(named('wordPuzzles'),d),...['search','crossword'].map(t=>doc(named('timedPuzzles'),d+'-'+t))]);
+        const snapshots=await Promise.all(refs.map(ref=>transaction.get(ref)));
+        const puzzles=snapshots.filter(s=>s.exists()).map(s=>s.data());
+        const reset=prepareReset({day,scope,puzzles,planned,history:history.exists()?history.data().used:[],requestId});
+        const before=puzzles.filter(p=>p.day===day&&reset.types.includes(p.word?'word':p.type));
+        for(const type of reset.types){
+          const word=type==='word',id=day+(word?'':'-'+type);
+          transaction.set(doc(named(word?'wordPuzzles':'timedPuzzles'),id),reset.rounds[type]);
+          for(const person of ['her','him'])for(const collection of word?['wordGames','wordResults']:['timedGames','timedResults'])transaction.delete(doc(named(collection),id+'-'+person));
+        }
+        transaction.set(ledger,{week,used:reset.used,updatedAt:Date.now()});
+        if(!plan.exists())transaction.set(planRef,{week,days:planned,createdAt:Date.now()});
+        const record={day,scope,requestId,by:ADMIN_UID,before,createdAt:Date.now()};
+        transaction.set(receipt,record);
+        transaction.set(doc(named(OUTBOX),'reset-'+requestId),{to:'her',kind:'activity-reset',title:'Fresh rounds ♡',body:(scope==='all'?'The three games':scope==='word'?'Little Word':scope==='search'?'Word Search':'Mini crossword')+' got a fresh start. New answers, fresh attempts.',ref:'gameResets/'+requestId,url:'activities.html#'+(scope==='all'?'daily':scope==='word'?'wordle':scope),createdAt:record.createdAt,sendAt:record.createdAt});
+        return record;
+      });
+      wakeDelivery();return saved;
     },
     answerQuestion(day, person, text, at) {
       const batch = writeBatch(db);

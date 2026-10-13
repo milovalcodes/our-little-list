@@ -1,5 +1,5 @@
-const CACHE = 'our-little-list-v112';
-// v112: lower-cost clocks and isolated, CPU-safe notification delivery.
+const CACHE = 'our-little-list-v113';
+// v113: safe admin resets and a shared, no-repeat weekly round library.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -21,6 +21,7 @@ const PAGES = [
 const ASSETS = [
   './connected-crossword.js',
   './puzzle-edition.js', './puzzle-edition-bank.js', './puzzle-edition-seasonal.js', './practice-edition-bank.js',
+  './round-engine.js', './round-revision.js', './round-library.js', './game-reset.js',
   './navigation-attention.js', './home-extras.js',
   './practice.html', './practice.js', './practice.css', './practice-catalog.js', './practice-links.js', './practice-store.js', './word-lexicon-extra.js',
   ...PAGES,

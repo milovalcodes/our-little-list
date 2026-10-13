@@ -9,14 +9,17 @@ import { createWordCelebration, wordFinish } from './word-celebration.js';
 import {wordTheme} from './puzzle-catalog.js';
 import {SEASONAL_WORDS} from './seasonal-puzzles.js';
 import {EDITION_WORDS} from './puzzle-edition.js';
+import {revisionOf} from './round-revision.js';
+import {answerPool} from './round-library.js';
 
 let activeBoard=null;
-const accepted=new Set([...WORD_LEXICON,...DAILY_WORDS,...SUNDAY_WORDS,...SEASONAL_WORDS.map(e=>e.word),...EDITION_WORDS.map(e=>e.word)]);
+const accepted=new Set([...WORD_LEXICON,...DAILY_WORDS,...SUNDAY_WORDS,...SEASONAL_WORDS.map(e=>e.word),...EDITION_WORDS.map(e=>e.word),...[false,true].flatMap(h=>['','october','december'].flatMap(s=>answerPool(h,s).map(e=>e.word)))]);
 export function startDailyWord({data,viewer,other},options={}){
   const openedDay=activityClock().day,day=options.day||openedDay,host=options.host||document.getElementById('word-game');
   const tie=day.includes('-tie-');
   if(!host)return;
   let pendingGuess=null,disposed=false,completionToCelebrate=null;
+  let latestMine=null,generation=0;
   let peekOpen=false,peekBusy=false,peekGame=null,peekError='',peekRequest=0;
   const celebration=createWordCelebration(host,viewer,day);
   let puzzle=null,mine=null,results=[],draft='',busy=false,error='',syncFailure=false,unsub=[],loaded=new Set(),timer;
@@ -26,9 +29,21 @@ export function startDailyWord({data,viewer,other},options={}){
     unsub.forEach(stop=>stop());unsub=[];loaded=new Set();error='';syncFailure=false;clearTimeout(timer);
     const fail=()=>{syncFailure=true;error='Couldn’t sync the word. Check your connection, then retry.';render();};
     const listen=(name,options,handle)=>unsub.push(data.listenToQuery(name,options,(items,meta)=>{loaded.add(name);handle(items,meta);render();},{onError:fail}));
-    listen('wordPuzzles',{where:{field:'day',value:day}},items=>{puzzle=items.find(p=>p.day===day)||(data.mode==='local'&&!tie?wordForDay(day):null);});
+    listen('wordPuzzles',{where:{field:'day',value:day}},items=>{
+      const next=items.find(p=>p.day===day)||(data.mode==='local'&&!tie?wordForDay(day):null);
+      if(puzzle&&next&&revisionOf(next)<revisionOf(puzzle))return;
+      if(puzzle&&next&&revisionOf(next)!==revisionOf(puzzle)){
+        generation++;busy=false;draft='';pendingGuess=null;peekRequest++;peekBusy=false;peekGame=null;peekOpen=false;completionToCelebrate=null;error='Fresh round · your attempts start here.';syncFailure=false;
+        mine=latestMine&&revisionOf(latestMine)===revisionOf(next)?latestMine:null;
+      }
+      puzzle=next;
+      if(mine&&revisionOf(mine)!==revisionOf(puzzle))mine=null;
+      if(!mine&&latestMine&&revisionOf(latestMine)===revisionOf(puzzle))mine=latestMine;
+    });
     listen('wordGames',{where:[{field:'person',value:viewer},{field:'day',value:day}]},(items,meta)=>{
       const incoming=items.find(p=>p.person===viewer&&p.day===day)||null;
+      latestMine=incoming;
+      if(incoming&&puzzle&&revisionOf(incoming)!==revisionOf(puzzle))return;
       // A cached snapshot must not rewind a guess already acknowledged by the server.
       if(!incoming&&meta?.fromCache===false){mine=null;draft='';pendingGuess=null;peekGame=null;peekOpen=false;completionToCelebrate=null;}
       else if(!mine||(incoming?.guesses.length||0)>=mine.guesses.length)mine=incoming;
@@ -70,7 +85,7 @@ export function startDailyWord({data,viewer,other},options={}){
     if(peekFocused)host.querySelector('[data-word-peek]')?.focus({preventScroll:true});
     if(completionToCelebrate&&!busy){celebration.play(completionToCelebrate);completionToCelebrate=null;}
   }
-  function canPeek(){return mine?.done&&results.some(r=>r.day===day&&r.person===other&&r.done);}
+  function canPeek(){return mine?.done&&results.some(r=>r.day===day&&r.person===other&&r.done&&revisionOf(r)===revisionOf(puzzle));}
   function peekMarkup(){
     if(!canPeek()||!puzzle)return '';
     const board=peekGame&&peekGame.guesses.map((guess,row)=>{
@@ -91,13 +106,13 @@ export function startDailyWord({data,viewer,other},options={}){
       // Never subscribe to or download the partner's unfinished guesses.
       const game=await Promise.race([data.readDoc('wordGames',day+'-'+other),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(new Error('timeout')),12000);})]);
       if(disposed||request!==peekRequest)return;
-      if(!game?.done||game.day!==day||game.person!==other||!Array.isArray(game.guesses)||!game.guesses.length||game.guesses.length>5||game.guesses.some(g=>typeof g!=='string'||!/^[a-z]{5}$/.test(g)))throw new Error('not ready');
+      if(!game?.done||revisionOf(game)!==revisionOf(puzzle)||game.day!==day||game.person!==other||!Array.isArray(game.guesses)||!game.guesses.length||game.guesses.length>5||game.guesses.some(g=>typeof g!=='string'||!/^[a-z]{5}$/.test(g)))throw new Error('not ready');
       peekGame=game;
     }catch(_){if(!disposed&&request===peekRequest)peekError='Couldn’t get their guesses. Check your connection and try again.';}
     finally{clearTimeout(timeout);if(!disposed&&request===peekRequest){peekBusy=false;render();}}
   }
   function partnerLabel(){
-    const result=results.find(r=>r.day===day&&r.person===other),name=escapeHtml(personName(other));
+    const result=results.find(r=>r.day===day&&r.person===other&&revisionOf(r)===revisionOf(puzzle)),name=escapeHtml(personName(other));
     if(!loaded.has('wordResults'))return 'checking the other side…';
     if(!result)return name+' hasn’t tried yet';
     if(!result.done)return name+` · ${result.attempts} / 5 tries`;
@@ -111,20 +126,21 @@ export function startDailyWord({data,viewer,other},options={}){
     if(draft.length!==5){error='Five letters, please. No try used.';render();return;}
     if(!accepted.has(draft)){error='Not in the word book. No try used—try another.';render();return;}
     if(mine?.guesses.includes(draft)){error='Already tried that one. No try used.';render();return;}
-    busy=true;pendingGuess={word:draft,index:mine?.guesses.length||0};render();
+    busy=true;pendingGuess={word:draft,index:mine?.guesses.length||0};const current=++generation;render();
     try{
       let timer;
-      const next=await Promise.race([data.submitWordGuess({day,person:viewer,guess:draft,expectedCount:mine?.guesses.length||0}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('confirmation timeout')),20000);})]).finally(()=>clearTimeout(timer));
+      const next=await Promise.race([data.submitWordGuess({day,person:viewer,guess:draft,expectedCount:mine?.guesses.length||0,expectedRevision:revisionOf(puzzle)}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('confirmation timeout')),20000);})]).finally(()=>clearTimeout(timer));
+      if(current!==generation||revisionOf(next)!==revisionOf(puzzle))return;
       if(!mine||next.guesses.length>=mine.guesses.length)mine=next;
       if(next.done)completionToCelebrate=next;
       draft='';
     }catch(problem){
-      if(pendingGuess){
+      if(current===generation&&pendingGuess){
         syncFailure=!/other screen|finished|closed/.test(problem.message);
         error=!syncFailure?problem.message:problem.message==='confirmation timeout'?'Still waiting for confirmation. Retry sync before trying again.':'That guess didn’t save. Check your connection and try again.';
       }
     }
-    finally{busy=false;render();}
+    finally{if(current===generation){busy=false;render();}}
   }
   host.addEventListener('click',event=>{const button=event.target.closest('[data-key]');if(button)void key(button.dataset.key);if(event.target.closest('[data-word-retry]'))read();if(event.target.closest('[data-word-peek]'))void peek();if(event.target.closest('[data-word-peek-retry]'))void peek(true);});
   const keydown=event=>{

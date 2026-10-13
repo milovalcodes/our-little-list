@@ -10,7 +10,7 @@ export const NOTIFICATION_GROUPS = [
   { id: 'arrivals', label: 'arrivals & on my way', kinds: ['arrival'] },
   { id: 'status', label: 'status & focus', kinds: ['status', 'focus'] },
   { id: 'keepsakes', label: 'date ideas & memories', kinds: ['date', 'memory'] },
-  { id: 'questions', label: 'daily activities', kinds: ['word-week', 'activity-result', 'activities-open', 'question-open', 'question-answered', 'question-reveal'] }
+  { id: 'questions', label: 'daily activities', kinds: ['word-week', 'activity-result', 'activity-reset', 'activities-open', 'question-open', 'question-answered', 'question-reveal'] }
 ];
 
 // Switches saved before groups were merged or split keep meaning what they

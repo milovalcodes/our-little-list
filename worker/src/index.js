@@ -18,7 +18,7 @@ import { acquireDeliveryLock, releaseDeliveryLock } from './delivery-lock.js';
 import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../../notification-policy.js';
 import { focusDelivery,contentSourcePath,contentStillWanted } from '../../delivery-policy.js';
 import { questionClock, questionForDay } from '../../question-prompts.js';
-import { wordForDay } from '../../daily-words.js';
+import {workerWordPuzzle as wordForDay,savedDailyRounds} from './puzzles.js';
 import { activityWindow } from '../../activity-clock.js';
 import {scheduleListReminders,listReminderWanted,listNudgeWanted} from './list-reminders.js';
 
@@ -155,11 +155,22 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
         await db.remove(message.path); dropped += 1; continue;
       }
       if(message.kind==='activity-result'){
-        const match=/^activities\/(\d{4}-\d{2}-\d{2}(?:-tie-\d+)?)-(word|search|crossword)-(waiting|reveal)$/.exec(message.ref||'');
-        const day=match?.[1],type=match?.[2],event=match?.[3];
-        const stale=!match||(day.includes('-tie-')?Boolean(await db.get(`${household}/wordDuelEnds/${day}`)):day!==questionClock(now).day);
+        const match=/^activities\/(\d{4}-\d{2}-\d{2}(?:-tie-\d+)?)-(word|search|crossword)(?:-r(\d+))?-(waiting|reveal)$/.exec(message.ref||'');
+        const day=match?.[1],type=match?.[2],revision=Number(match?.[3]||0),event=match?.[4];
+        const puzzle=match?await db.get(`${household}/${type==='word'?'wordPuzzles':'timedPuzzles'}/${day}${type==='word'?'':'-'+type}`):null;
+        const stale=!match||revision!==(puzzle?.revision||0)||(day.includes('-tie-')?Boolean(await db.get(`${household}/wordDuelEnds/${day}`)):day!==questionClock(now).day);
         const result=!stale&&event==='waiting'?await db.get(`${household}/${type==='word'?'wordResults':'timedResults'}/${day}-${type==='word'?'':type+'-'}${message.to}`):null;
         if(stale||(event==='waiting'&&(type==='word'?result?.done:timedOver(result,now)))){await db.remove(message.path);dropped+=1;continue;}
+      }
+      if(message.kind==='activity-reset'){
+        const id=/^gameResets\/([A-Za-z0-9-]{20,80})$/.exec(message.ref||'')?.[1];
+        const reset=id?await db.get(`${household}/gameResets/${id}`):null;
+        let wanted=reset?.day===questionClock(now).day&&Array.isArray(reset.before);
+        if(wanted)for(const old of reset.before){
+          const p=await db.get(`${household}/${old.word?'wordPuzzles':'timedPuzzles'}/${reset.day}${old.word?'':'-'+old.type}`);
+          if((p?.revision||0)!==(old.revision||0)+1){wanted=false;break;}
+        }
+        if(!wanted){await db.remove(message.path);dropped+=1;continue;}
       }
       if (String(message.kind || '').startsWith('question-')) {
         const clock = questionClock(now);
@@ -305,13 +316,15 @@ export async function ensureQuestionOfDay(db, household, now) {
   const selected = questionForDay(clock.day);
   const word = wordForDay(clock.day);
   if (!selected && !word) return { open: false, exhausted: true };
+  let saved,lookedUp=false;
+  const daily=async()=>{if(!lookedUp){saved=await savedDailyRounds(db,household,clock.day);lookedUp=true;}return saved;};
   if (word) {
     const wordPath = `${household}/wordPuzzles/${clock.day}`;
-    if (!await db.get(wordPath)) await db.create(wordPath, word);
+    if (!await db.get(wordPath)) await db.create(wordPath, (await daily())?.word||word);
   }
   if(clock.day>=LEAGUE_START_DAY)for(const type of PUZZLE_TYPES){
     const puzzlePath=`${household}/timedPuzzles/${clock.day}-${type}`;
-    if(!await db.get(puzzlePath))await db.create(puzzlePath,timedPuzzle(clock.day,type,now));
+    if(!await db.get(puzzlePath))await db.create(puzzlePath,(await daily())?.[type]||timedPuzzle(clock.day,type,now));
   }
   const path = `${household}/questions/${clock.day}`;
   let question = await db.get(path);

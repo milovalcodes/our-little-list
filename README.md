@@ -26,6 +26,34 @@ A small **add** button beside the heading opens the full composer on List,
 Date ideas and Memories. Home has quick add; Notes has its own writing bar.
 Activities has no unrelated add controls.
 
+## Daily round engine and admin resets
+
+`round-engine.js` builds all three games using `round-library.js`. From Oct 13,
+the compiled calendar reserves every answer across all seven daily trios in a
+week, not just within one game. `gamePlans/{week}` freezes these reservations
+once the week opens, so later catalog releases cannot reshuffle it. The first week's spoiled technical-difficulty
+rounds are retired explicitly. Seasonal-only vocabulary stays in its month;
+practice vocabulary may appear in scored games. The accepted-guess dictionary
+already contains over 20,000 five-letter forms; the curated answer and clue
+libraries are deliberately smaller and use original clues, not copied NYT data.
+
+Only `ADMIN_UID` can reset today's games from Activities. The Firebase
+transaction increments puzzle revisions, deletes both users' selected games
+and result summaries, saves an immutable request receipt and weekly exclusion
+ledger, and queues one partner notification. Rules require the new revision and
+atomic removal of both users' old progress; selecting the moon UI does not grant
+admin rights. Reset receipts make a lost-response retry idempotent. Unfinished
+submissions and queued completion notifications carry the round revision, so a
+reset cannot be undone by another open phone. Other days, question answers,
+practice progress and settled crowns are not reset. Weekly totals derive from
+the remaining result records and do not need a separate points mutation.
+
+Rebuild generated Worker data with `node scripts/compile-worker-crosswords.mjs
+--write` after library/engine changes. Never run connected crossword generation
+inside the free delivery Worker. `test/round-engine.test.mjs`,
+`test/worker-puzzles.test.mjs`, the emulator reset-rules checks and the two-phone
+Chromium/WebKit real-time checks cover this contract.
+
 All signed-in pages load the same foreground notification module. In Firebase
 mode it listens to the recipient's outbox, rather than duplicating an incomplete
 set of per-feature listeners. Future reminders wait for worker validation. A

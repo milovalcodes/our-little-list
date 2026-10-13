@@ -6,6 +6,7 @@
 // path is frozen here instead. The Firestore rules are what actually grant
 // access to it.
 export const HOUSEHOLD_ID = 'oLSxADOwjqS04hSS2aHGOcvozmz2';
+export const ADMIN_UID = HOUSEHOLD_ID;
 
 // Which account is which side. Firebase UIDs are not secrets and are safe to
 // ship; they are identifiers, not credentials.

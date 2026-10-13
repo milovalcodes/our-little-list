@@ -24,7 +24,7 @@ export function wordFinish(game) {
 // A separate, short-lived layer: board redraws can never restart the animation.
 // Call only after a guess from this screen is confirmed, never on initial load.
 export function createWordCelebration(host, person, day) {
-  const key=`our-little-list-word-finish-v1:${person}:${day}`;
+  const baseKey=`our-little-list-word-finish-v1:${person}:${day}`;
   let layer=null, timer=null;
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
   function clear() { clearTimeout(timer); timer=null; layer?.remove(); layer=null; }
@@ -34,6 +34,7 @@ export function createWordCelebration(host, person, day) {
   motion.addEventListener('change',motionChanged);
   return {
     play(game, customFinish=null) {
+      const key=baseKey+(game?.revision?':r'+game.revision:'');
       const finish=customFinish||wordFinish(game);
       if(!finish||remembered.has(key))return;
       try { if(localStorage.getItem(key))return; localStorage.setItem(key,'seen'); } catch (_) { /* private browsing */ }

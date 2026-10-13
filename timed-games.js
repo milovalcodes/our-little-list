@@ -4,6 +4,7 @@ import {millis,timedPoints,timedOver,timedLimit} from './timed-game.js';
 import {escapeHtml as esc} from './ui-helpers.js';
 import {personName} from './profile-store.js';
 import {createWordCelebration} from './word-celebration.js';
+import {revisionOf} from './round-revision.js';
 const time=ms=>`${Math.floor(Math.max(0,ms)/60000)}:${String(Math.floor(Math.max(0,ms)/1000)%60).padStart(2,'0')}`;
 export function startTimedGame(context,{type,day=activityClock().day,host,summary,disclosure}){
  const {data,viewer,other}=context,openedDay=activityClock().day;
@@ -16,14 +17,25 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  let dragPointer=null;
  let renderedClue=-1;
  let partnerFinished=false;
+ let latestMine=null;
  const finished=()=>mine&&(closed||timedOver(mine)||puzzle&&Date.now()>=puzzle.closesAt);
- const partner=()=>results.find(r=>r.person===other);
+ const partner=()=>results.find(r=>r.person===other&&revisionOf(r)===revisionOf(puzzle));
  function listen(){
   unsubs.forEach(fn=>fn());unsubs=[];
   const fail=()=>{message='Couldn’t sync this puzzle. Check your connection and retry.';render();};
-  unsubs.push(data.listenToQuery('timedPuzzles',{where:[{field:'day',value:day},{field:'type',value:type}]},rows=>{puzzle=rows[0]||(data.mode==='local'?timedPuzzle(day,type):null);render();},{onError:fail}));
+  unsubs.push(data.listenToQuery('timedPuzzles',{where:[{field:'day',value:day},{field:'type',value:type}]},rows=>{
+   const next=rows[0]||(data.mode==='local'?timedPuzzle(day,type):null);
+   if(puzzle&&next&&revisionOf(next)<revisionOf(puzzle))return;
+   if(puzzle&&next&&revisionOf(next)!==revisionOf(puzzle)){
+    action++;busy=false;selected=0;draft='';dragStart=null;tapStart=null;peek=null;peekOpen=false;peekBusy=false;expiredDrawn=false;expiredRetryAt=0;pendingSearch.clear();flash=-1;message='Fresh board · ready when you are.';
+    mine=latestMine&&revisionOf(latestMine)===revisionOf(next)?latestMine:null;
+   }
+   puzzle=next;if(mine&&revisionOf(mine)!==revisionOf(puzzle))mine=null;if(!mine&&latestMine&&revisionOf(latestMine)===revisionOf(puzzle))mine=latestMine;render();
+  },{onError:fail}));
   unsubs.push(data.listenToQuery('timedGames',{where:[{field:'day',value:day},{field:'type',value:type},{field:'person',value:viewer}]},(rows,meta)=>{
    const next=rows.find(g=>g.person===viewer);
+   latestMine=next||null;
+   if(next&&puzzle&&revisionOf(next)!==revisionOf(puzzle))return;
    // Server timestamps are null on unconfirmed local snapshots.
    if(next&&(!millis(next.startedAt)||next.done&&!millis(next.finishedAt)))return;
    if(next&&(!mine||next.solved.length>mine.solved.length||next.done&&!mine.done))message='';
@@ -71,10 +83,10 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  async function loadPeek(){
   if(!finished()||!timedOver(partner())||peekBusy)return;
   peekOpen=!peekOpen;if(!peekOpen||peek){render();return;}
-  peekBusy=true;peekError='';render();let timeout;
-  try{const result=await Promise.race([data.readDoc('timedGames',`${day}-${type}-${other}`),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error('timeout')),12000);})]);if(!result||result.person!==other||result.day!==day||result.type!==type||!Array.isArray(result.solved))throw Error('missing');peek=result;}
-  catch(_){peekError='Couldn’t get their round. Close this and try again.';}
-  finally{clearTimeout(timeout);peekBusy=false;render();}
+  peekBusy=true;peekError='';render();let timeout;const revision=revisionOf(puzzle);
+  try{const result=await Promise.race([data.readDoc('timedGames',`${day}-${type}-${other}`),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error('timeout')),12000);})]);if(disposed||revision!==revisionOf(puzzle))return;if(!result||revisionOf(result)!==revision||result.person!==other||result.day!==day||result.type!==type||!Array.isArray(result.solved))throw Error('missing');peek=result;}
+  catch(_){if(revision===revisionOf(puzzle))peekError='Couldn’t get their round. Close this and try again.';}
+  finally{clearTimeout(timeout);if(!disposed&&revision===revisionOf(puzzle)){peekBusy=false;render();}}
  }
  async function play(options){
   if(busy||disposed||closed)return;
@@ -82,13 +94,13 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   const resumeAnswer=type==='crossword'&&Boolean(document.activeElement?.closest('.crossword-answer'));
   busy=true;message='';const current=++action;render();let timer;
   try{
-   const next=await Promise.race([data.playTimedPuzzle({day,type,person:viewer,expectedCount:mine?.solved.length||0,...options}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Still waiting for confirmation. Retry sync before continuing.')),15000);})]);
-   if(disposed||current!==action)return;
+   const next=await Promise.race([data.playTimedPuzzle({day,type,person:viewer,expectedCount:mine?.solved.length||0,expectedRevision:revisionOf(puzzle),...options}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Still waiting for confirmation. Retry sync before continuing.')),15000);})]);
+   if(disposed||current!==action||!next||revisionOf(next)!==revisionOf(puzzle))return;
    if(!mine||next.solved.length>=mine.solved.length)mine=next;
    if(Number.isInteger(options.index)){flash=options.index;clearTimeout(flashTimer);flashTimer=setTimeout(()=>{host.querySelectorAll('.just-found').forEach(c=>c.classList.remove('just-found'));flash=-1;},700);}
    if(type==='crossword'&&!next.done){selected=puzzle.entries.findIndex((_,i)=>!next.solved.includes(i));draft='';}
-   if(next.done)celebration.play({done:true,won:next.complete,guesses:Array(3)},next.solved.length?{tier:next.complete?'brilliant':'win',icon:'✦',text:`${timedPoints(next)} points · ${next.complete?'all found!':'nicely done ♡'}`,pieces:next.complete?24:0,duration:2600}:undefined);
-  }catch(error){if(!disposed){pendingSearch.clear();message=error.message||'Couldn’t save. Check your connection and retry.';expiredRetryAt=Date.now()+15000;}}
+   if(next.done)celebration.play({done:true,won:next.complete,guesses:Array(3),revision:revisionOf(next)},next.solved.length?{tier:next.complete?'brilliant':'win',icon:'✦',text:`${timedPoints(next)} points · ${next.complete?'all found!':'nicely done ♡'}`,pieces:next.complete?24:0,duration:2600}:undefined);
+  }catch(error){if(!disposed&&current===action){pendingSearch.clear();message=error.message||'Couldn’t save. Check your connection and retry.';expiredRetryAt=Date.now()+15000;}}
   finally{clearTimeout(timer);if(!disposed&&current===action){pendingSearch.delete(options.index);busy=false;if(finished())pendingSearch.clear();render();if(resumeAnswer&&!finished())host.querySelector('[data-answer]')?.focus({preventScroll:true});drainSearch();}}
  }
  function drainSearch(){
