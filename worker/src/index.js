@@ -385,10 +385,31 @@ async function tokenFor(credentials) {
   return signed.idToken;
 }
 
+// The free HTTP/cron Worker has a 10ms CPU budget. Authentication, puzzle
+// scheduling and Web Push crypto together exceed it, even with compiled boards.
+// A private SQLite-backed Durable Object has a 30s CPU budget on the same plan.
+// Keep its namespace separate from the pet save; no public route can call it.
+export class DeliveryRunner {
+  constructor(ctx,env){this.env=env;}
+  async fetch(request){
+    if(request.method!=='POST')return new Response('POST only',{status:405});
+    const input=await request.json();
+    if(Object.keys(input).some(k=>!['scheduleQuestions','scheduleReminders'].includes(k))||Object.values(input).some(v=>typeof v!=='boolean'))return new Response('Invalid delivery options',{status:400});
+    return Response.json(await deliver(this.env,input));
+  }
+}
+export async function runDelivery(env,options={}){
+  if(!env.DELIVERY_RUNNER)throw Error('Delivery runner is not configured.');
+  const stub=env.DELIVERY_RUNNER.get(env.DELIVERY_RUNNER.idFromName(env.HOUSEHOLD_ID));
+  const response=await stub.fetch('https://delivery.internal/',{method:'POST',body:JSON.stringify(options)});
+  if(!response.ok)throw Error('Delivery runner failed; queued messages remain.');
+  return response.json();
+}
+
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(
-      deliver(env)
+      runDelivery(env)
         .then(result => console.log(JSON.stringify(result)))
         .catch(problem => console.error(`delivery failed: ${problem.message || problem}`))
     );
@@ -401,7 +422,7 @@ export default {
     if(['/dispatch','/dispatch/activities'].includes(url.pathname)){
       const auth=await authorizeWake(request,env);
       if(auth.response)return auth.response;
-      ctx.waitUntil(wakeDelivery(env,deliver,{activities:url.pathname.endsWith('/activities')})
+      ctx.waitUntil(wakeDelivery(env,runDelivery,{activities:url.pathname.endsWith('/activities')})
         .then(result=>console.log(JSON.stringify({trigger:'immediate',...result})))
         .catch(()=>console.error('Immediate delivery failed; queued messages remain for the scheduled backstop.')));
       return Response.json({accepted:true},{status:202,headers:auth.headers});
@@ -416,7 +437,7 @@ export default {
       return new Response('nope', { status: 403 });
     }
     try {
-      return Response.json(await deliver(env));
+      return Response.json(await runDelivery(env));
     } catch (problem) {
       return Response.json({ error: problem.message || String(problem) }, { status: 500 });
     }

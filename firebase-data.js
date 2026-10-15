@@ -321,6 +321,18 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
     updateIn: (name, id, changes) => applied(updateDoc(doc(named(name), id), changes), name),
     removeFrom: (name, id) => applied(deleteDoc(doc(named(name), id)), name),
 
+    // Background registration must not silently steal the other device's
+    // delivery address. Switching devices is an explicit Settings action.
+    async claimPushEndpoint(person,fields,{replace=false}={}) {
+      if(!signedIn())throw Error('Sign in before registering this phone.');
+      return runTransaction(db,async transaction=>{
+        const ref=doc(named('pushSubs'),person),snapshot=await transaction.get(ref);
+        const previous=snapshot.data()?.subscription?.endpoint;
+        if(previous&&previous!==fields.subscription.endpoint&&!replace)return {state:'other-device'};
+        transaction.set(ref,fields);return {state:'ready'};
+      });
+    },
+
     // Compare and delete in one transaction: another device may have
     // re-registered this side between our read and a sign-out.
     async releasePushEndpoint(person, endpoint) {

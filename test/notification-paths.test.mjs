@@ -98,6 +98,8 @@ async function firePush(payload, { failFirst = false, watching = false, acknowle
   assert.equal(missed[0].options.silent,false);
   const answer=await firePush({title:'answered',body:'x',url:'tasks.html',kind:'help-answer'},{watching:true});
   assert.equal(answer[0].closed,true,'help answers can now be presented by the foreground app');
+  const test=await firePush({title:'Test',body:'Server delivery',kind:'push-test'},{watching:true});
+  assert.equal(test[0].closed,false,'a delivery test must remain in the system tray even with Settings open');
   // Arrivals also use the same acknowledged foreground delivery path.
   const arrival = await firePush({ title: 'home', body: 'x', url: 'status.html', kind: 'arrival', vibrate: [180, 90, 180] }, { watching: true });
   assert.ok(arrival[0].options.silent && arrival[0].closed, 'a displayed arrival avoids a second phone buzz');

@@ -14,6 +14,9 @@ export async function bootPage({ onAuth } = {}) {
   // Every signed-in destination, including Activities and Settings, can show
   // a partner's ping. ES modules keep this singleton on legacy script pages.
   void import('./live-notes.js');
+  // Deep links and installed-game launches also refresh this phone's address.
+  // No permission prompt; an existing other-device registration is preserved.
+  void import('./push-client.js').then(module=>module.ensurePushSubscription(data,viewer)).catch(()=>{});
   document.querySelectorAll('.back-to-side').forEach(back => { back.href = `${viewer}.html`; });
   return { data, viewer, other: partnerOf(viewer) };
 }

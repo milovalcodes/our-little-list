@@ -22,3 +22,16 @@ const sandbox={self,console,importScripts(){},caches:{keys:async()=>['our-little
 vm.createContext(sandbox);vm.runInContext(source,sandbox);handlers.activate({waitUntil:p=>activated=p});await activated;
 assert.deepEqual(removed,['our-little-list-v1']);
 console.log('CACHE LIFETIME: navigation and asset writes finish before shutdown; other apps and SDK caches survive activation');
+
+// A slow first visit to the large game must not get cached home HTML at its URL.
+{
+ const handlers={},home={home:true},game={status:200,type:'basic',clone:()=>({})};let finishNetwork,response,settled=false;
+ const self={location:{href:scope+'service-worker.js',origin:'https://example.test'},registration:{scope},oldPageTarget:()=>null,addEventListener:(n,f)=>handlers[n]=f};
+ const sandbox={self,URL,Request,Response,console,importScripts(){},setTimeout:fn=>setTimeout(fn,0),fetch:()=>new Promise(resolve=>finishNetwork=resolve),caches:{match:async key=>key==='./index.html'?home:undefined,open:async()=>({put:async()=>{}})}};
+ vm.createContext(sandbox);vm.runInContext(source,sandbox);
+ handlers.fetch({request:{method:'GET',url:scope+'little-star.html',mode:'navigate'},respondWith:p=>response=p,waitUntil(){}});
+ response.then(()=>settled=true);await new Promise(r=>setTimeout(r,20));
+ assert.equal(settled,false,'uncached game keeps waiting rather than becoming Home');
+ finishNetwork(game);assert.equal(await response,game);
+ console.log('SLOW FIRST LOAD: the uncached game never becomes a cached home page');
+}

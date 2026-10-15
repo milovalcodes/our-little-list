@@ -6,9 +6,17 @@ compatibility_date = "2026-09-01"
 name = "STAR_NURSERY"
 class_name = "StarNursery"
 
+[[durable_objects.bindings]]
+name = "DELIVERY_RUNNER"
+class_name = "DeliveryRunner"
+
 [[migrations]]
 tag = "star-v1"
 new_sqlite_classes = ["StarNursery"]
+
+[[migrations]]
+tag = "delivery-v1"
+new_sqlite_classes = ["DeliveryRunner"]
 
 # Every minute. Cloudflare actually honours this, which is the whole reason
 # this exists — GitHub Actions was firing a */5 schedule about every 4 hours.

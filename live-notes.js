@@ -20,6 +20,7 @@ function pingUrl(message){
 const pingKey=message=>message.eventId||message.id?`event:${message.eventId||message.id}`:JSON.stringify([message.kind,pingUrl(message),message.body||'']);
 navigator.serviceWorker?.addEventListener('message',event=>{
   if(!['littlelist:was-ping-shown','littlelist:present-ping'].includes(event.data?.type))return;
+  if(event.data.payload?.kind==='push-test'){event.ports?.[0]?.postMessage({shown:false});return;}
   const at=displayedPings.get(pingKey(event.data.payload));
   const already=!document.hidden&&Number.isFinite(at)&&Date.now()-at<5*60000;
   const shown=already||(event.data.type==='littlelist:present-ping'&&announce({...event.data.payload,label:event.data.payload.title}));
@@ -46,6 +47,7 @@ async function boot(viewer) {
     const seenIds=new Set();
     data.listenToQuery('outbox',{where:{field:'to',value:viewer}},rows=>{
       for(const message of rows){
+        if(message.kind==='push-test')continue;
         if(seenIds.has(message.id))continue;seenIds.add(message.id);
         if(Number(message.createdAt)<openedAt-5000||Number(message.sendAt)>Date.now())continue;
         announce({...message,label:message.title});

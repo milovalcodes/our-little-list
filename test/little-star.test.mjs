@@ -42,6 +42,9 @@ try{
  await action('her','coffee');assert.equal((await action('him','coffee')).status,400,'coffee quota belongs to pet, not account');
  // A second pet can be selected independently on each phone.
  const two=freshRecord(now);two.state=scenario('grown',now);two.state.wallets={him:1000,her:1000};values.set('nursery',two);
+ const lastAttention=values.get('nursery').state.seen.him;
+ now+=1000;await internal({op:'read',actor:'him'});
+ assert.equal(values.get('nursery').state.seen.him,lastAttention,'sync polling must not suppress phone reminders');
  r=await action('him','adopt-second');assert.equal(r.star.petId,'star-2');
  assert.equal((await internal({op:'read',actor:'her'})).star.petId,'star-1');
  assert.equal((await internal({op:'read',actor:'him'})).star.petId,'star-2');

@@ -6,7 +6,7 @@
 import { setButtonBusy, showFailure, toast } from './ui-helpers.js';
 import { isApplePhone } from './device-mode.js';
 import { ensurePushSubscription, pushState } from './push-client.js';
-import { NOTIFICATION_GROUPS, normalizeNotificationPreferences, vibrationPattern } from './notification-policy.js';
+import { NOTIFICATION_GROUPS, normalizeNotificationPreferences } from './notification-policy.js';
 import { readNotificationPreferences, saveNotificationPreferences } from './notification-preferences.js';
 
 export function startPingSettings({ data, viewer, onChange = () => {} }) {
@@ -81,7 +81,7 @@ $('notification-settings-form').addEventListener('submit', async event => {
     const state = await pushState();
     if (state === 'ready' || state === 'needs-subscribe') {
       const result = await ensurePushSubscription(data, viewer);
-      if (result.state === 'failed') throw result.problem || new Error('registration failed');
+      if (result.state !== 'ready') throw result.problem || new Error('registration not confirmed');
     }
     $('save-state').textContent = 'saved ✓';
     savedNote = window.setTimeout(() => { $('save-state').textContent = 'changes save by themselves'; }, 2500);
@@ -105,7 +105,9 @@ $('test-notification').addEventListener('click', async event => {
     }
     if (state === 'ready' || state === 'needs-subscribe') {
       const result = await ensurePushSubscription(data, viewer);
-      if (result.state === 'failed') throw result.problem || new Error('registration failed');
+      if (result.state !== 'ready') {
+        toast(result.state==='other-device'?'Choose “use this phone” in setup first.':'Registration did not finish. Reconnect and retry.');return;
+      }
     }
     // An iPhone that has not been added to the Home Screen has no Notification
     // at all, and touching it threw instead of pointing the way.
@@ -115,25 +117,14 @@ $('test-notification').addEventListener('click', async event => {
       toast('allow notifications first ↑');
       return;
     }
-    window.playLittleSound?.(preferences.inAppSound);
-    const registration = await navigator.serviceWorker.ready;
-    const silent = preferences.backgroundSound === 'silent';
-    const artwork = globalThis.LittleSeasonAssets.forSeason(globalThis.LittleSeasonAssets.seasonForDate());
-    const options = {
-      body: silent ? 'quiet mode. very sneaky.' : 'the sun and moon have entered the notification bar.',
-      icon: './' + artwork.notification,
-      badge: './' + artwork.badge,
-      silent,
-      tag: 'our-little-list-settings-test',
-      renotify: true,
-      data: { url: new URL('./phone-check.html#pings', location.href).href }
-    };
-    // Chrome throws on a silent notification that names any vibration pattern,
-    // even an empty one — so testing quiet mode always "failed".
-    if (!silent) options.vibrate = vibrationPattern(preferences.vibration);
-    await registration.showNotification('tiny ping check ✦', options);
+    // Exercise the real server -> push provider -> service worker path.
+    // A local showNotification proves only that the browser can draw a popup.
+    if(data.mode==='local')throw Error('Sign in to test delivery.');
+    const queued=await data.notify(viewer,{kind:'push-test',title:'Notification test',body:'Background delivery reached this device.',url:'phone-check.html#pings',urgent:true,sendAt:Date.now()+15000});
+    if(!queued?.queued)throw Error('Could not queue test.');
+    $('push-test-state').textContent='Test queued. Lock this phone; look for it within a minute.';
   } catch (_) {
-    showFailure('the test ping did not happen.', 'check Settings, Focus mode, and this app’s notification settings.');
+    showFailure('could not queue the test.', 'check your connection and notification setup, then retry.');
   } finally {
     setButtonBusy(button, false);
     onChange();

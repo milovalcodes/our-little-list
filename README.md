@@ -94,6 +94,17 @@ Offline writes wake only after server acknowledgement; a failed wake leaves the
 queue intact for the backstop. Scheduled reminders and daily openings still use
 the minute checker. Normal action delivery targets seconds, not guaranteed time.
 
+Delivery work now runs in a private SQLite Durable Object
+(`DeliveryRunner`, migration `delivery-v1`): scheduled Workers on the Free plan
+have only 10ms of CPU, which was repeatedly stopping the combined scheduler and
+sender. The existing queue, authentication, per-message receipts and leases are
+unchanged; `STAR_NURSERY` and its saved egg remain in their separate namespace.
+Do not remove either migration on rollback. Settings verifies the server copy
+of the current subscription and its test uses the real outbox, not a local
+popup. Automatic registration never replaces another device; moving delivery
+requires the explicit “use this phone” button. There is one delivery device per
+member, with per-device preferences.
+
 Every opted-in visible ping requests high Web Push
 transport priority on Apple and Android; this does not bypass focus, quiet hours
 or category choices. Logs separate queue wait from push-provider acceptance time,

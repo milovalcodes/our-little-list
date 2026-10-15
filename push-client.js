@@ -36,7 +36,7 @@ export async function pushState() {
 
 // Creates (or reuses) this phone's push subscription and files it under the
 // signed-in couple account so the delivery workflow can find it.
-export async function ensurePushSubscription(data, person) {
+export async function ensurePushSubscription(data, person, {replace=false}={}) {
   const state = await pushState();
   if (state !== 'ready' && state !== 'needs-subscribe') return { state };
   if (!data || data.mode === 'local') return { state: 'no-sync' };
@@ -51,19 +51,38 @@ export async function ensurePushSubscription(data, person) {
       });
     }
     const record = JSON.parse(JSON.stringify(subscription.toJSON()));
-    await data.setTo(PUSH_SUBS, person, {
+    const fields = {
       person,
       subscription: record,
       preferences: readNotificationPreferences(),
       utcOffsetMinutes: -new Date().getTimezoneOffset(),
       updatedAt: Date.now(),
       device: navigator.userAgent.slice(0, 180)
-    });
+    };
+    const saved=data.claimPushEndpoint
+      ? await data.claimPushEndpoint(person,fields,{replace})
+      : await data.setTo(PUSH_SUBS,person,fields);
+    if(saved?.state==='other-device')return saved;
+    if(saved?.syncing)return {state:'pending'};
     await releaseEndpointFromOtherSide(data, person, record.endpoint);
     return { state: 'ready' };
   } catch (problem) {
     return { state: 'failed', problem };
   }
+}
+
+// Browser permission is not proof that the server saved this endpoint.
+export async function registeredPushState(data,person){
+  const state=await pushState();
+  if(state!=='ready')return state;
+  if(!data||data.mode==='local')return 'no-sync';
+  try{
+    const registration=await navigator.serviceWorker.ready;
+    const subscription=await registration.pushManager.getSubscription();
+    const rows=await data.readOnce(PUSH_SUBS,{fromServer:true});
+    const saved=rows.find(row=>row.id===person)?.subscription?.endpoint;
+    return saved===subscription?.endpoint?'ready':saved?'other-device':'needs-subscribe';
+  }catch{return 'failed';}
 }
 
 // A browser has exactly one push subscription, so if two accounts are ever used

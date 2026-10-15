@@ -1,7 +1,7 @@
 import { setButtonBusy } from './ui-helpers.js';
 import { isStandalone, isApplePhone } from './device-mode.js';
 import { bootPage } from './page-boot.js';
-import { ensurePushSubscription, pushState } from './push-client.js';
+import { ensurePushSubscription, pushState, registeredPushState } from './push-client.js';
 import { startPresence } from './presence.js';
 import { startPingSettings } from './pings-settings.js';
 
@@ -81,7 +81,18 @@ function renderInstall(){
 }
 async function renderNotifications(){
   const button=$('ask-notifications');
-  const state=await pushState();
+  const state=await registeredPushState(data,viewer);
+
+  if(state==='failed'||state==='pending'){
+    setFailure('notification','registration could not be verified.');
+    help('notification','connect to the internet, then recheck.','fail');
+    button.textContent='recheck';return;
+  }
+  if(state==='other-device'){
+    setStatus('notification',false,'background pings go to your other device.');
+    help('notification','choose “use this phone” to move them here.');
+    button.textContent='use this phone';return;
+  }
 
   if(state==='needs-install'){
     setFailure('notification','iPhone needs this on the Home Screen first.');
@@ -114,9 +125,9 @@ async function renderNotifications(){
   }
 
   // state === 'ready'
-  setStatus('notification',true,'allowed and registered. reminders will arrive with the app closed.');
+  setStatus('notification',true,'registered for background pings.');
   clearHelp('notification');
-  button.textContent='test popup';
+  button.textContent='recheck';
 }
 async function renderLocation(){
   const button=$('ask-location');
@@ -176,9 +187,10 @@ $('ask-notifications').addEventListener('click',async()=>{
   if(Notification.permission==='default'){busy($('ask-notifications'),true,'waiting for phone…');await Notification.requestPermission();busy($('ask-notifications'),false);}
   if(Notification.permission==='granted'){
     busy($('ask-notifications'),true,'registering…');
-    const result=await ensurePushSubscription(data,viewer);
+    const registered=await registeredPushState(data,viewer);
+    const result=await ensurePushSubscription(data,viewer,{replace:registered==='other-device'});
     busy($('ask-notifications'),false);
-    if(result.state==='failed')help('notification','this phone allowed notifications but could not register for background ones. try reloading the page.','fail');
+    if(result.state!=='ready'){await renderNotifications();help('notification','registration did not finish. reconnect, then try again.','fail');return;}
   }
   await renderNotifications();
   // One test button, in little pings below, so the test uses the sound and

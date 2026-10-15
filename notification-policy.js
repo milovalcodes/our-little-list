@@ -72,6 +72,7 @@ export function quietHoursEndUtc(now, quietHours, utcOffsetMinutes) {
 }
 
 export function notificationKindEnabled(kind, preferences = DEFAULT_NOTIFICATION_PREFERENCES) {
+  if(kind==='push-test')return true; // Explicitly requested in Settings, not chatter.
   if(kind==='game')return false; // Retired arcade invites must never ring again.
   const group = GROUP_FOR_KIND[String(kind || 'note')] || 'notes';
   return normalizeNotificationPreferences(preferences).categories[group] !== false;

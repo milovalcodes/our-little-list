@@ -53,7 +53,7 @@ function store(initial = {}) {
   };
 }
 
-const { ensurePushSubscription, forgetPushSubscription } = await import('../push-client.js');
+const { ensurePushSubscription, forgetPushSubscription, registeredPushState } = await import('../push-client.js');
 
 // 1. The phone that already answers for him must stop doing so when she signs in.
 {
@@ -123,3 +123,21 @@ for(const existing of [null,{endpoint:ENDPOINT}]){
 console.log(' ok  desktop sign-out preserves the phone; concurrent replacement uses atomic endpoint ownership');
 
 console.log('\nPUSH REGISTRATION CLEAN');
+
+{
+ browser();const android={person:'him',subscription:{endpoint:'https://push.example/android'}};
+ const data=store({him:android});
+ data.claimPushEndpoint=async(person,fields,{replace})=>{
+  if(data.rows[person]?.subscription.endpoint!==fields.subscription.endpoint&&!replace)return {state:'other-device'};
+  data.rows[person]=fields;return {state:'ready'};
+ };
+ assert.equal((await ensurePushSubscription(data,'him')).state,'other-device');
+ assert.deepEqual(data.rows.him,android,'automatic registration on desktop preserves Android');
+ assert.equal(await registeredPushState(data,'him'),'other-device');
+ assert.equal((await ensurePushSubscription(data,'him',{replace:true})).state,'ready');
+ assert.equal(await registeredPushState(data,'him'),'ready');
+ data.readOnce=async()=>{throw Error('offline');};assert.equal(await registeredPushState(data,'him'),'failed');
+ const pending=store();pending.setTo=async()=>({syncing:true});
+ assert.equal((await ensurePushSubscription(pending,'him')).state,'pending','unconfirmed writes do not report success');
+ console.log('PUSH HEALTH: server-confirmed registration, explicit device transfer and offline failures checked');
+}

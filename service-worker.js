@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v114';
+const CACHE = 'our-little-list-v115';
 // v114: authenticated shared Little Star alpha, competition earnings and care pings.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
@@ -155,9 +155,10 @@ self.addEventListener('fetch', event => {
           // Fall back to this exact page before falling back to the front door,
           // so going offline on the list does not dump you at the door picker.
           // With nothing cached at all there is nothing to do but keep waiting.
+          // An uncached (large) game must keep loading, not silently become
+          // the home page at the game URL after three seconds on mobile data.
           return (await caches.match(pageKey))
-            || (await caches.match('./index.html'))
-            || network.catch(() => Response.error());
+            || network.catch(async () => (await caches.match('./index.html')) || Response.error());
         })
     );
     return;
@@ -234,7 +235,7 @@ self.addEventListener('push', event => {
     const windows = await Promise.resolve().then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true })).catch(() => []);
     // Being on this page isn't proof: its first snapshot, a slow listener or
     // a failed connection may mean it never displayed this specific message.
-    const candidates=windows.filter(client=>
+    const candidates=windows.filter(client=>payload.kind!=='push-test'&&
       client.visibilityState==='visible'&&client.focused&&PAGES_WITH_POPUPS.test(client.url||''));
     const watching=(await Promise.all(candidates.map(client=>pageDisplayedPing(client,payload)))).some(Boolean);
     const { vibrate: _buzz, ...quiet } = options;

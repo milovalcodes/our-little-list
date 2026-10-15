@@ -92,7 +92,8 @@ export class StarNursery {
      reply={message:result.message,effect:result.effect};
      await tx.put(key,{fingerprint,reply,at:now});
     }else if(input.op!=='read')throw Error('Unknown nursery request.');
-    else{record.state=orient(record.state,record.selected[input.actor]);record.state.seen[input.actor]=now;}
+    // Sync polling is not care: an idle desktop tab must not suppress reminders.
+    else{record.state=orient(record.state,record.selected[input.actor]);}
     collectStarPings(record,now);await tx.put('nursery',record);
     return {...view(record,input.actor,now),...reply};
    });

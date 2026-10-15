@@ -112,3 +112,20 @@ assert.match(data,/work\.then\(\(\)=>\{if\(Number\(item.sendAt\)<=Date.now\(\)\)
 assert.match(data,/if\(saved.done\)wakeDelivery\(\{activities:true\}\)/);
 assert.match(data,/work\.then\(\(\)=>wakeDelivery\(\{activities:true\}\),\(\)=>\{\}\)/);
 console.log('IMMEDIATE DELIVERY: authenticated/CORS-only wake, no arbitrary payload, bounded retries, 40 lease races, old-owner fencing, batching and confirmed-save hooks pass');
+
+// Scheduled and immediate entrypoints hand off CPU-heavy work without exposing
+// a public unauthenticated delivery route or touching the nursery namespace.
+{
+ const {default:entry,runDelivery,DeliveryRunner}=await import('../worker/src/index.js');
+ const calls=[],tasks=[],testEnv={HOUSEHOLD_ID:'test-household',DELIVERY_RUNNER:{idFromName:id=>id,get:id=>({fetch:async(url,options)=>{calls.push({id,url,options:JSON.parse(options.body)});return Response.json({checked:true,sent:0});}})}};
+ await entry.scheduled({},testEnv,{waitUntil:p=>tasks.push(p)});await Promise.all(tasks);
+ assert.equal(calls.length,1);assert.equal(calls[0].id,'test-household');assert.deepEqual(calls[0].options,{});
+ await runDelivery(testEnv,{scheduleQuestions:false,scheduleReminders:false});assert.deepEqual(calls[1].options,{scheduleQuestions:false,scheduleReminders:false});
+ await assert.rejects(runDelivery({}),/not configured/);
+ const runner=new DeliveryRunner({},{});
+ assert.equal((await runner.fetch(new Request('https://internal'))).status,405);
+ assert.equal((await runner.fetch(new Request('https://internal',{method:'POST',body:JSON.stringify({to:'him'})}))).status,400);
+ const blocked=await entry.fetch(new Request('https://worker.test/dispatch',{method:'POST'}),testEnv,{});
+ assert.ok([401,403].includes(blocked.status));assert.equal(calls.length,2);
+ console.log('DELIVERY CPU ISOLATION: cron delegates privately; authentication and option boundaries preserved');
+}
