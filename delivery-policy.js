@@ -1,5 +1,5 @@
 // Shared by the scheduled worker and its manual backstop.
-const FOCUS_HELD_KINDS = new Set(['status', 'item', 'item-finished', 'date', 'memory', 'reaction', 'keepsake', 'game']);
+const FOCUS_HELD_KINDS = new Set(['status', 'item', 'item-finished', 'date', 'memory', 'reaction', 'keepsake', 'game', 'star-care', 'star-growth', 'star-ready']);
 
 // A queued content notification is only useful while its source still exists.
 // Old queues did not have refs, so recover their exact, known destination IDs.

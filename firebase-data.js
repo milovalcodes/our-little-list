@@ -74,6 +74,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
   const layer = {
     mode: 'firebase',
     signedIn,
+    getIdToken: () => auth.currentUser?.getIdToken() || Promise.reject(Error('Sign in to continue.')),
     listenTo(name, callback, { onError } = {}) {
       if (!signedIn()) return () => {};
       let live = liveCollections.get(name);

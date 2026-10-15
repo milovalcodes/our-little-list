@@ -1,0 +1,15 @@
+# Little Star live alpha
+
+`little-star.html` is the generated standalone game; `little-star-live.js` is its authenticated network adapter. `engine.mjs` and `star-gameplay.mjs` are the same pure engine used by the game, copied by `tools/build-little-star.mjs` from the companion asset/source project. To rebuild on another machine, run `node tools/build-little-star.mjs /path/to/baby-star-demo`. The committed output is deployable without that source directory.
+
+The existing delivery worker owns a SQLite-backed `StarNursery` Durable Object, one per household. Only Firebase-verified household members can use `/star`; the browser submits commands, never balances or clocks. Durable transactions serialize concurrent care and spending. Actor-scoped receipts bind a request ID to its command indefinitely. The per-member active pet is independent of the other member's selection.
+
+Opening the live game initializes a fresh egg with normal 40-stardust starter wallets. It never imports the local demo. Verified daily Word/Search/Crossword results from launch week onward award 1 stardust per competition point. A per-day/game/member high-water ledger prevents reset/replay farming. A reset can change the current weekly display, but cannot revoke spent rewards or repay an old score. Source results are read-only; pet games and purchases never modify them. Practice puzzles retain the main app's no-points rule. Earnings catch up when the nursery opens; while visible, saves poll every five seconds and scores at most every 30 seconds.
+
+Cooking and arcade results require a server-created session, valid scored result, plausible elapsed time and exactly-once collection. This is not a competitive anti-cheat system: gameplay remains client-rendered and these rewards only affect the shared pet economy.
+
+The minute scheduler projects needs and growth, stores pending notifications, then atomically creates existing Firestore outbox/receipt documents. Failed queueing retries; delivery revalidates the event and its need cycle. Global phone preferences, quiet hours and focus apply. No new Firebase collection permissions or service-account secrets are needed. Each phone still needs its existing browser notification permission and subscription.
+
+Run `node test/little-star.test.mjs` plus `pnpm test`. `node tools/star-preview.mjs` serves the actual live UI/adapter against a disposable in-memory nursery at `127.0.0.1:8892`; `?scene=egg` and `?scene=ready`, with `&as=her`, provide independent QA fixtures. It cannot touch production. The asset project's `node qa.mjs` runs its 14 gameplay/art regression suites. Browser verification uses the browser-control tool, not shell-driven automation.
+
+Deployment order: test and bundle, deploy the existing worker with its `star-v1` SQLite migration, then publish Pages by pushing `main`. Do not remove the durable binding/migration during rollback; deploy a compatibility patch that preserves storage. The cron never initializes a pet on its own. No live admin reset/debug endpoint exists.

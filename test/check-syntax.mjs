@@ -2,7 +2,7 @@ import { readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 
-const folders = ['.', 'tools', 'worker/src'];
+const folders = ['.', 'tools', 'worker/src', 'little-star'];
 const files = folders.flatMap(folder => readdirSync(folder)
   .filter(name => name.endsWith('.js') || name.endsWith('.mjs'))
   .map(name => join(folder, name)));

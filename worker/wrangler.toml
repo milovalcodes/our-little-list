@@ -2,6 +2,14 @@ name = "our-little-list-delivery"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
 
+[[durable_objects.bindings]]
+name = "STAR_NURSERY"
+class_name = "StarNursery"
+
+[[migrations]]
+tag = "star-v1"
+new_sqlite_classes = ["StarNursery"]
+
 # Every minute. Cloudflare actually honours this, which is the whole reason
 # this exists — GitHub Actions was firing a */5 schedule about every 4 hours.
 [triggers]

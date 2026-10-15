@@ -2,6 +2,7 @@
 // Keep this file free of browser globals so Wrangler can bundle it too.
 
 export const NOTIFICATION_GROUPS = [
+  { id: 'pets', label: 'Little Star', kinds: ['star-care', 'star-growth', 'star-ready'] },
   { id: 'notes', label: 'notes & reactions', kinds: ['note', 'reaction'] },
   { id: 'listsAdded', label: 'added to the list', kinds: ['item'] },
   { id: 'listsFinished', label: 'finished on the list', kinds: ['item-finished'] },

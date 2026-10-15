@@ -40,6 +40,7 @@ jobs:
 
       - name: Profiles, competitive game logic and notification taps
         run: |
+          node test/little-star.test.mjs
           node test/practice.test.mjs
           node test/round-engine.test.mjs
           node test/puzzle-edition.test.mjs

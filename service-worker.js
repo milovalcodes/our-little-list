@@ -1,5 +1,5 @@
-const CACHE = 'our-little-list-v113';
-// v113: safe admin resets, readable controls and a shared, no-repeat weekly round library.
+const CACHE = 'our-little-list-v114';
+// v114: authenticated shared Little Star alpha, competition earnings and care pings.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -19,6 +19,7 @@ const PAGES = [
 ];
 
 const ASSETS = [
+  './little-star-live.js', './little-star-live.css',
   './connected-crossword.js',
   './puzzle-edition.js', './puzzle-edition-bank.js', './puzzle-edition-seasonal.js', './practice-edition-bank.js',
   './round-engine.js', './round-revision.js', './round-library.js', './game-reset.js',
@@ -176,7 +177,7 @@ self.addEventListener('fetch', event => {
   event.respondWith(cached.then(value => value || network));
 });
 
-const PAGES_WITH_POPUPS = /\/(her|him|today|tasks|notes|dates|memories|status|activities|practice|phone-check|guide)\.html(?:[?#]|$)/;
+const PAGES_WITH_POPUPS = /\/(her|him|today|tasks|notes|dates|memories|status|activities|practice|phone-check|guide|little-star)\.html(?:[?#]|$)/;
 function pageDisplayedPing(client,payload){
   return new Promise(resolve=>{
     let channel,timer;
