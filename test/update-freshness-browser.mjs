@@ -35,7 +35,20 @@ try{
   await page.waitForFunction(()=>navigator.serviceWorker.controller);
   generation=2;
   await page.evaluate(async()=>{const reg=await navigator.serviceWorker.getRegistration();await reg.update();});
-  await page.waitForFunction(async()=>(await caches.keys()).includes('our-little-list-v2')&&!(await caches.keys()).includes('our-little-list-v1'));
+  // caches.open() creates the name before addAll has populated it. Cache names
+  // are not activation acknowledgements (also see the failed-upgrade case
+  // below). Wait for the controlling worker and its actual cached resource.
+  await page.waitForFunction(async()=>{
+    if(!navigator.serviceWorker.controller)return false;
+    const version=await new Promise(resolve=>{
+      const channel=new MessageChannel();
+      const finish=value=>{clearTimeout(timer);channel.port1.close();resolve(value);};
+      const timer=setTimeout(()=>finish(null),1000);
+      channel.port1.onmessage=event=>finish(event.data.version);
+      navigator.serviceWorker.controller.postMessage('littlelist:get-version',[channel.port2]);
+    });
+    return version===2&&Boolean(await(await caches.open('our-little-list-v2')).match('/app.js'));
+  });
   const cached=await page.evaluate(async()=>await (await (await caches.open('our-little-list-v2')).match('/app.js')).text());
   assert.match(cached,/loadedGeneration=2/,'a new shell must not precache the old, still-fresh HTTP response');
   await page.reload();
