@@ -177,7 +177,7 @@ document.addEventListener('keydown',e=>{
  if(type!=='word'||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||e.target.closest('input,textarea,select,[contenteditable="true"],dialog,.app-sheet')||document.querySelector('dialog[open]'))return;
  if(e.target.closest('button,a')&&['Enter',' '].includes(e.key))return;
  const key=e.key==='Enter'?'↵':e.key==='Backspace'?'⌫':e.key.toLowerCase();
- if(key==='↵'||key==='⌫'||/^[a-z]$/.test(key)){e.preventDefault();wordKey(key);}
+ if(key==='↵'||key==='⌫'||/^[a-z]$/.test(key)){e.preventDefault();host.focus({preventScroll:true});wordKey(key);}
 });
 picker.addEventListener('change',()=>{index=Number(picker.value);store.move(type,index,difficulty);load();});
 document.getElementById('practice-next').addEventListener('click',()=>{const half=PRACTICE_COUNTS[type]/2,offset=difficulty==='hard'?half:0;index=offset+(index-offset+1)%half;store.move(type,index,difficulty);load();host.focus({preventScroll:true});});

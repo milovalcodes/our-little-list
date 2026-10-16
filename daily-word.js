@@ -146,11 +146,16 @@ export function startDailyWord({data,viewer,other},options={}){
   const keydown=event=>{
     if(activeBoard!==host)return;
     if([...document.querySelectorAll('dialog[open],[role="dialog"]')].some(dialog=>dialog.getClientRects().length))return;
-    if(!(options.disclosure||document.getElementById('wordle')).open||document.getElementById('daily').hidden||event.ctrlKey||event.metaKey||event.altKey||event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+    if(!(options.disclosure||document.getElementById('wordle')).open||document.getElementById('daily').hidden||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
     // Let focused buttons keep their ordinary Enter behavior.
     if(event.key==='Enter'&&event.target.closest('button,summary,a'))return;
     const value=event.key==='Enter'?'↵':event.key==='Backspace'?'⌫':event.key.toLowerCase();
-    if(/^[a-z]$/.test(value)||value==='↵'||value==='⌫'){event.preventDefault();void key(value);}
+    if(/^[a-z]$/.test(value)||value==='↵'||value==='⌫'){
+      event.preventDefault();
+      // Typing starts keyboard play. Otherwise focus stays on the disclosure
+      // that opened the game, and Enter closes it instead of sending the word.
+      host.tabIndex=-1;host.focus({preventScroll:true});void key(value);
+    }
   };
   document.addEventListener('keydown',keydown);
   const activate=()=>{activeBoard=host;};

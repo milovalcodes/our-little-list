@@ -129,6 +129,10 @@ metadata without sending a test notification or printing private content.
 
 Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 
+## Isolated manual QA
+
+`node tools/qa-preview.mjs` serves the ordinary app at `http://127.0.0.1:8879/him.html?as=him` with local-only storage and an empty Firebase configuration. A second tab using `?as=her` checks the other side without touching live accounts. No service worker is installed on this QA origin. For Little Star, use `node tools/star-preview.mjs` as documented in `little-star/README.md`; it runs the real game adapter against disposable RAM state. The release builder also copies the actual UI restore function into a generated CI fixture so clock-only sync, stale replies and active-game protection can be tested without duplicating its logic.
+
 Old links still work: `reminders.html`, `activity.html`, `notifications.html`,
 `help.html`, `admire.html`, `location.html` and `profiles.html` are no longer
 pages. `old-links.js` maps each to where it lives now; GitHub Pages' `404.html`

@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
 import {StarNursery,freshRecord,creditResults,collectStarPings,starPingWanted} from '../worker/src/star-store.js';
 import {authorizeStar,handleStar,scheduleStar,queuedStarWanted} from '../worker/src/star-api.js';
 import {scenario,DAY,COFFEE,eggProgress} from '../little-star/engine.mjs';
+import * as starEngine from '../little-star/engine.mjs';
 import {notificationKindEnabled} from '../notification-policy.js';
 import {ADMIN_UID} from '../household.js';
 const realNow=Date.now,realFetch=globalThis.fetch;
@@ -82,5 +85,16 @@ try{
  assert.equal(values.get('nursery').state.transfers.at(-1).from,'him','only token identity chooses the actor');
  globalThis.fetch=async()=>Response.json({users:[{localId:'outsider'}]});assert.equal((await handleStar(req({op:'read'}),env)).status,403);
  globalThis.fetch=async()=>Response.json({error:'expired'},{status:400});assert.equal((await handleStar(req({op:'read'}),env)).status,401);
+ // Exercise the shipped UI's restore path, not a duplicate of its logic.
+ const restoreCode=readFileSync(new URL('./fixtures/star-ui-restore.js',import.meta.url),'utf8');
+ let draws=0,meters=0;const seed=scenario('ready',now);
+ const ui={...starEngine,live:true,state:seed,server:seed,now,tickAt:now,busy:false,ceremony:null,game:null,cooking:null,careSession:null,retry:null,restoreQueued:null,tab:'play',lastPlayGate:'',lastEggReady:false,root:{contains:()=>false},document:{activeElement:null},$:()=>({open:false}),render(){draws++;},updateRoom(){meters++;},renderPanel(){draws++;}};
+ vm.createContext(ui);vm.runInContext(restoreCode,ui);
+ ui.restore({star:starEngine.projectStar(seed,now+5000),now:now+5000});
+ assert.equal(draws,0,'clock-only polls must preserve focused game/shop controls');assert.equal(meters,1,'needs still update without an action revision');
+ ui.restore({star:seed,now:now+1000});assert.equal(ui.now,now+5000,'old same-revision responses cannot rewind the clock');
+ const changed=starEngine.projectStar({...seed,revision:seed.revision+1},now+6000);
+ ui.restore({star:changed,now:now+6000});assert.equal(draws,1,'real partner actions still refresh the UI');
+ ui.cooking={};ui.restore({star:{...changed,revision:changed.revision+1},now:now+7000});assert.equal(draws,1);assert.ok(ui.restoreQueued,'active gameplay defers shared updates');
  console.log('LITTLE STAR LIVE: shared egg, two accounts, purchases, durable retries, competition high-water rewards, per-pet coffee, independent pet selection, cooking, notification queue/staleness and API authorization passed.');
 }finally{Date.now=realNow;globalThis.fetch=realFetch;}

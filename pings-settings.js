@@ -122,7 +122,7 @@ $('test-notification').addEventListener('click', async event => {
     if(data.mode==='local')throw Error('Sign in to test delivery.');
     const queued=await data.notify(viewer,{kind:'push-test',title:'Notification test',body:'Background delivery reached this device.',url:'phone-check.html#pings',urgent:true,sendAt:Date.now()+15000});
     if(!queued?.queued)throw Error('Could not queue test.');
-    $('push-test-state').textContent='Test queued. Lock this phone; look for it within a minute.';
+    $('push-test-state').textContent='Test queued. Lock this phone; look for it after about a minute.';
   } catch (_) {
     showFailure('could not queue the test.', 'check your connection and notification setup, then retry.');
   } finally {

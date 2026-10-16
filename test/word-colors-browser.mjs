@@ -19,6 +19,13 @@ try {
    await d.setTo('wordGames',day+'-'+person,{day,person,guesses:['allee','grape'],done:false,won:false,updatedAt:1});
   },side);
   await page.waitForSelector('.word-keyboard [data-key="g"].absent');
+  // Opening the disclosure leaves its summary focused. Physical typing must
+  // move focus into the game, or Enter collapses it instead of submitting.
+  await page.locator('#wordle > summary').focus();
+  await page.keyboard.type('zzzzz');await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#wordle').getAttribute('open'),'');
+  await page.waitForFunction(()=>document.getElementById('word-game').textContent.includes('Not in the word book'));
+  for(let i=0;i<5;i++)await page.keyboard.press('Backspace');
   assert.equal(await page.locator('.word-keyboard [data-key="l"]').getAttribute('class'),'present ','an extra L cannot erase a known L');
   assert.match(await page.locator('.word-keyboard [data-key="a"]').getAttribute('class'),/correct/,'later yellow cannot erase earlier correct');
   assert.match(await page.locator('.word-keyboard [data-key="g"]').getAttribute('aria-label'),/not in the word/);
