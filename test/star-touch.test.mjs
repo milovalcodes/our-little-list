@@ -35,6 +35,18 @@ function cooking(recipe='porridge'){
  return h;
 }
 const cook=cooking();
+const roundCook=cooking();
+for(let i=0;i<6;i++)roundCook.tap(roundCook.work,92+Math.floor(i/2)*83.2,132.5);
+roundCook.tick(1000);
+// Follow the exact ellipse drawn on the pot, including a wrapped final sample.
+roundCook.input('pointerdown',roundCook.work,81,192,111);
+for(let i=1;i<=96&&!roundCook.ctl.snapshot().transition;i++){
+ roundCook.tick(60);const angle=i*Math.PI/16;
+ roundCook.input('pointermove',roundCook.work,81,160+32*Math.cos(angle),111+14*Math.sin(angle));
+}
+assert.equal(roundCook.ctl.snapshot().grades[1],100,'three circles on the visible guide finish without an extra nudge');
+roundCook.input('pointerup',roundCook.work,81,192,111);roundCook.tick(900);assert.equal(roundCook.ctl.snapshot().phase,2);
+console.log('PASS guide-aligned stirring completes on the third circle');
 // Enter on another control must not become a stirring hold. Native keyboard
 // activation of retry/pause/navigation must remain available at this station.
 const keyboardCook=cooking();

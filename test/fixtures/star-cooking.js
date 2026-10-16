@@ -99,10 +99,11 @@ function mountStarCooking(host,ctx){
   // Pointer samples already reject implausible jumps. A held control must
   // integrate elapsed time, even when a phone renders only a few frames/sec.
   const amount=delta;lap+=amount;
-  if(Math.abs(lap)>=Math.PI*2){turns++;lap-=Math.sign(lap)*Math.PI*2;ctx.beep(turns%4);}
+  // A sub-pixel gap at the end of a circle should not demand another lap.
+  if(Math.abs(lap)>=Math.PI*2-.02){turns++;lap=Math.sign(lap)*Math.max(0,Math.abs(lap)-Math.PI*2);ctx.beep(turns%4);}
   recipe.stir=turns*Math.PI*2+Math.abs(lap);recipe.stirGood+=Math.abs(amount)*quality;recipe.stirTravel+=Math.abs(amount);
   recipe.angle+=amount;
-  const progress=Math.min(100,recipe.stir/(Math.PI*6)*100),meter=host.querySelector('.stir-progress');
+  const progress=turns>=3?100:Math.min(99,recipe.stir/(Math.PI*6)*100),meter=host.querySelector('.stir-progress');
   meter.setAttribute('aria-valuenow',Math.round(progress));meter.firstElementChild.style.width=progress+'%';
   host.querySelector('.stir-count').textContent=Math.min(3,Math.floor(recipe.stir/(Math.PI*2)))+' / 3 · '+Math.round(progress)+'%';
   feedback(turns?turns+' / 3 circles':'Stir in circles');
