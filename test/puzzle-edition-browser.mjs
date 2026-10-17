@@ -35,10 +35,12 @@ try{
      await page.locator('#search [data-cell="'+(e.start+(e.word.length-1)*e.step)+'"]').click();
     }else{
      await page.locator('#crossword [data-clue="'+n+'"]').click();
-     await page.locator('#crossword [data-answer]').fill(e.word);
-     await page.locator('#crossword button[type=submit]').click();
+     if(await page.locator('#crossword .puzzle-cell.cursor').getAttribute('data-cell')!==String(e.start))await page.locator('#crossword [data-cell="'+e.start+'"]').click();
+     for(const ch of e.word)await page.keyboard.press(ch.toLowerCase());
     }
-    await page.waitForFunction(({type,n})=>document.querySelectorAll('#'+type+' '+(type==='search'?'.search-words':'.crossword-clues')+' .found').length===n,{type,n:n+1});
+    // Crossword credit is saved silently, so wait on the saved game itself.
+    if(type==='search')await page.waitForFunction(n=>document.querySelectorAll('#search .search-words .found').length===n,n+1);
+    else for(let tries=0;await page.evaluate(async({day,side})=>(await(await(await import('./data-hub.js')).sharedLayer()).readDoc('timedGames',day+'-crossword-'+side))?.solved.length||0,{day,side})<n+1;tries++){assert.ok(tries<80,'crossword word '+n+' saved');await page.waitForTimeout(100);}
    }
    const step=p.durationMs>120000?(p.durationMs-10000)/p.entries.length:10000;
    const expected=timedPoints({day,type,total:p.entries.length,count:p.entries.length,startedAt:started,finishedAt:started+p.entries.length*step,done:true,complete:true,durationMs:p.durationMs});

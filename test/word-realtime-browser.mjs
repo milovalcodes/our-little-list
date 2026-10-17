@@ -143,14 +143,16 @@ try {
  assert.equal(moves.filter(r=>r.ok).length,1,'two screens cannot overwrite a saved word');
  let board=moves.find(r=>r.ok).game;
  for(let i=0;i<timedPuzzle.entries.length;i++)if(!board.solved.includes(i)){const move=await play(moon,'him',{index:i,answer:timedPuzzle.entries[i].word,expectedCount:board.solved.length});assert.ok(move.ok,JSON.stringify(move));board=move.game;}
- await sun.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☾ '+points),80*multiplier);
+ // The saved server times decide any time bonus, so score from the saved result.
+ const searchPoints=await moon.evaluate(async day=>{const d=await(await import('./data-hub.js')).sharedLayer(),{timedPoints}=await import('./timed-game.js');return timedPoints(await d.readDoc('timedResults',day+'-search-him'));},timedPuzzle.day);
+ await sun.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☾ '+points),solvedIn(3)+searchPoints);
  assert.equal(await sun.evaluate(async day=>{try{await(await(await import('./data-hub.js')).sharedLayer()).readDoc('timedGames',day+'-search-him');return false;}catch(e){return e.code==='permission-denied';}},timedPuzzle.day),true);
  assert.ok((await play(sun,'her',{start:true})).ok);
  for(let i=0;i<timedPuzzle.entries.length;i++)assert.ok((await play(sun,'her',{index:i,answer:timedPuzzle.entries[i].word,expectedCount:i})).ok);
  await moon.locator('#search>summary').click();await moon.waitForSelector('#search [data-peek]');await moon.click('#search [data-peek]');await moon.waitForSelector('#search .timed-peek li');
  assert.equal(await moon.locator('#search .timed-peek li').count(),10);
- assert.match(await moon.locator('#search-summary').textContent(),new RegExp((50*multiplier)+' points'));
- await moon.reload();await moon.waitForFunction(points=>document.querySelector('#search-summary').textContent.includes(points+' points'),50*multiplier);
+ assert.match(await moon.locator('#search-summary').textContent(),new RegExp('^'+searchPoints+' points'));
+ await moon.reload();await moon.waitForFunction(points=>document.querySelector('#search-summary').textContent.startsWith(points+' points'),searchPoints);
  assert.deepEqual(errors,[]);
  console.log('REAL FIREBASE TIMED: server timestamps, independent attempts, simultaneous-tab protection, live total scores, private routes, live reveal and saved reload verified');
  // An explicitly authorized server reset must clear the old finished UI,

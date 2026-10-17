@@ -24,16 +24,31 @@ try{
  await page.reload();await page.waitForFunction(()=>document.querySelector('#search-summary').textContent.includes('50 points'));
  await page.locator('#crossword>summary').click();await page.click('#crossword [data-start]');
  const cross=await page.evaluate(async()=>{const{timedPuzzle}=await import('./daily-puzzles.js');return timedPuzzle('2026-10-09','crossword');});
- await page.locator('#crossword [data-answer]').fill('ZZ');await page.locator('#crossword button[type=submit]').click();
- assert.match(await page.locator('#crossword .timed-feedback').textContent(),/not quite/);
- for(let i=0;i<2;i++){await page.locator(`#crossword [data-clue="${i}"]`).click();await page.locator('#crossword [data-answer]').fill(cross.entries[i].word);await page.locator('#crossword button[type=submit]').click();await page.waitForFunction(n=>document.querySelectorAll('#crossword .crossword-clues .found').length===n,i+1);}
- // Reload preserves the server-style start time and already solved words.
- await page.reload();await page.locator('#crossword>summary').click();await page.waitForFunction(()=>document.querySelectorAll('#crossword .crossword-clues .found').length===2);
+ // Letter-by-letter entry: wrong squares are never flagged while competing.
+ const typeWord=async i=>{
+  await page.locator(`#crossword [data-clue="${i}"]`).click();
+  if(await page.locator('#crossword .puzzle-cell.cursor').getAttribute('data-cell')!==String(cross.entries[i].start))await page.locator(`#crossword [data-cell="${cross.entries[i].start}"]`).click();
+  for(const ch of cross.entries[i].word)await page.keyboard.press(ch.toLowerCase());
+ };
+ const savedWords=()=>page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();return (await d.readDoc('timedGames','2026-10-09-crossword-him'))?.solved.length||0;});
+ await page.locator('#crossword [data-clue="0"]').click();await page.keyboard.press('z');await page.keyboard.press('z');
+ assert.equal(await page.locator('#crossword .timed-feedback').textContent(),'','no check while competing');
+ assert.equal(await page.locator('#crossword .found,#crossword .missed-word').count(),0);
+ assert.match(await page.locator('#crossword .timed-toolbar').textContent(),/2 \/ \d+ squares/);
+ for(let i=0;i<2;i++)await typeWord(i);
+ for(let tries=0;await savedWords()<2;tries++){assert.ok(tries<50,'correct words are saved silently');await page.waitForTimeout(100);}
+ assert.equal(await page.locator('#crossword .found').count(),0,'saved words stay unmarked until the round ends');
+ // Reload preserves the server-style start time, typed squares and saved words.
+ const squares=await page.locator('#crossword .timed-toolbar span').textContent();
+ await page.reload();if(!await page.locator('#crossword').evaluate(d=>d.open))await page.locator('#crossword>summary').click();
+ await page.waitForFunction(text=>document.querySelector('#crossword .timed-toolbar span')?.textContent===text,squares);
  await page.clock.setFixedTime(now+120001);
  await page.waitForFunction(()=>document.querySelector('#crossword-summary').textContent.includes('points'));
  const points=Math.round(2/cross.entries.length*50);
  assert.match(await page.locator('#crossword-summary').textContent(),new RegExp(points+' points'));
- assert.equal(await page.locator('#crossword [data-answer]').count(),0);
+ assert.equal(await page.locator('#crossword .crossword-keys').count(),0);
+ assert.equal(await page.locator('#crossword .crossword-clues .found').count(),2);
+ assert.ok(await page.locator('#crossword .puzzle-cell.missed-word').count()>0,'wrong and empty squares are marked after the round');
  // A saved partner round unlocks the process without reloading; direct read only after both end.
  await page.evaluate(async({cross,now})=>{const{sharedLayer}=await import('./data-hub.js'),d=await sharedLayer();const{newTimedGame,timedSummary}=await import('./timed-game.js');const g={...newTimedGame(cross,'her',now),done:true,complete:false,finishedAt:now+120000,solved:[0],foundAt:[12000]};await d.setTo('timedGames','2026-10-09-crossword-her',g);await d.setTo('timedResults','2026-10-09-crossword-her',timedSummary(g));},{cross,now});
  await page.locator('#crossword [data-peek]').click();await page.locator('#crossword .timed-peek li').waitFor();
