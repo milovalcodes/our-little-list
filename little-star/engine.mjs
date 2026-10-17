@@ -33,9 +33,13 @@ export const FORMS={
  blackhole:{name:'black hole',icon:'◉',care:'roll a little orbit',line:'Has eaten one sock. Denies everything.',animation:'blackhole'}
 };
 export const EGG_CARE=[{id:'dwarf',name:'a quiet nest',icon:'☾',verb:'tucked the egg into a quiet nest'},{id:'giant',name:'warm little hands',icon:'♡',verb:'warmed the egg with a long cuddle'},{id:'neutron',name:'tap a tiny rhythm',icon:'♫',verb:'tapped a little rhythm for the egg'},{id:'blackhole',name:'roll a little orbit',icon:'◉',verb:'rolled a stardust orbit around the egg'}];
-export const ECONOMY={starter:40,practiceCap:40,practiceRate:.2,petGameCap:3,ritualReward:6,wordPoints:[100,40,30,20,10]};
-export const STAGES=[{id:'baby',name:'baby spark',time:3,care:1,growth:4},{id:'little',name:'little star',time:3,care:2,growth:40},{id:'teen',name:'teen star',time:3,care:3,growth:80},{id:'grown',name:'grown star',time:7,care:5,growth:200},{id:'final',name:'final form',time:0,care:0,growth:0}];
-export const FOODS=[{id:'porridge',name:'homemade star porridge',icon:'🥣',price:null,food:32,joy:5},{id:'milk',name:'moon milk',icon:'🥛',price:18,food:32,joy:3},{id:'toast',name:'sunbeam toast',icon:'🍞',price:22,food:38,joy:2},{id:'berry',name:'berry-cloud pudding',icon:'🍮',price:35,food:32,joy:12},{id:'soup',name:'pumpkin soup',icon:'🥣',price:32,food:40,joy:8,season:'spooky'},{id:'cocoa',name:'snowflake cocoa',icon:'☕',price:35,food:30,joy:12,season:'christmas'}];
+export const ECONOMY={starter:40,practiceCap:40,practiceRate:.2,petGameCap:3,ritualReward:6,wordPoints:[100,40,30,20,10],arcadeCap:90,recordBonus:10};
+export const STAGES=[{id:'baby',name:'baby spark',time:2,care:1,growth:30},{id:'little',name:'little star',time:3,care:2,growth:60},{id:'teen',name:'teen star',time:4,care:3,growth:90},{id:'grown',name:'grown star',time:6,care:4,growth:130},{id:'final',name:'final form',time:0,care:0,growth:0}];
+// Stages that began before the v2 pacing keep their original goals; the next
+// stage a star enters uses STAGES. Only time/care/growth are read from here.
+export const LEGACY_STAGES=[{time:3,care:1,growth:4},{time:3,care:2,growth:40},{time:3,care:3,growth:80},{time:7,care:5,growth:200},{time:0,care:0,growth:0}];
+export const PHASE_PACING=2;
+export const FOODS=[{id:'porridge',name:'homemade star porridge',icon:'🥣',price:null,food:32,joy:5},{id:'milk',name:'moon milk',icon:'🥛',price:12,food:32,joy:3},{id:'toast',name:'sunbeam toast',icon:'🍞',price:15,food:38,joy:2},{id:'berry',name:'berry-cloud pudding',icon:'🍮',price:25,food:32,joy:12},{id:'soup',name:'pumpkin soup',icon:'🥣',price:22,food:40,joy:8,season:'spooky'},{id:'cocoa',name:'snowflake cocoa',icon:'☕',price:25,food:30,joy:12,season:'christmas'}];
 export const PET_GAMES={catch:{name:'Wish catcher',energy:16,food:10,clean:16,joy:12,form:'blackhole'},pairs:{name:'Star pairs',energy:12,food:6,clean:4,joy:8,form:'neutron'},echo:{name:'Little echo',energy:8,food:4,clean:2,joy:6,form:'dwarf'}};
 export const COOK_BONUS={golden:'one extra portion',dwarf:'one cozy pudding',giant:'two extra portions',neutron:'one energizing moon milk',blackhole:'one extra portion & tidies the mess'};
 export function playNeeds(s,now){const v=projectStar(s,now),needs=[];if(!v.born)needs.push('let the egg hatch');if(v.vacation)needs.push('resume care');if(longRest(v,now))needs.push('let your star sleep until 8 a.m.');else if(v.sleepUntil>now)needs.push('let your star wake');if(v.born){if(v.needs.food<25)needs.push('a snack');if(v.needs.clean<25)needs.push('a bath');if(v.needs.energy<25)needs.push('a nap');if(v.needs.joy<15)needs.push('a cuddle');}return needs;}
@@ -55,11 +59,11 @@ export const SHOP=[
  {id:'pumpkin',name:'pumpkin night-light',slot:'decor',price:500,icon:'🎃',look:'pumpkin',season:'spooky'},
  {id:'tree',name:'pocket Christmas tree',slot:'decor',price:650,icon:'🎄',look:'tree',season:'christmas'},
  {id:'cloud-room',name:'cloud nursery',slot:'room',price:0,icon:'☁',look:'cloud'},
- {id:'garden-room',name:'moon garden',slot:'room',price:2400,icon:'🌿',look:'garden'},
- {id:'observatory',name:'little observatory',slot:'room',price:5200,icon:'🔭',look:'observatory'},
- {id:'haunted-room',name:'cozy little haunting',slot:'room',price:2800,icon:'🕯',look:'haunted',season:'spooky'},
- {id:'snow-room',name:'snow-globe room',slot:'room',price:2800,icon:'❄',look:'snow',season:'christmas'},
- {id:'galaxy-room',name:'a galaxy of our own',slot:'room',price:9000,icon:'🌌',look:'galaxy'},
+ {id:'garden-room',name:'moon garden',slot:'room',price:1800,icon:'🌿',look:'garden'},
+ {id:'observatory',name:'little observatory',slot:'room',price:4200,icon:'🔭',look:'observatory'},
+ {id:'haunted-room',name:'cozy little haunting',slot:'room',price:2200,icon:'🕯',look:'haunted',season:'spooky'},
+ {id:'snow-room',name:'snow-globe room',slot:'room',price:2200,icon:'❄',look:'snow',season:'christmas'},
+ {id:'galaxy-room',name:'a galaxy of our own',slot:'room',price:7500,icon:'🌌',look:'galaxy'},
  {id:'sprout',name:'one ambitious sprout',slot:'wearable',price:200,icon:'🌱',look:'sprout'},
  {id:'sleepcap',name:'sleepy cloud cap',slot:'wearable',price:260,icon:'🌙',look:'sleepcap'},
  {id:'chef',name:'tiny chef hat',slot:'wearable',price:300,icon:'👨‍🍳',look:'chef'},
@@ -70,23 +74,23 @@ export const SHOP=[
  {id:'aquarium',name:'one very small sea',slot:'decor',price:1200,icon:'🐠',look:'aquarium'},
  {id:'booknook',name:'books bigger than you',slot:'decor',price:950,icon:'📚',look:'booknook'},
  {id:'planetlamp',name:'Saturn night-light',slot:'decor',price:800,icon:'🪐',look:'planetlamp'},
- {id:'bakery-room',name:'the moonbeam bakery',slot:'room',price:3800,icon:'🥐',look:'bakery'},
- {id:'aurora-room',name:'northern lights nook',slot:'room',price:6500,icon:'🌠',look:'aurora'},
- {id:'cozy',name:'cloud-knit set',slot:'wearable',price:1100,look:'cozy',tier:'apprentice',aura:'cold',description:'Beanie & fitted star sweater.'},
- {id:'wizard',name:'starlight mage set',slot:'wearable',price:1250,look:'wizard',tier:'apprentice',aura:'heavy',description:'Wizard hat & clasped cape.'},
- {id:'bedtime',name:'night-sky set',slot:'wearable',price:1150,look:'bedtime',tier:'apprentice',aura:'astral',description:'Nightcap & constellation pajamas.'},
- {id:'picnic',name:'sunny picnic set',slot:'wearable',price:1000,look:'picnic',tier:'apprentice',aura:'warm',description:'Ribbon & wrapped scarf.'},
- {id:'ember-regalia',name:'sunfire regalia',slot:'wearable',price:3600,look:'ember-regalia',tier:'master',aura:'warm',description:'Solar crown, embroidered coat & cape.'},
- {id:'frost-traveler',name:'frost traveler',slot:'wearable',price:3600,look:'frost-traveler',tier:'master',aura:'cold',description:'Crystal hood, fur-lined coat & scarf.'},
- {id:'astral-oracle',name:'astral oracle',slot:'wearable',price:4200,look:'astral-oracle',tier:'master',aura:'astral',description:'Crescent diadem & constellation robes.'},
- {id:'void-monarch',name:'void monarch',slot:'wearable',price:4200,look:'void-monarch',tier:'master',aura:'heavy',description:'Amethyst crown, mantle & royal coat.'},
+ {id:'bakery-room',name:'the moonbeam bakery',slot:'room',price:3000,icon:'🥐',look:'bakery'},
+ {id:'aurora-room',name:'northern lights nook',slot:'room',price:5000,icon:'🌠',look:'aurora'},
+ {id:'cozy',name:'cloud-knit set',slot:'wearable',price:800,look:'cozy',tier:'apprentice',aura:'cold',description:'Beanie & fitted star sweater.'},
+ {id:'wizard',name:'starlight mage set',slot:'wearable',price:850,look:'wizard',tier:'apprentice',aura:'heavy',description:'Wizard hat & clasped cape.'},
+ {id:'bedtime',name:'night-sky set',slot:'wearable',price:800,look:'bedtime',tier:'apprentice',aura:'astral',description:'Nightcap & constellation pajamas.'},
+ {id:'picnic',name:'sunny picnic set',slot:'wearable',price:700,look:'picnic',tier:'apprentice',aura:'warm',description:'Ribbon & wrapped scarf.'},
+ {id:'ember-regalia',name:'sunfire regalia',slot:'wearable',price:2400,look:'ember-regalia',tier:'master',aura:'warm',description:'Solar crown, embroidered coat & cape.'},
+ {id:'frost-traveler',name:'frost traveler',slot:'wearable',price:2400,look:'frost-traveler',tier:'master',aura:'cold',description:'Crystal hood, fur-lined coat & scarf.'},
+ {id:'astral-oracle',name:'astral oracle',slot:'wearable',price:2800,look:'astral-oracle',tier:'master',aura:'astral',description:'Crescent diadem & constellation robes.'},
+ {id:'void-monarch',name:'void monarch',slot:'wearable',price:2800,look:'void-monarch',tier:'master',aura:'heavy',description:'Amethyst crown, mantle & royal coat.'},
  {id:'rewind',name:'little yesterday drop',slot:'magic',price:4500,icon:'💧',look:'rewind',description:'Use once: return one stage. Keeps belongings and memories.'},
  {id:'age',name:'bottled tomorrow',slot:'magic',price:3500,icon:'⏳',look:'age',description:'Use once: advance one stage with the care history you have now.'},
- {id:'stasis',name:'pause-pocket watch',slot:'magic',price:1200,icon:'⌚',look:'stasis',description:'Reusable: pause or resume evolution. Everyday needs keep going.'}
+ {id:'stasis',name:'pause-pocket watch',slot:'magic',price:900,icon:'⌚',look:'stasis',description:'Reusable: pause or resume evolution. Everyday needs keep going.'}
 ];
 export const AURAS={warm:{name:'warm',form:'giant'},cold:{name:'cold',form:'dwarf'},astral:{name:'astral',form:'neutron'},heavy:{name:'heavy',form:'blackhole'}};
 const auraItems={warm:['santa','scarf','sweater','chef','raincoat','lantern','pumpkin','tree','bakery-room'],cold:['beanie','flower','sleepcap','pajamas','sprout','plant','aquarium','garden-room','snow-room'],astral:['bow','halo','stardress','mobile','planetlamp','observatory','aurora-room'],heavy:['witch','overalls','cape','booknook','haunted-room','galaxy-room']};
-for(const item of SHOP){item.aura??=Object.keys(auraItems).find(k=>auraItems[k].includes(item.id))||null;if(item.aura){item.tier??=item.price>=3500?'master':item.price>=800?'apprentice':'beginner';item.auraRate=WEARABLE_TIERS[item.tier].rate;}}
+for(const item of SHOP){item.aura??=Object.keys(auraItems).find(k=>auraItems[k].includes(item.id))||null;if(item.aura){item.tier??=item.price>=2400?'master':item.price>=800?'apprentice':'beginner';item.auraRate=WEARABLE_TIERS[item.tier].rate;}}
 export function auraRates(s){const rates={warm:0,cold:0,astral:0,heavy:0};for(const [slot,id] of Object.entries(s.equipped||{})){const item=SHOP.find(i=>i.id===id&&i.slot===slot);if(item?.aura&&s.owned.includes(id))rates[item.aura]+=item.auraRate;}return rates;}
 // Rates change only from migration time, never backdate a new 3/5-point rate.
 function migrateWardrobe(s,now){
@@ -128,13 +132,13 @@ export function eggProgress(s,now=s.updatedAt){
 }
 export function stageProgress(s,now){
  if(s.evolvedAt||s.born&&s.stage===STAGES.length-1)return {percent:100,label:'Final form · yours forever',daysLeft:0,careLeft:0,growthLeft:0,timeLeft:0,timeLabel:'ready'};
- const phase=STAGES[s.stage],target=!s.born?{time:EGG_DURATION/DAY,care:1,xp:0}:{time:phase.time,care:phase.care,xp:phase.growth};
+ const phase=(s.phasePacing===PHASE_PACING?STAGES:LEGACY_STAGES)[s.stage],target=!s.born?{time:EGG_DURATION/DAY,care:1,xp:0}:{time:phase.time,care:phase.care,xp:phase.growth};
  const age=Math.max(0,((s.pausedAt||now)-s.phaseAt)/DAY),percent=Math.floor(100*Math.min(1,age/target.time,s.phaseDays.length/target.care,target.xp?s.phaseXP/target.xp:1));
  const timeLeft=Math.max(0,(target.time-age)*DAY),timeLabel=timeLeft>DAY?Math.ceil(timeLeft/DAY)+' days':timeLeft>2*HOUR?Math.ceil(timeLeft/HOUR)+' hours':timeLeft>0?Math.ceil(timeLeft/60000)+' min':'time ready';
  return {percent,label:s.pausedAt?'Evolution paused':!s.born?'Next: baby spark':'Next: '+(STAGES[s.stage+1]?.name||'final form'),daysLeft:Math.max(0,Math.ceil(target.time-age)),timeLeft,timeLabel,careLeft:Math.max(0,target.care-s.phaseDays.length),growthLeft:Math.max(0,target.xp-s.phaseXP)};
 }
-function restartPhase(s,now){s.phaseAt=now;s.phaseXP=0;s.phaseDays=[];if(s.pausedAt)s.pausedAt=now;}
-export const PET_FIELDS='petId name born wishes eggCare form affinity auraTime auraAt auraSchema evolvedAt phaseAt phaseXP phaseDays pausedAt createdAt updatedAt lastCareAt seen needs needAlerts xp stage careDays equipped traits rituals sleepUntil coffeeUsedAt vacation growthEvent'.split(' ');
+function restartPhase(s,now){s.phaseAt=now;s.phasePacing=PHASE_PACING;s.phaseXP=0;s.phaseDays=[];if(s.pausedAt)s.pausedAt=now;}
+export const PET_FIELDS='petId name born wishes eggCare form affinity auraTime auraAt auraSchema evolvedAt phaseAt phasePacing phaseXP phaseDays pausedAt createdAt updatedAt lastCareAt seen needs needAlerts xp stage careDays equipped traits rituals sleepUntil coffeeUsedAt vacation growthEvent'.split(' ');
 export const petSnapshot=s=>Object.fromEntries(PET_FIELDS.map(k=>[k,clone(s[k]??null)]));
 function plaque(s,now){if(!s.evolvedAt||s.plaques.some(p=>p.petId===s.petId))return;s.plaques.push({petId:s.petId,name:s.name,form:s.form,at:now});memory(s,'raised-fully',`Raised a ${FORMS[s.form].name} fully`,`${s.name}, a whole little universe raised by both of you.`,now);}
 function growthLook(s){return {life:s.born?STAGES[s.stage].id:'egg',form:s.born?s.form:'egg'};}
@@ -188,7 +192,7 @@ export function normalizeStar(value,now,nested=false){
  s.needs=Object.fromEntries(Object.keys(fallback.needs).map(k=>[k,clamp(Number.isFinite(value.needs?.[k])?value.needs[k]:fallback.needs[k])]));
  s.needAlerts=Object.fromEntries(Object.keys(NEED_DECAY).map(k=>{const a=value.needAlerts?.[k];return [k,{cycle:clamp(Math.floor(Number(a?.cycle)||0),0,1e9),empty:a?.empty===true,at:clamp(Number(a?.at)||0,0,now),sent:{him:a?.sent?.him===true,her:a?.sent?.her===true}}];}));
  s.wallets=Object.fromEntries(Object.keys(PEOPLE).map(k=>[k,clamp(Math.floor(Number(s.wallets?.[k])||0),0,999999)]));delete s.coins;s.xp=clamp(Number(s.xp)||0,0,99999);s.stage=clamp(Math.floor(Number(s.stage)||0),0,STAGES.length-1);
- s.createdAt=Number.isFinite(s.createdAt)?Math.min(now,s.createdAt):now;s.phaseAt=Number.isFinite(s.phaseAt)?Math.min(now,s.phaseAt):s.createdAt;s.phaseXP=clamp(Number(s.phaseXP)||0,0,99999);s.phaseDays=[...new Set((Array.isArray(s.phaseDays)?s.phaseDays:[]).filter(validDay))];s.pausedAt=Number.isFinite(s.pausedAt)?clamp(s.pausedAt,0,now):0;
+ s.createdAt=Number.isFinite(s.createdAt)?Math.min(now,s.createdAt):now;s.phaseAt=Number.isFinite(s.phaseAt)?Math.min(now,s.phaseAt):s.createdAt;s.phasePacing=value.phasePacing===PHASE_PACING?PHASE_PACING:1;s.phaseXP=clamp(Number(s.phaseXP)||0,0,99999);s.phaseDays=[...new Set((Array.isArray(s.phaseDays)?s.phaseDays:[]).filter(validDay))];s.pausedAt=Number.isFinite(s.pausedAt)?clamp(s.pausedAt,0,now):0;
  s.magic=Object.fromEntries(['rewind','age','stasis'].map(k=>[k,clamp(Math.floor(Number(s.magic?.[k])||0),0,k==='stasis'?1:99)]));s.transfers=(Array.isArray(s.transfers)?s.transfers:[]).filter(x=>x&&PEOPLE[x.from]&&PEOPLE[x.to]&&Number.isInteger(x.amount)&&x.amount>0).slice(-12);
  s.name=String(s.name||'Pip').trim().slice(0,18)||'Pip';s.updatedAt=Number.isFinite(s.updatedAt)?Math.min(now,s.updatedAt):now;s.lastCareAt=Number.isFinite(s.lastCareAt)?Math.min(now,s.lastCareAt):now;
  s.owned=[...new Set(['cloud-room',...(Array.isArray(s.owned)?s.owned:[]).filter(id=>SHOP.some(i=>i.id===id))])];
@@ -216,7 +220,7 @@ export function normalizeStar(value,now,nested=false){
  s.receipts=s.receipts.filter(v=>typeof v==='string');s.careDays=[...new Set(s.careDays.filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)))];
  s.sleepUntil=Number.isFinite(s.sleepUntil)?s.sleepUntil:0;s.revision=clamp(Math.floor(Number(s.revision)||0),0,999999);s.born=s.born===true;s.vacation=s.vacation===true;
  s.actions=s.actions.filter(a=>PEOPLE[a?.actor]&&typeof a.text==='string'&&validAt(a.at));s.memories=s.memories.filter(m=>typeof m?.id==='string'&&typeof m.title==='string'&&typeof m.text==='string'&&validAt(m.at));s.pings=s.pings.filter(p=>typeof p?.id==='string'&&PEOPLE[p.to]&&typeof p.title==='string'&&typeof p.body==='string'&&['waiting','shown','cancelled'].includes(p.status)&&(!p.dueAt||(Number.isFinite(p.dueAt)&&p.dueAt>=0&&p.dueAt<=now+DAY)));
- s.daily={};for(const [key,b] of Object.entries(value.daily||{}))if(/^\d{4}-\d{2}-\d{2}:(him|her)$/.test(key)&&b&&typeof b==='object')s.daily[key]={care:clamp(Math.floor(Number(b.care)||0),0,6),cookBonuses:clamp(Math.floor(Number(b.cookBonuses)||0),0,3),games:clamp(Math.floor(Number(b.games)||0),0,10),imprints:clamp(Math.floor(Number(b.imprints)||0),0,4),last:Object.fromEntries(Object.entries(b.last||{}).filter(([k,v])=>['feed','wash','play','cuddle','nap'].includes(k)&&Number.isFinite(v)))};
+ s.daily={};for(const [key,b] of Object.entries(value.daily||{}))if(/^\d{4}-\d{2}-\d{2}:(him|her)$/.test(key)&&b&&typeof b==='object')s.daily[key]={care:clamp(Math.floor(Number(b.care)||0),0,6),cookBonuses:clamp(Math.floor(Number(b.cookBonuses)||0),0,3),games:clamp(Math.floor(Number(b.games)||0),0,10),arcadeCash:clamp(Math.floor(Number(b.arcadeCash)||0),0,ECONOMY.arcadeCap),records:(Array.isArray(b.records)?b.records:[]).filter((g,i,a)=>['catch','pairs','echo'].includes(g)&&a.indexOf(g)===i),imprints:clamp(Math.floor(Number(b.imprints)||0),0,4),last:Object.fromEntries(Object.entries(b.last||{}).filter(([k,v])=>['feed','wash','play','cuddle','nap'].includes(k)&&Number.isFinite(v)))};
  s.cookingBest=Object.fromEntries(['him','her'].map(p=>[p,clamp(Math.floor(Number(value.cookingBest?.[p])||0),0,100)]));
  s.cookingRecipeBest=Object.fromEntries(['him','her'].map(p=>[p,Object.fromEntries(['porridge','toast'].map(recipe=>{const stored=value.cookingRecipeBest?.[p]?.[recipe];return [recipe,clamp(Math.floor(Number.isFinite(stored)?stored:recipe==='porridge'?s.cookingBest[p]:0),0,100)];}))]));
  s.arcadeBest=Object.fromEntries(['him','her'].map(p=>[p,Object.fromEntries(Object.entries(value.arcadeBest?.[p]||{}).filter(([k])=>/^(catch|catch-endless|pairs-(4|6|8|10|12)|echo-[468]|echo-endless)$/.test(k)).map(([k,v])=>[k,clamp(Math.floor(Number(v)||0),0,999999999)]))]));
@@ -298,7 +302,7 @@ export function settleGrowth(input,now){const s=projectStar(input,now),before=s.
 // excellent execution is useful without becoming an unlimited cash faucet.
 export function cookingReward(score){
  if(!Number.isInteger(score)||score<0||score>100)throw Error('Cooking score must be 0–100.');
- return score===100?{portions:4,tip:4,label:'PERFECT'}:score>=90?{portions:3,tip:3,label:'GOLD'}:score>=70?{portions:2,tip:1,label:'SILVER'}:{portions:1,tip:0,label:'HOMEMADE'};
+ return score===100?{portions:4,tip:8,label:'PERFECT'}:score>=90?{portions:3,tip:5,label:'GOLD'}:score>=70?{portions:2,tip:2,label:'SILVER'}:{portions:1,tip:0,label:'HOMEMADE'};
 }
 // The result screen and settlement use the same helper and wallet rules.
 export function cookingPayout(s,actor,session,score,now){
@@ -388,8 +392,11 @@ export function applyAction(input,{actor,type,id,payload={},expectedRevision},no
    const session=s.playSessions[actor];if(!session||session.id!==payload.sessionId||session.petId!==s.petId||session.game!==payload.game||session.done)throw Error('Start a new game; that play cannot be rewarded twice.');session.done=true;s.traits.playful++;
    if(session.arcadeVersion===2&&(!payload.arcade||(payload.game==='pairs'&&payload.arcade.total!==session.level)))throw Error('That result does not match the started challenge.');
    if(payload.arcade){
-    const result=arcadeResult(payload.game,payload.arcade);s.arcadeBest??={};s.arcadeBest[actor]??={};s.arcadeBest[actor][result.recordKey]=Math.max(s.arcadeBest[actor][result.recordKey]||0,result.raw);
-    const reward=Math.min(result.cash,999999-s.wallets[actor]);s.wallets[actor]+=reward;if(result.cash){s.xp+=3;b.games=Math.min(10,b.games+1);}message=`${result.label}. +${reward} stardust for ${PEOPLE[actor]}.`;effect=null;
+    const result=arcadeResult(payload.game,payload.arcade);s.arcadeBest??={};s.arcadeBest[actor]??={};const best=s.arcadeBest[actor][result.recordKey]||0;s.arcadeBest[actor][result.recordKey]=Math.max(best,result.raw);
+    // Beating an existing record pays once per game per day. Everything the
+    // arcade pays shares one daily allowance; records still save after it.
+    b.records??=[];const record=best>0&&result.raw>best&&!b.records.includes(payload.game);if(record)b.records.push(payload.game);
+    const earned=result.cash+(record?ECONOMY.recordBonus:0),reward=Math.min(earned,Math.max(0,ECONOMY.arcadeCap-(b.arcadeCash||0)),999999-s.wallets[actor]);b.arcadeCash=(b.arcadeCash||0)+reward;s.wallets[actor]+=reward;if(result.cash){s.xp+=3;b.games=Math.min(10,b.games+1);}message=`${result.label}.${record?' New best!':''} +${reward} stardust for ${PEOPLE[actor]}.${earned>reward?' Daily arcade stardust is full; records still count.':''}`;effect=null;
    }else{
     // Settle pre-upgrade result payloads without rewriting historical records.
     if(typeof payload.recordKey==='string'&&new RegExp('^'+payload.game+'(?:-[468])?$').test(payload.recordKey)&&Number.isInteger(payload.raw)&&payload.raw>=0&&payload.raw<=999999){s.arcadeBest??={};s.arcadeBest[actor]??={};s.arcadeBest[actor][payload.recordKey]=Math.max(s.arcadeBest[actor][payload.recordKey]||0,payload.raw);}
