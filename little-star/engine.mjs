@@ -39,7 +39,15 @@ export const STAGES=[{id:'baby',name:'baby spark',time:2,care:1,growth:30},{id:'
 // stage a star enters uses STAGES. Only time/care/growth are read from here.
 export const LEGACY_STAGES=[{time:3,care:1,growth:4},{time:3,care:2,growth:40},{time:3,care:3,growth:80},{time:7,care:5,growth:200},{time:0,care:0,growth:0}];
 export const PHASE_PACING=2;
-export const FOODS=[{id:'porridge',name:'homemade star porridge',icon:'🥣',price:null,food:32,joy:5},{id:'milk',name:'moon milk',icon:'🥛',price:12,food:32,joy:3},{id:'toast',name:'sunbeam toast',icon:'🍞',price:15,food:38,joy:2},{id:'berry',name:'berry-cloud pudding',icon:'🍮',price:25,food:32,joy:12},{id:'soup',name:'pumpkin soup',icon:'🥣',price:22,food:40,joy:8,season:'spooky'},{id:'cocoa',name:'snowflake cocoa',icon:'☕',price:25,food:30,joy:12,season:'christmas'}];
+export const FOODS=[{id:'porridge',name:'homemade star porridge',icon:'🥣',price:null,food:20,joy:3},{id:'milk',name:'moon milk',icon:'🥛',price:12,food:32,joy:3},{id:'toast',name:'sunbeam toast',icon:'🍞',price:15,food:38,joy:2},{id:'berry',name:'berry-cloud pudding',icon:'🍮',price:25,food:32,joy:12},{id:'soup',name:'pumpkin soup',icon:'🥣',price:22,food:40,joy:8,season:'spooky'},{id:'cocoa',name:'snowflake cocoa',icon:'☕',price:25,food:30,joy:12,season:'christmas'},{id:'pancakes',name:'little star pancakes',icon:'🥞',price:null,food:45,joy:12},{id:'stew',name:'comet veggie stew',icon:'🍲',price:null,food:50,joy:8},{id:'onigiri',name:'snow rice balls',icon:'🍙',price:null,food:40,joy:10}];
+// Ingredients are bought for one batch at a time; cooking turns them into
+// several portions, so a homemade meal is always better value than a snack.
+export const INGREDIENTS=[{id:'bread',name:'sunbeam loaf',price:8},{id:'berries',name:'moonberries',price:5},{id:'flour',name:'starlight flour',price:6},{id:'egg',name:'cloud egg',price:5},{id:'cream',name:'moon cream',price:7},{id:'carrot',name:'comet carrot',price:4},{id:'potato',name:'pebble potato',price:4},{id:'rice',name:'snow rice',price:6},{id:'seaweed',name:'night seaweed',price:4}];
+// Each recipe is a short series of stations. Porridge needs nothing at all:
+// it is the always-available meal that makes a food soft-lock impossible.
+export const RECIPES={porridge:{name:'moonberry porridge',dish:'porridge',ingredients:{},stations:['chop','stir','heat','top']},toast:{name:'sunbeam berry toast',dish:'toast',ingredients:{bread:1,berries:1},stations:['chop','spread','heat','top']},pancakes:{name:'little star pancakes',dish:'pancakes',ingredients:{flour:1,egg:1,cream:1},stations:['crack','whisk','pour','flip','top']},stew:{name:'comet veggie stew',dish:'stew',ingredients:{carrot:2,potato:1},stations:['chop','add','stir','heat','ladle']},onigiri:{name:'snow rice balls',dish:'onigiri',ingredients:{rice:1,seaweed:1},stations:['rinse','shape','wrap']}};
+export function missingIngredients(s,recipe){const need=RECIPES[recipe]?.ingredients||{};return Object.fromEntries(Object.entries(need).map(([k,n])=>[k,Math.max(0,n-(s.larder?.[k]||0))]).filter(([,n])=>n>0));}
+export const ingredientCost=missing=>Object.entries(missing).reduce((sum,[k,n])=>sum+n*(INGREDIENTS.find(i=>i.id===k)?.price||0),0);
 export const PET_GAMES={catch:{name:'Wish catcher',energy:16,food:10,clean:16,joy:12,form:'blackhole'},pairs:{name:'Star pairs',energy:12,food:6,clean:4,joy:8,form:'neutron'},echo:{name:'Little echo',energy:8,food:4,clean:2,joy:6,form:'dwarf'}};
 export const COOK_BONUS={golden:'one extra portion',dwarf:'one cozy pudding',giant:'two extra portions',neutron:'one energizing moon milk',blackhole:'one extra portion & tidies the mess'};
 export function playNeeds(s,now){const v=projectStar(s,now),needs=[];if(!v.born)needs.push('let the egg hatch');if(v.vacation)needs.push('resume care');if(longRest(v,now))needs.push('let your star sleep until 8 a.m.');else if(v.sleepUntil>now)needs.push('let your star wake');if(v.born){if(v.needs.food<25)needs.push('a snack');if(v.needs.clean<25)needs.push('a bath');if(v.needs.energy<25)needs.push('a nap');if(v.needs.joy<15)needs.push('a cuddle');}return needs;}
@@ -86,6 +94,22 @@ export const SHOP=[
  {id:'void-monarch',name:'void monarch',slot:'wearable',price:2800,look:'void-monarch',tier:'master',aura:'heavy',description:'Amethyst crown, mantle & royal coat.'},
  {id:'rewind',name:'little yesterday drop',slot:'magic',price:4500,icon:'💧',look:'rewind',description:'Use once: return one stage. Keeps belongings and memories.'},
  {id:'age',name:'bottled tomorrow',slot:'magic',price:3500,icon:'⏳',look:'age',description:'Use once: advance one stage with the care history you have now.'},
+ {id:'honey-apron',name:'honey bee apron',slot:'wearable',price:280,look:'honey-apron',aura:'warm',pending:true,description:'Striped apron & bee bandana.'},
+ {id:'snow-earmuffs',name:'snowdrop earmuffs',slot:'wearable',price:260,look:'snow-earmuffs',aura:'cold',pending:true,description:'Fluffy earmuffs & mitten scarf.'},
+ {id:'comet-tail',name:'comet tail ribbon',slot:'wearable',price:300,look:'comet-tail',aura:'astral',pending:true,description:'A trailing ribbon of tiny stars.'},
+ {id:'moth-hood',name:'sleepy moth hood',slot:'wearable',price:320,look:'moth-hood',aura:'heavy',pending:true,description:'Soft hood with fuzzy antennae.'},
+ {id:'baker-set',name:'little baker set',slot:'wearable',price:800,look:'baker-set',tier:'apprentice',aura:'warm',pending:true,description:'Toque, apron & oven mitts.'},
+ {id:'snow-scout',name:'snow scout set',slot:'wearable',price:820,look:'snow-scout',tier:'apprentice',aura:'cold',pending:true,description:'Bobble hat, parka & tiny backpack.'},
+ {id:'moon-dancer',name:'moon dancer set',slot:'wearable',price:850,look:'moon-dancer',tier:'apprentice',aura:'astral',pending:true,description:'Crescent tiara & twirling skirt.'},
+ {id:'night-knight',name:'night knight set',slot:'wearable',price:850,look:'night-knight',tier:'apprentice',aura:'heavy',pending:true,description:'Little helm, tabard & wooden sword.'},
+ {id:'aurora-sovereign',name:'aurora sovereign',slot:'wearable',price:3000,look:'aurora-sovereign',tier:'master',aura:'astral',pending:true,description:'Prismatic crown, flowing aurora robes.'},
+ {id:'blossom-druid',name:'blossom druid',slot:'wearable',price:2800,look:'blossom-druid',tier:'master',aura:'cold',pending:true,description:'Antler-branch circlet, leaf mantle & petals.'},
+ {id:'tea-set',name:'tiny tea table',slot:'decor',price:700,icon:'🫖',look:'tea-set',aura:'warm',pending:true},
+ {id:'cloud-pillow',name:'cloud beanbag',slot:'decor',price:650,icon:'☁',look:'cloud-pillow',aura:'cold',pending:true},
+ {id:'comet-clock',name:'comet cuckoo clock',slot:'decor',price:900,icon:'🕰',look:'comet-clock',aura:'astral',pending:true},
+ {id:'geode',name:'glowing geode',slot:'decor',price:1000,icon:'💎',look:'geode',aura:'heavy',pending:true},
+ {id:'tea-house',name:'the cozy tea house',slot:'room',price:3200,icon:'🍵',look:'teahouse',aura:'warm',pending:true},
+ {id:'crystal-cave',name:'crystal hollow',slot:'room',price:4200,icon:'💠',look:'crystalcave',aura:'heavy',pending:true},
  {id:'stasis',name:'pause-pocket watch',slot:'magic',price:900,icon:'⌚',look:'stasis',description:'Reusable: pause or resume evolution. Everyday needs keep going.'}
 ];
 export const AURAS={warm:{name:'warm',form:'giant'},cold:{name:'cold',form:'dwarf'},astral:{name:'astral',form:'neutron'},heavy:{name:'heavy',form:'blackhole'}};
@@ -120,8 +144,8 @@ export function clock(now){const p=Object.fromEntries(fmt.formatToParts(new Date
 export function longRest(s,now){const h=clock(now).hour;return !!s.born&&(h>=22||h<8);}
 export function roomTime(now){const {hour,minute}=clock(now),h=hour+minute/60;return h>=22||h<6?'night':h<8?'dawn':h<18?'day':h<20?'dusk':'night';}
 export const seasonAt=now=>{const m=+clock(now).day.slice(5,7);return m===10?'spooky':m===12?'christmas':'normal';};
-export const available=(item,now)=>!item.season||item.season===seasonAt(now);
-export function freshStar(now){return {version:VERSION,revision:0,name:'Pip',born:false,wishes:{},eggCare:[],form:null,affinity:{dwarf:0,giant:0,neutron:0,blackhole:0},auraTime:{warm:0,cold:0,astral:0,heavy:0},auraAt:now,auraSchema:2,evolvedAt:0,phaseAt:now,phaseXP:0,phaseDays:[],pausedAt:0,petId:'star-1',otherPet:null,plaques:[],secondAdopted:false,magic:{rewind:0,age:0,stasis:0},transfers:[],pantry:{porridge:2,milk:1,toast:1},playSessions:{},cookSessions:{},createdAt:now,updatedAt:now,lastCareAt:now,seen:{him:now,her:now},needs:{food:72,clean:82,joy:76,energy:78},xp:0,stage:0,careDays:[],wallets:{him:ECONOMY.starter,her:ECONOMY.starter},goal:'garden-room',gameAwards:{},practicePaid:{},practiceBudget:{},earnings:[],owned:['cloud-room'],equipped:{wearable:null,decor:null,room:'cloud-room'},traits:{gentle:0,playful:0,curious:0},daily:{},rituals:{},sleepUntil:0,coffeeUsedAt:0,vacation:false,actions:[],memories:[],receipts:[],pings:[],pingBudget:{},prefs:{him:{enabled:true,care:true,team:true,milestones:true,quiet:true},her:{enabled:true,care:true,team:true,milestones:true,quiet:true}}};}
+export const available=(item,now)=>!item.pending&&(!item.season||item.season===seasonAt(now));
+export function freshStar(now){return {version:VERSION,revision:0,name:'Pip',born:false,wishes:{},eggCare:[],form:null,affinity:{dwarf:0,giant:0,neutron:0,blackhole:0},auraTime:{warm:0,cold:0,astral:0,heavy:0},auraAt:now,auraSchema:2,evolvedAt:0,phaseAt:now,phaseXP:0,phaseDays:[],pausedAt:0,petId:'star-1',otherPet:null,plaques:[],secondAdopted:false,magic:{rewind:0,age:0,stasis:0},transfers:[],pantry:{porridge:2,milk:1,toast:1},larder:{},playSessions:{},cookSessions:{},createdAt:now,updatedAt:now,lastCareAt:now,seen:{him:now,her:now},needs:{food:72,clean:82,joy:76,energy:78},xp:0,stage:0,careDays:[],wallets:{him:ECONOMY.starter,her:ECONOMY.starter},goal:'garden-room',gameAwards:{},practicePaid:{},practiceBudget:{},earnings:[],owned:['cloud-room'],equipped:{wearable:null,decor:null,room:'cloud-room'},traits:{gentle:0,playful:0,curious:0},daily:{},rituals:{},sleepUntil:0,coffeeUsedAt:0,vacation:false,actions:[],memories:[],receipts:[],pings:[],pingBudget:{},prefs:{him:{enabled:true,care:true,team:true,milestones:true,quiet:true},her:{enabled:true,care:true,team:true,milestones:true,quiet:true}}};}
 export function eggProgress(s,now=s.updatedAt){
  const care=s.eggCare||[],days=new Set(care.map(c=>c.day)).size,counts=Object.fromEntries(EGG_CARE.map(c=>[c.id,0]));
  care.forEach(c=>{if(c.form in counts)counts[c.form]++;});
@@ -209,6 +233,7 @@ export function normalizeStar(value,now,nested=false){
  s.eggCare=(Array.isArray(s.eggCare)?s.eggCare:[]).filter(c=>c&&PEOPLE[c.actor]&&validDay(c.day)&&EGG_CARE.some(e=>e.id===c.form)).filter((c,i,a)=>a.findIndex(x=>x.actor===c.actor&&x.day===c.day)===i).slice(-60);
  s.affinity=Object.fromEntries(Object.keys(fallback.affinity).map(k=>[k,clamp(Number(s.affinity?.[k])||0,0,9999)]));s.evolvedAt=s.born&&s.stage===STAGES.length-1?(Number.isFinite(s.evolvedAt)&&s.evolvedAt>0?s.evolvedAt:now):0;
  s.pantry=Object.fromEntries([...FOODS,COFFEE].map(f=>[f.id,clamp(Math.floor(Number(s.pantry?.[f.id])||0),0,99)]));
+ s.larder=Object.fromEntries(INGREDIENTS.map(i=>[i.id,clamp(Math.floor(Number(s.larder?.[i.id])||0),0,99)]));
  s.coffeeUsedAt=validAt(value.coffeeUsedAt)?value.coffeeUsedAt:0;
  for(const field of ['playSessions','cookSessions'])s[field]=Object.fromEntries(Object.entries(s[field]||{}).filter(([actor,v])=>PEOPLE[actor]&&v&&typeof v.id==='string'&&Number.isFinite(v.at)));
  s.gameAwards={};for(const [key,v] of Object.entries(value.gameAwards||{})){const [d,g,a]=key.split(':');if(validDay(d)&&['word','crossword','search'].includes(g)&&PEOPLE[a]&&v&&Number.isInteger(v.cash)&&Number.isInteger(v.points)&&v.cash>=v.points&&v.points>=0&&v.cash<=200)s.gameAwards[key]={cash:v.cash,points:v.points};}
@@ -304,6 +329,8 @@ export function settleGrowth(input,now){const s=projectStar(input,now),before=s.
 // Beating an existing record pays once per game per day; all arcade pay shares
 // one daily allowance, and records still save after it is spent.
 export function arcadePayout(s,actor,game,result,now){const b=s.daily?.[clock(now).day+':'+actor]||{},best=s.arcadeBest?.[actor]?.[result.recordKey]||0,record=best>0&&result.raw>best&&!(b.records||[]).includes(game),earned=result.cash+(record?ECONOMY.recordBonus:0),cash=Math.max(0,Math.min(earned,ECONOMY.arcadeCap-(b.arcadeCash||0),999999-(s.wallets?.[actor]||0)));return {cash,earned,record,bonus:record?ECONOMY.recordBonus:0,capped:earned>cash,left:Math.max(0,ECONOMY.arcadeCap-(b.arcadeCash||0))};}
+// Return a batch's set-aside ingredients to the larder. Returns true if any.
+function refundCook(s,actor){const old=s.cookSessions?.[actor];if(!old||old.done||!old.reserved)return false;for(const [k,n] of Object.entries(old.reserved))s.larder[k]=Math.min(99,(s.larder[k]||0)+n);delete old.reserved;old.done=true;return true;}
 export function cookingReward(score){
  if(!Number.isInteger(score)||score<0||score>100)throw Error('Cooking score must be 0–100.');
  return score===100?{portions:4,tip:8,label:'PERFECT'}:score>=90?{portions:3,tip:5,label:'GOLD'}:score>=70?{portions:2,tip:2,label:'SILVER'}:{portions:1,tip:0,label:'HOMEMADE'};
@@ -321,8 +348,8 @@ export function applyAction(input,{actor,type,id,payload={},expectedRevision},no
  if(input.receipts.includes(id))return {state:clone(input),duplicate:true,message:'Already saved. No double charge.',effect:null};
  if(expectedRevision!==undefined&&expectedRevision!==input.revision)throw Error('The other phone changed the nursery. Refresh the snapshot and try again.');
  const s=projectStar(input,now);now=s.updatedAt;const b=budget(s,actor,now);let message='',effect=type;
- if(!s.born&&!['wish','incubate','hatch','rename','visit','prefs','game-reward','goal','start-cook','cook','buy-food','transfer','buy','equip','magic','adopt-second','switch-pet'].includes(type))throw Error('Leave your wishes and give the egg a little care before it hatches.');
- if(s.vacation&&!(type==='play'&&payload.arcade)&&!['vacation','prefs','visit','rename','equip','game-reward','goal','start-cook','cook','buy-food','transfer','magic','buy','adopt-second','switch-pet'].includes(type))throw Error('The nursery is on holiday. Resume care when you’re ready.');
+ if(!s.born&&!['wish','incubate','hatch','rename','visit','prefs','game-reward','goal','start-cook','cook','cancel-cook','buy-food','buy-ingredients','transfer','buy','equip','magic','adopt-second','switch-pet'].includes(type))throw Error('Leave your wishes and give the egg a little care before it hatches.');
+ if(s.vacation&&!(type==='play'&&payload.arcade)&&!['vacation','prefs','visit','rename','equip','game-reward','goal','start-cook','cook','cancel-cook','buy-food','buy-ingredients','transfer','magic','buy','adopt-second','switch-pet'].includes(type))throw Error('The nursery is on holiday. Resume care when you’re ready.');
  if(s.sleepUntil>now&&['feed','wash'].includes(type))throw Error('The star is sleeping. Wake gently first, or leave a cuddle.');
  if(longRest(s,now)&&(['feed','wash','cuddle','start-play','ritual','nap','wake'].includes(type)||(type==='play'&&!payload.arcade)||(type==='start-cook'&&payload.withPet)||(type==='magic'&&payload.item!=='stasis')))throw Error('Long rest: 10 p.m.–8 a.m. Let your star sleep. Solo cooking and the shop are still open.');
  if(type==='adopt-second'){
@@ -355,23 +382,36 @@ export function applyAction(input,{actor,type,id,payload={},expectedRevision},no
   const reason=coffeeStatus(s,now);if(reason)throw Error(reason==='Used today'?'One coffee per star per day. Try again tomorrow.':reason+'.');
   const gain=Math.min(COFFEE.energy,100-s.needs.energy);s.pantry.coffee--;s.coffeeUsedAt=now;s.needs.energy=clamp(s.needs.energy+COFFEE.energy);message=`Coffee · +${Math.round(gain)} energy`;effect='stretch';
  }else if(type==='start-cook'){
-  const recipe=payload.recipe==='toast'?'toast':'porridge';
+  const recipe=Object.hasOwn(RECIPES,payload.recipe)?payload.recipe:'porridge',def=RECIPES[recipe];
   const maxBatch=4+(payload.withPet?(s.form==='giant'?2:['golden','blackhole'].includes(s.form)?1:0):0);
-  if((s.pantry[recipe]||0)>99-maxBatch)throw Error('Make room for a full batch in the pantry. Serve some '+recipe+' first.');
+  if((s.pantry[def.dish]||0)>99-maxBatch)throw Error('Make room for a full batch in the pantry. Serve some '+def.dish+' first.');
+  refundCook(s,actor);
+  if(Object.keys(missingIngredients(s,recipe)).length)throw Error('Buy the ingredients for '+def.name+' first.');
   if(payload.withPet){const needs=playNeeds(s,now);if(needs.length)throw Error(`Cook solo for now. Your star needs ${needs.join(', ')}.`);s.needs.energy=clamp(s.needs.energy-8);s.needs.clean=clamp(s.needs.clean-8);s.needs.food=clamp(s.needs.food-3);}
-  s.cookSessions[actor]={id,petId:s.petId,at:now,recipe,form:payload.withPet?s.form:null,done:false};message='Ready to cook.';effect=null;
+  for(const [k,n] of Object.entries(def.ingredients))s.larder[k]-=n;
+  s.cookSessions[actor]={id,petId:s.petId,at:now,recipe,form:payload.withPet?s.form:null,done:false,reserved:{...def.ingredients}};message='Ready to cook.';effect=null;
+ }else if(type==='cancel-cook'){
+  if(!refundCook(s,actor))throw Error('There is no unfinished recipe to put away.');delete s.cookSessions[actor];message='Ingredients back in the larder.';effect=null;
+ }else if(type==='buy-ingredients'){
+  const missing=Object.hasOwn(RECIPES,payload.recipe)?missingIngredients(s,payload.recipe):INGREDIENTS.some(i=>i.id===payload.item)?{[payload.item]:1}:null;
+  if(!missing||!Object.keys(missing).length)throw Error(missing?'You already have everything for that recipe.':'Choose an ingredient.');
+  const cost=ingredientCost(missing);if(s.wallets[actor]<cost)throw Error('A little more stardust first. Porridge is always free.');
+  if(Object.entries(missing).some(([k,n])=>(s.larder[k]||0)+n>99))throw Error('The larder is full of that already.');
+  s.wallets[actor]-=cost;for(const [k,n] of Object.entries(missing))s.larder[k]=(s.larder[k]||0)+n;message='Ingredients in the larder.';effect='buy-food';
  }else if(type==='cook'){
   const session=s.cookSessions[actor];if(!session||session.id!==payload.sessionId||session.petId!==s.petId||session.done)throw Error('Start a fresh recipe; this batch cannot be collected twice.');
   const graded=payload.grades!==undefined;
   // Accept the previous demo's completed-step marker for pending retries.
   // New batches send four; all graded receipts still require four real grades.
-  if(!Number.isInteger(payload.steps)||(graded?![3,4].includes(payload.steps):payload.steps!==3))throw Error('Finish every cooking station first.');session.done=true;
-  if(graded&&(!Array.isArray(payload.grades)||payload.grades.length!==4||payload.grades.some(n=>!Number.isInteger(n)||n<0||n>100)))throw Error('Finish the four scored stations first.');
-  const score=graded?Math.floor(payload.grades.reduce((a,v)=>a+v,0)/4):70,reward=cookingReward(score);
+  const def=RECIPES[session.recipe]||RECIPES.porridge,count=def.stations.length;
+  // Older four-station batches may still be retried with the previous marker.
+  if(!Number.isInteger(payload.steps)||(graded?![count,...(count===4?[3]:[])].includes(payload.steps):payload.steps!==3))throw Error('Finish every cooking station first.');
+  if(graded&&(!Array.isArray(payload.grades)||payload.grades.length!==count||payload.grades.some(n=>!Number.isInteger(n)||n<0||n>100)))throw Error('Finish every scored station first.');session.done=true;
+  const score=graded?Math.floor(payload.grades.reduce((a,v)=>a+v,0)/count):70,reward=cookingReward(score);
   const payout=cookingPayout(s,actor,session,score,now),{form,portions}=payout;
   let tip=0;if(graded&&payout.tip){tip=payout.tip;s.wallets[actor]+=tip;b.cookBonuses=(b.cookBonuses||0)+1;}
   if(graded){s.cookingBest=s.cookingBest||{};s.cookingBest[actor]=Math.max(s.cookingBest[actor]||0,score);}
-  const dish=session.recipe==='toast'?'toast':'porridge';s.pantry[dish]=Math.min(99,(s.pantry[dish]||0)+portions);s.cookingRecipeBest??={};s.cookingRecipeBest[actor]??={};s.cookingRecipeBest[actor][dish]=Math.max(s.cookingRecipeBest[actor][dish]||0,score);
+  const dish=def.dish;delete session.reserved;s.pantry[dish]=Math.min(99,(s.pantry[dish]||0)+portions);s.cookingRecipeBest??={};s.cookingRecipeBest[actor]??={};s.cookingRecipeBest[actor][dish]=Math.max(s.cookingRecipeBest[actor][dish]||0,score);
   if(form==='dwarf')s.pantry.berry=Math.min(99,(s.pantry.berry||0)+1);if(form==='neutron')s.pantry.milk=Math.min(99,(s.pantry.milk||0)+1);if(form==='blackhole')s.needs.clean=clamp(s.needs.clean+8);
   if(form){s.needs.joy=clamp(s.needs.joy+10);imprint(s,b,form==='golden'?'giant':form);care(s,actor,now);}
   message=`${portions} homemade meals in the pantry.${graded?' '+reward.label+' · '+score+'%.':''}${tip?' +'+tip+' stardust chef bonus.':''}${form?' '+COOK_BONUS[form]+'.':' Cooked by you. Tiny chef, optional.'}`;effect='cook';memory(s,'first-cook','Your first homemade meal','A little chopping, a little stirring. A whole lot of love in a bowl.',now);
@@ -476,7 +516,7 @@ export function servicePings(input,now){
 export function scenario(which,now){
  const s=freshStar(now);if(which==='wish')return s;
  if(which==='hatching'){s.createdAt=now-EGG_DURATION;s.phaseAt=s.createdAt;s.wishes={him:'a safe place',her:'a home full of snacks'};s.eggCare=[{actor:'her',day:clock(now).day,form:'blackhole'}];s.phaseDays=s.eggCare.map(c=>c.day);s.affinity.blackhole=2;return s;}
- s.born=true;s.phasePacing=PHASE_PACING;s.form=Object.hasOwn(FORMS,which)?which:'golden';s.wishes={him:'a safe place to be little',her:'a home full of snacks'};memory(s,'hatch','Two wishes made a little star','Your nursery began with a wish from each of you.',now-2*DAY);
+ s.born=true;s.phasePacing=PHASE_PACING;s.larder={bread:3,berries:3,flour:1,egg:1,cream:1,carrot:2,potato:1,rice:1,seaweed:1};s.form=Object.hasOwn(FORMS,which)?which:'golden';s.wishes={him:'a safe place to be little',her:'a home full of snacks'};memory(s,'hatch','Two wishes made a little star','Your nursery began with a wish from each of you.',now-2*DAY);
  if(which==='grown'){s.xp=1700;s.stage=4;s.evolvedAt=now-DAY;s.createdAt=now-100*DAY;s.careDays=Array.from({length:60},(_,i)=>new Date(now-i*DAY).toISOString().slice(0,10));s.wallets={him:230,her:380};s.owned.push('bow','scarf','picnic','plant','garden-room');s.equipped={wearable:'picnic',decor:'plant',room:'garden-room'};memory(s,'growth-4','A forever star','Still small enough for the towel. Always.',now);}
  if(which==='shop'){s.wallets={him:12000,her:9500};s.magic={age:2,rewind:2,stasis:1};}
  if(Object.hasOwn(FORMS,which)){s.stage=4;s.evolvedAt=now;s.createdAt=now-100*DAY;}

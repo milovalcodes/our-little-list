@@ -54,7 +54,7 @@ try{
  assert.equal((await action('him','rename',{name:'Wrong pet'},undefined,'star-1')).status,400);
  r=await action('him','rename',{name:'Nova'},undefined,'star-2');assert.equal(r.star.name,'Nova');
  // Cooking and arcade settlement cannot accept old demo payloads or mint instantly.
- await action('him','start-cook',{recipe:'toast',withPet:false},'meal-start','star-2');
+ values.get('nursery').state.larder={};assert.equal((await action('him','start-cook',{recipe:'toast',withPet:false},undefined,'star-2')).status,400,'toast needs its ingredients'); assert.equal((await action('him','buy-ingredients',{recipe:'toast'},undefined,'star-2')).status,200,'toast needs its ingredients'); await action('him','start-cook',{recipe:'toast',withPet:false},'meal-start','star-2');
  assert.equal((await action('him','cook',{sessionId:'him-meal-start',steps:4,grades:[100,100,100,100]},undefined,'star-2')).status,400);
  now+=9000;r=await action('him','cook',{sessionId:'him-meal-start',steps:4,grades:[100,100,100,100]},'meal-collect','star-2');assert.equal(r.status,200);assert.equal(r.star.pantry.toast,5);
  duplicate=await action('him','cook',{sessionId:'him-meal-start',steps:4,grades:[100,100,100,100]},'meal-collect','star-2');assert.equal(duplicate.star.pantry.toast,5);

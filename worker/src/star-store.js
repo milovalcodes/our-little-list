@@ -3,7 +3,7 @@ import {freshStar,projectStar,petSnapshot,applyAction,settleGrowth,servicePings,
 import {wordPoints} from '../../word-scores.js';
 import {timedPoints} from '../../timed-game.js';
 
-export const STAR_ACTIONS=new Set(['wish','incubate','hatch','visit','rename','feed','wash','cuddle','nap','wake','vacation','buy-food','coffee','start-cook','cook','start-play','play','buy','equip','magic','transfer','goal','adopt-second','switch-pet','prefs']);
+export const STAR_ACTIONS=new Set(['wish','incubate','hatch','visit','rename','feed','wash','cuddle','nap','wake','vacation','buy-food','buy-ingredients','coffee','start-cook','cook','cancel-cook','start-play','play','buy','equip','magic','transfer','goal','adopt-second','switch-pet','prefs']);
 const clone=value=>structuredClone(value);
 export function weekStart(day){const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);return d.toISOString().slice(0,10);}
 function orient(state,petId){if(state.petId===petId||!state.otherPet)return state;if(state.otherPet.petId!==petId)throw Error('That star is not in this nursery.');const old=petSnapshot(state);return {...state,...state.otherPet,otherPet:old};}
@@ -80,7 +80,7 @@ export class StarNursery {
      // Live results must come from the current scored protocol, never legacy demo shortcuts.
      if(c.type==='start-play'&&c.payload.arcadeVersion!==2)throw Error('Refresh the game to play.');
      if(c.type==='play'&&!c.payload.arcade)throw Error('Finish the challenge first.');
-     if(c.type==='cook'&&(!Array.isArray(c.payload.grades)||c.payload.steps!==4))throw Error('Finish all four cooking stations.');
+     if(c.type==='cook'&&(!Array.isArray(c.payload.grades)||c.payload.steps!==c.payload.grades.length))throw Error('Finish every cooking station.');
      if(c.type==='cook'&&now-(oriented.cookSessions[input.actor]?.at||now)<8000)throw Error('Finish the cooking stations before collecting.');
      if(c.type==='play'){
       const elapsed=Math.max(0,(now-(oriented.playSessions[input.actor]?.at||now))/1000),a=c.payload.arcade;
