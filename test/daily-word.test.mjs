@@ -5,7 +5,7 @@ import {WORD_LEXICON} from '../word-lexicon.js';
 import {puzzleSeason,seasonalWords} from '../seasonal-puzzles.js';
 import {usesNewEdition,editionWordPool} from '../puzzle-edition.js';
 import {scoreGuess,nextWordAttempt,wordSummary} from '../word-game.js';
-import {wordPoints,scoreWeek,weekForDay,reigningCrowns,duelOutcome} from '../word-scores.js';
+import {wordPoints,wordAttempts,wordCeiling,SCORING_V3_DAY,scoreWeek,weekForDay,reigningCrowns,duelOutcome} from '../word-scores.js';
 import {settleWordWeeks} from '../worker/src/word-week.js';
 import {ensureQuestionOfDay} from '../worker/src/index.js';
 assert.equal(activityClock(new Date('2026-10-09T12:59:59Z')).day,'2026-10-08');
@@ -78,6 +78,27 @@ assert.deepEqual(normalizeWeekRecord({winners:['him','him','bad']}).winners,['hi
 
 assert.deepEqual([1,2,3,4,5].map(attempts=>wordPoints({day:'2026-10-08',done:true,won:true,attempts})),[100,40,30,20,10]);
 assert.deepEqual([1,2,3,4,5].map(attempts=>wordPoints({day:'2026-10-11',done:true,won:true,attempts})),[200,80,60,40,20]);
+// Forward-only rebalance: days from SCORING_V3_DAY get six guesses at 60…10.
+assert.equal(SCORING_V3_DAY,'2026-10-19');
+assert.deepEqual([1,2,3,4,5,6].map(attempts=>wordPoints({day:'2026-10-20',done:true,won:true,attempts})),[60,50,40,30,20,10]);
+assert.deepEqual([1,2,3,4,5,6].map(attempts=>wordPoints({day:'2026-10-25',done:true,won:true,attempts})),[120,100,80,60,40,20],'Sunday still doubles');
+assert.equal(wordPoints({day:'2026-10-18',done:true,won:true,attempts:6}),0,'old days never accept a sixth guess');
+assert.equal(wordPoints({day:'2026-10-18',done:true,won:true,attempts:1}),200,'the last old Sunday keeps its score');
+assert.equal(wordPoints({day:'2026-10-19-tie-1',done:true,won:true,attempts:1}),120,'new-week tie rounds use the new scale');
+assert.equal(wordPoints({day:'2026-10-12-tie-1',done:true,won:true,attempts:1}),200,'an old week settles on its own scale');
+assert.deepEqual([wordAttempts('2026-10-18'),wordAttempts('2026-10-19'),wordAttempts('2026-10-12-tie-2')],[5,6,5]);
+assert.equal(wordCeiling({day:'2026-10-20',done:false,attempts:5}),10);
+assert.equal(wordCeiling({day:'2026-10-19-tie-1',done:false,attempts:0}),120);
+{
+ const open={day:'2026-10-20',word:'apple',opensAt:0,closesAt:Date.now()+86400000};
+ let g=null;for(const guess of ['crane','beach','crown','grape','table'])g=nextWordAttempt(g,open,{day:open.day,person:'her',guess,expectedCount:g?.guesses.length||0});
+ assert.equal(g.done,false,'a fifth miss leaves one more guess');
+ g=nextWordAttempt(g,open,{day:open.day,person:'her',guess:'lemon',expectedCount:5});
+ assert.equal(g.done,true);assert.throws(()=>nextWordAttempt(g,open,{day:open.day,person:'her',guess:'mango',expectedCount:6}));
+ const old={...open,day:'2026-10-14'};let o=null;
+ for(const guess of ['crane','beach','crown','grape','table'])o=nextWordAttempt(o,old,{day:old.day,person:'her',guess,expectedCount:o?.guesses.length||0});
+ assert.equal(o.done,true,'legacy days still end after five');
+}
 const perfect=weekForDay('2026-10-12').days.map(day=>result('her',day));
 assert.equal(scoreWeek('2026-10-12',perfect).scores.her,800);
 assert.equal(normalizeWeekRecord({scores:{her:80,him:0}}).scores.her,800);

@@ -1,4 +1,4 @@
-import {wordPoints,scoreWeek,weekForDay} from './word-scores.js';
+import {wordPoints,wordCeiling,scoreWeek,weekForDay} from './word-scores.js';
 import {LEAGUE_START_DAY,PUZZLE_TYPES} from './daily-puzzles.js';
 import {timedPoints,timedCeiling,timedOver} from './timed-game.js';
 export const LEAGUE_WEEK=weekForDay(LEAGUE_START_DAY).start;
@@ -13,7 +13,7 @@ export function trioProgress(day,carry,words=[],timed=[],now=Date.now()){
  for(const person of ['her','him']){
   const word=words.find(w=>w.day===day&&w.person===person);
   scores[person]+=wordPoints(word);
-  const remainingWord=word?.done?wordPoints(word):([200,80,60,40,20][word?.attempts||0]||0);
+  const remainingWord=wordCeiling(word,day);
   ceiling[person]+=remainingWord;
   if(word?.done)finished[person]++;
   for(const type of PUZZLE_TYPES){

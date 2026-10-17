@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {weeklyReport} from '../weekly-report.js';
+import {weeklyReport,gameMax,SCORE_GAMES} from '../weekly-report.js';
 import {leagueWeek} from '../league-scores.js';
 const day='2026-10-09',now=Date.parse(day+'T18:00Z');
 const w=(person,attempts=1,date=day)=>({day:date,person,done:true,won:true,attempts,updatedAt:now});
@@ -29,3 +29,4 @@ const lost=weeklyReport(day,[{...w('her',5),won:false}],[t('her','search',0)],nu
 assert.equal(weeklyReport(day,[{...w('her',2),won:false,done:false}],[],null,now+86400000).entries.find(e=>e.day===day).games[0].people.her.detail,'unfinished · closed');
 assert.equal(weeklyReport('2026-10-11',[w('her',1,'2026-10-11')],[t('her','search',10,10,'2026-10-11')],null,now).totals.her,300);
 console.log('WEEKLY REPORT: per-game/day sums, double points, partials, missing history, duplicate snapshots, tie carry and frozen early-clinch recaps pass');
+assert.deepEqual(['2026-10-18','2026-10-19'].map(day=>gameMax(SCORE_GAMES[0],day)),[100,60],'each day keeps the Little Word maximum it was played under');

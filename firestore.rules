@@ -357,15 +357,17 @@ service cloud.firestore {
       function valid(g) {
         let p = get(/databases/$(database)/documents/households/$(householdId)/wordPuzzles/$(g.day)).data;
         let n = g.guesses.size();
+        // Six guesses from the 2026-10-19 scoring change; older days keep five.
+        let most = g.day >= '2026-10-19' ? 6 : 5;
         return g.keys().hasOnly(['day','person','guesses','won','done','updatedAt','revision'])
           && g.get('revision',0) == p.get('revision',0)
           && g.person == mySide() && id == g.day + '-' + mySide()
-          && g.guesses is list && n >= 1 && n <= 5 && g.guesses.toSet().size() == n
+          && g.guesses is list && n >= 1 && n <= most && g.guesses.toSet().size() == n
           && g.guesses[n-1].matches('[a-z]{5}')
           && request.time.toMillis() >= p.opensAt && request.time.toMillis() < p.closesAt
           && (!g.day.matches('.*-tie-.*') || !exists(/databases/$(database)/documents/households/$(householdId)/wordDuelEnds/$(g.day)))
           && g.won == (g.guesses[n-1] == p.word)
-          && g.done == (g.won || n == 5) && g.updatedAt is int;
+          && g.done == (g.won || n == most) && g.updatedAt is int;
       }
       function appended(a,b) {
         let n = a.guesses.size();
@@ -374,7 +376,8 @@ service cloud.firestore {
           && b.guesses[0] == a.guesses[0]
           && (n<2 || b.guesses[1] == a.guesses[1])
           && (n<3 || b.guesses[2] == a.guesses[2])
-          && (n<4 || b.guesses[3] == a.guesses[3]);
+          && (n<4 || b.guesses[3] == a.guesses[3])
+          && (n<5 || b.guesses[4] == a.guesses[4]);
       }
       // Reveal only a specific finished board, and only after this viewer has
       // finished the same puzzle. Collection queries remain owner-only.

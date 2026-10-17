@@ -56,6 +56,25 @@ await write('him','wordPuzzles/'+tie.day,tie);
 await commit('him',nextWordAttempt(null,tie,{day:tie.day,person:'him',guess:'table',expectedCount:0}));
 await write('him','wordDuelEnds/'+tie.day,{week:tie.week,outcome:'her',closedAt:now});
 await commit('him',{day:tie.day,person:'him',guesses:['table','apple'],won:true,done:true,updatedAt:now},false);
+// From the 2026-10-19 scoring change a word gets six guesses; older days keep five.
+const six={...puzzle,day:'2026-10-20'};
+await write('him','wordPuzzles/'+six.day,six);
+let sixGame=null;
+for(const guess of ['crane','beach','crown','grape','table']){
+ sixGame=nextWordAttempt(sixGame,six,{day:six.day,person:'her',guess,expectedCount:sixGame?.guesses.length||0});
+ await commit('her',sixGame);
+}
+assert.equal(sixGame.done,false,'five misses no longer end a new-scoring word');
+await commit('her',{...sixGame,guesses:[...sixGame.guesses,'lemon'],done:false},false);
+const sixth=nextWordAttempt(sixGame,six,{day:six.day,person:'her',guess:'apple',expectedCount:5});
+assert.equal(sixth.won,true);
+await commit('her',{...sixth,guesses:['crane','beach','crown','grape','lemon','apple']},false);
+await commit('her',sixth);
+await commit('her',{...sixth,guesses:[...sixth.guesses,'mango']},false);
+const fiveDone={day:six.day,person:'him',guesses:['crane','beach','crown','grape','table'],won:false,done:true,updatedAt:now};
+await commit('him',{...fiveDone,guesses:['crane'],done:false});
+for(let n=2;n<=4;n++)await commit('him',{...fiveDone,guesses:fiveDone.guesses.slice(0,n),done:false});
+await commit('him',fiveDone,false);
 // Settlement records accept real scores, not malformed values or two crowns.
 const final={week:'2026-10-05',scores:{her:12,him:8},winners:['her'],settledAt:now};
 await write('him','wordWeeks/'+final.week,{...final,scores:{her:'12',him:8}},false);

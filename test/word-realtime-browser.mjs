@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {activityClock} from '../activity-clock.js';
 import {wordForDay} from '../daily-words.js';
+import {wordPoints,wordAttempts} from '../word-scores.js';
 import {timedPuzzle as makeTimedPuzzle} from '../daily-puzzles.js';
 const host=process.env.FIRESTORE_EMULATOR_HOST;
 assert.match(host||'',/^(127\.0\.0\.1|localhost):8089$/,'emulator required; never run against production');
@@ -91,10 +92,10 @@ try {
    try{const {sharedLayer}=await import('./data-hub.js'),data=await sharedLayer();return {ok:true,game:await data.submitWordGuess({day,person:'him',guess,expectedCount:count})};}
    catch(e){return {ok:false,error:e.message};}
  },{guess,count,day:puzzle.day});
- const multiplier=new Date(puzzle.day+'T12:00Z').getUTCDay()===0?2:1;
+ const tries=wordAttempts(puzzle.day),solvedIn=attempts=>wordPoints({day:puzzle.day,done:true,won:true,attempts});
  const wrong=['grape','table','crane','beach'].filter(w=>w!==puzzle.word);
  assert.ok((await submit(moon,wrong[0],0)).ok);
- await sun.waitForFunction(()=>document.querySelector('.word-partner').textContent.includes('1 / 5'));
+ await sun.waitForFunction(label=>document.querySelector('.word-partner').textContent.includes(label),'1 / '+tries);
  const denied=await sun.evaluate(async day=>{try{const {sharedLayer}=await import('./data-hub.js');await(await sharedLayer()).readDoc('wordGames',day+'-him');return false;}catch(e){return e.code==='permission-denied';}},puzzle.day);
  assert.equal(denied,true,'partner guesses cannot be read');
  console.log('word: boards connected; testing simultaneous guesses');
@@ -102,19 +103,19 @@ try {
  console.log('word: simultaneous guesses settled');
  assert.equal(race.filter(r=>r.ok).length,1,'two screens cannot spend the same attempt');
  assert.match(race.find(r=>!r.ok).error,/other screen/);
- await sun.waitForFunction(()=>document.querySelector('.word-partner').textContent.includes('2 / 5'));
+ await sun.waitForFunction(label=>document.querySelector('.word-partner').textContent.includes(label),'2 / '+tries);
  console.log('word: both screens received the second guess');
  const win=await submit(moon,puzzle.word,2);assert.ok(win.ok,JSON.stringify(win));
  console.log('word: winning guess saved');
- await sun.waitForFunction(points=>document.querySelector('.word-partner').textContent.includes(points+' points'),30*multiplier);
- await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),30*multiplier);
- await secondMoon.reload();await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),30*multiplier);
+ await sun.waitForFunction(points=>document.querySelector('.word-partner').textContent.includes(points+' points'),solvedIn(3));
+ await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),solvedIn(3));
+ await secondMoon.reload();await secondMoon.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),solvedIn(3));
  assert.equal(await sun.locator('[data-word-peek]').count(),0,'finishing first never exposes your guesses');
  const stillPrivate=await sun.evaluate(async day=>{try{await(await(await import('./data-hub.js')).sharedLayer()).readDoc('wordGames',day+'-him');return false;}catch(e){return e.code==='permission-denied';}},puzzle.day);
  assert.equal(stillPrivate,true,'finished partner board stays protected while I am playing');
  const herWin=await sun.evaluate(async({day,word})=>{const {sharedLayer}=await import('./data-hub.js');return(await sharedLayer()).submitWordGuess({day,person:'her',guess:word,expectedCount:0});},puzzle);
  assert.equal(herWin.won,true);
- await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),100*multiplier);
+ await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),solvedIn(1));
  await Promise.all([moon,sun].map(p=>p.waitForSelector('[data-word-peek]')));
  await moon.click('[data-word-peek]');await sun.click('[data-word-peek]');
  for(const page of [moon,sun]){

@@ -13,7 +13,7 @@ export function practiceStore(scope,storage){
   move(type,index,difficulty){write('cursor:'+type,{index});if(difficulty)write('cursor:'+type+':'+difficulty,{index});},
   load(type,index){
    const raw=read(type+':'+index);
-   return {guesses:Array.isArray(raw.guesses)?raw.guesses.filter(w=>/^[a-z]{5}$/.test(w)).slice(0,5):[],
+   return {guesses:Array.isArray(raw.guesses)?raw.guesses.filter(w=>/^[a-z]{5}$/.test(w)).slice(0,6):[],
     solved:Array.isArray(raw.solved)?[...new Set(raw.solved.filter(n=>Number.isInteger(n)&&n>=0&&n<(type==='crossword'?20:10)))]:[],
     hints:Number.isInteger(raw.hints)?Math.max(0,Math.min(3,raw.hints)):0,
     selected:Number.isInteger(raw.selected)&&raw.selected>=0&&raw.selected<(type==='crossword'?20:10)?raw.selected:0,

@@ -1,9 +1,11 @@
-import {weekForDay,wordPoints,normalizeWeekRecord} from './word-scores.js';
+import {weekForDay,wordPoints,wordTable,wordAttempts,normalizeWeekRecord} from './word-scores.js';
 import {timedPoints,timedOver} from './timed-game.js';
 import {LEAGUE_START_DAY,isHardDay} from './daily-puzzles.js';
 import {activityWindow} from './activity-clock.js';
-export const SCORE_GAMES=[{id:'word',name:'Little Word',icon:'W',max:100},{id:'search',name:'Word Search',icon:'⌕',max:50},{id:'crossword',name:'Mini crossword',icon:'▦',max:50}];
+export const SCORE_GAMES=[{id:'word',name:'Little Word',icon:'W',max:60},{id:'search',name:'Word Search',icon:'⌕',max:50},{id:'crossword',name:'Mini crossword',icon:'▦',max:50}];
 const people=['her','him'];
+// Older days keep the maximum they were played under.
+export const gameMax=(game,day)=>game.id==='word'?wordTable(day)[0]:game.max;
 export function weeklyReport(day,words=[],timed=[],raw=null,now=Date.now()){
  const week=weekForDay(day),record=raw?normalizeWeekRecord(raw):null;
  // Freeze partial timers at the actual clinch, not the time a recap is read.
@@ -22,9 +24,9 @@ export function weeklyReport(day,words=[],timed=[],raw=null,now=Date.now()){
   const r=byKey.get(date+':'+g.id+':'+person),ended=g.id==='word'?Boolean(r?.done):timedOver(r,cutoff);
   const points=g.id==='word'?wordPoints(r):timedPoints(r,cutoff);
   const closed=r&&!ended&&(Boolean(record)||(!tieRound(date)&&cutoff>=activityWindow(date).closesAt));
-  const detail=!r?'not played':!ended?(closed?'unfinished · closed':'in progress'):g.id==='word'?(r.won?`${r.attempts} ${r.attempts===1?'guess':'guesses'}`:'5 tries · missed'):`${r.count} / ${r.total} words`;
+  const detail=!r?'not played':!ended?(closed?'unfinished · closed':'in progress'):g.id==='word'?(r.won?`${r.attempts} ${r.attempts===1?'guess':'guesses'}`:`${wordAttempts(date)} tries · missed`):`${r.count} / ${r.total} words`;
   const s=stats[person][g.id];s.points+=points;
-  if(ended){s.finished++;s.max+=g.max*(isHardDay(date)?2:1);if(!s.best||points>s.best.points)s.best={points,day:date,detail};}
+  if(ended){s.finished++;s.max+=gameMax(g,date)*(isHardDay(date)?2:1);if(!s.best||points>s.best.points)s.best={points,day:date,detail};}
   return [person,{points,detail,played:Boolean(r),ended}];
  }))}))}));
  const sums=Object.fromEntries(people.map(p=>[p,SCORE_GAMES.reduce((n,g)=>n+stats[p][g.id].points,0)]));

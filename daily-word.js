@@ -2,7 +2,7 @@ import { activityClock } from './activity-clock.js';
 import { DAILY_WORDS, SUNDAY_WORDS, wordForDay } from './daily-words.js';
 import { WORD_LEXICON } from './word-lexicon.js';
 import { scoreGuess, wordSummary } from './word-game.js';
-import { wordPoints } from './word-scores.js';
+import { wordPoints, wordAttempts } from './word-scores.js';
 import { escapeHtml } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { createWordCelebration, wordFinish } from './word-celebration.js';
@@ -63,7 +63,7 @@ export function startDailyWord({data,viewer,other},options={}){
     if(ready())clearTimeout(timer);
     const guesses=mine?.guesses||[],done=mine?.done||closed(),sunday=tie||new Date(day+'T12:00:00Z').getUTCDay()===0;
     const finish=wordFinish(mine);
-    summary.textContent=mine?.done?(mine.won?`solved · ${wordPoints(wordSummary(mine))} points`:'all 5 tried · tomorrow’s a new one'):closed()?'today’s word has closed':tie?'hard word · tie-break round':sunday?'Sunday challenge · double points':guesses.length?`${guesses.length} / 5 tries`:'5 letters · 5 tries';
+    summary.textContent=mine?.done?(mine.won?`solved · ${wordPoints(wordSummary(mine))} points`:`all ${wordAttempts(day)} tried · tomorrow’s a new one`):closed()?'today’s word has closed':tie?'hard word · tie-break round':sunday?'Sunday challenge · double points':guesses.length?`${guesses.length} / 5 tries`:'5 letters · 5 tries';
     const marks=puzzle?guesses.map(guess=>scoreGuess(guess,puzzle.word)):[];
     const keys={};
     guesses.forEach((guess,row)=>[...guess].forEach((letter,i)=>{const score=marks[row]?.[i];if(!score)return;if(!keys[letter]||['absent','present','correct'].indexOf(score)>['absent','present','correct'].indexOf(keys[letter]))keys[letter]=score;}));
@@ -71,8 +71,8 @@ export function startDailyWord({data,viewer,other},options={}){
     const peekFocused=Boolean(host.querySelector('[data-word-peek]:focus'));
     const disabled=busy||!ready()||done||!navigator.onLine;
     host.innerHTML=`
-      <div class="word-heading"><span>${puzzle?escapeHtml(puzzle.theme||wordTheme(puzzle.word,sunday)):'your guesses'}</span><span>${sunday?'hard · 2× points':`${guesses.length} / 5`}</span></div>
-      <div class="word-grid" role="group" aria-label="Five guesses">${Array.from({length:5},(_,row)=>{
+      <div class="word-heading"><span>${puzzle?escapeHtml(puzzle.theme||wordTheme(puzzle.word,sunday)):'your guesses'}</span><span>${sunday?'hard · 2× points':`${guesses.length} / ${wordAttempts(day)}`}</span></div>
+      <div class="word-grid" role="group" aria-label="${wordAttempts(day)} guesses">${Array.from({length:wordAttempts(day)},(_,row)=>{
         const text=guesses[row]||(!done&&row===guesses.length?draft:'');
         return `<div class="word-row" aria-label="Guess ${row+1}">${Array.from({length:5},(_,i)=>`<span class="word-tile ${marks[row]?.[i]||''}" aria-label="${text[i]?escapeHtml(text[i].toUpperCase())+', '+(marks[row]?.[i]||'not submitted'):'empty'}">${escapeHtml(text[i]||'')}</span>`).join('')}</div>`;
       }).join('')}</div>
@@ -106,7 +106,7 @@ export function startDailyWord({data,viewer,other},options={}){
       // Never subscribe to or download the partner's unfinished guesses.
       const game=await Promise.race([data.readDoc('wordGames',day+'-'+other),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(new Error('timeout')),12000);})]);
       if(disposed||request!==peekRequest)return;
-      if(!game?.done||revisionOf(game)!==revisionOf(puzzle)||game.day!==day||game.person!==other||!Array.isArray(game.guesses)||!game.guesses.length||game.guesses.length>5||game.guesses.some(g=>typeof g!=='string'||!/^[a-z]{5}$/.test(g)))throw new Error('not ready');
+      if(!game?.done||revisionOf(game)!==revisionOf(puzzle)||game.day!==day||game.person!==other||!Array.isArray(game.guesses)||!game.guesses.length||game.guesses.length>wordAttempts(day)||game.guesses.some(g=>typeof g!=='string'||!/^[a-z]{5}$/.test(g)))throw new Error('not ready');
       peekGame=game;
     }catch(_){if(!disposed&&request===peekRequest)peekError='Couldn’t get their guesses. Check your connection and try again.';}
     finally{clearTimeout(timeout);if(!disposed&&request===peekRequest){peekBusy=false;render();}}
@@ -115,7 +115,7 @@ export function startDailyWord({data,viewer,other},options={}){
     const result=results.find(r=>r.day===day&&r.person===other&&revisionOf(r)===revisionOf(puzzle)),name=escapeHtml(personName(other));
     if(!loaded.has('wordResults'))return 'checking the other side…';
     if(!result)return name+' hasn’t tried yet';
-    if(!result.done)return name+` · ${result.attempts} / 5 tries`;
+    if(!result.done)return name+` · ${result.attempts} / ${wordAttempts(day)} tries`;
     return name+(result.won?` solved in ${result.attempts} · ${wordPoints(result)} points`:' · no luck today');
   }
   async function key(value){

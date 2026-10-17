@@ -57,6 +57,7 @@ assert.equal(trioProgress(day,{her:0,him:0},[word('her'),word('him',1,false,fals
 assert.equal(trioProgress(day,{her:0,him:0},[word('her')],['search','crossword'].map(t=>timed('her',t)),now).outcome,'','400 can still be tied');
 assert.equal(timedCeiling(timed('him','search',3,false),'search',now+120000),30);
 assert.equal(trioProgress(day,{her:250,him:250},['her','him'].map(p=>word(p)),['her','him'].flatMap(p=>['search','crossword'].map(t=>timed(p,t))),now).outcome,'tie');
+assert.equal(trioProgress('2026-10-19-tie-1',{her:0,him:0},[],[],now).ceiling.her,120+200,'a new-scale tie word can still earn 120');
 assert.deepEqual(normalizeWeekRecord({scores:{her:12,him:8}}).scores,{her:120,him:80});
 assert.deepEqual(normalizeWeekRecord({format:'trio',scoreVersion:2,round:2,scores:{her:2000,him:1900}}).scores,{her:2000,him:1900});
 assert.equal(wordPoints({day:'2026-10-09',done:true,won:true,attempts:1}),100);

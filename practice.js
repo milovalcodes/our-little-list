@@ -4,7 +4,7 @@ import {practicePuzzle,PRACTICE_COUNTS,PRACTICE_NAMES} from './practice-catalog.
 import {practiceStore} from './practice-store.js';
 import {entryCells,selectedSearchWord} from './daily-puzzles.js';
 import {WORD_LEXICON} from './word-lexicon.js';
-import {scoreGuess} from './word-game.js';
+import {scoreGuess,WORD_ATTEMPTS} from './word-game.js';
 import {escapeHtml as esc} from './ui-helpers.js';
 import {createWordCelebration} from './word-celebration.js';
 
@@ -14,11 +14,11 @@ const host=document.getElementById('practice-game'),picker=document.getElementBy
 host.tabIndex=-1;
 let type,index,puzzle,state,selected=0,message='',tapStart=null,drag=null,celebration,flashTimer,difficulty='normal';
 let renderedClue=-1;
-const isDone=()=>type==='word'?state.guesses.includes(puzzle.word.toLowerCase())||state.guesses.length>=5:state.solved.length===puzzle.entries.length;
+const isDone=()=>type==='word'?state.guesses.includes(puzzle.word.toLowerCase())||state.guesses.length>=WORD_ATTEMPTS:state.solved.length===puzzle.entries.length;
 function save(){state.selected=selected;store.save(type,index,state);document.getElementById('practice-warning').textContent=store.warning;}
 function progress(){
  document.getElementById('practice-progress').textContent=type==='word'
-  ?`${puzzle.difficulty} · ${store.completed(type,difficulty)} finished · 5 tries, retry anytime`
+  ?`${puzzle.difficulty} · ${store.completed(type,difficulty)} finished · ${WORD_ATTEMPTS} tries, retry anytime`
   :`${puzzle.difficulty} · ${store.completed(type,difficulty)} finished · take your time`;
 }
 function open(){
@@ -57,7 +57,7 @@ function hintText(){
 function renderWord(){
  const done=isDone(),won=state.guesses.includes(puzzle.word.toLowerCase()),keys={},rank={absent:1,present:2,correct:3};
  for(const guess of state.guesses)scoreGuess(guess,puzzle.word.toLowerCase()).forEach((mark,i)=>{if((rank[keys[guess[i]]]||0)<rank[mark])keys[guess[i]]=mark;});
- host.innerHTML=`<div class="word-grid" aria-label="Practice guesses">${Array.from({length:5},(_,row)=>{
+ host.innerHTML=`<div class="word-grid" aria-label="Practice guesses">${Array.from({length:WORD_ATTEMPTS},(_,row)=>{
   const guess=state.guesses[row],marks=guess?scoreGuess(guess,puzzle.word.toLowerCase()):[];
   return `<div class="word-row" ${!guess&&row===state.guesses.length?'data-draft-row':''}>${Array.from({length:5},(_,i)=>`<span class="word-tile ${marks[i]||''}" aria-label="${guess?guess[i].toUpperCase()+', '+{absent:'not in word',present:'wrong spot',correct:'right spot'}[marks[i]]:'empty'}">${guess?.[i]||(!guess&&row===state.guesses.length?state.draft[i]||'':'')}</span>`).join('')}</div>`;
  }).join('')}</div>

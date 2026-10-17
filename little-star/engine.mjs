@@ -33,7 +33,7 @@ export const FORMS={
  blackhole:{name:'black hole',icon:'◉',care:'roll a little orbit',line:'Has eaten one sock. Denies everything.',animation:'blackhole'}
 };
 export const EGG_CARE=[{id:'dwarf',name:'a quiet nest',icon:'☾',verb:'tucked the egg into a quiet nest'},{id:'giant',name:'warm little hands',icon:'♡',verb:'warmed the egg with a long cuddle'},{id:'neutron',name:'tap a tiny rhythm',icon:'♫',verb:'tapped a little rhythm for the egg'},{id:'blackhole',name:'roll a little orbit',icon:'◉',verb:'rolled a stardust orbit around the egg'}];
-export const ECONOMY={starter:40,practiceCap:40,practiceRate:.2,petGameCap:3,ritualReward:6,wordPoints:[100,40,30,20,10],arcadeCap:90,recordBonus:10};
+export const ECONOMY={starter:40,practiceCap:40,practiceRate:.2,petGameCap:3,ritualReward:6,wordPoints:[60,50,40,30,20,10],arcadeCap:90,recordBonus:10};
 export const STAGES=[{id:'baby',name:'baby spark',time:2,care:1,growth:30},{id:'little',name:'little star',time:3,care:2,growth:60},{id:'teen',name:'teen star',time:4,care:3,growth:90},{id:'grown',name:'grown star',time:6,care:4,growth:130},{id:'final',name:'final form',time:0,care:0,growth:0}];
 // Stages that began before the v2 pacing keep their original goals; the next
 // stage a star enters uses STAGES. Only time/care/growth are read from here.
@@ -176,7 +176,7 @@ function validDay(day){return typeof day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(
 export function scoreResult(r){
  if(!['word','crossword','search'].includes(r.game))throw Error('Choose one of the three daily games.');
  if(r.game==='word'){
-  if(!Number.isInteger(r.attempts)||r.attempts<0||r.attempts>5)throw Error('Use 1–5 guesses, or 0 for an unsolved word.');
+  if(!Number.isInteger(r.attempts)||r.attempts<0||r.attempts>ECONOMY.wordPoints.length)throw Error('Use 1–6 guesses, or 0 for an unsolved word.');
   return r.attempts?ECONOMY.wordPoints[r.attempts-1]:0;
  }
  if(!Number.isInteger(r.found)||!Number.isInteger(r.total)||r.total<1||r.total>30||r.found<0||r.found>r.total)throw Error('The board’s completion count is not valid.');

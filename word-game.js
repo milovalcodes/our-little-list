@@ -1,4 +1,5 @@
-export const WORD_ATTEMPTS=5;
+import {wordAttempts,WORD_POINTS} from './word-scores.js';
+export const WORD_ATTEMPTS=WORD_POINTS.length;
 import {assertRevision,revisionOf} from './round-revision.js';
 // Greens claim their copies first. Yellow must consume only the copies left.
 export function scoreGuess(guess,answer) {
@@ -13,10 +14,10 @@ export function nextWordAttempt(before,puzzle,{day,person,guess,expectedCount,ex
   if(!['her','him'].includes(person)||!/^[a-z]{5}$/.test(guess))throw Error('Use a five-letter word.');
   const guesses=before?.guesses||[];
   if(before&&(before.person!==person||before.day!==day))throw Error('This is not your puzzle.');
-  if(before?.done||guesses.length>=WORD_ATTEMPTS)throw Error('You’ve finished this one. Another word arrives at 9 a.m.');
+  if(before?.done||guesses.length>=wordAttempts(day))throw Error('You’ve finished this one. Another word arrives at 9 a.m.');
   if(guesses.length!==expectedCount)throw Error('Your other screen made a guess. The board is catching up.');
   if(guesses.includes(guess))throw Error('Already tried that one. No attempt used.');
   const next=[...guesses,guess],won=guess===puzzle.word;
-  return {day,person,guesses:next,won,done:won||next.length===WORD_ATTEMPTS,updatedAt:now,...(revisionOf(puzzle)?{revision:revisionOf(puzzle)}:{})};
+  return {day,person,guesses:next,won,done:won||next.length===wordAttempts(day),updatedAt:now,...(revisionOf(puzzle)?{revision:revisionOf(puzzle)}:{})};
 }
 export function wordSummary(game){return {day:game.day,person:game.person,attempts:game.guesses.length,done:game.done,won:game.won,updatedAt:game.updatedAt,...(revisionOf(game)?{revision:revisionOf(game)}:{})};}
