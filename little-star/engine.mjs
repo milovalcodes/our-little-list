@@ -475,7 +475,7 @@ export function servicePings(input,now){
 export function scenario(which,now){
  const s=freshStar(now);if(which==='wish')return s;
  if(which==='hatching'){s.createdAt=now-EGG_DURATION;s.phaseAt=s.createdAt;s.wishes={him:'a safe place',her:'a home full of snacks'};s.eggCare=[{actor:'her',day:clock(now).day,form:'blackhole'}];s.phaseDays=s.eggCare.map(c=>c.day);s.affinity.blackhole=2;return s;}
- s.born=true;s.form=Object.hasOwn(FORMS,which)?which:'golden';s.wishes={him:'a safe place to be little',her:'a home full of snacks'};memory(s,'hatch','Two wishes made a little star','Your nursery began with a wish from each of you.',now-2*DAY);
+ s.born=true;s.phasePacing=PHASE_PACING;s.form=Object.hasOwn(FORMS,which)?which:'golden';s.wishes={him:'a safe place to be little',her:'a home full of snacks'};memory(s,'hatch','Two wishes made a little star','Your nursery began with a wish from each of you.',now-2*DAY);
  if(which==='grown'){s.xp=1700;s.stage=4;s.evolvedAt=now-DAY;s.createdAt=now-100*DAY;s.careDays=Array.from({length:60},(_,i)=>new Date(now-i*DAY).toISOString().slice(0,10));s.wallets={him:230,her:380};s.owned.push('bow','scarf','picnic','plant','garden-room');s.equipped={wearable:'picnic',decor:'plant',room:'garden-room'};memory(s,'growth-4','A forever star','Still small enough for the towel. Always.',now);}
  if(which==='shop'){s.wallets={him:12000,her:9500};s.magic={age:2,rewind:2,stasis:1};}
  if(Object.hasOwn(FORMS,which)){s.stage=4;s.evolvedAt=now;s.createdAt=now-100*DAY;}
