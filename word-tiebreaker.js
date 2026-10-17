@@ -3,6 +3,8 @@ import { personName } from './profile-store.js';
 import { escapeHtml } from './ui-helpers.js';
 import {startTimedGame} from './timed-games.js';
 import {trioProgress} from './league-scores.js';
+import {hidePartnerUntilPlayed,wordEnded} from './daily-results.js';
+import {timedOver} from './timed-game.js';
 export function startWordTiebreakers(context){
   const host=document.getElementById('tiebreaker');
   let duels=[],ends=[],finals=[],active='',lastDuel='',stop=null,selected='';
@@ -28,7 +30,7 @@ export function startWordTiebreakers(context){
     const board=host.querySelector('.tie-board');
     board.innerHTML='<p class="trio-score" role="status"></p><p class="trio-hint">One fresh round of each. The set closes once the lead can’t be caught or tied.</p>'+['wordle','search','crossword'].map(type=>`<details class="daily-entry" data-trio="${type}"><summary><strong>${type==='wordle'?'Little Word':type==='search'?'Word Search':'Mini crossword'}</strong><small>getting ready…</small></summary><section></section></details>`).join('');
     const stops=[];let words=[],timed=[];
-    const score=()=>{const state=trioProgress(next.puzzleId,next.scores,words,timed);host.querySelector('.trio-score').textContent=`☀ ${state.scores.her} · ☾ ${state.scores.him}`;host.querySelector('.tie-summary').textContent=state.outcome==='tie'?'tied again · next set shortly':state.outcome?'the crown is on its way…':'three rounds · play when you can';};
+    const score=()=>{const open=()=>true,state=trioProgress(next.puzzleId,next.scores,hidePartnerUntilPlayed(words,context.viewer,open,wordEnded),hidePartnerUntilPlayed(timed,context.viewer,open,r=>timedOver(r)));host.querySelector('.trio-score').textContent=`☀ ${state.scores.her} · ☾ ${state.scores.him}`;host.querySelector('.tie-summary').textContent=state.outcome==='tie'?'tied again · next set shortly':state.outcome?'the crown is on its way…':'three rounds · play when you can';};
     for(const type of ['wordle','search','crossword']){const detail=board.querySelector(`[data-trio="${type}"]`),options={day:next.puzzleId,host:detail.querySelector('section'),summary:detail.querySelector('small'),disclosure:detail};stops.push(type==='wordle'?startDailyWord(context,options):startTimedGame(context,{...options,type}));}
     stops.push(context.data.listenToQuery('wordResults',{where:{field:'day',value:next.puzzleId}},items=>{words=items;score();}));
     stops.push(context.data.listenToQuery('timedResults',{where:{field:'day',value:next.puzzleId}},items=>{timed=items;score();}));

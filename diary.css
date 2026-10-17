@@ -767,6 +767,23 @@ body[data-app="activities"]:has(.timed-playing) #sync-chip { opacity:0; pointer-
 .timed-feedback { min-height:1.4em; font-size:.9rem; line-height:1.5; }
 .timed-peek ol { padding:0; list-style:none; display:grid; gap:6px; }
 .timed-peek li { display:flex; justify-content:space-between; gap:12px; padding:8px; background:var(--diary-raised); border-radius:10px; }
+.daily-results { display:grid; gap:10px; margin:14px 0 6px; }
+.result-compare { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.result-side { display:grid; gap:2px; padding:10px; border:1px solid var(--diary-rule); border-radius:12px; background:var(--diary-panel); text-align:center; }
+.result-side b { font-size:.8rem; color:var(--page-muted); }
+.result-side span { font-size:1.25rem; font-weight:800; font-variant-numeric:tabular-nums; }
+.result-side span.waiting { align-self:center; font-size:.95rem; font-weight:700; color:var(--page-muted); }
+.result-side small { min-height:1.2em; font-size:.8rem; font-variant-numeric:tabular-nums; }
+.result-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:0; text-align:center; }
+.result-stats div { display:flex; flex-direction:column-reverse; }
+.result-stats dt { font-size:.7rem; color:var(--page-muted); }
+.result-stats dd { margin:0; font-size:1.15rem; font-weight:800; font-variant-numeric:tabular-nums; }
+.guess-bars { display:grid; gap:4px; }
+.guess-bars>div { display:grid; grid-template-columns:1.2em 1fr; align-items:center; gap:6px; font-size:.8rem; font-weight:700; }
+.guess-bars i { display:flex; justify-content:flex-end; min-width:1.8em; width:calc(1.8em + (100% - 1.8em) * var(--share)); padding:2px 6px; border-radius:6px; background:var(--diary-raised); font-style:normal; }
+.guess-bars .today i { background:var(--accent); color:var(--button-text, #171c32); }
+.daily-results [data-share] { justify-self:center; min-height:44px; padding:10px 18px; border:1px solid var(--diary-rule); border-radius:14px; color:var(--page-text); background:var(--diary-raised); font:inherit; font-weight:800; }
+.share-note { min-height:1.2em; text-align:center; color:var(--page-muted); }
 .trio-hint,.score-help p { font-size:.9rem; line-height:1.5; }
 .trio-score { font-size:1.35rem; font-weight:800; font-variant-numeric:tabular-nums; text-align:center; }
 .weekly-entry { border-color:color-mix(in srgb,var(--accent) 55%,var(--diary-rule)); }

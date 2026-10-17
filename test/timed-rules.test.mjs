@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {timedPuzzle} from '../daily-puzzles.js';
 import {newTimedGame,advanceTimedGame,timedSummary} from '../timed-game.js';
+import {weeklyRounds} from '../round-engine.js';
 const host=process.env.FIRESTORE_EMULATOR_HOST;assert.match(host||'',/^(127\.0\.0\.1|localhost):8089$/,'emulator only');
 const project='demo-little-list',household='oLSxADOwjqS04hSS2aHGOcvozmz2',root=`projects/${project}/databases/(default)/documents`,base='http://'+host+'/v1/'+root;
 const path=name=>'households/'+household+'/'+name;
@@ -88,4 +89,21 @@ for(let i=0;i<20;i++){
  twenty=await commit('her',next);
 }
 assert.ok(twenty.complete);assert.equal(twenty.solved.length,20);
+// 5x5 minis (catalog 7): exactly 5x5, six answers, 2:00 normal / 3:00 hard, only from 2026-10-19.
+const mini={...weeklyRounds('2026-11-10')['2026-11-11'].crossword,opensAt:Date.now()-1000,closesAt:Date.now()+86400000};
+assert.equal(mini.catalogVersion,7);assert.equal(mini.durationMs,120000);
+await write('him','timedPuzzles/'+mini.day+'-crossword',{...mini,durationMs:180000},false);
+await write('him','timedPuzzles/'+mini.day+'-crossword',{...mini,entries:mini.entries.slice(0,5)},false);
+await write('him','timedPuzzles/'+mini.day+'-crossword',{...mini,size:9,grid:mini.grid.padEnd(81,'#')},false);
+const early={...mini,day:'2026-10-14'};
+await write('him','timedPuzzles/2026-10-14-crossword',early,false);
+await write('him','timedPuzzles/'+mini.day+'-crossword',mini);
+let six=await commit('him',newTimedGame(mini,'him'),{start:true});
+for(let i=0;i<6;i++)six=await commit('him',advanceTimedGame(six,mini,{index:i,expectedCount:i}));
+assert.ok(six.complete);assert.equal(six.solved.length,6);
+const hardMini={...weeklyRounds('2026-11-10')['2026-11-15'].crossword,opensAt:Date.now()-1000,closesAt:Date.now()+86400000};
+assert.equal(hardMini.durationMs,180000);
+await write('him','timedPuzzles/'+hardMini.day+'-crossword',{...hardMini,durationMs:300000},false);
+await write('him','timedPuzzles/'+hardMini.day+'-crossword',hardMini);
+console.log('TIMED RULES: 5x5 minis keep their exact shape, 2:00/3:00 clocks and start day.');
 console.log('TIMED RULES: server deadlines including normal 3:00 and hard 2:30/5:00, no forged extension, private routes, no resets, atomic counts, closed ties and scoring pass');

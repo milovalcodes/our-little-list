@@ -39,10 +39,12 @@ try{
   await page.selectOption('#score-week','2026-10-12');
   await page.waitForFunction(()=>document.querySelector('#weekly-score').textContent.includes('☀ 0 · ☾ 0'));
   await page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();await d.setTo('wordResults','2026-10-12-him',{day:'2026-10-12',person:'him',attempts:2,done:true,won:true,updatedAt:Date.now()});});
-  await page.waitForFunction(()=>document.querySelector('#weekly-score').textContent.includes('☾ 40'));
+  // Today's partner word stays hidden from her until she has finished her own.
+  await page.waitForFunction(side=>document.querySelector('#weekly-score').textContent.includes(side==='him'?'☾ 40':'☾ 0'),side);
+  if(side==='her')await page.waitForFunction(()=>document.querySelector('#weekly-board').textContent.includes('hidden until you finish yours'));
   await page.locator('[data-score-detail="2026-10-12"]>summary').click();
   await page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();await d.setTo('wordResults','2026-10-12-her',{day:'2026-10-12',person:'her',attempts:3,done:true,won:true,updatedAt:Date.now()});});
-  await page.waitForFunction(()=>document.querySelector('#weekly-score').textContent.includes('☀ 30'));
+  await page.waitForFunction(()=>document.querySelector('#weekly-score').textContent.includes('☀ 30 · ☾ 40'));
   assert.equal(await page.locator('[data-score-detail="2026-10-12"]').getAttribute('open'),'','live points retain the expanded day');
   await context.close();
  }

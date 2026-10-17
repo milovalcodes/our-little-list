@@ -7,7 +7,7 @@ import {connectedCrossword} from '../connected-crossword.js';
 import {PUZZLE_THEMES,catalogPool} from '../puzzle-catalog.js';
 import {DIFFICULTY_VERSION} from '../puzzle-edition.js';
 import {weeklyRounds,ROUND_ENGINE_START} from '../round-engine.js';
-export const compiledSources=['daily-puzzles.js','connected-crossword.js','puzzle-catalog.js','puzzle-edition.js','puzzle-edition-bank.js','puzzle-edition-seasonal.js','seasonal-puzzles.js','round-engine.js','round-library.js','practice-edition-bank.js','daily-words.js'];
+export const compiledSources=['daily-puzzles.js','connected-crossword.js','mini-crossword.js','puzzle-catalog.js','puzzle-edition.js','puzzle-edition-bank.js','puzzle-edition-seasonal.js','seasonal-puzzles.js','round-engine.js','round-library.js','practice-edition-bank.js','daily-words.js'];
 export const fingerprint=()=>createHash('sha256').update(compiledSources.map(name=>readFileSync(new URL('../'+name,import.meta.url),'utf8').replace(/\r\n/g,'\n')).join('\n')).digest('hex');
 export function compile(){
  const days={},ties={},rounds={},start='2026-10-12',end='2028-10-15';

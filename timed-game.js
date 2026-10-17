@@ -23,7 +23,8 @@ export function timedPoints(game,now=Date.now()){
  return (base+(base===50?timeBonus(game):0))*multiplier;
 }
 export function timedMax(day){return (50+(newScoring(day)?TIME_BONUS_MAX:0))*(isHardDay(day)?2:1);}
-export function timedOver(game,now=Date.now()){return Boolean(game&&(game.done||now>=Math.min(millis(game.startedAt)+timedLimit(game.type,game),game.closesAt||Infinity)));}
+// A hidden partner marker (see daily-results.js) is never a finished round.
+export function timedOver(game,now=Date.now()){return Boolean(game&&!game.hidden&&(game.done||now>=Math.min(millis(game.startedAt)+timedLimit(game.type,game),game.closesAt||Infinity)));}
 export function timedCeiling(game,type,now=Date.now(),day=game?.day){
  if(!PUZZLE_TYPES.includes(type))return 0;
  if(timedOver(game,now))return timedPoints(game,now);

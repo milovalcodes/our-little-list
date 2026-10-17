@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {weeklyRounds,freshRounds,roundWords,weekDays,assertRevision} from '../round-engine.js';
+import {weeklyRounds,freshRounds,roundWords,weekDays,assertRevision,isMiniDay,crosswordDuration,MINI_CROSSWORD_START} from '../round-engine.js';
 import {prepareReset} from '../game-reset.js';
 import {LIBRARY_STATS} from '../round-library.js';
 import {activityWindow} from '../activity-clock.js';
@@ -8,12 +8,21 @@ import {newTimedGame,advanceTimedGame,timedSummary} from '../timed-game.js';
 import {notifyActivityResults} from '../worker/src/activity-week.js';
 import {savedDailyRounds} from '../worker/src/puzzles.js';
 assert.ok(LIBRARY_STATS.answers>=1300);assert.ok(LIBRARY_STATS.clues>=1000);
-for(const day of ['2026-10-12','2026-10-26','2026-11-02','2026-11-30','2026-12-14','2027-03-08']){
+assert.equal(MINI_CROSSWORD_START,'2026-10-19');
+for(const day of ['2026-10-12','2026-10-19','2026-10-26','2026-11-02','2026-11-30','2026-12-14','2026-12-21','2027-03-08']){
  const plan=weeklyRounds(day),used=Object.values(plan).flatMap(d=>Object.values(d).flatMap(roundWords));
- assert.equal(used.length,157);assert.equal(new Set(used).size,157,'one exclusion set across all three games and seven days');
+ const expected=Object.values(plan).reduce((n,r)=>n+1+10+(isMiniDay(r.crossword.day)?6:r.crossword.hard?20:10),0);
+ assert.equal(used.length,expected);assert.equal(new Set(used).size,expected,'one exclusion set across all three games and seven days');
  for(const [d,rounds]of Object.entries(plan)){
   assert.deepEqual(rounds.word.opensAt,activityWindow(d).opensAt);
-  assert.equal(rounds.crossword.durationMs,rounds.crossword.hard?300000:180000);
+  assert.equal(rounds.crossword.durationMs,crosswordDuration(d,rounds.crossword.hard));
+  if(isMiniDay(d)){
+   // The 5x5 lattice: blocks at the four inner corners, six five-letter answers.
+   const c=rounds.crossword;assert.equal(c.size,5);assert.equal(c.catalogVersion,7);assert.equal(c.entries.length,6);
+   assert.deepEqual([...c.grid].flatMap((ch,i)=>ch==='#'?[i]:[]),[6,8,16,18]);
+   assert.deepEqual(c.entries.map(e=>e.start+'/'+e.step),['0/1','0/5','2/5','4/5','10/1','20/1']);
+   assert.ok(c.entries.every(e=>e.word.length===5&&e.clue));
+  }else assert.equal(rounds.crossword.catalogVersion,6);
   assert.equal(rounds.search.durationMs,rounds.search.hard?150000:120000);
   for(const puzzle of [rounds.crossword,rounds.search])for(const e of puzzle.entries)assert.equal([...e.word].map((_,i)=>puzzle.grid[e.start+i*e.step]).join(''),e.word);
  }

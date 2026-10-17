@@ -3,8 +3,10 @@ import {weekForDay} from './word-scores.js';
 import {weeklyReport,SCORE_GAMES} from './weekly-report.js';
 import {personName} from './profile-store.js';
 import {escapeHtml as esc} from './ui-helpers.js';
+import {hidePartnerUntilPlayed,wordEnded} from './daily-results.js';
+import {timedOver} from './timed-game.js';
 
-export function startWeeklyTracker({data}){
+export function startWeeklyTracker({data,viewer}){
  const host=document.getElementById('weekly-board'),headline=document.getElementById('weekly-score'),current=weekForDay(activityClock().day).start;
  const hashWeek=()=>{const value=/^#scoreboard-(\d{4}-\d{2}-\d{2})$/.exec(location.hash)?.[1];return value&&Number.isFinite(Date.parse(value+'T12:00Z'))&&value<=current&&weekForDay(value).start===value?value:null;};
  let selected=hashWeek()||current,weeks=[],duels=[],words=[],timed=[],loaded=new Set(),failures=new Set(),stops=[],revision=0,failed=false,timedOut=false,signature='',disposed=false,loadTimer;
@@ -24,7 +26,10 @@ export function startWeeklyTracker({data}){
  }
  function render(){
   if(disposed)return;
-  const record=weeks.find(w=>w.week===selected),report=weeklyReport(selected,words,timed,record);
+  // Today's (and an open tie set's) partner rounds stay hidden until yours ends.
+  const record=weeks.find(w=>w.week===selected),today=activityClock().day,openDay=day=>day===today||day.includes('-tie-')&&!record;
+  const shown=rows=>viewer?hidePartnerUntilPlayed(rows,viewer,openDay,rows===words?wordEnded:r=>timedOver(r)):rows;
+  const report=weeklyReport(selected,shown(words),shown(timed),record);
   const choices=[...new Set([current,selected,...[...weeks,...duels].map(w=>w.week).filter(w=>/^\d{4}-\d{2}-\d{2}$/.test(w)&&w<=current)])].sort().reverse();
   const next=JSON.stringify({report,choices,failed,loaded:[...loaded],names:['her','him'].map(p=>personName(p))});
   if(next===signature)return;signature=next;
@@ -51,7 +56,7 @@ export function startWeeklyTracker({data}){
    const a=entry.games.reduce((n,g)=>n+g.people.her.points,0),b=entry.games.reduce((n,g)=>n+g.people.him.points,0);
    return `<details class="score-day" data-score-detail="${esc(entry.day)}"><summary><strong>${entry.tie?'Tie-break '+entry.tie:label(entry.day)}${entry.hard?' <small>2×</small>':''}</strong><span>☀ ${a} <i>·</i> ☾ ${b}</span></summary><div class="score-day-rows">${entry.games.map(row=>`<div><b>${SCORE_GAMES.find(g=>g.id===row.type).name}</b>${['her','him'].map(p=>`<span><strong>${name(p)} · ${row.people[p].points} pts</strong><small>${esc(row.people[p].detail)}</small></span>`).join('')}</div>`).join('')}</div></details>`;
   }).join('')}</section>`;
-  host.innerHTML=dateRow+hero+sources+recap+days+`<details class="score-help" data-score-detail="help"><summary>how points work</summary><p>Little Word: 60 / 50 / 40 / 30 / 20 / 10 for 1–6 guesses. Miss it: 0. Days before Oct 19 keep their old 100 / 40 / 30 / 20 / 10 for 1–5.</p><p>Word Search and Mini crossword: words found ÷ total × 50, rounded. Find every word and each 5 seconds left on the clock adds 1, up to +10 (from Oct 19). A points tie goes to whoever had more time left over on fully solved boards; only an exact tie opens the hard rounds. Word Search: 2:00 normal / 2:30 hard. New crosswords: 10 words in 3:00 / 20 in 5:00. No words: 0. Sunday and tie-breaks double the points. Tie-break points are included above.</p></details>`;
+  host.innerHTML=dateRow+hero+sources+recap+days+`<details class="score-help" data-score-detail="help"><summary>how points work</summary><p>Little Word: 60 / 50 / 40 / 30 / 20 / 10 for 1–6 guesses. Miss it: 0. Days before Oct 19 keep their old 100 / 40 / 30 / 20 / 10 for 1–5.</p><p>Word Search and Mini crossword: words found ÷ total × 50, rounded. Find every word and each 5 seconds left on the clock adds 1, up to +10 (from Oct 19). A points tie goes to whoever had more time left over on fully solved boards; only an exact tie opens the hard rounds. Word Search: 2:00 normal / 2:30 hard. Mini crossword (from Oct 19): 6 words in 2:00 / 3:00 on Sunday; tie-break crosswords: 20 words in 5:00. No words: 0. Sunday and tie-breaks double the points. Tie-break points are included above.</p></details>`;
   for(const d of host.querySelectorAll('[data-score-detail]'))d.open=open.includes(d.dataset.scoreDetail);
   if(focus)document.getElementById(focus)?.focus({preventScroll:true});
   const totals=JSON.stringify(report.totals);host.dataset.totals=totals;

@@ -1,7 +1,9 @@
 import {activityClock} from './activity-clock.js';
 import {timedPuzzle,PUZZLE_NAMES,entryCells,selectedSearchWord,isHardDay} from './daily-puzzles.js';
-import {millis,timedPoints,timedOver,timedLimit,timedMax,timeBonus,TIME_BONUS_MAX} from './timed-game.js';
+import {millis,timedPoints,timedOver,timedLimit,timedMax,timeBonus,TIME_BONUS_MAX,timedSummary} from './timed-game.js';
 import {newScoring} from './word-scores.js';
+import {timedStats,timedTaken,timedShare,clock} from './daily-results.js';
+import {shareResult} from './share-result.js';
 import {escapeHtml as esc} from './ui-helpers.js';
 import {personName} from './profile-store.js';
 import {createWordCelebration} from './word-celebration.js';
@@ -20,7 +22,8 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  const pendingSearch=new Set();
  let dragPointer=null;
  // Crossword squares live on this device until the round ends.
- let letters=[],lettersKey='',cursor=null;
+ let letters=[],lettersKey='',cursor=null,focusGrid=false;
+ let history=[],shareNote='';
  let partnerFinished=false;
  let latestMine=null;
  const finished=()=>mine&&(closed||timedOver(mine)||puzzle&&Date.now()>=puzzle.closesAt);
@@ -49,6 +52,8 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
    render();
   },{onError:fail}));
   unsubs.push(data.listenToQuery('timedResults',{where:[{field:'day',value:day},{field:'type',value:type}]},rows=>{results=rows;partnerFinished=timedOver(partner());render();},{onError:fail}));
+  // Your own finished boards feed the clear streak and best time.
+  if(!day.includes('-tie-'))unsubs.push(data.listenToQuery('timedResults',{where:[{field:'person',value:viewer},{field:'type',value:type}]},rows=>{history=rows.filter(r=>r.person===viewer&&r.type===type);render();},{onError:()=>{}}));
   if(day.includes('-tie-'))unsubs.push(data.listenTo('wordDuelEnds',ends=>{closed=ends.some(e=>e.id===day);if(closed)render();},{onError:fail}));
  }
  function ensureLetters(){
@@ -88,7 +93,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
    const known=type==='search'||revealed.has(index)||done;
    return `<button type="button" class="puzzle-cell ${pendingCells.has(index)?'pending-find':''} ${missed.has(index)?'missed-word':''} ${tapStart===index?'tracing':''} ${revealed.has(index)?'found':''} ${active.has(index)?'chosen':''} ${flash>=0&&entryCells(puzzle,flash).includes(index)?'just-found':''}" data-cell="${index}" tabindex="${index===[...puzzle.grid].findIndex(c=>c!=='#')?0:-1}" aria-label="${type==='crossword'&&numbers.has(index)?numbers.get(index)+', ':''}${known?letter:'empty'}, row ${Math.floor(index/puzzle.size)+1}, column ${index%puzzle.size+1}" ${done||(busy&&type!=='search')?'disabled':''}>${type==='crossword'&&numbers.has(index)?`<small>${numbers.get(index)}</small>`:''}<span>${known?letter:''}</span></button>`;
   }).join('');
-  host.innerHTML=`<p class="puzzle-theme">${esc(puzzle.theme)} · ${puzzle.hard?'hard · 2× points':'normal'}</p><div class="timed-toolbar"><strong data-timer>${done?'finished':time(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)))}</strong><span>${solved.size} / ${puzzle.entries.length}</span></div><div class="puzzle-scroll"><div class="puzzle-grid ${type==='search'?'search-grid':'crossword-grid'}" style="--grid-size:${puzzle.size}" aria-label="${esc(PUZZLE_NAMES[type])} grid">${cells}</div></div>${type==='search'?`<div class="search-words">${puzzle.entries.map((e,i)=>`<span class="${solved.has(i)?'found':done?'missed-word':pendingSearch.has(i)?'pending-find':''}">${e.word}</span>`).join('')}</div><small class="puzzle-hint">${done?'Outlined letters show the words you missed.':'Drag a word, or tap its first letter, then its last.'}</small>`:''}<p class="timed-feedback" role="status">${esc(message||(mine.done?(mine.solved.length?`${pointsText(mine)} · nicely done ♡`:'you did your best :c'):done?`time’s up · ${timedPoints(mine)} points`:pendingSearch.size?'saving selections…':busy?'saving…':''))}</p>${message?'<button type="button" data-retry>retry sync</button>':''}${done?peekMarkup():''}`;
+  host.innerHTML=`<p class="puzzle-theme">${esc(puzzle.theme)} · ${puzzle.hard?'hard · 2× points':'normal'}</p><div class="timed-toolbar"><strong data-timer>${done?'finished':time(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)))}</strong><span>${solved.size} / ${puzzle.entries.length}</span></div><div class="puzzle-scroll"><div class="puzzle-grid ${type==='search'?'search-grid':'crossword-grid'}" style="--grid-size:${puzzle.size}" aria-label="${esc(PUZZLE_NAMES[type])} grid">${cells}</div></div>${type==='search'?`<div class="search-words">${puzzle.entries.map((e,i)=>`<span class="${solved.has(i)?'found':done?'missed-word':pendingSearch.has(i)?'pending-find':''}">${e.word}</span>`).join('')}</div><small class="puzzle-hint">${done?'Outlined letters show the words you missed.':'Drag a word, or tap its first letter, then its last.'}</small>`:''}<p class="timed-feedback" role="status">${esc(message||(mine.done?(mine.solved.length?`${pointsText(mine)} · nicely done ♡`:'you did your best :c'):done?`time’s up · ${timedPoints(mine)} points`:pendingSearch.size?'saving selections…':busy?'saving…':''))}</p>${message?'<button type="button" data-retry>retry sync</button>':''}${done?resultsMarkup()+peekMarkup():''}`;
 
  }
  function renderCrossword(done,solved){
@@ -105,10 +110,24 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   const clues=across=>clueOrder(puzzle).filter(i=>isAcross(puzzle.entries[i])===across).map(i=>{const e=puzzle.entries[i];return `<button type="button" data-clue="${i}" aria-pressed="${!done&&i===index}" class="${done?(solved.has(i)?'found':'missed-word'):''}" ${done?'disabled':''}><b>${numbers.get(e.start)}</b> ${esc(e.clue)} <small>(${e.word.length})${done?' · '+e.word+(solved.has(i)?' ✓':''):''}</small></button>`;}).join('');
   const keys=['QWERTYUIOP','ASDFGHJKL','⇄ZXCVBNM⌫'].map(row=>`<div>${[...row].map(k=>`<button type="button" data-ckey="${k}" class="${k==='⇄'||k==='⌫'?'wide-key':''}" aria-label="${k==='⌫'?'delete':k==='⇄'?'switch across or down':k}">${k}</button>`).join('')}</div>`).join('');
   const status=message||(done?(mine.complete?`${pointsText(mine)} · solved it ♡`:`time’s up · ${timedPoints(mine)} points · dashed squares were wrong`):'');
-  host.innerHTML=`<p class="puzzle-theme">${esc(puzzle.theme)} · ${puzzle.hard?'hard · 2× points':'normal'}</p><div class="timed-toolbar"><strong data-timer>${done?'finished':time(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)))}</strong><span>${done?`${solved.size} / ${puzzle.entries.length} words`:`${filledCount(puzzle,letters)} / ${white} squares`}</span></div>${done?'':`<div class="crossword-current"><button type="button" data-clue-step="-1" aria-label="Previous clue">‹</button><button type="button" data-flip aria-label="Switch across or down"><b>${numbers.get(clue.start)} ${isAcross(clue)?'across':'down'}</b> ${esc(clue.clue)} <small>(${clue.word.length})</small></button><button type="button" data-clue-step="1" aria-label="Next clue">›</button></div>`}<div class="puzzle-scroll"><div class="puzzle-grid crossword-grid" style="--grid-size:${puzzle.size}" role="group" aria-label="${esc(PUZZLE_NAMES[type])} grid">${cells}</div></div>${done?'':`<div class="word-keyboard crossword-keys" aria-label="Crossword keyboard">${keys}</div><small class="puzzle-hint">Tap a square twice, or ⇄, to switch between across and down. Words aren’t checked until the round ends.</small>`}<div class="crossword-clues"><h3>Across</h3>${clues(true)}<h3>Down</h3>${clues(false)}</div><p class="timed-feedback" role="status">${esc(status)}</p>${message?'<button type="button" data-retry>retry sync</button>':''}${done?peekMarkup():''}`;
+  host.innerHTML=`<p class="puzzle-theme">${esc(puzzle.theme)} · ${puzzle.hard?'hard · 2× points':'normal'}</p><div class="timed-toolbar"><strong data-timer>${done?'finished':time(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)))}</strong><span>${done?`${solved.size} / ${puzzle.entries.length} words`:`${filledCount(puzzle,letters)} / ${white} squares`}</span></div>${done?'':`<div class="crossword-current"><button type="button" data-clue-step="-1" aria-label="Previous clue">‹</button><button type="button" data-flip aria-label="Switch across or down"><b>${numbers.get(clue.start)} ${isAcross(clue)?'across':'down'}</b> ${esc(clue.clue)} <small>(${clue.word.length})</small></button><button type="button" data-clue-step="1" aria-label="Next clue">›</button></div>`}<div class="puzzle-scroll"><div class="puzzle-grid crossword-grid" style="--grid-size:${puzzle.size}" role="group" aria-label="${esc(PUZZLE_NAMES[type])} grid">${cells}</div></div>${done?'':`<div class="word-keyboard crossword-keys" aria-label="Crossword keyboard">${keys}</div><small class="puzzle-hint">Tap a square twice, or ⇄, to switch between across and down. Words aren’t checked until the round ends.</small>`}<div class="crossword-clues"><h3>Across</h3>${clues(true)}<h3>Down</h3>${clues(false)}</div><p class="timed-feedback" role="status">${esc(status)}</p>${message?'<button type="button" data-retry>retry sync</button>':''}${done?resultsMarkup()+peekMarkup():''}`;
   const pane=host.querySelector('.puzzle-scroll'),mark=host.querySelector('.puzzle-cell.cursor');
   if(pane){pane.scrollLeft=previousScroll;if(mark){const a=mark.getBoundingClientRect(),b=pane.getBoundingClientRect();if(a.left<b.left)pane.scrollLeft-=b.left-a.left+8;else if(a.right>b.right)pane.scrollLeft+=a.right-b.right+8;}}
-  if(hadFocus&&!done)mark?.focus({preventScroll:true});
+  // Starting the round hands the keyboard straight to the grid.
+  if((hadFocus||focusGrid)&&!done){mark?.focus({preventScroll:true});focusGrid=false;}
+ }
+ // Side by side once your round is over; the partner column fills in when theirs is.
+ function resultsMarkup(){
+  const theirs=partner(),side=(label,r)=>{
+   const over=timedOver(r),taken=timedTaken(r);
+   return `<div class="result-side"><b>${label}</b><span class="${over?'':'waiting'}">${over?(r.count??r.solved?.length??0)+' / '+r.total:r?'still playing':'not played yet'}</span><small>${over?(taken!==null?clock(taken):'time ran out')+' · '+timedPoints(r)+' points':''}</small></div>`;
+  };
+  let stats='';
+  if(!day.includes('-tie-')){
+   const s=timedStats([...history.filter(r=>r.day!==day),timedSummary(mine)],type,day);
+   stats=`<dl class="result-stats"><div><dt>played</dt><dd>${s.played}</dd></div><div><dt>cleared</dt><dd>${s.cleared}</dd></div><div><dt>streak</dt><dd>${s.current}</dd></div><div><dt>best time</dt><dd>${s.bestTime===null?'–':clock(s.bestTime)}</dd></div></dl>`;
+  }
+  return `<section class="daily-results" aria-label="Today’s results"><div class="result-compare">${side('You',mine)}${side(esc(personName(other)),theirs)}</div>${stats}<button type="button" data-share>share my result</button><small class="share-note" role="status">${esc(shareNote)}</small></section>`;
  }
  function peekMarkup(){
   if(!timedOver(partner()))return '<p class="word-partner">waiting for '+esc(personName(other))+' · their process stays private</p>';
@@ -153,7 +172,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  const down=event=>{if(type!=='search'||finished()||dragStart!==null||event.isPrimary===false||event.button>0||!event.target.closest('[data-cell]'))return;event.preventDefault();dragPointer=event.pointerId;dragStart=tapStart??Number(event.target.closest('[data-cell]').dataset.cell);host.querySelector(`[data-cell="${dragStart}"]`)?.classList.add('tracing');host.querySelector('.puzzle-grid').setPointerCapture?.(event.pointerId);};
  const move=event=>{if(dragStart==null)return;const end=cellAt(event);if(end==null)return;host.querySelectorAll('.tracing').forEach(c=>c.classList.remove('tracing'));const r=dragStart/puzzle.size|0,c=dragStart%puzzle.size,dr=(end/puzzle.size|0)-r,dc=end%puzzle.size-c;if(dr&&dc&&Math.abs(dr)!==Math.abs(dc))return;for(let i=0;i<=Math.max(Math.abs(dr),Math.abs(dc));i++)host.querySelector(`[data-cell="${dragStart+i*(Math.sign(dr)*puzzle.size+Math.sign(dc))}"]`)?.classList.add('tracing');};
  const up=event=>{if(dragStart==null||event.pointerId!==dragPointer)return;const end=cellAt(event),start=dragStart;dragStart=null;dragPointer=null;const grid=host.querySelector('.puzzle-grid');if(grid?.hasPointerCapture?.(event.pointerId))grid.releasePointerCapture(event.pointerId);if(end==null){cancel();return;}if(start===end){tapStart=tapStart===start?null:start;render();}else search(start,end);};
- const click=event=>{if(event.target.closest('[data-start]'))void play({start:true});if(event.target.closest('[data-retry]')){message='';listen();render();}if(event.target.closest('[data-peek]'))void loadPeek();if(type!=='crossword'||!mine||!puzzle||finished())return;
+ const click=event=>{if(event.target.closest('[data-start]')){focusGrid=type==='crossword';void play({start:true});}if(event.target.closest('[data-retry]')){message='';listen();render();}if(event.target.closest('[data-peek]'))void loadPeek();if(event.target.closest('[data-share]')&&mine&&finished())void shareResult(timedShare(timedSummary(mine),PUZZLE_NAMES[type])).then(note=>{shareNote=note;render();});if(type!=='crossword'||!mine||!puzzle||finished())return;
   const clue=event.target.closest('[data-clue]'),cell=event.target.closest('[data-cell]'),key=event.target.closest('[data-ckey]'),step=event.target.closest('[data-clue-step]');
   if(clue)moveTo(selectClue(puzzle,letters,Number(clue.dataset.clue)));
   else if(cell)moveTo(selectCell(puzzle,cursor,Number(cell.dataset.cell)));

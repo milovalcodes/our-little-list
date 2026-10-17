@@ -21,13 +21,14 @@ export function weeklyReport(day,words=[],timed=[],raw=null,now=Date.now()){
  const days=[...week.days,...[...new Set(rows.map(r=>r.day).filter(tieRound))].sort((a,b)=>tieRound(a)-tieRound(b))];
  const stats=Object.fromEntries(people.map(p=>[p,Object.fromEntries(SCORE_GAMES.map(g=>[g.id,{points:0,finished:0,max:0,best:null}]))]));
  const entries=days.map(date=>({day:date,tie:tieRound(date),hard:isHardDay(date),games:SCORE_GAMES.map(g=>({type:g.id,people:Object.fromEntries(people.map(person=>{
-  const r=byKey.get(date+':'+g.id+':'+person),ended=g.id==='word'?Boolean(r?.done):timedOver(r,cutoff);
-  const points=g.id==='word'?wordPoints(r):timedPoints(r,cutoff);
-  const closed=r&&!ended&&(Boolean(record)||(!tieRound(date)&&cutoff>=activityWindow(date).closesAt));
-  const detail=!r?'not played':!ended?(closed?'unfinished · closed':'in progress'):g.id==='word'?(r.won?`${r.attempts} ${r.attempts===1?'guess':'guesses'}`:`${wordAttempts(date)} tries · missed`):`${r.count} / ${r.total} words`;
+  // A hidden row is the partner's round while yours is still unplayed.
+  const r=byKey.get(date+':'+g.id+':'+person),hidden=Boolean(r?.hidden),ended=!hidden&&(g.id==='word'?Boolean(r?.done):timedOver(r,cutoff));
+  const points=hidden?0:g.id==='word'?wordPoints(r):timedPoints(r,cutoff);
+  const closed=r&&!hidden&&!ended&&(Boolean(record)||(!tieRound(date)&&cutoff>=activityWindow(date).closesAt));
+  const detail=!r?'not played':hidden?'played · hidden until you finish yours':!ended?(closed?'unfinished · closed':'in progress'):g.id==='word'?(r.won?`${r.attempts} ${r.attempts===1?'guess':'guesses'}`:`${wordAttempts(date)} tries · missed`):`${r.count} / ${r.total} words`;
   const s=stats[person][g.id];s.points+=points;
   if(ended){s.finished++;s.max+=gameMax(g,date)*(isHardDay(date)?2:1);if(!s.best||points>s.best.points)s.best={points,day:date,detail};}
-  return [person,{points,detail,played:Boolean(r),ended}];
+  return [person,{points,detail,played:Boolean(r),ended,hidden}];
  }))}))}));
  const sums=Object.fromEntries(people.map(p=>[p,SCORE_GAMES.reduce((n,g)=>n+stats[p][g.id].points,0)]));
  const totals=record?record.scores:sums;
