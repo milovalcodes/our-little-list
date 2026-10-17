@@ -26,11 +26,7 @@ const PIXEL_ICONS={
  bread:['............','..kkkkkkk...','.kYyyyyyyk..','kYyyyyyyyyk.','kYcccccccYk.','kYcccccccYk.','.kkkkkkkkk..'],
  berries:['....g.g.....','...kgkgk....','..kPkkPk....','.kPPpkPPk...','.kPPPkPPPk..','..kkk.kkk...']
 };
-// Authored classic icons (assets/kitchen-icon-frames.json) by the same names;
-// the code-drawn grids remain only as a fallback for anything not yet drawn.
-const AUTHORED_KITCHEN_ICONS=new Set(['bread','berries','flour','egg','cream','carrot','potato','rice','seaweed','herb','carrot-cut','yolk','batter','whisk','pan','jug','ladle','pancake','pancakes','stew','onigiri','riceball','jam','butter']);
 function pixelIcon(name,cls='pixel-icon'){
- if(AUTHORED_KITCHEN_ICONS.has(name))return '<span class="'+cls+' pixel-'+name+' kitchen-icon" data-kicon="'+name+'" aria-hidden="true"></span>';
  const grid=PIXEL_ICONS[name];if(!grid)return '';let rects='';
  grid.forEach((row,y)=>[...row].forEach((c,x)=>{if(KITCHEN_PALETTE[c])rects+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+KITCHEN_PALETTE[c]+'"/>';}));
  return '<svg class="'+cls+' pixel-'+name+'" viewBox="0 0 12 12" aria-hidden="true" shape-rendering="crispEdges">'+rects+'</svg>';

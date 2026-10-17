@@ -23,9 +23,7 @@ function starFx(host){
  }
  function spawn(cls,p,vars={},text=''){
   const n=document.createElement('span');n.className=cls;n.style.left=p.x+'px';n.style.top=p.y+'px';
-  for(const [k,v] of Object.entries(vars))n.style.setProperty(k,v);
-  // Glyphs become pixel bitmaps when the effects module is loaded.
-  if(text){const art=typeof glyphFx==='function'?glyphFx(text):'';if(art){n.innerHTML=art;n.classList.add('fx-px');}else n.textContent=text;}
+  for(const [k,v] of Object.entries(vars))n.style.setProperty(k,v);if(text)n.textContent=text;
   n.addEventListener('animationend',()=>n.remove(),{once:true});layer().append(n);return n;
  }
  const safe=fn=>(...args)=>{try{if(!quiet())fn(...args);}catch{}};
