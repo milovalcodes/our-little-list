@@ -2,6 +2,8 @@ import {chromium,webkit} from 'playwright';
 import assert from 'node:assert/strict';
 import {timedPuzzle} from '../daily-puzzles.js';
 import {wordForDay} from '../daily-words.js';
+import {wordPoints} from '../word-scores.js';
+import {timedPoints} from '../timed-game.js';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 const browser=await(process.env.GAME_BROWSER==='webkit'?webkit:chromium).launch();
@@ -38,7 +40,9 @@ try{
     }
     await page.waitForFunction(({type,n})=>document.querySelectorAll('#'+type+' '+(type==='search'?'.search-words':'.crossword-clues')+' .found').length===n,{type,n:n+1});
    }
-   assert.match(await page.locator('#'+type+'-summary').textContent(),new RegExp((p.hard?100:50)+' points'));
+   const step=p.durationMs>120000?(p.durationMs-10000)/p.entries.length:10000;
+   const expected=timedPoints({day,type,total:p.entries.length,count:p.entries.length,startedAt:started,finishedAt:started+p.entries.length*step,done:true,complete:true,durationMs:p.durationMs});
+   assert.match(await page.locator('#'+type+'-summary').textContent(),new RegExp('^'+expected+' points'));
    await page.setViewportSize({width:320,height:700});
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
    await page.setViewportSize({width:390,height:844});
@@ -47,7 +51,7 @@ try{
   const word=wordForDay(day);await page.locator('#wordle [data-key]').first().waitFor();
   for(const letter of word.word)await page.locator('#wordle [data-key="'+letter+'"]').click();
   await page.locator('#wordle [data-key="↵"]').click();
-  await page.waitForFunction(()=>document.querySelector('#wordle').textContent.includes('100 points')||document.querySelector('#wordle').textContent.includes('200 points'));
+  await page.waitForFunction(points=>document.querySelector('#wordle').textContent.includes(points+' points'),wordPoints({day,done:true,won:true,attempts:1}));
   if(day==='2026-10-11')await page.screenshot({path:join(tmpdir(),'little-puzzles-v108.png'),fullPage:true});
   await context.close();
  }

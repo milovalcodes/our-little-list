@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import {timedPuzzle,entryCells,selectedSearchWord} from '../daily-puzzles.js';
 import {PUZZLE_CATALOG,catalogPool,wordTheme} from '../puzzle-catalog.js';
 import {LITTLE_WORD_CATALOG} from '../daily-words.js';
-import {newTimedGame,advanceTimedGame,timedSummary,timedPoints,timedCeiling,timedOver} from '../timed-game.js';
-import {trioProgress,leagueWeek} from '../league-scores.js';
-import {normalizeWeekRecord,wordPoints} from '../word-scores.js';
+import {newTimedGame,advanceTimedGame,timedSummary,timedPoints,timedCeiling,timedOver,timeBonus,timedMax} from '../timed-game.js';
+import {trioProgress,leagueWeek,weekTimeSaved} from '../league-scores.js';
+import {normalizeWeekRecord,wordPoints,weekForDay} from '../word-scores.js';
 import {settleActivityWeeks,notifyActivityResults} from '../worker/src/activity-week.js';
 assert.equal(new Set(PUZZLE_CATALOG.map(e=>e.id)).size,PUZZLE_CATALOG.length);
 assert.ok(LITTLE_WORD_CATALOG.length>800);assert.equal(wordTheme('apple'),'Fruit');
@@ -57,7 +57,44 @@ assert.equal(trioProgress(day,{her:0,him:0},[word('her'),word('him',1,false,fals
 assert.equal(trioProgress(day,{her:0,him:0},[word('her')],['search','crossword'].map(t=>timed('her',t)),now).outcome,'','400 can still be tied');
 assert.equal(timedCeiling(timed('him','search',3,false),'search',now+120000),30);
 assert.equal(trioProgress(day,{her:250,him:250},['her','him'].map(p=>word(p)),['her','him'].flatMap(p=>['search','crossword'].map(t=>timed(p,t))),now).outcome,'tie');
-assert.equal(trioProgress('2026-10-19-tie-1',{her:0,him:0},[],[],now).ceiling.her,120+200,'a new-scale tie word can still earn 120');
+assert.equal(trioProgress('2026-10-19-tie-1',{her:0,him:0},[],[],now).ceiling.her,120+120+120,'a new-scale tie set can still earn 120 per game');
+// Time bonus: +1 per 5 s left on a fully solved board, capped at +10, new days only.
+{
+ const at=Date.parse('2026-10-20T14:00Z');
+ const board=(d,elapsed,count=10,type='search',durationMs=120000)=>({day:d,type,person:'her',total:10,count,startedAt:at,finishedAt:at+elapsed,done:true,complete:count===10,closesAt:at+86400000,durationMs});
+ assert.equal(timedPoints(board('2026-10-20',20000)),60,'a fast clear earns the full +10');
+ assert.equal(timedPoints(board('2026-10-20',97000)),54,'23 s left earns +4');
+ assert.equal(timedPoints(board('2026-10-20',119999)),50,'under 5 s left earns nothing extra');
+ assert.equal(timedPoints({...board('2026-10-20',120000,9),done:true}),45,'no bonus without every word');
+ assert.equal(timedPoints(board('2026-10-25',20000,10,'crossword',300000)),120,'Sunday doubles the bonus too');
+ assert.equal(timedPoints(board('2026-10-14',20000)),50,'old days keep their 50-point cap');
+ assert.equal(timedPoints(board('2026-10-12-tie-1',20000)),100,'old-week tie rounds keep the old cap');
+ assert.equal(timeBonus(board('2026-10-20',-5000)),10,'clock skew cannot exceed the cap');
+ assert.deepEqual(['2026-10-14','2026-10-20','2026-10-25','2026-10-19-tie-1'].map(timedMax),[50,60,120,120]);
+ assert.equal(timedCeiling(undefined,'search',at,'2026-10-19-tie-1'),120);
+ // Points tie → more time left on solved boards wins; an exact tie still goes to hard rounds.
+ const week='2026-10-19',words=['her','him'].map(person=>({day:'2026-10-20',person,attempts:2,done:true,won:true,updatedAt:at}));
+ const run=(her,him,d='2026-10-20')=>[{...board(d,her),person:'her'},{...board(d,him),person:'him'}];
+ const byTime=leagueWeek(week,words,run(10000,30000),at+86400000);
+ assert.deepEqual(byTime.scores,{her:110,him:110});assert.deepEqual(byTime.winners,['her']);assert.equal(byTime.decidedBy,'time');
+ assert.deepEqual(byTime.saved,{her:110000,him:90000});
+ assert.deepEqual(leagueWeek(week,words,run(30000,30000),at+86400000).winners,['her','him'],'identical times still tie');
+ const oldWords=words.map(w=>({...w,day:'2026-10-13'}));
+ assert.deepEqual(leagueWeek('2026-10-12',oldWords,run(10000,30000,'2026-10-13'),at).winners,['her','him'],'old weeks keep hard-round tie-breaks');
+ assert.deepEqual(weekTimeSaved(weekForDay(week),[{...board('2026-10-20',60000,9),person:'him'}]),{her:0,him:0},'unsolved boards save no time');
+ // Settlement crowns the faster player directly instead of opening a hard set.
+ const store=new Map(),home='households/TIME',fast={
+  async get(p){return store.get(p)||null;},async list(p){return [...store].filter(([k])=>k.startsWith(p+'/')).map(([k,v])=>({id:k.split('/').at(-1),...v}));},
+  async dayRange(p,first,last=first){return(await this.list(p)).filter(r=>r.day>=first&&r.day<=last);},
+  async createMany(rows){if(rows.some(r=>store.has(r.path)))return false;rows.forEach(r=>store.set(r.path,structuredClone(r.fields)));return true;}
+ };
+ for(const w of words)store.set(`${home}/wordResults/${w.day}-${w.person}`,w);
+ for(const r of run(10000,30000))store.set(`${home}/timedResults/${r.day}-${r.type}-${r.person}`,r);
+ await settleActivityWeeks(fast,home,Date.parse('2026-10-26T14:00Z'));
+ const crowned=store.get(home+'/wordWeeks/'+week);
+ assert.deepEqual(crowned.winners,['her']);assert.equal(crowned.decidedBy,'time');
+ assert.equal([...store.keys()].some(k=>k.includes('/wordDuels/')),false,'no hard set when time decides it');
+}
 assert.deepEqual(normalizeWeekRecord({scores:{her:12,him:8}}).scores,{her:120,him:80});
 assert.deepEqual(normalizeWeekRecord({format:'trio',scoreVersion:2,round:2,scores:{her:2000,him:1900}}).scores,{her:2000,him:1900});
 assert.equal(wordPoints({day:'2026-10-09',done:true,won:true,attempts:1}),100);

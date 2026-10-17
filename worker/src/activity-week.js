@@ -50,7 +50,7 @@ export async function settleActivityWeeks(db,base,now){
   const {words,timed}=await rounds(db,base,span.start,span.end);
   const score=leagueWeek(week,words,timed,now);
   // A genuinely unplayed week rests. A played 0–0 week is still a tie.
-  if(score.scores.her===score.scores.him&&(words.length||timed.length))await open(score,1);
+  if(score.winners.length!==1&&(words.length||timed.length))await open(score,1);
   else await award(score,'',0);
  }
 }

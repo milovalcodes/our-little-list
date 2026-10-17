@@ -21,7 +21,7 @@ try{
  await page.keyboard.press('Backspace');await page.keyboard.type(practicePuzzle('word',0).word.toLowerCase());await page.keyboard.press('Enter');
  assert.match(await page.locator('[data-feedback]').textContent(),/got it/);
  await page.click('#practice-next');assert.equal(await page.locator('#practice-picker').inputValue(),'1');
- const wrong=['apple','beach','lemon','grape','candy'].filter(w=>w!==practicePuzzle('word',1).word.toLowerCase());
+ const wrong=['apple','beach','lemon','grape','candy','house','mango'].filter(w=>w!==practicePuzzle('word',1).word.toLowerCase()).slice(0,6);
  for(const word of wrong){await page.keyboard.type(word);await page.keyboard.press('Enter');}
  assert.match(await page.locator('[data-feedback]').textContent(),/It was/);
  page.once('dialog',d=>d.accept());await page.click('#practice-restart');await page.waitForSelector('[data-key]');
