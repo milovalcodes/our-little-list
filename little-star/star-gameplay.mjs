@@ -28,16 +28,16 @@ export const PAIR_BOARDS={8:{seconds:120,cash:20},10:{seconds:180,cash:28},12:{s
 export function catchDifficulty(caught){const wave=1+Math.floor(caught/10),tier=Math.min(8,wave);return {wave,speed:72+(tier-1)*12,interval:.95-(tier-1)*.055,reach:Math.min(145,(.95-(tier-1)*.055)*300*.8)};}
 export function arcadeResult(type,s){
  const count=(key,max=1000000)=>{const n=s?.[key];if(!Number.isInteger(n)||n<0||n>max)throw Error('That arcade progress did not look right.');return n;};
- if(type==='catch'){const caught=count('caught'),misses=count('misses',3),hits=count('hits',3),best=count('bestCombo');if(misses+hits>3||best>caught)throw Error('That catch progress did not look right.');return {cash:Math.floor(caught/4)+5*Math.floor(best/15),raw:caught*100+best*25,recordKey:'catch-endless',label:caught+' wish'+(caught===1?'':'es'),complete:false};}
+ if(type==='catch'){const caught=count('caught'),heals=s?.heals===undefined?0:count('heals',1000),misses=count('misses',3+heals),hits=count('hits',3+heals),best=count('bestCombo');if(heals>Math.floor(caught/25)||misses+hits>3+heals||best>caught)throw Error('That catch progress did not look right.');return {cash:Math.floor(caught/4)+5*Math.floor(best/15),raw:caught*100+best*25,recordKey:'catch-endless',label:caught+' wish'+(caught===1?'':'es'),complete:false};}
  if(type==='echo'){const longest=count('longest',4096);count('mistakes',3);let cash=0;for(let n=2;n<=longest;n++)cash+=1+Math.floor((n-2)/4);return {cash:Math.floor(cash*1.5),raw:longest,recordKey:'echo-endless',label:longest+' notes remembered',complete:false};}
  if(type==='pairs'){const total=count('total',12),matched=count('matched',12),moves=count('moves'),board=PAIR_BOARDS[total];if(!board||matched>total||moves<matched||!Number.isFinite(s.left)||s.left<0||s.left>board.seconds)throw Error('That board progress did not look right.');const complete=matched===total,efficiency=Math.max(0,Math.min(1,(total*3-moves)/(total*1.5))),bonus=complete?Math.floor(board.cash*.5*efficiency):0;return {cash:complete?board.cash+bonus:Math.floor(matched/2),raw:complete?Math.max(1,100000-moves*100+Math.floor(s.left)):0,recordKey:'pairs-'+total,label:complete?'Board cleared':matched+' / '+total+' pairs',complete};}
  throw Error('Choose a pet game.');
 }
-export function arcadeStats(g){return g.type==='catch'?{caught:g.caught,misses:g.practice?0:g.misses,hits:g.practice?0:g.hits,bestCombo:g.bestCombo}:g.type==='echo'?{longest:g.longest,mistakes:g.practice?0:g.mistakes}:{total:g.total,matched:g.matched.length/2,moves:g.moves,left:g.left};}
+export function arcadeStats(g){return g.type==='catch'?{caught:g.caught,misses:g.practice?0:g.misses,hits:g.practice?0:g.hits,heals:g.practice?0:g.heals||0,bestCombo:g.bestCombo}:g.type==='echo'?{longest:g.longest,mistakes:g.practice?0:g.mistakes}:{total:g.total,matched:g.matched.length/2,moves:g.moves,left:g.left};}
 export function arcadeSnapshot(g){
- const keys=['type','level','actor','petId','sessionId','claimRequestId','practice','ready','done','total','cards','flipped','matched','moves','left','preview','delay','waiting','combo','bestCombo','started','sequence','input','longest','mistakes','replays','echoPhase','caught','misses','hits','lives','targetX','basketX','spawn','serial','spawnX','previousCloud','recovery','elapsed'];
+ const keys=['type','level','actor','petId','sessionId','claimRequestId','practice','ready','done','total','cards','flipped','matched','moves','left','preview','delay','waiting','combo','bestCombo','started','sequence','input','longest','mistakes','replays','echoPhase','caught','misses','hits','heals','nextHeart','heartDue','lives','targetX','basketX','spawn','serial','spawnX','previousCloud','recovery','elapsed'];
  const result={version:2};for(const key of keys)if(g[key]!==undefined)result[key]=g[key];
- if(g.objects)result.objects=g.objects.map(({id,x,y,cloud})=>({id,x,y,cloud}));
+ if(g.objects)result.objects=g.objects.map(({id,x,y,cloud,heart})=>({id,x,y,cloud,...(heart?{heart:true}:{})}));
  return JSON.parse(JSON.stringify(result));
 }
 // Only resume structurally complete snapshots. A partial/old save must not
@@ -56,7 +56,7 @@ export function validArcadeSnapshot(g,session,actor,petIds){
    return finite('combo')&&finite('bestCombo');
   }
   if(g.type==='echo')return Array.isArray(g.sequence)&&g.sequence.length>=2&&g.sequence.length<=4096&&g.sequence.every(n=>[0,1,2,3].includes(n))&&g.longest<=g.sequence.length&&Array.isArray(g.input)&&g.input.length<=g.sequence.length&&g.input.every((n,i)=>n===g.sequence[i])&&['watch','repeat','nice','retry'].includes(g.echoPhase)&&finite('replays');
-  return Array.isArray(g.objects)&&g.objects.length<=40&&g.objects.every(o=>o&&Number.isInteger(o.id)&&typeof o.cloud==='boolean'&&Number.isFinite(o.x)&&Number.isFinite(o.y)&&o.x>=28&&o.x<=292&&o.y>=-35&&o.y<=300)&&finite('basketX',28,292)&&finite('targetX',28,292)&&finite('spawn',-1,2)&&finite('elapsed')&&finite('recovery',0,1.1)&&Number.isInteger(g.serial)&&g.serial>=0&&finite('combo')&&g.lives===3-g.misses-g.hits;
+  return Array.isArray(g.objects)&&g.objects.length<=40&&g.objects.every(o=>o&&Number.isInteger(o.id)&&typeof o.cloud==='boolean'&&Number.isFinite(o.x)&&Number.isFinite(o.y)&&o.x>=28&&o.x<=292&&o.y>=-35&&o.y<=300)&&finite('basketX',28,292)&&finite('targetX',28,292)&&finite('spawn',-1,2)&&finite('elapsed')&&finite('recovery',0,1.1)&&Number.isInteger(g.serial)&&g.serial>=0&&finite('combo')&&g.lives===3-g.misses-g.hits+(g.heals||0);
  }catch{return false;}
 }
 export function logicalStroke(from,to,visit){

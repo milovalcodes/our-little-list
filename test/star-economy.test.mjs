@@ -1,7 +1,7 @@
 // Little Star v2 pacing and economy: stages that began earlier keep their
 // original goals, and arcade stardust has a daily allowance plus record bonus.
 import assert from 'node:assert/strict';
-import {scenario,applyAction,stageProgress,normalizeStar,STAGES,LEGACY_STAGES,ECONOMY,HOUR,DAY,cookingReward,SHOP} from '../little-star/engine.mjs';
+import {scenario,applyAction,stageProgress,normalizeStar,arcadePayout,STAGES,LEGACY_STAGES,ECONOMY,HOUR,DAY,cookingReward,SHOP} from '../little-star/engine.mjs';
 import {arcadeResult,PAIR_BOARDS} from '../little-star/star-gameplay.mjs';
 
 const start=Date.parse('2026-10-20T17:00:00Z');
@@ -40,7 +40,10 @@ const play=(game,arcade,level=0)=>{
   state.needs={food:100,clean:100,joy:90,energy:100};
   state=act(state,'him','start-play',{game,arcadeVersion:2,level},now);
   now+=5*60000;
+  // The result screen's preview must be exactly what settlement pays.
+  const before=state.wallets.him,preview=arcadePayout(state,'him',game,arcadeResult(game,arcade),now).cash;
   state=act(state,'him','play',{game,sessionId:state.playSessions.him.id,arcade},now);
+  assert.equal(state.wallets.him-before,preview,'result preview matches settlement');
   now+=60000;return state.wallets.him;
 };
 let wallet=play('catch',{caught:40,misses:1,hits:1,bestCombo:15});

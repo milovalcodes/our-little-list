@@ -300,6 +300,10 @@ function grow(s,now){if(s.pausedAt||s.evolvedAt||!s.born)return;if(stageProgress
 export function settleGrowth(input,now){const s=projectStar(input,now),before=s.growthEvent?.id;if(!longRest(s,now))grow(s,now);if(before!==s.growthEvent?.id)s.revision++;return s;}
 // Bounded skill rewards: free food remains available after a rough round;
 // excellent execution is useful without becoming an unlimited cash faucet.
+// What a finished arcade run pays now: shared by the result screen and settlement.
+// Beating an existing record pays once per game per day; all arcade pay shares
+// one daily allowance, and records still save after it is spent.
+export function arcadePayout(s,actor,game,result,now){const b=s.daily?.[clock(now).day+':'+actor]||{},best=s.arcadeBest?.[actor]?.[result.recordKey]||0,record=best>0&&result.raw>best&&!(b.records||[]).includes(game),earned=result.cash+(record?ECONOMY.recordBonus:0),cash=Math.max(0,Math.min(earned,ECONOMY.arcadeCap-(b.arcadeCash||0),999999-(s.wallets?.[actor]||0)));return {cash,earned,record,bonus:record?ECONOMY.recordBonus:0,capped:earned>cash,left:Math.max(0,ECONOMY.arcadeCap-(b.arcadeCash||0))};}
 export function cookingReward(score){
  if(!Number.isInteger(score)||score<0||score>100)throw Error('Cooking score must be 0–100.');
  return score===100?{portions:4,tip:8,label:'PERFECT'}:score>=90?{portions:3,tip:5,label:'GOLD'}:score>=70?{portions:2,tip:2,label:'SILVER'}:{portions:1,tip:0,label:'HOMEMADE'};
@@ -392,11 +396,8 @@ export function applyAction(input,{actor,type,id,payload={},expectedRevision},no
    const session=s.playSessions[actor];if(!session||session.id!==payload.sessionId||session.petId!==s.petId||session.game!==payload.game||session.done)throw Error('Start a new game; that play cannot be rewarded twice.');session.done=true;s.traits.playful++;
    if(session.arcadeVersion===2&&(!payload.arcade||(payload.game==='pairs'&&payload.arcade.total!==session.level)))throw Error('That result does not match the started challenge.');
    if(payload.arcade){
-    const result=arcadeResult(payload.game,payload.arcade);s.arcadeBest??={};s.arcadeBest[actor]??={};const best=s.arcadeBest[actor][result.recordKey]||0;s.arcadeBest[actor][result.recordKey]=Math.max(best,result.raw);
-    // Beating an existing record pays once per game per day. Everything the
-    // arcade pays shares one daily allowance; records still save after it.
-    b.records??=[];const record=best>0&&result.raw>best&&!b.records.includes(payload.game);if(record)b.records.push(payload.game);
-    const earned=result.cash+(record?ECONOMY.recordBonus:0),reward=Math.min(earned,Math.max(0,ECONOMY.arcadeCap-(b.arcadeCash||0)),999999-s.wallets[actor]);b.arcadeCash=(b.arcadeCash||0)+reward;s.wallets[actor]+=reward;if(result.cash){s.xp+=3;b.games=Math.min(10,b.games+1);}message=`${result.label}.${record?' New best!':''} +${reward} stardust for ${PEOPLE[actor]}.${earned>reward?' Daily arcade stardust is full; records still count.':''}`;effect=null;
+    const result=arcadeResult(payload.game,payload.arcade),pay=arcadePayout(s,actor,payload.game,result,now);s.arcadeBest??={};s.arcadeBest[actor]??={};s.arcadeBest[actor][result.recordKey]=Math.max(s.arcadeBest[actor][result.recordKey]||0,result.raw);
+    b.records??=[];if(pay.record)b.records.push(payload.game);const record=pay.record,earned=pay.earned,reward=pay.cash;b.arcadeCash=(b.arcadeCash||0)+reward;s.wallets[actor]+=reward;if(result.cash){s.xp+=3;b.games=Math.min(10,b.games+1);}message=`${result.label}.${record?' New best!':''} +${reward} stardust for ${PEOPLE[actor]}.${earned>reward?' Daily arcade stardust is full; records still count.':''}`;effect=null;
    }else{
     // Settle pre-upgrade result payloads without rewriting historical records.
     if(typeof payload.recordKey==='string'&&new RegExp('^'+payload.game+'(?:-[468])?$').test(payload.recordKey)&&Number.isInteger(payload.raw)&&payload.raw>=0&&payload.raw<=999999){s.arcadeBest??={};s.arcadeBest[actor]??={};s.arcadeBest[actor][payload.recordKey]=Math.max(s.arcadeBest[actor][payload.recordKey]||0,payload.raw);}

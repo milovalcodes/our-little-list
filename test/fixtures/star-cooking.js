@@ -1,6 +1,6 @@
 // Station play is disposable. Only the engine can settle a finished batch.
 function mountStarCooking(host,ctx){
- const ctl=toyController(host,{practice:()=>recipe.practice}),sprite=ctx.sprite,toast=ctx.recipe==='toast',limits=[20,24,12,30],names=['cut',toast?'spread':'stir','heat','top'];
+ const ctl=toyController(host,{practice:()=>recipe.practice}),fx=starFx(host),sprite=ctx.sprite,toast=ctx.recipe==='toast',limits=[20,24,12,30],names=['cut',toast?'spread':'stir','heat','top'];
  const recipe={phase:0,started:false,left:20,sliced:new Set(),chops:0,cutScores:[],stir:0,stirGood:0,stirTravel:0,angle:0,heat:0,held:false,plated:new Set(),occupied:new Set(),toppings:{},plateScores:[],grades:[],penalties:0,quality:0,score:0,transition:0,practice:!!ctx.practice};
  const targets=[{x:132,y:142},{x:184,y:142},{x:158,y:162}];
  // Toast has a broad bread surface now. Keep the spread hit regions on that
@@ -21,7 +21,7 @@ function mountStarCooking(host,ctx){
    '<ol class="recipe-stations" aria-label="Recipe progress">'+names.map((n,i)=>'<li data-state="'+(phase>i?'done':phase===i?'active':'next')+'" '+(phase===i?'aria-current="step"':'')+'><span>'+(phase>i?recipe.grades[i]+'%':i+1)+'</span>'+n+'</li>').join('')+'</ol>'+
    '<h4 class="recipe-title">'+['Chop the moonberries',toast?'Spread from edge to edge':'Stir three full circles','Stop at the perfect temperature',toast?'Garnish your berry toast':'Garnish your porridge','Your kitchen report'][phase]+'</h4>'+
    '<div class="recipe-worktop" data-recipe-phase="'+phase+'" role="group" aria-label="'+['Cutting station',toast?'Spreading station':'Stirring station','Cooking station','Topping station','Finished dish'][phase]+'"></div>'+
-   '<div class="recipe-clock"><span data-recipe-time>'+(phase===4?'':limits[phase]+'s · starts with your first move')+'</span><span data-recipe-detail></span></div><div class="recipe-feedback" role="status"></div><div class="recipe-access"></div>';
+   '<div class="recipe-clock"><span data-recipe-time>'+(phase===4?'':'no rush · take your time')+'</span><span data-recipe-detail></span></div><div class="recipe-feedback" role="status"></div><div class="recipe-access"></div>';
   const stage=host.querySelector('.recipe-worktop'),access=host.querySelector('.recipe-access');
   if(phase===0){
    stage.innerHTML='<span class="recipe-board" aria-hidden="true"><i></i><i></i><i></i></span>'+[0,1,2].map(i=>'<button type="button" class="recipe-berry" data-slice="'+i+'" style="left:'+(21+i*26)+'%" aria-label="Chop moonberries: tap twice per berry">'+sprite('berry')+'<i class="cut-guide"></i></button>').join('')+'<span class="recipe-knife">'+sprite('knife')+'</span><span class="chop-count">0 / 6 chops</span><span class="chop-hint">TAP TO CHOP</span>';
@@ -44,15 +44,16 @@ function mountStarCooking(host,ctx){
    access.innerHTML='<button type="button" class="main-button" data-finish-plate disabled>serve this plate</button>';
    feedback('Place berries on the glowing spots.');
   }else{
-   recipe.score=Math.floor(recipe.grades.reduce((a,b)=>a+b,0)/4);
+   recipe.score=Math.floor(recipe.grades.reduce((a,b)=>a+b,0)/4);const stars=recipe.score>=90?3:recipe.score>=70?2:1;
    const reward=!recipe.practice&&ctx.reward?ctx.reward(recipe.score):cookingReward(recipe.score);recipe.quality=reward.portions;
    host.querySelector('[data-recipe-time]').textContent=recipe.practice?'PRACTICE SCORE · '+recipe.score+'%':recipe.score>(ctx.bestScore||0)?'NEW PERSONAL BEST!':'YOUR BEST · '+Math.max(ctx.bestScore||0,recipe.score)+'%';
    // Keep exactly the bowl and topping positions the player created. A result
    // garnish is not a button: give it its own absolute, fixed-size layer.
-   stage.innerHTML='<span class="recipe-bowl">'+dish()+'</span>'+Object.entries(recipe.toppings).map(([i,p])=>'<span class="served-topping" style="left:'+(p.x-16)/3.2+'%;top:'+(p.y-16)/2.5+'%">'+sprite('sliced')+'</span>').join('')+'<span class="recipe-stars">'+reward.label+' · '+recipe.score+'%</span>';
+   stage.innerHTML='<span class="recipe-bowl">'+dish()+'</span>'+Object.entries(recipe.toppings).map(([i,p])=>'<span class="served-topping" style="left:'+(p.x-16)/3.2+'%;top:'+(p.y-16)/2.5+'%">'+sprite('sliced')+'</span>').join('')+'<span class="recipe-stars">'+reward.label+' · '+recipe.score+'%</span><span class="result-stars" aria-label="'+stars+' of 3 stars">'+'★'.repeat(stars)+'<i>'+'★'.repeat(3-stars)+'</i></span>';
    access.innerHTML='<button type="button" class="main-button" data-serve-cook>'+(recipe.practice?'finish practice':'collect '+reward.portions+' meal'+(reward.portions===1?'':'s'))+'</button><button type="button" data-cook-again>'+(recipe.practice?'practice again':'collect & cook again')+'</button>';
    feedback(recipe.practice?'Practice':ctx.rewardText?.(recipe.score)||'');
    ctx.complete({score:recipe.score,grades:[...recipe.grades],quality:recipe.quality,practice:recipe.practice});
+   ctx.fx?.(stars===3?'clear':'match');fx.burst(stage.querySelector('.recipe-bowl'),{count:8+stars*4,tone:['gold','cream','pink'],glyph:'✦',spread:70});if(stars===3)fx.banner(reward.label);
   }
   if(phase<4)access.insertAdjacentHTML('beforeend','<button type="button" data-retry-station>'+(recipe.practice?'retry station':'retry without rewards')+'</button>');
   ctl.animate(stage,[{opacity:.6,translate:'0 6px'},{opacity:1,translate:'0 0'}],180);
@@ -67,6 +68,7 @@ function mountStarCooking(host,ctx){
   feedback(names[recipe.phase]+' · '+recipe.grades[recipe.phase]+'%');
   host.querySelector('.recipe-worktop').insertAdjacentHTML('beforeend','<div class="station-grade">'+recipe.grades[recipe.phase]+'%<small>'+names[recipe.phase]+' complete</small></div>');
   ctl.animate(host.querySelector('.station-grade'),[{opacity:0,translate:'0 8px'},{opacity:1,translate:'0 0'}],180);
+  const grade=recipe.grades[recipe.phase];ctx.fx?.(grade>=90?'match':'plate');fx.burst(host.querySelector('.station-grade'),{count:grade>=90?12:6,tone:grade>=90?['gold','cream']:'cream',glyph:grade>=90?'✦':'',spread:50});
  }
  function slice(i,score){
   if(recipe.phase!==0||recipe.transition||recipe.sliced.has(i))return;
@@ -78,13 +80,13 @@ function mountStarCooking(host,ctx){
   if(recipe.phase!==0||recipe.transition||performance.now()<chopCooldown)return;
   // Input debounce must not stretch with a throttled or dropped render frame.
   const i=Math.floor(recipe.chops/2),center={x:92+i*83.2,y:132.5};start();
-  if(point&&Math.hypot((point.x-center.x),(.7*(point.y-center.y)))>34){recipe.penalties+=4;feedback('Miss · −4');ctx.fx?.('miss');return;}
+  if(point&&Math.hypot((point.x-center.x),(.7*(point.y-center.y)))>34){feedback('Aim for the glowing berry.');fx.ring(center,'cream');return;}
   placeKnife();recipe.chops++;chopCooldown=performance.now()+200;
   const knife=host.querySelector('.recipe-knife');knife.classList.remove('chopping');void knife.offsetWidth;knife.classList.add('chopping');
   const berry=host.querySelector('[data-slice="'+i+'"]');berry.classList.add('nicked');ctx.beep(i);
   host.querySelector('.chop-count').textContent=recipe.chops+' / 6 chops';
   host.querySelector('.chop-hint').textContent='CHOP!';
-  feedback(recipe.chops+' / 6 · '+(recipe.chops===6?'All sliced!':'Good cut. Follow the glow.'));ctx.fx?.('cut');
+  feedback(recipe.chops+' / 6 · '+(recipe.chops===6?'All sliced!':'Good cut. Follow the glow.'));ctx.fx?.('cut');fx.burst(center,{count:5,tone:['lilac','pink','cream'],spread:22});
   if(recipe.chops%2===0)slice(i,100);
  }
  function placeSpoon(){
@@ -100,7 +102,7 @@ function mountStarCooking(host,ctx){
   // integrate elapsed time, even when a phone renders only a few frames/sec.
   const amount=delta;lap+=amount;
   // A sub-pixel gap at the end of a circle should not demand another lap.
-  if(Math.abs(lap)>=Math.PI*2-.02){turns++;lap=Math.sign(lap)*Math.max(0,Math.abs(lap)-Math.PI*2);ctx.beep(turns%4);}
+  if(Math.abs(lap)>=Math.PI*2-.02){turns++;lap=Math.sign(lap)*Math.max(0,Math.abs(lap)-Math.PI*2);ctx.beep(turns%4);ctx.fx?.('bubble');fx.burst({x:160,y:104},{count:6,tone:['cream','mint'],glyph:'○',spread:30});}
   recipe.stir=turns*Math.PI*2+Math.abs(lap);recipe.stirGood+=Math.abs(amount)*quality;recipe.stirTravel+=Math.abs(amount);
   recipe.angle+=amount;
   const progress=turns>=3?100:Math.min(99,recipe.stir/(Math.PI*6)*100),meter=host.querySelector('.stir-progress');
@@ -113,7 +115,8 @@ function mountStarCooking(host,ctx){
  const heldTemperature=()=>Math.min(1,heatStart+(performance.now()-heatHeldAt)*.00019);
  function releaseHeat(){
   if(!recipe.held||recipe.phase!==2)return;recipe.heat=heldTemperature();recipe.held=false;
-  finishStation(100-Math.max(0,Math.abs(recipe.heat-.7)-.035)*250);
+  if(recipe.heat<.45){feedback('Still cool. Hold again to keep warming.');return;}
+  finishStation(100-Math.max(0,Math.abs(recipe.heat-.7)-.05)*160);
  }
  function spread(x,y,amount){
   if(recipe.transition||recipe.phase!==1)return;start();
@@ -134,7 +137,7 @@ function mountStarCooking(host,ctx){
   const b=host.querySelector('[data-topping="'+i+'"]'),from={left:b.style.left,top:b.style.top};
   const settle=()=>ctl.animate(b,[from,{left:b.style.left,top:b.style.top}],150);
   if(!placement){b.style.left=old?(old.x-16)/3.2+'%':(17+i*28)+'%';b.style.top=old?(old.y-16)/2.5+'%':'18%';settle();feedback('Aim inside the '+(toast?'toast':'porridge')+'. Nothing lost — try again.');return;}
-  recipe.plateScores[i]=placement.score;recipe.plated.add(i);recipe.toppings[i]=placement;b.style.left=(placement.x-16)/3.2+'%';b.style.top=(placement.y-16)/2.5+'%';b.classList.add('plated');
+  recipe.plateScores[i]=placement.score;recipe.plated.add(i);recipe.toppings[i]=placement;b.style.left=(placement.x-16)/3.2+'%';b.style.top=(placement.y-16)/2.5+'%';b.classList.add('plated');fx.burst({x:placement.x,y:placement.y},{count:placement.score>=90?8:4,tone:['gold','cream'],spread:20});
   recipe.occupied=new Set(Object.values(recipe.toppings).map(p=>p.target));host.querySelectorAll('[data-plate-target]').forEach((el,n)=>{el.classList.toggle('placed',recipe.occupied.has(n));el.disabled=recipe.occupied.has(n);});ctx.fx?.('plate');
   settle();selected=[0,1,2].find(n=>!recipe.plated.has(n))??i;host.querySelectorAll('[data-topping]').forEach(el=>el.setAttribute('aria-pressed',String(+el.dataset.topping===selected)));feedback(placement.score+'% placement · '+recipe.plated.size+' / 3 berries'+(recipe.plated.size===3?' · adjust, or serve when happy.':''));
   host.querySelector('[data-finish-plate]').disabled=recipe.plated.size!==3;
@@ -204,11 +207,8 @@ function mountStarCooking(host,ctx){
   if(recipe.phase===4)return;
   host.querySelector('.chop-meter b')?.style.setProperty('left',(50+Math.sin(clockTime*2.2)*47)+'%');
   if(!recipe.started)return;
-  recipe.left=Math.max(0,recipe.left-dt);host.querySelector('[data-recipe-time]').textContent=Math.ceil(recipe.left)+'s';
-  host.dataset.urgent=String(recipe.left<5);
   if(recipe.phase===1&&keyStir)stir(keyStir*dt*2.2,1);
-  if(recipe.phase===2){recipe.heat=recipe.held?heldTemperature():Math.max(0,recipe.heat-.08*dt);host.querySelector('.heat-level').style.left=recipe.heat*100+'%';host.querySelector('.recipe-pot').classList.toggle('simmer',recipe.heat>.5);host.querySelector('[data-recipe-detail]').textContent=recipe.heat<.55?'warming…':recipe.heat<.665?'almost…':recipe.heat<=.735?'RELEASE!':'too hot!';if(recipe.heat>=1)finishStation(15);}
-  if(recipe.left===0&&!recipe.transition){const partial=recipe.phase===0?recipe.chops/6*100-recipe.penalties:recipe.phase===1?Math.min(1,recipe.stir/(Math.PI*6))*100:recipe.phase===3?recipe.plateScores.reduce((a,b)=>a+b,0)/3:0;finishStation(Math.min(60,partial));}
+  if(recipe.phase===2){recipe.heat=recipe.held?heldTemperature():Math.max(0,recipe.heat-.08*dt);host.querySelector('.heat-level').style.left=recipe.heat*100+'%';host.querySelector('.recipe-pot').classList.toggle('simmer',recipe.heat>.5);const detail=recipe.heat<.55?'warming…':recipe.heat<.65?'almost…':recipe.heat<=.75?'RELEASE!':'too hot · let go';const label=host.querySelector('[data-recipe-detail]');if(label.textContent!==detail){label.textContent=detail;if(detail==='RELEASE!')ctx.fx?.('tick');if(detail.startsWith('too hot'))ctx.fx?.('sizzle');}}
  });
  draw();return {...ctl,snapshot:()=>({...recipe,sliced:[...recipe.sliced],plated:[...recipe.plated]})};
 }
