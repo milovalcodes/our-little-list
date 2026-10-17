@@ -37,19 +37,37 @@ try{
   await page.evaluate(async()=>{const reg=await navigator.serviceWorker.getRegistration();await reg.update();});
   // caches.open() creates the name before addAll has populated it. Cache names
   // are not activation acknowledgements (also see the failed-upgrade case
-  // below). Wait for the controlling worker and its actual cached resource.
-  await page.waitForFunction(async()=>{
-    if(!navigator.serviceWorker.controller)return false;
-    const version=await new Promise(resolve=>{
-      const channel=new MessageChannel();
-      const finish=value=>{clearTimeout(timer);channel.port1.close();resolve(value);};
-      const timer=setTimeout(()=>finish(null),1000);
-      channel.port1.onmessage=event=>finish(event.data.version);
-      navigator.serviceWorker.controller.postMessage('littlelist:get-version',[channel.port2]);
+  // below). Wait for the controlling worker and its actual cached resource, and
+  // read that resource in the same step. Poll from Node: page.waitForFunction
+  // treats an async predicate's pending Promise as truthy and returns at once,
+  // which let CI read the cache before install finished (run 38930416452).
+  let cached=false;
+  for(const deadline=Date.now()+30000;!cached&&Date.now()<deadline;){
+    cached=await page.evaluate(async()=>{
+      if(!navigator.serviceWorker.controller)return false;
+      const version=await new Promise(resolve=>{
+        const channel=new MessageChannel();
+        const finish=value=>{clearTimeout(timer);channel.port1.close();resolve(value);};
+        const timer=setTimeout(()=>finish(null),1000);
+        channel.port1.onmessage=event=>finish(event.data.version);
+        navigator.serviceWorker.controller.postMessage('littlelist:get-version',[channel.port2]);
+      });
+      if(version!==2)return false;
+      const response=await(await caches.open('our-little-list-v2')).match('/app.js');
+      return response?await response.text():false;
     });
-    return version===2&&Boolean(await(await caches.open('our-little-list-v2')).match('/app.js'));
-  });
-  const cached=await page.evaluate(async()=>await (await (await caches.open('our-little-list-v2')).match('/app.js')).text());
+    if(!cached)await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  if(!cached){
+    const state=await page.evaluate(async()=>{
+      const reg=await navigator.serviceWorker.getRegistration();
+      const caches_={};
+      for(const name of await caches.keys())caches_[name]=(await(await caches.open(name)).keys()).map(request=>new URL(request.url).pathname);
+      return {caches:caches_,controller:navigator.serviceWorker.controller?.scriptURL??null,
+        active:reg?.active?.state??null,waiting:reg?.waiting?.state??null,installing:reg?.installing?.state??null};
+    }).catch(inner=>({unavailable:inner.message}));
+    throw new Error('v2 never served a cached /app.js within 30s; state: '+JSON.stringify(state));
+  }
   assert.match(cached,/loadedGeneration=2/,'a new shell must not precache the old, still-fresh HTTP response');
   await page.reload();
   assert.equal(await page.evaluate(()=>window.loadedGeneration),2,'running code must match the activated release');
