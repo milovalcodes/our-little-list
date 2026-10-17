@@ -89,7 +89,7 @@ function mountStarPairs(host,ctx){
  const deck=['sun','moon','star','heart','orbit','cloud','bowl','soap','oven','friends','basket','music'];
  const extra={bowl:'feed',soap:'wash',oven:'kitchen',friends:'together',basket:'catch',music:'echo'};
  const picture=card=>extra[card]?uiIcon(extra[card],'arcade-glyph'):arcadeGlyph(card.split(' ')[0]);
- if(!g.restored)Object.assign(g,{peeked:false,total:g.level||10,cards:ctx.shuffle(deck.slice(0,g.level||10).flatMap(c=>[c,c])),flipped:[],matched:[],moves:0,waiting:true,left:PAIR_BOARDS[g.level||10].seconds,preview:3,delay:0,combo:0,bestCombo:0,started:false});
+ if(!g.restored)Object.assign(g,{peeked:false,total:g.level||10,cards:ctx.shuffle(ctx.shuffle(deck).slice(0,g.level||10).flatMap(c=>[c,c])),flipped:[],matched:[],moves:0,waiting:true,left:PAIR_BOARDS[g.level||10].seconds,preview:3,delay:0,combo:0,bestCombo:0,started:false});
  host.dataset.pairCount=g.total;
  host.innerHTML='<div class="game-header"><span class="arcade-stat"><small>PAIRS</small><b data-game-score></b></span><span class="arcade-stat"><small>TURNS</small><b data-game-moves></b></span><span class="arcade-stat"><small>TIME</small><b data-pairs-time>LOOK</b></span></div><div class="pairs-grid">'+g.cards.map((card,i)=>'<button type="button" class="'+(g.preview>0||g.flipped.includes(i)||g.matched.includes(i)?'flipped ':'')+(g.matched.includes(i)?'matched':'')+'" data-pair="'+i+'" '+(g.matched.includes(i)?'disabled':'')+' aria-label="'+(g.preview>0||g.flipped.includes(i)||g.matched.includes(i)?card:'Hidden card '+(i+1))+'"><span class="pair-face pair-back" aria-hidden="true">'+arcadeGlyph('star')+'</span><span class="pair-face pair-front" aria-hidden="true">'+picture(card)+'<small>'+card+'</small></span></button>').join('')+'</div><p class="pair-feedback" role="status">Find the matching pictures.</p><div class="toy-actions"><button type="button" data-pairs-peek>peek · −10s</button></div>';
  const cards=[...host.querySelectorAll('[data-pair]')],message=host.querySelector('.pair-feedback'),update=arcadeHud(host,ctx),peekButton=host.querySelector('[data-pairs-peek]');
@@ -125,10 +125,13 @@ function mountStarPairs(host,ctx){
 }
 function mountStarEcho(host,ctx){
  const ctl=toyController(host,{saved:true,practice:()=>ctx.game.practice}),g=ctx.game,fx=starFx(host),bestEcho=ctx.best?.('echo-endless')||0;let serial=0,flashSerial=0,passedBest=false;
- if(!g.restored)Object.assign(g,{sequence:Array.from({length:2},()=>Math.floor(Math.random()*4)),input:[],mistakes:0,replays:0,longest:0,heals:0,verseMistakes:0,echoPhase:'watch'});
+ // Random notes, but never three identical in a row and no endless ping-pong.
+ function nextNote(seq){for(;;){const n=Math.floor(Math.random()*4),l=seq.length;if(l>=2&&seq[l-1]===n&&seq[l-2]===n)continue;if(l>=3&&seq[l-1]===seq[l-3]&&n===seq[l-2]&&Math.random()<.7)continue;return n;}}
+ const opening=[Math.floor(Math.random()*4)];opening.push(nextNote(opening));
+ if(!g.restored)Object.assign(g,{sequence:opening,input:[],mistakes:0,replays:0,longest:0,heals:0,verseMistakes:0,echoPhase:'watch'});
  g.heals??=0;g.verseMistakes??=g.mistakes;
  const hearts=()=>3-g.mistakes+g.heals;
- if(g.longest===g.sequence.length){g.sequence.push(Math.floor(Math.random()*4));g.input=[];g.echoPhase='watch';}
+ if(g.longest===g.sequence.length){g.sequence.push(nextNote(g.sequence));g.input=[];g.echoPhase='watch';}
  host.innerHTML='<div class="game-header"><span class="arcade-stat"><small>SEQUENCE</small><b data-echo-round></b></span><span class="arcade-stat"><small>HEARTS</small><b data-echo-lives></b></span><span class="arcade-stat"><small>LONGEST</small><b data-echo-best></b></span></div><div class="echo-stage" data-echo-phase="watch">'+ctx.pet+'<div class="echo-phase" aria-hidden="true">LISTEN</div><div class="echo-grid" role="group" aria-label="Musical memory pads">'+['Sun','Moon','Star','Heart'].map((label,i)=>'<button type="button" data-note="'+i+'" aria-label="'+label+' note" disabled><span class="note-number">'+(i+1)+'</span>'+arcadeGlyph(label.toLowerCase())+'<small>'+label+'</small></button>').join('')+'<span class="echo-mallet" aria-hidden="true"></span></div><div class="echo-spark" aria-hidden="true">♪</div></div><div class="echo-progress" aria-hidden="true"></div><p class="echo-feedback" role="status">Watch the notes.</p><div class="toy-actions"><button type="button" data-replay-tune>listen again · 1 heart</button></div>';
  const stage=host.querySelector('.echo-stage'),pads=[...host.querySelectorAll('[data-note]')],feedback=host.querySelector('.echo-feedback'),progress=host.querySelector('.echo-progress'),replay=host.querySelector('[data-replay-tune]'),update=arcadeHud(host,ctx);
  function later(fn,ms){return ctl.later(()=>{if(ctl.isAlive()&&host.isConnected&&!g.done)fn();},ms);}
@@ -146,7 +149,7 @@ function mountStarEcho(host,ctx){
  function repeat(){phase('repeat');lock(false);markers();feedback.textContent='Your turn · '+g.input.length+' / '+g.sequence.length+' · take your time';paint();ctx.changed?.();}
  function replayTune(){
   const run=++serial;phase('watch');g.input=[];lock(true);markers();paint();feedback.textContent='Watch · '+g.sequence.length+' notes';ctx.changed?.();
-  let index=0;const lit=Math.max(280,460-Math.max(0,g.sequence.length-5)*12),gap=180;
+  let index=0;const lit=Math.max(240,460-Math.max(0,g.sequence.length-5)*12),gap=Math.max(120,180-Math.max(0,g.sequence.length-8)*6);
   function next(){if(run!==serial||g.done)return;if(index<g.sequence.length){flash(g.sequence[index++],lit);later(next,lit+gap);}else repeat();}
   later(next,450);
  }
@@ -161,7 +164,7 @@ function mountStarEcho(host,ctx){
    if(!g.practice&&g.longest%8===0){if(g.mistakes===g.verseMistakes&&hearts()<3){g.heals++;ctx.fx?.('heart');fx.text(stage,'+1 heart','pink');}g.verseMistakes=g.mistakes;}
    if(g.longest%4===0){fx.banner(g.longest+' NOTES');ctx.fx?.('wave');fx.burst(stage,{count:12,tone:['gold','lilac','mint'],glyph:'♪',spread:70});}else{ctx.fx?.('match');fx.burst(progress,{count:6,tone:'cream',spread:26});}
    if(!g.practice&&!passedBest&&bestEcho>0&&g.longest>bestEcho){passedBest=true;fx.text(stage,'NEW BEST!','mint');ctx.fx?.('best');}
-   phase('nice');lock(true);paint();update();feedback.textContent=g.longest+' notes remembered! One more…';later(()=>{g.sequence.push(Math.floor(Math.random()*4));replayTune();},700);}else ctx.changed?.();
+   phase('nice');lock(true);paint();update();feedback.textContent=g.longest+' notes remembered! One more…';later(()=>{g.sequence.push(nextNote(g.sequence));replayTune();},700);}else ctx.changed?.();
  }
  ctl.on(host,'keydown',e=>{if(/^[1-4]$/.test(e.key)&&!e.repeat){e.preventDefault();note(Number(e.key)-1);}});
  paint();toyReady(host,ctl,g,'Repeat the notes · 3 hearts',()=>{update();if(g.restored&&g.echoPhase==='repeat')repeat();else replayTune();},ctx);
@@ -171,7 +174,7 @@ function mountStarCatch(host,ctx){
  const ctl=toyController(host,{saved:true,practice:()=>ctx.game.practice}),g=ctx.game,sprite=ctx.sprite,fx=starFx(host);
  if(!g.restored)Object.assign(g,{targetX:160,basketX:160,objects:[],spawn:1,serial:0,combo:0,caught:0,misses:0,hits:0,heals:0,bestCombo:0,lives:3,recovery:0,elapsed:0,nextHeart:25,heartDue:false});
  // Older saved runs predate heart pickups.
- g.heals??=0;g.nextHeart??=25*(Math.floor(g.caught/25)+1);g.heartDue??=false;g.magnet??=0;g.slow??=0;let drawnX=g.basketX;
+ g.heals??=0;g.nextHeart??=25*(Math.floor(g.caught/25)+1);g.heartDue??=false;g.magnet??=0;g.slow??=0;g.powerCooldown??=8;g.cloudRun??=0;let drawnX=g.basketX,windShown=catchDifficulty(g.caught).wind>0;
  const bestRaw=ctx.best?.('catch-endless')||0;let passedBest=false;
  const streakTier=()=>g.combo>=25?3:g.combo>=10?2:1;
  host.innerHTML='<div class="game-header"><span class="arcade-stat"><small>WISHES</small><b data-game-score>'+g.caught+'</b></span><span class="arcade-stat"><small>WAVE</small><b data-game-wave></b></span><span class="arcade-stat"><small>HEARTS</small><b data-catch-lives>'+g.lives+'</b></span></div><div class="catch-meter" aria-hidden="true"><i data-catch-fill></i></div><div class="catch-stage" role="group" aria-label="Move the basket to catch falling wishes"><div class="catch-moon" aria-hidden="true">'+arcadeGlyph('moon')+'</div><div class="catch-sky"></div><span class="catch-basket"><span class="basket-back">'+sprite('basket')+'</span>'+ctx.pet+'<span class="basket-front">'+sprite('basket')+'</span></span><span class="catch-feedback" role="status"></span></div><div class="catch-steering"><button type="button" data-steer="-1" aria-label="Move basket left">←</button><span>catch wishes · dodge clouds<br><small>drag anywhere in the sky</small></span><button type="button" data-steer="1" aria-label="Move basket right">→</button></div>';
@@ -182,7 +185,7 @@ function mountStarCatch(host,ctx){
  const resize=typeof ResizeObserver==='undefined'?null:new ResizeObserver(()=>{size={width:stage.clientWidth,height:stage.clientHeight};paint();});resize?.observe(stage);
  const score=host.querySelector('[data-game-score]'),wave=host.querySelector('[data-game-wave]'),lives=host.querySelector('[data-catch-lives]'),fill=host.querySelector('[data-catch-fill]');
  const label=(el,value)=>{const text=String(value);if(el.textContent!==text)el.textContent=text;};
- function node(o){const n=document.createElement('span');n.className='falling-wish'+(o.heart?' heart-wish':o.power?' power-wish power-'+o.power:o.cloud?' cloud-wish':' star-wish');n.innerHTML=o.heart?arcadeGlyph('heart'):o.power?arcadeGlyph(o.power==='magnet'?'orbit':'moon'):sprite(o.cloud?'storm':'wish');sky.append(n);o.node=n;}
+ function node(o){const n=document.createElement('span');n.className='falling-wish'+(o.heart?' heart-wish':o.power?' power-wish power-'+o.power:o.cloud?' cloud-wish':' star-wish'+(o.fast?' meteor-wish':''));n.innerHTML=o.heart?arcadeGlyph('heart'):o.power?arcadeGlyph(o.power==='magnet'?'orbit':'moon'):sprite(o.cloud?'storm':'wish');sky.append(n);o.node=n;}
  g.objects.forEach(node);
  function paint(){basket.style.translate=Math.round(g.basketX/320*size.width)+'px 0';
   // Lean into the motion: a small tilt from the basket's velocity.
@@ -196,6 +199,7 @@ function mountStarCatch(host,ctx){
  ctl.on(host,'keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();held=e.key==='ArrowLeft'?-1:1;}});
  ctl.on(host,'keyup',()=>held=0);ctl.on(host,'click',e=>{const b=e.target.closest('[data-steer]');if(b&&e.detail===0)g.targetX=Math.max(28,Math.min(292,g.targetX+Number(b.dataset.steer)*35));});
  const release=()=>{held=0;pointer=null;steerPointer=null;};
+ let feedbackTimer=null;function clearFeedback(){if(feedbackTimer)ctl.clear(feedbackTimer);feedbackTimer=ctl.later(()=>{const el=host.querySelector('.catch-feedback');if(el)el.textContent='';feedbackTimer=null;},1600);}
  ctl.on(document,'visibilitychange',()=>{if(document.hidden)release();});ctl.on(window,'blur',release);ctl.on(host,'focusout',()=>held=0);ctl.on(window,'keyup',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight')held=0;});ctl.on(host,'toy-pause',release);
  function damage(cloud){
   if(cloud)g.hits++;else g.misses++;g.combo=0;if(!g.practice)g.lives--;
@@ -203,7 +207,7 @@ function mountStarCatch(host,ctx){
   g.objects.forEach(o=>o.node.remove());g.objects=[];g.recovery=1.1;g.spawn=.4;g.spawnX=g.basketX;g.previousCloud=false;
   ctl.animate(basket.querySelector('.toy-pet'),[{opacity:1},{opacity:.35,offset:.25},{opacity:1,offset:.5},{opacity:.35,offset:.75},{opacity:1}],700);
   ctl.animate(lives,[{color:'#f29d88'},{color:'inherit'}],700);
-  host.querySelector('.catch-feedback').textContent=(cloud?'Cloud caught.':'Wish missed.')+(g.practice?' Keep practising.':' One heart lost. Ready…');paint();if(!g.practice&&g.lives<=0){ctx.finish();return;}ctx.changed?.();
+  clearFeedback();host.querySelector('.catch-feedback').textContent=(cloud?'Cloud caught.':'Wish missed.')+(g.practice?' Keep practising.':' One heart lost. Ready…');paint();if(!g.practice&&g.lives<=0){ctx.finish();return;}ctx.changed?.();
  }
  function step(dt){
   if(g.done||!g.ready)return;g.elapsed+=dt;g.targetX=Math.max(28,Math.min(292,g.targetX+held*300*dt));g.basketX+=Math.max(-300*dt,Math.min(300*dt,(g.targetX-g.basketX)*(1-Math.exp(-22*dt))));
@@ -211,22 +215,33 @@ function mountStarCatch(host,ctx){
   const difficulty=catchDifficulty(g.caught);g.spawn-=dt;
   if(g.magnet>0)g.magnet=Math.max(0,g.magnet-dt);if(g.slow>0)g.slow=Math.max(0,g.slow-dt);
   const fall=difficulty.speed*(g.slow>0?.6:1),reach=g.magnet>0?48:30;
+  if(difficulty.wind&&!windShown){windShown=true;fx.banner('WINDY!','mint');ctx.fx?.('whoosh');}
   if(g.spawn<=0){
-   g.spawn=difficulty.interval/(g.slow>0?.6:1);const heart=g.heartDue&&g.serial%7!==5,power=!heart&&g.caught>=10&&g.serial%17===11?(Math.floor(g.serial/17)%2?'slow':'magnet'):null,cloud=!heart&&!power&&g.serial%7===5,previousX=g.spawnX??g.basketX;if(heart)g.heartDue=false;
+   // Weighted randomness that ramps with each wave. Fairness guards: never
+   // three clouds in a row, a power-up cooldown, and room to dodge.
+   g.spawn=difficulty.interval/(g.slow>0?.6:1);g.powerCooldown=Math.max(0,g.powerCooldown-1);
+   const roll=Math.random(),heart=g.heartDue,power=!heart&&g.caught>=10&&!g.powerCooldown&&roll<.05?(Math.random()<.5?'slow':'magnet'):null;
+   const cloud=!heart&&!power&&g.cloudRun<2&&Math.random()<difficulty.cloud,previousX=g.spawnX??g.basketX;if(heart)g.heartDue=false;if(power)g.powerCooldown=14;g.cloudRun=cloud?g.cloudRun+1:0;
    // Adjacent cloud/wish lanes leave room to dodge, without impossible travel.
    let delta=(Math.random()*2-1)*difficulty.reach;
    if(cloud||g.previousCloud){const direction=previousX>160?-1:1;delta=direction*Math.max(100,Math.abs(delta));}
    const nextX=Math.max(28,Math.min(292,previousX+delta));g.spawnX=nextX;g.previousCloud=cloud;
-   const o={id:g.serial++,x:nextX,y:-35,cloud,...(heart?{heart:true}:{}),...(power?{power}:{})};node(o);g.objects.push(o);
+   const fast=!cloud&&!heart&&!power&&Math.random()<difficulty.meteor;
+   const o={id:g.serial++,x:nextX,y:-35,cloud,...(heart?{heart:true}:{}),...(power?{power}:{}),...(fast?{fast:true}:{})};node(o);g.objects.push(o);
+   // A burst drops a second wish across the sky; the next gap is longer so
+   // the pace stays humanly catchable.
+   if(!cloud&&!heart&&!power&&Math.random()<difficulty.burst){const x2=nextX>160?Math.max(28,nextX-90-Math.random()*60):Math.min(292,nextX+90+Math.random()*60),twin={id:g.serial++,x:x2,y:-70,cloud:false};node(twin);g.objects.push(twin);g.spawn*=1.7;}
   }
   for(const o of g.objects){
-   o.y+=fall*dt;
+   o.y+=fall*(o.fast?1.45:1)*dt;
+   // Wind sways wishes and clouds alike, gently and differently per object.
+   if(difficulty.wind)o.x=Math.max(28,Math.min(292,o.x+Math.sin(g.elapsed*.9+o.id*1.7)*difficulty.wind*dt));
    // The magnet gently pulls nearby wishes in; clouds are never attracted.
    if(g.magnet>0&&!o.cloud&&o.y>60)o.x+=Math.sign(g.basketX-o.x)*Math.min(Math.abs(g.basketX-o.x),70*dt);
    if(o.y>183&&o.y<221&&Math.abs(o.x-g.basketX)<reach){
     if(o.cloud){damage(true);return;}
-    if(o.power){const n=o.node;o.y=300;n.remove();g[o.power]=o.power==='magnet'?6:5;ctx.fx?.('power');fx.banner(o.power==='magnet'?'MAGNET!':'SLOW-MO','lilac');fx.burst(basket,{count:12,tone:['lilac','cream'],glyph:'✦'});host.querySelector('.catch-feedback').textContent=o.power==='magnet'?'Magnet: wishes drift to you.':'Slow-mo: the sky takes a breath.';ctx.changed?.();continue;}
-    if(o.heart){const n=o.node;o.y=300;n.remove();g.heals++;g.lives=Math.min(3,g.lives+1);ctx.fx?.('heart');fx.burst(basket,{count:10,tone:['pink','cream'],glyph:'♥'});fx.text(basket,'+1 heart','pink');host.querySelector('.catch-feedback').textContent='Heart caught! Back to '+g.lives+' hearts.';ctx.changed?.();continue;}
+    if(o.power){const n=o.node;o.y=300;n.remove();g[o.power]=o.power==='magnet'?6:5;ctx.fx?.('power');fx.banner(o.power==='magnet'?'MAGNET!':'SLOW-MO','lilac');fx.burst(basket,{count:12,tone:['lilac','cream'],glyph:'✦'});clearFeedback();host.querySelector('.catch-feedback').textContent=o.power==='magnet'?'Magnet: wishes drift to you.':'Slow-mo: the sky takes a breath.';ctx.changed?.();continue;}
+    if(o.heart){const n=o.node;o.y=300;n.remove();g.heals++;g.lives=Math.min(3,g.lives+1);ctx.fx?.('heart');fx.burst(basket,{count:10,tone:['pink','cream'],glyph:'♥'});fx.text(basket,'+1 heart','pink');clearFeedback();host.querySelector('.catch-feedback').textContent='Heart caught! Back to '+g.lives+' hearts.';ctx.changed?.();continue;}
     const caughtNode=o.node;ctl.animate(caughtNode,[{opacity:1},{opacity:0,transform:'translate(-50%,-85%)'}],160);ctl.later(()=>caughtNode.remove(),160);
     o.y=300;g.caught++;g.combo++;g.bestCombo=Math.max(g.bestCombo,g.combo);
     const tier=streakTier();ctx.fx?.(g.combo===10||g.combo===25?'combo':'catch',g.combo===10||g.combo===25?tier:g.combo%15);ctl.animate(basket.querySelector('.basket-front'),[{scale:'1 1'},{scale:'1.12 .86',offset:.3},{scale:'.96 1.06',offset:.65},{scale:'1 1'}],220);fx.burst({x:o.x,y:196},{count:tier>1?8:5,tone:tier>2?['pink','gold']:tier>1?['gold','cream']:'cream',spread:24+tier*6});
@@ -234,7 +249,7 @@ function mountStarCatch(host,ctx){
     if(g.caught%10===0){fx.banner('WAVE '+catchDifficulty(g.caught).wave);ctx.fx?.('wave');}
     if(!g.practice&&g.caught>=g.nextHeart){g.nextHeart+=25;if(g.lives<3)g.heartDue=true;}
     if(!g.practice&&!passedBest&&bestRaw>0&&arcadeResult('catch',arcadeStats(g)).raw>bestRaw){passedBest=true;fx.banner('NEW BEST!','mint');ctx.fx?.('best');}
-    host.querySelector('.catch-feedback').textContent=g.caught%10===0?'Wave '+catchDifficulty(g.caught).wave+' · stardust earned!':g.combo+' caught in a row';
+    clearFeedback();host.querySelector('.catch-feedback').textContent=g.caught%10===0?'Wave '+catchDifficulty(g.caught).wave+' · stardust earned!':g.combo+' caught in a row';
     ctl.animate(basket.querySelector('.toy-pet'),[{translate:'0 0'},{translate:'0 5px',offset:.25},{translate:'0 -5px',offset:.6},{translate:'0 0'}],240);ctx.beep(g.caught%4);update();
    }else if(o.y>246){o.node.remove();if(!o.cloud&&!o.heart&&!o.power){damage(false);return;}o.y=300;}
    else if(!o.cloud&&!o.near&&o.y>221&&Math.abs(o.x-g.basketX)<reach+14){o.near=true;fx.text({x:o.x,y:206},'close!','cream');}

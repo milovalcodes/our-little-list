@@ -2,7 +2,7 @@
 function mountStarCooking(host,ctx){
  const ctl=toyController(host,{practice:()=>recipe.practice}),fx=starFx(host),sprite=ctx.sprite,toast=ctx.recipe==='toast',limits=[20,24,12,30],names=['cut',toast?'spread':'stir','heat','top'];
  const recipe={phase:0,started:false,left:20,sliced:new Set(),chops:0,cutScores:[],stir:0,stirGood:0,stirTravel:0,angle:0,heat:0,held:false,plated:new Set(),occupied:new Set(),toppings:{},plateScores:[],grades:[],penalties:0,quality:0,score:0,transition:0,practice:!!ctx.practice};
- const targets=[{x:132,y:142},{x:184,y:142},{x:158,y:162}];
+ const rand=ctx.random||Math.random,jitter=n=>Math.round((rand()*2-1)*n),targets=[{x:132+jitter(6),y:142+jitter(4)},{x:184+jitter(6),y:142+jitter(4)},{x:158+jitter(6),y:162+jitter(3)}],heatTarget=.62+rand()*.16;
  // Toast has a broad bread surface now. Keep the spread hit regions on that
  // surface, aligned with the nine contiguous sections of the jam artwork.
  const spreadPatches=Array.from({length:9},(_,i)=>({x:123+i%3*37,y:121+Math.floor(i/3)*37,value:0}));
@@ -36,7 +36,7 @@ function mountStarCooking(host,ctx){
    feedback('Stir three circles inside the pot.');
    placeSpoon();
   }else if(phase===2){
-   stage.innerHTML=pot()+'<span class="heat-steam" aria-hidden="true"><i></i><i></i><i></i></span><div class="heat-track"><span class="heat-good"></span><i class="heat-level"></i></div><button type="button" class="heat-button" data-heat>hold to warm</button>';
+   stage.innerHTML=pot()+'<span class="heat-steam" aria-hidden="true"><i></i><i></i><i></i></span><div class="heat-track"><span class="heat-good" style="left:'+((heatTarget-.14)*100).toFixed(1)+'%"></span><i class="heat-level"></i></div><button type="button" class="heat-button" data-heat>hold to warm</button>';
    feedback('Release in the gold center.');
   }else if(phase===3){
    stage.innerHTML='<span class="ingredient-tray" aria-hidden="true"></span><span class="recipe-bowl">'+dish()+'</span>'+targets.map((p,i)=>'<button type="button" class="topping-target" data-plate-target="'+i+'" style="left:'+p.x/3.2+'%;top:'+p.y/2.5+'%" aria-label="Place selected berry on empty garnish spot '+(i+1)+'"></button>').join('')+
@@ -117,7 +117,7 @@ function mountStarCooking(host,ctx){
  function releaseHeat(){
   if(!recipe.held||recipe.phase!==2)return;recipe.heat=heldTemperature();recipe.held=false;
   if(recipe.heat<.45){feedback('Still cool. Hold again to keep warming.');return;}
-  finishStation(100-Math.max(0,Math.abs(recipe.heat-.7)-.05)*160);
+  finishStation(100-Math.max(0,Math.abs(recipe.heat-heatTarget)-.05)*160);
  }
  function spread(x,y,amount){
   if(recipe.transition||recipe.phase!==1)return;start();
@@ -209,7 +209,7 @@ function mountStarCooking(host,ctx){
   host.querySelector('.chop-meter b')?.style.setProperty('left',(50+Math.sin(clockTime*2.2)*47)+'%');
   if(!recipe.started)return;
   if(recipe.phase===1&&keyStir)stir(keyStir*dt*2.2,1);
-  if(recipe.phase===2){recipe.heat=recipe.held?heldTemperature():Math.max(0,recipe.heat-.08*dt);host.querySelector('.heat-level').style.left=recipe.heat*100+'%';host.querySelector('.recipe-pot').classList.toggle('simmer',recipe.heat>.5);const detail=recipe.heat<.55?'warming…':recipe.heat<.65?'almost…':recipe.heat<=.75?'RELEASE!':'too hot · let go';const label=host.querySelector('[data-recipe-detail]');if(label.textContent!==detail){label.textContent=detail;if(detail==='RELEASE!')ctx.fx?.('tick');if(detail.startsWith('too hot'))ctx.fx?.('sizzle');}}
+  if(recipe.phase===2){recipe.heat=recipe.held?heldTemperature():Math.max(0,recipe.heat-.08*dt);host.querySelector('.heat-level').style.left=recipe.heat*100+'%';host.querySelector('.recipe-pot').classList.toggle('simmer',recipe.heat>.5);const detail=recipe.heat<heatTarget-.15?'warming…':recipe.heat<heatTarget-.05?'almost…':recipe.heat<=heatTarget+.05?'RELEASE!':'too hot · let go';const label=host.querySelector('[data-recipe-detail]');if(label.textContent!==detail){label.textContent=detail;if(detail==='RELEASE!')ctx.fx?.('tick');if(detail.startsWith('too hot'))ctx.fx?.('sizzle');}}
  });
  draw();return {...ctl,snapshot:()=>({...recipe,sliced:[...recipe.sliced],plated:[...recipe.plated]})};
 }

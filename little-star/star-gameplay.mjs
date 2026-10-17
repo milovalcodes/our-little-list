@@ -25,7 +25,7 @@ export function echoResult(completed,rounds,mistakes,replays){return Math.max(0,
 // Arcade v2: cash follows verified progress, never elapsed/idle time or a
 // shared 0–10 rating. These same rules drive previews and engine settlement.
 export const PAIR_BOARDS={8:{seconds:120,cash:20},10:{seconds:180,cash:28},12:{seconds:240,cash:36}};
-export function catchDifficulty(caught){const wave=1+Math.floor(caught/10),tier=Math.min(8,wave);return {wave,speed:72+(tier-1)*12,interval:.95-(tier-1)*.055,reach:Math.min(145,(.95-(tier-1)*.055)*300*.8)};}
+export function catchDifficulty(caught){const wave=1+Math.floor(caught/10),tier=Math.min(8,wave),late=Math.min(15,Math.max(0,wave-8)),interval=Math.max(.42,.95-(tier-1)*.055-late*.008);return {wave,speed:72+(tier-1)*12+late*4,interval,reach:Math.min(145,interval*300*.8),cloud:Math.min(.3,.1+(Math.min(wave,23)-1)*.012),burst:wave>=3?Math.min(.28,.06+(Math.min(wave,23)-3)*.012):0,meteor:wave>=4?Math.min(.2,.05+(Math.min(wave,23)-4)*.008):0,wind:wave>=6?Math.min(36,(Math.min(wave,23)-5)*2):0};}
 export function arcadeResult(type,s){
  const count=(key,max=1000000)=>{const n=s?.[key];if(!Number.isInteger(n)||n<0||n>max)throw Error('That arcade progress did not look right.');return n;};
  if(type==='catch'){const caught=count('caught'),heals=s?.heals===undefined?0:count('heals',1000),misses=count('misses',3+heals),hits=count('hits',3+heals),best=count('bestCombo');if(heals>Math.floor(caught/25)||misses+hits>3+heals||best>caught)throw Error('That catch progress did not look right.');return {cash:Math.floor(caught/4)+5*Math.floor(best/15),raw:caught*100+best*25,recordKey:'catch-endless',label:caught+' wish'+(caught===1?'':'es'),complete:false};}
@@ -35,9 +35,9 @@ export function arcadeResult(type,s){
 }
 export function arcadeStats(g){return g.type==='catch'?{caught:g.caught,misses:g.practice?0:g.misses,hits:g.practice?0:g.hits,heals:g.practice?0:g.heals||0,bestCombo:g.bestCombo}:g.type==='echo'?{longest:g.longest,mistakes:g.practice?0:g.mistakes,heals:g.practice?0:g.heals||0}:{total:g.total,matched:g.matched.length/2,moves:g.moves,left:g.left};}
 export function arcadeSnapshot(g){
- const keys=['type','level','actor','petId','sessionId','claimRequestId','practice','ready','done','total','cards','flipped','matched','moves','left','preview','delay','waiting','combo','bestCombo','started','sequence','input','longest','mistakes','replays','echoPhase','caught','misses','hits','heals','nextHeart','heartDue','magnet','slow','verseMistakes','peeked','lives','targetX','basketX','spawn','serial','spawnX','previousCloud','recovery','elapsed'];
+ const keys=['type','level','actor','petId','sessionId','claimRequestId','practice','ready','done','total','cards','flipped','matched','moves','left','preview','delay','waiting','combo','bestCombo','started','sequence','input','longest','mistakes','replays','echoPhase','caught','misses','hits','heals','nextHeart','heartDue','magnet','slow','powerCooldown','cloudRun','verseMistakes','peeked','lives','targetX','basketX','spawn','serial','spawnX','previousCloud','recovery','elapsed'];
  const result={version:2};for(const key of keys)if(g[key]!==undefined)result[key]=g[key];
- if(g.objects)result.objects=g.objects.map(({id,x,y,cloud,heart,power})=>({id,x,y,cloud,...(heart?{heart:true}:{}),...(power?{power}:{})}));
+ if(g.objects)result.objects=g.objects.map(({id,x,y,cloud,heart,power,fast})=>({id,x,y,cloud,...(heart?{heart:true}:{}),...(power?{power}:{}),...(fast?{fast:true}:{})}));
  return JSON.parse(JSON.stringify(result));
 }
 // Only resume structurally complete snapshots. A partial/old save must not

@@ -29,7 +29,7 @@ function setup(){
 }
 const touch=(target,id,x,y,primary=true)=>({target,pointerId:id,pointerType:'touch',isPrimary:primary,button:0,clientX:x,clientY:y,preventDefault(){}});
 function cooking(recipe='porridge'){
- const h=setup(),done=[];h.ctl=h.sandbox.mountStarCooking(h.host,{recipe,sprite:()=>'',foodSprite:()=>'',beep(){},complete:r=>done.push(r)});h.done=done;h.work=h.host.querySelector('.recipe-worktop');
+ const h=setup(),done=[];h.ctl=h.sandbox.mountStarCooking(h.host,{recipe,random:()=>.5,sprite:()=>'',foodSprite:()=>'',beep(){},complete:r=>done.push(r)});h.done=done;h.work=h.host.querySelector('.recipe-worktop');
  h.input=(type,target,id,x,y,primary=true)=>h.host.fire(type,touch(target,id,x,y,primary));
  h.tap=(target,x,y)=>{h.input('pointerdown',target,1,x,y);h.input('pointerup',target,1,x,y);h.tick(250);};
  return h;
