@@ -49,14 +49,15 @@ function mountStarCooking(host,ctx){
    host.querySelector('[data-recipe-time]').textContent=recipe.practice?'PRACTICE SCORE · '+recipe.score+'%':recipe.score>(ctx.bestScore||0)?'NEW PERSONAL BEST!':'YOUR BEST · '+Math.max(ctx.bestScore||0,recipe.score)+'%';
    // Keep exactly the bowl and topping positions the player created. A result
    // garnish is not a button: give it its own absolute, fixed-size layer.
-   stage.innerHTML='<span class="recipe-bowl">'+dish()+'</span>'+Object.entries(recipe.toppings).map(([i,p])=>'<span class="served-topping" style="left:'+(p.x-16)/3.2+'%;top:'+(p.y-16)/2.5+'%">'+sprite('sliced')+'</span>').join('')+'<span class="recipe-stars">'+reward.label+' · '+recipe.score+'%</span><span class="result-stars" aria-label="'+stars+' of 3 stars">'+'★'.repeat(stars)+'<i>'+'★'.repeat(3-stars)+'</i></span>';
+   stage.innerHTML='<span class="recipe-bowl">'+dish()+'</span>'+Object.entries(recipe.toppings).map(([i,p])=>'<span class="served-topping" style="left:'+(p.x-16)/3.2+'%;top:'+(p.y-16)/2.5+'%">'+sprite('sliced')+'</span>').join('')+(ctx.pet?'<span class="taste-pet">'+ctx.pet+'</span>':'')+'<span class="recipe-stars">'+reward.label+' · '+recipe.score+'%</span><span class="result-stars" aria-label="'+stars+' of 3 stars">'+'★'.repeat(stars)+'<i>'+'★'.repeat(3-stars)+'</i></span>';
    access.innerHTML='<button type="button" class="main-button" data-serve-cook>'+(recipe.practice?'finish practice':'collect '+reward.portions+' meal'+(reward.portions===1?'':'s'))+'</button><button type="button" data-cook-again>'+(recipe.practice?'practice again':'collect & cook again')+'</button>';
    feedback(recipe.practice?'Practice':ctx.rewardText?.(recipe.score)||'');
    ctx.complete({score:recipe.score,grades:[...recipe.grades],quality:recipe.quality,practice:recipe.practice});
    ctx.fx?.(stars===3?'clear':'match');fx.burst(stage.querySelector('.recipe-bowl'),{count:8+stars*4,tone:['gold','cream','pink'],glyph:'✦',spread:70});if(stars===3)fx.banner(reward.label);
+   const taster=stage.querySelector('.taste-pet');if(taster)ctl.later(()=>{ctx.fx?.('slurp');fx.burst(taster,{count:6+stars*2,tone:['pink','cream'],glyph:'♥',spread:40});},650);
   }
   if(phase<4)access.insertAdjacentHTML('beforeend','<button type="button" data-retry-station>'+(recipe.practice?'retry station':'retry without rewards')+'</button>');
-  ctl.animate(stage,[{opacity:.6,translate:'0 6px'},{opacity:1,translate:'0 0'}],180);
+  ctl.animate(stage,[{opacity:0,translate:'18px 0'},{opacity:1,translate:'0 0'}],240);
   // Replacing a station removes its focused control. Put keyboard users on
   // the next real action, rather than dropping focus back to the page body.
   (stage.querySelector('button:not(:disabled)')||access.querySelector('button:not(:disabled)'))?.focus({preventScroll:true});
@@ -68,7 +69,7 @@ function mountStarCooking(host,ctx){
   feedback(names[recipe.phase]+' · '+recipe.grades[recipe.phase]+'%');
   host.querySelector('.recipe-worktop').insertAdjacentHTML('beforeend','<div class="station-grade">'+recipe.grades[recipe.phase]+'%<small>'+names[recipe.phase]+' complete</small></div>');
   ctl.animate(host.querySelector('.station-grade'),[{opacity:0,translate:'0 8px'},{opacity:1,translate:'0 0'}],180);
-  const grade=recipe.grades[recipe.phase];ctx.fx?.(grade>=90?'match':'plate');fx.burst(host.querySelector('.station-grade'),{count:grade>=90?12:6,tone:grade>=90?['gold','cream']:'cream',glyph:grade>=90?'✦':'',spread:50});
+  const grade=recipe.grades[recipe.phase];recipe.perfectRun=grade>=95?(recipe.perfectRun||0)+1:0;if(recipe.perfectRun>=2)fx.text(host.querySelector('.station-grade'),'perfect ×'+recipe.perfectRun,'mint');ctx.fx?.(grade>=90?'match':'plate');fx.burst(host.querySelector('.station-grade'),{count:grade>=90?12:6,tone:grade>=90?['gold','cream']:'cream',glyph:grade>=90?'✦':'',spread:50});
  }
  function slice(i,score){
   if(recipe.phase!==0||recipe.transition||recipe.sliced.has(i))return;
