@@ -1,5 +1,17 @@
 # Handoff: daily games + Little Star art (2026-10-17)
 
+## Completion record (2026-10-17)
+
+- Owner authorized pushing all release changes to `main` and deploying both production backends after checks pass.
+- Full [GitHub Checks run 39076833006](https://github.com/milovalcodes/our-little-list/actions/runs/39076833006) passed on `f3f5ee2`, including the art build, Firestore emulator rules, browser flows, lifecycle, touch, visual and realtime tests. Local `pnpm test` also passed, including the new crossword-entry and daily-results unit tests.
+- Firestore rules deployed successfully to `our-little-list-5ea59`.
+- Worker `our-little-list-delivery` deployed successfully as version `e7a77bb3-fbfa-4bb9-bff7-332e585042cb`. Previous version: `6ce8026a-5a64-4325-9eba-26e8c4c7172c`.
+- All 1,466 working-art files were moved from the app's `art-brief/` into the editable Little Star source's `art-brief/`. Every copy was SHA-256 verified before removing its original; existing source files were preserved. `/art-brief/` is now ignored in the app repo.
+- App release is prepared for `main`; GitHub Pages publishes directly from that branch. Verify the Pages build after pushing this completion commit.
+- The optional follow-ups below remain future ideas, not release blockers. Scoring and mini-crossword cutovers remain 2026-10-19.
+
+The original handoff below is retained as historical context; the completion record supersedes its pending verification and deployment status.
+
 Read `CLAUDE.md` first (paths, Node 24 PATH, commands, gotchas). Treat live data as production. **Never** push `main`, deploy the Worker, deploy Firestore rules or touch Firebase data unless the owner explicitly asks.
 
 ## Where things are

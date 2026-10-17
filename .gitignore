@@ -1,4 +1,6 @@
 node_modules/
+# Working Little Star art belongs with the editable source, not GitHub Pages.
+/art-brief/
 # wrangler writes build output and local state here
 .wrangler/
 *-debug.log
