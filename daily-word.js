@@ -26,7 +26,6 @@ export function startDailyWord({data,viewer,other},options={}){
   if(!host)return;
   let pendingGuess=null,disposed=false,completionToCelebrate=null;
   let latestMine=null,generation=0;
-  let peekOpen=false,peekBusy=false,peekGame=null,peekError='',peekRequest=0;
   const celebration=createWordCelebration(host,viewer,day);
   const together=createSharedRound({data,viewer,other,day,type:'word',host,onChange:render});
   let history=[],shareNote='';
@@ -42,7 +41,7 @@ export function startDailyWord({data,viewer,other},options={}){
       const next=items.find(p=>p.day===day)||(data.mode==='local'&&!tie?wordForDay(day):null);
       if(puzzle&&next&&revisionOf(next)<revisionOf(puzzle))return;
       if(puzzle&&next&&revisionOf(next)!==revisionOf(puzzle)){
-        generation++;busy=false;draft='';pendingGuess=null;peekRequest++;peekBusy=false;peekGame=null;peekOpen=false;completionToCelebrate=null;error='Fresh round · your attempts start here.';syncFailure=false;
+        generation++;busy=false;draft='';pendingGuess=null;completionToCelebrate=null;error='Fresh round · your attempts start here.';syncFailure=false;
         mine=latestMine&&revisionOf(latestMine)===revisionOf(next)?latestMine:null;
       }
       puzzle=next;
@@ -54,7 +53,7 @@ export function startDailyWord({data,viewer,other},options={}){
       latestMine=incoming;
       if(incoming&&puzzle&&revisionOf(incoming)!==revisionOf(puzzle))return;
       // A cached snapshot must not rewind a guess already acknowledged by the server.
-      if(!incoming&&meta?.fromCache===false){mine=null;draft='';pendingGuess=null;peekGame=null;peekOpen=false;completionToCelebrate=null;}
+      if(!incoming&&meta?.fromCache===false){mine=null;draft='';pendingGuess=null;completionToCelebrate=null;}
       else if(!mine||(incoming?.guesses.length||0)>=mine.guesses.length)mine=incoming;
       if(pendingGuess&&incoming?.guesses[pendingGuess.index]===pendingGuess.word){
         if(incoming.done)completionToCelebrate=incoming;
@@ -80,7 +79,6 @@ export function startDailyWord({data,viewer,other},options={}){
     const keys={};
     guesses.forEach((guess,row)=>[...guess].forEach((letter,i)=>{const score=marks[row]?.[i];if(!score)return;if(!keys[letter]||['absent','present','correct'].indexOf(score)>['absent','present','correct'].indexOf(keys[letter]))keys[letter]=score;}));
     const focused=host.querySelector(':focus')?.dataset.key||'';
-    const peekFocused=Boolean(host.querySelector('[data-word-peek]:focus'));
     const announcement=guesses.length?`Guess ${guesses.length}: ${[...guesses.at(-1)].map((c,i)=>c.toUpperCase()+' '+({correct:'right spot',present:'in the word',absent:'not in the word'}[marks.at(-1)?.[i]]||'')).join(', ')}.`:'';
     const disabled=busy||!ready()||done||!navigator.onLine;
     host.classList.toggle('game-active',Boolean(ready()&&!done));typing.update(Boolean(ready()&&!done),disabled);
@@ -94,37 +92,10 @@ export function startDailyWord({data,viewer,other},options={}){
       ${syncFailure?'<button type="button" data-word-retry>retry sync</button>':''}
       ${!done?`<div role="group" class="word-keyboard" aria-label="Word keyboard">${['qwertyuiop','asdfghjkl','↵zxcvbnm⌫'].map(row=>`<div>${[...row].map(letter=>`<button type="button" data-key="${letter}" class="${keys[letter]||''} ${letter==='↵'||letter==='⌫'?'wide-key':''}" aria-label="${letter==='↵'?'Submit guess':letter==='⌫'?'Delete letter':letter.toUpperCase()+(keys[letter]?', '+({correct:'right spot',present:'in the word',absent:'not in the word'}[keys[letter]]):', not tried')}" ${disabled?'disabled':''}>${letter==='↵'?'enter':letter}</button>`).join('')}</div>`).join('')}</div>`:''}
       <p class="sr-only" role="status" aria-live="polite">${escapeHtml(announcement)}</p><div class="word-legend"><span><i class="word-tile correct">A</i>right spot</span><span><i class="word-tile present">A</i>in the word</span><span><i class="word-tile absent">A</i>not in the word</span></div>
-      ${mine?.done?'':`<p class="word-partner">${partnerLabel()}</p>`}${resultsMarkup()}${peekMarkup()}`;
+      ${mine?.done?'':`<p class="word-partner">${partnerLabel()}</p>`}${resultsMarkup()}`;
     if(focused)host.querySelector(`[data-key="${focused}"]`)?.focus({preventScroll:true});
-    if(peekFocused)host.querySelector('[data-word-peek]')?.focus({preventScroll:true});
     if(completionToCelebrate&&!busy){celebration.play(completionToCelebrate);completionToCelebrate=null;}
     together.mounted();
-  }
-  function canPeek(){return mine?.done&&results.some(r=>r.day===day&&r.person===other&&r.done&&revisionOf(r)===revisionOf(puzzle));}
-  function peekMarkup(){
-    if(!canPeek()||!puzzle)return '';
-    const board=peekGame&&peekGame.guesses.map((guess,row)=>{
-      const marks=scoreGuess(guess,puzzle.word);
-      return `<div role="group" class="word-row" aria-label="Guess ${row+1}">${[...guess].map((letter,i)=>`<span role="img" class="word-tile ${marks[i]}" aria-label="${escapeHtml(letter.toUpperCase())}, ${marks[i]}">${escapeHtml(letter)}</span>`).join('')}</div>`;
-    }).join('');
-    return `<div class="word-peek"><button type="button" data-word-peek aria-expanded="${peekOpen}" ${peekBusy?'aria-busy="true"':''}>${peekBusy?'getting their guesses…':peekOpen?'close their process':'peek their process'}</button>${peekOpen?`<div class="word-peek-board"><h3>${escapeHtml(personName(other))}’s guesses</h3>${peekError?`<p role="status">${escapeHtml(peekError)}</p><button type="button" data-word-peek-retry>try again</button>`:peekBusy?'<p role="status">one second…</p>':`<div class="word-grid" role="group" aria-label="Partner’s guesses">${board||''}</div>`}</div>`:''}</div>`;
-  }
-  async function peek(retry=false){
-    if(disposed||!canPeek())return;
-    if(peekOpen&&!retry){peekOpen=false;render();return;}
-    peekOpen=true;
-    if(peekGame||peekBusy){render();return;}
-    peekBusy=true;peekError='';render();
-    const request=++peekRequest;let timeout;
-    try{
-      // A single-document read is checked by Firestore against both boards.
-      // Never subscribe to or download the partner's unfinished guesses.
-      const game=await Promise.race([data.readDoc('wordGames',day+'-'+other),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(new Error('timeout')),12000);})]);
-      if(disposed||request!==peekRequest)return;
-      if(!game?.done||revisionOf(game)!==revisionOf(puzzle)||game.day!==day||game.person!==other||!Array.isArray(game.guesses)||!game.guesses.length||game.guesses.length>wordAttempts(day)||game.guesses.some(g=>typeof g!=='string'||!/^[a-z]{5}$/.test(g)))throw new Error('not ready');
-      peekGame=game;
-    }catch(_){if(!disposed&&request===peekRequest)peekError='Couldn’t get their guesses. Check your connection and try again.';}
-    finally{clearTimeout(timeout);if(!disposed&&request===peekRequest){peekBusy=false;render();}}
   }
   function resultsMarkup(){
     if(!mine?.done||!puzzle)return '';
@@ -169,7 +140,7 @@ export function startDailyWord({data,viewer,other},options={}){
     }
     finally{if(current===generation){busy=false;render();}}
   }
-  const click=event=>{const button=event.target.closest('[data-key]');if(button)void key(button.dataset.key);if(event.target.closest('[data-word-retry]'))read();if(event.target.closest('[data-word-peek]'))void peek();if(event.target.closest('[data-share]')&&mine?.done&&puzzle)void shareResult(wordShare(mine,puzzle.word)).then(note=>{shareNote=note;render();});if(event.target.closest('[data-word-peek-retry]'))void peek(true);};
+  const click=event=>{const button=event.target.closest('[data-key]');if(button)void key(button.dataset.key);if(event.target.closest('[data-word-retry]'))read();if(event.target.closest('[data-share]')&&mine?.done&&puzzle)void shareResult(wordShare(mine,puzzle.word)).then(note=>{shareNote=note;render();});};
   host.addEventListener('click',click);
   const keydown=event=>{
     if(event.defaultPrevented||activeBoard!==host)return;

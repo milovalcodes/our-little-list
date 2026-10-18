@@ -51,8 +51,9 @@ try{
  assert.ok(await page.locator('#crossword .puzzle-cell.missed-word').count()>0,'wrong and empty squares are marked after the round');
  // A saved partner round unlocks the process without reloading; direct read only after both end.
  await page.evaluate(async({cross,now})=>{const{sharedLayer}=await import('./data-hub.js'),d=await sharedLayer();const{newTimedGame,timedSummary}=await import('./timed-game.js');const g={...newTimedGame(cross,'her',now),done:true,complete:false,finishedAt:now+120000,solved:[0],foundAt:[12000]};await d.setTo('timedGames','2026-10-09-crossword-her',g);await d.setTo('timedResults','2026-10-09-crossword-her',timedSummary(g));},{cross,now});
- await page.locator('#crossword [data-peek]').click();await page.locator('#crossword .timed-peek li').waitFor();
- assert.match(await page.locator('#crossword .timed-peek').textContent(),new RegExp(cross.entries[0].word));
+ await page.locator('#crossword .timed-route:last-child li').waitFor();
+ assert.equal(await page.locator('[data-peek]').count(),0,'finished routes reveal automatically');
+ assert.match(await page.locator('#crossword .timed-route:last-child').textContent(),new RegExp(cross.entries[0].word));
  for(const width of [320,390]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));}
  await page.screenshot({path:join(tmpdir(),'little-timed-puzzles.png'),fullPage:true});
  // A fresh, empty board expires to exactly zero, never a participation point.

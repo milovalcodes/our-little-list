@@ -399,7 +399,7 @@ The optional `GAME_BROWSER=webkit` word real-time test forwards unary demo-emula
 
 `test/word-celebration-browser.mjs` checks all finish tiers, one-time coronations, deferred prompts while typing, 320px animation frames, seasonal portraits and reduced motion. Effects live outside the board: do not put repeating reveal animations on guessed tiles.
 
-“Peek their process” reads one partner board on demand only after both players finish that puzzle (winning or using all five guesses). Firestore independently checks both private game documents; `wordGames` collection queries remain owner-only. Keep these checks when changing the UI. `test/word-peek-browser.mjs` covers loading/error retry and the reveal UI; `test/word-rules.test.mjs` and `test/word-realtime-browser.mjs` cover the actual permissions and two-phone unlock. Deploy rules before the frontend for changes to this boundary.
+The shared Little Word comparison automatically reads one partner board only after both players finish that puzzle (winning or using all available guesses), then shows both sets of letters and colours in order. Firestore independently checks both private game documents; `wordGames` collection queries remain owner-only. Keep these checks when changing the UI. `test/word-peek-browser.mjs` covers loading/error retry and the reveal UI; `test/word-rules.test.mjs` and `test/word-realtime-browser.mjs` cover the actual permissions and two-phone unlock. Deploy rules before the frontend for changes to this boundary.
 
 ### Friendly daily games and app feel (v120)
 

@@ -122,21 +122,19 @@ try {
  await sun.waitForFunction(points=>document.querySelector('.result-compare')?.textContent.includes(points+' points'),solvedIn(3));
  assert.match(await sun.locator('.result-compare').textContent(),new RegExp('1 / '+tries));
  await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),solvedIn(1));
- await Promise.all([moon,sun].map(p=>p.waitForSelector('[data-word-peek]')));
- await moon.click('[data-word-peek]');await sun.click('[data-word-peek]');
  for(const page of [moon,sun]){
   for(let retry=0;retry<3;retry++){
-   await page.waitForFunction(()=>document.querySelector('.word-peek-board .word-row')||document.querySelector('[data-word-peek-retry]'));
-   if(await page.locator('.word-peek-board .word-row').count())break;
-   await page.click('[data-word-peek-retry]');
+   await page.waitForFunction(()=>document.querySelector('.shared-grid:last-child .shared-word-row')||document.querySelector('[data-round-grid-retry]'));
+   if(await page.locator('.shared-grid:last-child .shared-word-row').count())break;
+   await page.click('[data-round-grid-retry]');
   }
-  await page.waitForSelector('.word-peek-board .word-row');
+  await page.waitForSelector('.shared-grid:last-child .shared-word-row');
  }
- assert.equal(await moon.locator('.word-peek-board .word-row').count(),1);
- assert.equal(await sun.locator('.word-peek-board .word-row').count(),3);
- assert.equal(await moon.locator('.word-peek-board .word-row').textContent(),puzzle.word);
- assert.equal(await sun.locator('.word-peek-board .word-row').last().textContent(),puzzle.word);
- assert.equal(await sun.locator('.word-peek-board .correct').count()>=5,true);
+ assert.equal(await moon.locator('.shared-grid:last-child .shared-word-row').count(),1);
+ assert.equal(await sun.locator('.shared-grid:last-child .shared-word-row').count(),3);
+ assert.equal(await moon.locator('.shared-grid:last-child .shared-word-row').textContent(),puzzle.word);
+ assert.equal(await sun.locator('.shared-grid:last-child .shared-word-row').last().textContent(),puzzle.word);
+ assert.equal(await sun.locator('.shared-grid:last-child .correct').count()>=5,true);
 
  await sun.locator('[data-round-react="🔥"]').click();
  await moon.waitForFunction(()=>document.querySelector('#word-game .shared-reaction-status')?.textContent.includes('reacted 🔥'));
@@ -163,8 +161,8 @@ try {
  assert.ok((await play(sun,'her',{start:true})).ok);
  for(let i=0;i<timedPuzzle.entries.length;i++)assert.ok((await play(sun,'her',{index:i,answer:timedPuzzle.entries[i].word,expectedCount:i})).ok);
  await sun.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☾ '+points),solvedIn(3)+searchPoints);
- await moon.locator('#search>summary').click();await moon.waitForSelector('#search [data-peek]');await moon.click('#search [data-peek]');await moon.waitForSelector('#search .timed-peek li');
- assert.equal(await moon.locator('#search .timed-peek li').count(),10);
+ await moon.locator('#search>summary').click();await moon.waitForSelector('#search .timed-route:last-child li');
+ assert.equal(await moon.locator('#search .timed-route:last-child li').count(),10);
  assert.match(await moon.locator('#search-summary').textContent(),new RegExp('^'+searchPoints+' points'));
  await moon.reload();await moon.waitForFunction(points=>document.querySelector('#search-summary').textContent.startsWith(points+' points'),searchPoints);
  assert.deepEqual(errors,[]);

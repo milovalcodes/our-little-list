@@ -35,6 +35,11 @@ try{
   await a.locator('.shared-grids').waitFor();await a.locator('[data-shared-round]').scrollIntoViewIfNeeded();
   assert.match(await a.locator('.shared-round-result').textContent(),/You take this round/);
   assert.equal(await a.locator('.shared-grid .word-tile').count(),15);
+  assert.equal(await a.locator('[data-word-peek]').count(),0);
+  assert.equal(await a.locator('.shared-grid:last-child .shared-word-row').first().textContent(),'zzzzz');
+  assert.equal(await a.locator('.shared-grid:first-child .shared-word-row').textContent(),await a.locator('.shared-grid:last-child .shared-word-row').last().textContent());
+  assert.ok(await a.locator('.shared-grid .word-tile').evaluateAll(tiles=>tiles.every(tile=>tile.textContent.length===1&&tile.getAttribute('aria-label').startsWith(tile.textContent.toUpperCase())&&parseFloat(getComputedStyle(tile).fontSize)>=16)),'readable letters with accessible colour labels');
+
   assert.equal(await a.locator('.is-revealing').count(),0,'reduced motion skips reveal animation');
   await a.locator('[data-round-react="🔥"]').click();await a.waitForFunction(()=>document.querySelector('[data-round-react="🔥"]').getAttribute('aria-pressed')==='true');
   const b=await shared.newPage();b.on('pageerror',e=>errors.push(e.message));await b.clock.setFixedTime(now);await b.goto(base+'/activities.html?as=him#wordle');await b.locator('.shared-grids').waitFor();

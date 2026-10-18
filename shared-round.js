@@ -36,7 +36,7 @@ export function createSharedRound({data,viewer,other,day,type,host,onChange}){
   finally{clearTimeout(timer);if(!disposed&&token===request){loading=false;onChange();}}
  }
  function miniGrid(game,label){
-  return `<div class="shared-grid"><small>${esc(label)}</small><div role="img" aria-label="${esc(label)}: ${game.guesses.length} guesses">${game.guesses.map(guess=>`<div>${scoreGuess(guess,state.puzzle.word).map(mark=>`<i class="word-tile ${mark}"></i>`).join('')}</div>`).join('')}</div></div>`;
+  return `<div class="shared-grid"><small>${esc(label)}</small><div role="group" aria-label="${esc(label)}: ${game.guesses.length} guesses">${game.guesses.map((guess,row)=>`<div class="shared-word-row" role="group" aria-label="Guess ${row+1}">${scoreGuess(guess,state.puzzle.word).map((mark,i)=>`<span role="img" class="word-tile ${mark}" aria-label="${esc(guess[i].toUpperCase())}, ${mark}">${esc(guess[i])}</span>`).join('')}</div>`).join('')}</div></div>`;
  }
  const click=async event=>{
   if(event.target.closest('[data-round-retry]')){subscribe();return;}
