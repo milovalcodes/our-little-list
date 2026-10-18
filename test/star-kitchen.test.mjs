@@ -1,7 +1,7 @@
 // Little Star kitchen: ingredient recipes, set-aside ingredients, and the
 // guarantee that a free meal can always be made (no food soft-lock).
 import assert from 'node:assert/strict';
-import {scenario,applyAction,normalizeStar,RECIPES,INGREDIENTS,FOODS,missingIngredients,ingredientCost,HOUR,DAY} from '../little-star/engine.mjs';
+import {scenario,applyAction,normalizeStar,projectStar,RECIPES,INGREDIENTS,FOODS,missingIngredients,ingredientCost,FORAGE,HOUR,DAY} from '../little-star/engine.mjs';
 
 let serial=0;
 const act=(s,type,payload={},actor='him',now=Date.parse('2026-10-20T17:00:00Z'))=>applyAction(s,{actor,type,payload,id:'kitchen-'+(++serial)},now).state;
@@ -56,4 +56,24 @@ for(let i=0;i<400;i++){
  for(const who of ['him','her']){const probe=tries(structuredClone(f),'start-cook',{recipe:'porridge'},who,clock);
   if(probe instanceof Error){assert.match(probe.message,/Make room/,'porridge refused for: '+probe.message);assert.ok(f.pantry.porridge>90);}}
 }
+// Loose ingredients can be bought one at a time.
+let loose=scenario('ready',noon);loose.wallets={him:20,her:0};loose.larder={};
+loose=act(loose,'buy-ingredients',{item:'seaweed'});assert.equal(loose.larder.seaweed,1);assert.equal(loose.wallets.him,20-INGREDIENTS.find(i=>i.id==='seaweed').price);
+assert.match(String(tries(loose,'buy-ingredients',{item:'truffle'})),/Choose an ingredient/);
+
+// Arcade games that pay stardust also forage one themed ingredient, the one the
+// larder is lowest on, up to FORAGE_CAP a day each. Every recipe is reachable.
+for(const [game,k] of Object.entries(FORAGE))for(const id of k)assert.ok(INGREDIENTS.some(i=>i.id===id),game+' forages a real ingredient');
+for(const r of Object.values(RECIPES))for(const id of Object.keys(r.ingredients))assert.ok(Object.values(FORAGE).flat().includes(id),id+' can be foraged');
+const results={catch:{caught:40,misses:2,hits:1,bestCombo:20},pairs:{total:8,matched:8,moves:8,left:10},echo:{longest:9,mistakes:2}};
+const play=(s,game,actor='him',now=noon)=>{s=projectStar(s,now);s.needs={food:90,clean:90,energy:90,joy:50};s=act(s,'start-play',{game,arcadeVersion:2,...(game==='pairs'?{level:8}:{})},actor,now);return applyAction(s,{actor,type:'play',id:'kitchen-'+(++serial),payload:{game,sessionId:s.playSessions[actor].id,arcade:results[game]}},now);};
+let forage=scenario('ready',noon);forage.larder={};
+let r=play(forage,'echo');forage=r.state;assert.equal(forage.larder.carrot,1,'echo turns up a carrot first');assert.match(r.message,/comet carrot/);
+forage=play(forage,'echo').state;assert.equal(forage.larder.potato,1,'then the lowest one in its pool');
+forage=play(forage,'echo').state;assert.equal(forage.larder.seaweed,1);
+r=play(forage,'catch');forage=r.state;assert.equal(Object.values(forage.larder).reduce((a,b)=>a+b,0),3,'three a day each');assert.doesNotMatch(r.message,/Found/);
+forage=play(forage,'catch','her').state;assert.equal(forage.larder.berries,1,'the other person forages separately');
+forage=play(forage,'pairs','him',noon+DAY).state;assert.equal(forage.larder.bread,1,'and the cap resets tomorrow');
+assert.ok(Object.values(normalizeStar(forage,noon+DAY).daily).some(b=>b.forage===1),'the daily count survives a save');
+
 console.log('STAR KITCHEN: free porridge always possible, ingredients set aside and refunded, recipes settle with their own station counts');
