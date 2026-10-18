@@ -1,4 +1,5 @@
 import {crosswordFocus,revealFocusedLetter,themeCaption,rememberClueScroll} from './crossword-view.js';
+import {createCrosswordViewport} from './crossword-viewport.js';
 import {createGameTyping} from './game-typing.js';
 import {gameFeedback} from './game-comfort.js';
 import {countdownMarkup} from './daily-habit.js';
@@ -33,6 +34,8 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  const finished=()=>mine&&(closed||timedOver(mine)||puzzle&&Date.now()>=puzzle.closesAt);
  const partner=()=>results.find(r=>r.person===other&&revisionOf(r)===revisionOf(puzzle));
  const typing=type==='crossword'?createGameTyping(host,{label:'Crossword',enterLabel:'Next clue',onKey:k=>{if(!mine||!puzzle||finished())return;if(k==='⌫')edit(eraseLetter(puzzle,letters,cursor));else if(k==='↵')moveTo(nextClue(puzzle,letters,cursor));else edit(typeLetter(puzzle,letters,cursor,k.toUpperCase()));}}):null,view=typing?.view||host;
+ const board=type==='crossword'?createCrosswordViewport({keepTyping:()=>typing.focus()}):null;
+ let revealBoard=false;
  function listen(){
   unsubs.forEach(fn=>fn());unsubs=[];
   const fail=()=>{message='Couldn’t sync this puzzle. Check your connection and retry.';render();};
@@ -75,12 +78,11 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   for(const i of correctEntries(puzzle,letters))if(!mine.solved.includes(i))pendingSearch.add(i);
   drainSearch();
  }
- function edit(next){gameFeedback('key');letters=next.letters;cursor=next.cursor;saveLetters();creditWords();render();}
- function moveTo(next){cursor=next;render();}
+ function edit(next){gameFeedback('key');letters=next.letters;cursor=next.cursor;revealBoard=true;saveLetters();creditWords();render();}
+ function moveTo(next){cursor=next;revealBoard=true;render();}
  function render(){
   if(disposed)return;
   if(dragStart!==null){if(!finished())return;dragStart=null;tapStart=null;}
-  const previousScroll=host.querySelector('.puzzle-scroll')?.scrollLeft||0;
   const done=finished(),solved=new Set(mine?.solved||[]),available=Boolean(puzzle&&!closed&&Date.now()<puzzle.closesAt);
   host.classList.toggle('timed-playing',Boolean(mine&&!done));
   typing?.update(Boolean(mine&&!done),!navigator.onLine);
@@ -105,7 +107,6 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  function renderCrossword(done,solved){
   const restoreClue=rememberClueScroll(host);
   const hadFocus=Boolean(document.activeElement?.closest?.('.crossword-grid,.crossword-keys,.crossword-current,.crossword-focus'))&&host.contains(document.activeElement);
-  const previousScroll=host.querySelector('.puzzle-scroll')?.scrollLeft||0;
   const numbers=clueNumbers(puzzle),index=activeEntry(puzzle,cursor),clue=puzzle.entries[index];
   const active=new Set(done?[]:entryCells(puzzle,index)),white=[...puzzle.grid].filter(c=>c!=='#').length;
   const wrong=new Set(done?[...puzzle.grid].flatMap((c,i)=>c!=='#'&&letters[i]!==c?[i]:[]):[]);
@@ -117,10 +118,9 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   const clues=across=>clueOrder(puzzle).filter(i=>isAcross(puzzle.entries[i])===across).map(i=>{const e=puzzle.entries[i];return `<button type="button" data-clue="${i}" aria-pressed="${!done&&i===index}" class="${done?(solved.has(i)?'found':'missed-word'):''}" ${done?'disabled':''}><b>${numbers.get(e.start)}</b> ${esc(e.clue)} <small>(${e.word.length})${e.word===puzzle.anchor?' · theme clue':''}${done?' · '+e.word+(solved.has(i)?' ✓':''):''}</small></button>`;}).join('');
   const keys=['QWERTYUIOP','ASDFGHJKL','⇄ZXCVBNM⌫'].map(row=>`<div>${[...row].map(k=>`<button type="button" data-ckey="${k}" class="${k==='⇄'||k==='⌫'?'wide-key':''}" aria-label="${k==='⌫'?'delete':k==='⇄'?'switch across or down':k}">${k}</button>`).join('')}</div>`).join('');
   const status=message||(done?(mine.complete?`${pointsText(mine)} · solved it ♡`:`time’s up · ${timedPoints(mine)} points · dashed squares were wrong`):'');
-  view.innerHTML=`<p class="puzzle-theme">${esc(puzzle.theme)} · ${puzzle.hard?'hard · 2× points':'normal'}</p><div class="timed-toolbar"><strong data-timer>${done?'finished':time(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)))}</strong><span>${done?`${solved.size} / ${puzzle.entries.length} words`:`${filledCount(puzzle,letters)} / ${white} squares`}</span></div>${done?'':`<div class="crossword-current"><button type="button" data-clue-step="-1" aria-label="Previous clue">‹</button><button type="button" data-flip title="Switch across or down"><b>${numbers.get(clue.start)} ${isAcross(clue)?'across':'down'}</b> ${esc(clue.clue)} <small>(${clue.word.length})${clue.word===puzzle.anchor?" · theme clue":""}</small></button><button type="button" data-clue-step="1" aria-label="Next clue">›</button></div>`}${done?'':crosswordFocus(puzzle,index,letters,cursor,'data-focus-cell')}<div class="puzzle-scroll"><div class="puzzle-grid crossword-grid" style="--grid-size:${puzzle.size}" role="group" aria-label="${esc(PUZZLE_NAMES[type])} grid">${cells}</div></div>${done?'':`<div class="word-keyboard crossword-keys" aria-label="Crossword keyboard">${keys}</div><small class="puzzle-hint">Tap a square twice, or ⇄, to switch between across and down. Words aren’t checked until the round ends.</small>`}<div class="crossword-clues"><h3>Across</h3>${clues(true)}<h3>Down</h3>${clues(false)}</div><p class="timed-feedback" role="status">${esc(status)}</p>${message?'<button type="button" data-retry>retry sync</button>':''}${done?resultsMarkup()+peekMarkup():''}`;
-  const pane=host.querySelector('.puzzle-scroll'),mark=host.querySelector('.puzzle-cell.cursor');
+  board.render(view,`<p class="puzzle-theme">${esc(puzzle.theme)} · ${puzzle.hard?'hard · 2× points':'normal'}</p><div class="timed-toolbar"><strong data-timer>${done?'finished':time(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)))}</strong><span>${done?`${solved.size} / ${puzzle.entries.length} words`:`${filledCount(puzzle,letters)} / ${white} squares`}</span></div>${done?'':`<div class="crossword-current"><button type="button" data-clue-step="-1" aria-label="Previous clue">‹</button><button type="button" data-flip title="Switch across or down"><b>${numbers.get(clue.start)} ${isAcross(clue)?'across':'down'}</b> ${esc(clue.clue)} <small>(${clue.word.length})${clue.word===puzzle.anchor?" · theme clue":""}</small></button><button type="button" data-clue-step="1" aria-label="Next clue">›</button></div>`}${done?'':crosswordFocus(puzzle,index,letters,cursor,'data-focus-cell')}<div class="puzzle-scroll"><div class="puzzle-grid crossword-grid" style="--grid-size:${puzzle.size}" role="group" aria-label="${esc(PUZZLE_NAMES[type])} grid">${cells}</div></div>${done?'':`<div class="word-keyboard crossword-keys" aria-label="Crossword keyboard">${keys}</div><small class="puzzle-hint">Tap a square twice, or ⇄, to switch between across and down. Words aren’t checked until the round ends.</small>`}<div class="crossword-clues"><h3>Across</h3>${clues(true)}<h3>Down</h3>${clues(false)}</div><p class="timed-feedback" role="status">${esc(status)}</p>${message?'<button type="button" data-retry>retry sync</button>':''}${done?resultsMarkup()+peekMarkup():''}`,{puzzleKey:lettersKey+":"+puzzle.grid,currentCell:cursor.cell,revealCurrent:revealBoard});
+  const mark=host.querySelector('.puzzle-cell.cursor');revealBoard=false;
   revealFocusedLetter(host);restoreClue();
-  if(pane){pane.scrollLeft=previousScroll;if(mark){const a=mark.getBoundingClientRect(),b=pane.getBoundingClientRect();if(a.left<b.left)pane.scrollLeft-=b.left-a.left+8;else if(a.right>b.right)pane.scrollLeft+=a.right-b.right+8;}}
   // Starting the round hands the keyboard straight to the grid.
   if((hadFocus||focusGrid)&&!done){if(typing.active)typing.focus();else mark?.focus({preventScroll:true});focusGrid=false;}
  }
@@ -209,8 +209,8 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  host.addEventListener('click',click);host.addEventListener('pointerdown',down);host.addEventListener('pointermove',move);host.addEventListener('pointerup',up);host.addEventListener('pointercancel',cancel);host.addEventListener('keydown',key);
  const tick=()=>{if(disposed)return;if(partnerFinished!==timedOver(partner())){partnerFinished=timedOver(partner());render();}if(!mine||mine.done||closed||!puzzle)return;const remaining=Math.min(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)),puzzle.closesAt-Date.now());const timer=host.querySelector('[data-timer]');if(timer){timer.textContent=time(remaining);timer.classList.toggle('time-low',remaining<15000);}if(remaining<=0){if(!expiredDrawn){expiredDrawn=true;cancel();}if(!busy&&navigator.onLine&&Date.now()>=expiredRetryAt)void play({index:null});}};
  const interval=setInterval(tick,300);
- const toggle=()=>{if(!disclosure.open)typing?.suspend();};disclosure.addEventListener('toggle',toggle);
+ const toggle=()=>{if(!disclosure.open){typing?.suspend();board?.cancel();}};disclosure.addEventListener('toggle',toggle);
  const resume=()=>{if(activityClock().day!==openedDay){location.reload();return;}if(!document.hidden){listen();tick();creditWords();}};
  addEventListener('online',resume);addEventListener('offline',render);document.addEventListener('visibilitychange',resume);listen();
- return ()=>{disposed=true;typing?.dispose();host.classList.remove('timed-playing');disclosure.removeEventListener('toggle',toggle);action++;unsubs.forEach(fn=>fn());clearInterval(interval);clearTimeout(flashTimer);celebration.dispose();removeEventListener('online',resume);removeEventListener('offline',render);document.removeEventListener('visibilitychange',resume);for(const [name,handler]of Object.entries({click,pointerdown:down,pointermove:move,pointerup:up,pointercancel:cancel,keydown:key}))host.removeEventListener(name,handler);};
+ return ()=>{disposed=true;board?.dispose();typing?.dispose();host.classList.remove('timed-playing');disclosure.removeEventListener('toggle',toggle);action++;unsubs.forEach(fn=>fn());clearInterval(interval);clearTimeout(flashTimer);celebration.dispose();removeEventListener('online',resume);removeEventListener('offline',render);document.removeEventListener('visibilitychange',resume);for(const [name,handler]of Object.entries({click,pointerdown:down,pointermove:move,pointerup:up,pointercancel:cancel,keydown:key}))host.removeEventListener(name,handler);};
 }

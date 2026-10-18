@@ -32,7 +32,10 @@ try{
    check(await input.evaluate(n=>n===window.qaInput&&n===document.activeElement),label+': native input survives orientation, clue changes and deletion');
    check(await host.locator('.crossword-focus').evaluate(p=>{const a=p.querySelector('.current').getBoundingClientRect(),b=p.getBoundingClientRect();return a.left>=b.left-1&&a.right<=b.right+1;}),label+': current letter remains visible in the answer strip');
    check(!await dock.isVisible(),label+': keyboard viewport has no dock');
-   await host.locator('.puzzle-grid').evaluate(n=>window.scrollTo(0,n.getBoundingClientRect().top+scrollY+70));
+   // Scroll to the visible frame, not the zoomed canvas inside it. Wait for
+   // the page's smooth scroll to settle before measuring the sticky clue.
+   await host.locator('.crossword-viewport').evaluate(n=>window.scrollTo(0,n.getBoundingClientRect().top+scrollY+70));
+   await page.waitForFunction(()=>{const r=document.querySelector('#practice-game .crossword-current').getBoundingClientRect();return r.top>=0&&r.top<60;});
    const clue=await host.locator('.crossword-current').boundingBox();
    check(clue.y>=0&&clue.y<60&&clue.height<dimensions.height/2,label+': sticky clue fits shortened viewport');
    check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),label+': no page-wide horizontal overflow');
@@ -60,7 +63,7 @@ try{
    await host.locator('[data-entry="6"]').tap();await host.locator('.game-input-controls>button:not(.game-native-submit)').tap();
    await page.setViewportSize({width:320,height:480});await page.evaluate(()=>{document.documentElement.style.fontSize='200%';document.documentElement.style.scrollBehavior='auto';});
    await page.waitForTimeout(400); // Let WebKit finish the text-size/viewport reflow before the user scrolls.
-   await host.locator('.puzzle-grid').evaluate(n=>window.scrollTo(0,n.getBoundingClientRect().top+scrollY+50));
+   await host.locator('.crossword-viewport').evaluate(n=>window.scrollTo(0,n.getBoundingClientRect().top+scrollY+50));
    await page.waitForTimeout(350);
    const clue=await host.locator('.crossword-current').boundingBox();
    check(clue.y>=0&&clue.y<60&&clue.height<240,label+': enlarged clue leaves room for the board');
