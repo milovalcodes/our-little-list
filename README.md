@@ -410,6 +410,18 @@ Regression checklist:
 
 If the local sandbox blocks loopback sockets, `node --import ./test/local-preview.mjs test/app-life-browser.mjs` uses an isolated disk-backed preview at the test origin. It stubs Firebase and blocks external requests. Normal CI browser runs still use the HTTP server. This fallback does not replace service-worker network or real-emulator checks.
 
+### iPhone crossword QA (v123)
+
+Practice crosswords hide the dock while unfinished with either keyboard, restore
+navigation on completion or exit, and retain horizontal scroll while keeping the
+selected square visible. Both crossword modes use 44px clue-arrow targets.
+`test/iphone-crossword-browser.mjs` checks touch interactions in WebKit at
+320/390/430px, both profiles, normal/hard practice, landscape rotation, a shortened
+keyboard viewport, stable input focus, sticky clues and completing a hard board.
+Set `GAME_BROWSER=chromium` for the same comparison checks. This emulates browser
+behavior; it does not reproduce the physical iOS keyboard, Safari toolbar or audio
+hardware. The existing daily-game and sound suites remain part of the QA pass.
+
 ### Themed crosswords and interface sounds (v122)
 
 New daily plans from **2026-10-19** use catalog 8. The crossword returns to

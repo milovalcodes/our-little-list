@@ -767,7 +767,7 @@ body[data-app="activities"]:has(.timed-playing) #sync-chip { opacity:0; pointer-
 .crossword-grid .puzzle-cell.chosen:not(.cursor) { background:color-mix(in srgb,var(--accent) 24%,var(--diary-raised)); }
 .crossword-current { display:flex; gap:6px; margin:10px 0 8px; }
 .crossword-current button { min-height:44px; border:1px solid var(--diary-rule); border-radius:10px; color:var(--page-text); background:var(--diary-panel); font:inherit; }
-.crossword-current [data-clue-step] { flex:0 0 40px; font-size:1.3rem; font-weight:800; }
+.crossword-current :is([data-clue-step],[data-step]) { flex:0 0 44px; font-size:1.3rem; font-weight:800; }
 .crossword-current [data-flip] { flex:1; min-width:0; padding:8px 10px; text-align:left; font-size:.9rem; line-height:1.35; }
 .crossword-keys { margin-top:10px; }
 .crossword-keys button { text-transform:none; }
@@ -915,6 +915,7 @@ html[data-season="christmas"] .attention-badge { width:20px; height:20px; top:-3
 #practice-game .crossword-grid { max-width:360px; width:100%; margin:12px auto; }
 /* Keep the useful game context in view, without a floating navigation overlay. */
 body:has(#daily:not([hidden]) .daily-entry[open] :is(.game-active,.timed-playing)) .app-dock { display:none; }
+body:has(#practice-game.game-active) .app-dock { display:none; }
 .crossword-current,.timed-playing .search-words { position:sticky; top:max(8px,env(safe-area-inset-top)); z-index:16; padding:8px 0; background:var(--diary-panel); box-shadow:0 3px 0 var(--diary-rule); }
 .timed-playing .search-words { margin:0 0 12px; gap:6px 10px; font-size:.9rem; }
 .game-input-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:8px 0 12px; }
