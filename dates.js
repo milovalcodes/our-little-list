@@ -4,7 +4,7 @@ import { personName } from './profile-store.js';
 import { addDateIdea, addTask } from './records.js';
 import { deleteWithUndo, isPendingDelete } from './undo-delete.js';
 
-const $=id=>document.getElementById(id);let ideas=[];let vibe='go out';let viewLimit=8;let editingDateId='';
+const $=id=>document.getElementById(id);let ideas=[];let vibe='go out';let viewLimit=8;let editingDateId='',chosenDateIdea=null;
 
 const { data, viewer, other } = await bootPage();
 document.querySelector('.date-list-card').after(document.querySelector('.date-roulette'));
@@ -22,12 +22,11 @@ data.listenTo('dates',items=>{
 document.querySelectorAll('.date-vibe').forEach(button=>button.addEventListener('click',()=>{vibe=button.dataset.vibe;document.querySelectorAll('.date-vibe').forEach(item=>item.classList.toggle('active',item===button));}));
 $('date-form').addEventListener('submit',async event=>{event.preventDefault();const title=$('date-title').value.trim();const note=$('date-note').value.trim();const button=$('date-submit');const details={cost:$('date-cost').value,energy:$('date-energy').value,weather:$('date-weather').value,distance:$('date-distance').value,duration:$('date-duration').value};setButtonBusy(button,true,'saving…');try{await addDateIdea(data,{viewer,other,title,note,vibe,details});event.target.reset();$('date-more-details').open=false;$('sheet-date-form')?.querySelector('[data-close-sheet]')?.click();toast('saved for later ✦');}catch(_){showFailure('the idea escaped.','check the internet and save it again.');}finally{setButtonBusy(button,false);}});
 const rouletteFilters={vibe:'any',cost:'any'};
-let chosenDateIdea = null;
 document.querySelector('.roulette-filters').addEventListener('click',event=>{const button=event.target.closest('[data-filter-vibe],[data-filter-cost]');if(!button)return;const key=button.hasAttribute('data-filter-vibe')?'vibe':'cost';rouletteFilters[key]=button.dataset[`filter${key[0].toUpperCase()}${key.slice(1)}`];button.parentElement.querySelectorAll('button').forEach(item=>{const active=item===button;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active));});});
 $('pick-random').addEventListener('click',event=>{$('random-date').hidden=false;const chosen=Object.entries(rouletteFilters).filter(([,value])=>value!=='any');
 // Old imported dates have a vibe but no budget. Prefer exact matches; let an
 // untagged budget act as a fallback rather than making those ideas disappear.
-const compatible=ideas.filter(idea=>!idea.done&&chosen.every(([key,value])=>!idea[key]||idea[key]===value));
+const compatible=allIdeas().filter(idea=>!idea.done&&chosen.every(([key,value])=>!idea[key]||idea[key]===value));
 const exact=compatible.filter(idea=>chosen.every(([key])=>Boolean(idea[key])));
 const available=exact.length?exact:compatible;
 if(!available.length){$('random-date').textContent='nothing matches that exact mood.';$('date-plan').hidden=true;chosenDateIdea=null;return;}event.currentTarget.classList.remove('is-picking');void event.currentTarget.offsetWidth;event.currentTarget.classList.add('is-picking');const idea=available[Math.floor(Math.random()*available.length)];chosenDateIdea=idea;$('random-date').innerHTML=`<strong>${escapeHtml(idea.title)}</strong>${idea.note?`<span>${escapeHtml(idea.note)}</span>`:''}`;$('date-plan').hidden=false;});
@@ -73,6 +72,14 @@ $('date-list').addEventListener('keydown',event=>{if(event.key==='Escape'&&event
 function allIdeas(){return ideas.filter(idea=>!isPendingDelete('dates',idea.id));}
 function render(){
   const ideas=allIdeas();
+  if(chosenDateIdea){
+    chosenDateIdea=ideas.find(idea=>idea.id===chosenDateIdea.id&&!idea.done)||null;
+    if(chosenDateIdea){
+      $('random-date').innerHTML=`<strong>${escapeHtml(chosenDateIdea.title)}</strong>${chosenDateIdea.note?`<span>${escapeHtml(chosenDateIdea.note)}</span>`:''}`;
+    }else{
+      $('random-date').textContent='';$('random-date').hidden=true;$('date-plan').hidden=true;
+    }
+  }
   const finished=ideas.filter(idea=>idea.done).length;const left=ideas.length-finished;
   $('date-count').textContent=finished?`${left} left · ${finished} done`:`${ideas.length} saved`;
   $('date-empty').hidden=ideas.length>0;

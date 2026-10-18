@@ -19,8 +19,14 @@ export function isPendingDelete(name, id) {
 export function deleteWithUndo(data, name, id, { label = 'deleted', onChange = () => {}, onCommitted } = {}) {
   const key = `${name}/${id}`;
   if (!id || pending.has(key)) return;
-  const entry = { data, name, id, onChange, onCommitted, timer: window.setTimeout(() => void commit(key), WAIT_MS) };
+  const entry = { data, name, id, onChange, onCommitted, timer: null };
   pending.set(key, entry);
+  // The grouped bar promises to undo every item it counts. Give the whole
+  // group the same deadline when another deletion joins it.
+  for (const [pendingKey, item] of pending) {
+    window.clearTimeout(item.timer);
+    item.timer = window.setTimeout(() => void commit(pendingKey), WAIT_MS);
+  }
   onChange();
   showUndoBar(label, key);
   window.littleHaptic?.('tap');
