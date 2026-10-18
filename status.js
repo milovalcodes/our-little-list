@@ -37,7 +37,7 @@ const milestones=document.createElement('section');milestones.className='persona
 let selected = profileRoute(location.hash, viewer).person;
 const editor = document.querySelector('.status-editor-disclosure');
 $('profile-editor-slot').append(editor);
-$('status-close').addEventListener('click',()=>{editor.open=false;$('profile-actions').querySelector('[data-edit-profile]')?.focus();});
+$('status-close').addEventListener('click',()=>{editor.open=false;$('status-pair').querySelector('[data-edit-status]')?.focus();});
 $('profile-actions').addEventListener('click',event=>{if(event.target.closest('[data-edit-profile]'))openStatusEditor();});
 function openStatusEditor(){if(selected!==viewer)return;if(!editorDirty){delete $('status-form').dataset.hydrated;hydrateEditor();}editor.open=true;editor.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}
 $('status-form').addEventListener('input',()=>{editorDirty=true;});
@@ -155,7 +155,7 @@ function render(){
   $('status-pair').innerHTML=statusCard(selected,statuses.find(item=>item.id===selected||item.person===selected));
   document.querySelectorAll('[data-owner-control]').forEach(node=>{node.hidden=!own;});
   $('profile-actions').innerHTML=own
-    ? '<button type="button" data-edit-profile>Edit status</button><a href="phone-check.html#names" aria-label="Profile settings">Settings</a>'
+    ? '<a href="phone-check.html#names" aria-label="Profile settings">Settings</a>'
     : '<button type="button" data-open-quick="note">leave a note</button><a href="tasks.html#routines">our routine</a>';
 }
 

@@ -73,7 +73,7 @@ export async function notifyActivityResults(db,base,now){
   const event=both?'reveal':'waiting',id=`${day}-${type}${revision?'-r'+revision:''}-${event}`,path=base+'/activityEvents/'+(event==='waiting'?`${day}-${type}-waiting`:id);
   if(await db.get(path))continue;
   const to=both?first.person:first.person==='her'?'him':'her';
-  const label=type==='word'?'Little Word':type==='search'?'Word Search':'Mini crossword';
+  const label=type==='word'?'Little Word':type==='search'?'Word Search':'Crossword';
   await db.createMany([{path,fields:{day,createdAt:now}},{path:base+'/outbox/activity-'+id,fields:{to,title:both?'Both rounds are in':`${name(first.person)} finished ${label}`,body:both?'You can peek at their process now.':'Your turn, whenever you feel like it ✦',kind:both?'activity-result':'game-turn',ref:'activities/'+id,url:'activities.html#'+(day.includes('-tie-')?'tiebreaker':type==='word'?'wordle':type),createdAt:now,sendAt:now}}]);
  }
  }

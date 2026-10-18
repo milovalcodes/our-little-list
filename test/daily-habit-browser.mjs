@@ -35,8 +35,9 @@ try{
   });
   await page.goto(base+'/her.html?as=her');await page.locator('.daily-strip a').first().waitFor();
   assert.match(await page.locator('#sky-greeting').textContent(),/Anely/);
-  await page.waitForFunction(()=>document.querySelector('#home-next-up').textContent.includes('Word Search'));
-  assert.doesNotMatch(await page.locator('#home-next-up').textContent(),/nothing needs you/);
+  // Unplayed games show in the Today strip; the Today list points there rather than repeating them.
+  assert.match(await page.locator('.daily-strip').textContent(),/Word Search/);
+  await page.waitForFunction(()=>document.querySelector('#home-next-up').textContent.includes('games above'));
   assert.equal(await page.locator('.our-sky').evaluate(n=>getComputedStyle(n).opacity),'1');
   if(width===375){await page.waitForFunction(()=>document.querySelector('.weekly-home-recap')?.textContent.includes('0:35'));assert.match(await page.locator('.weekly-home-recap').textContent(),/Anely.*crown/);assert.equal(await page.locator('.weekly-home-recap a').getAttribute('href'),'activities.html#scoreboard-2026-10-12');}
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));

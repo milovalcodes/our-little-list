@@ -944,3 +944,10 @@ body:has(#practice-game.game-active) .app-dock { display:none; }
 @media(prefers-reduced-motion:reduce) { .daily-chevron { transition:none; } }
 
 body:has(.game-native-field input:focus) .app-dock { display:none; }
+
+/* Little Word keys stay in reach while a round is on: on the bottom edge in
+   daily rounds (the dock hides), just above the dock in practice. Crossword
+   keys stay in flow; the zoomable board keeps them close and must not sit
+   under them. */
+:is(.game-active,.timed-playing) .word-keyboard:not(.crossword-keys),#practice-game .word-keyboard:not(.crossword-keys) { position:sticky; bottom:calc(var(--app-dock-height,64px) + max(8px,env(safe-area-inset-bottom)) + 6px); z-index:14; margin-top:8px; padding:8px 0; background:var(--diary-panel); box-shadow:0 -3px 0 var(--diary-rule); }
+body:has(#daily:not([hidden]) .daily-entry[open] .game-active) .word-keyboard,body:has(#practice-game.game-active) .word-keyboard { bottom:env(safe-area-inset-bottom); }

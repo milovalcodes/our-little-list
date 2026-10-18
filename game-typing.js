@@ -1,3 +1,10 @@
+// The game keys are sticky while a round is on; start the board at the top of
+// the screen so they never open on top of it. Pass a function when the board
+// may be redrawn before the next frame.
+export function bringGameIntoView(target){
+ const motion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth';
+ requestAnimationFrame(()=>(typeof target==='function'?target():target)?.scrollIntoView?.({block:'start',behavior:motion}));
+}
 // Keep the real input outside the repainted board: replacing a focused input
 // dismisses the iPhone keyboard after every letter.
 export function createGameTyping(host,{label,onKey,enterLabel='Submit guess'}){
