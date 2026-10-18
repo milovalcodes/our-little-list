@@ -6,7 +6,7 @@ async function open(path){
  await context.route('**/*',r=>new URL(r.request().url()).origin===base?r.fallback():r.abort());
  await context.route('**/firebase-config.js',r=>r.fulfill({contentType:'text/javascript',body:'export const firebaseConfig={};'}));
  const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',e=>errors.push(e.message));
- await page.goto(base+'/'+path);await page.waitForSelector('.app-dock');await page.locator('.thinking-screen').waitFor({state:'hidden'});return page;
+ await page.goto(base+'/'+path);await page.waitForSelector('.app-dock',{state:'attached'});await page.locator('.thinking-screen').waitFor({state:'hidden'});return page;
 }
 async function check(name,run){try{await run();console.log('DEEP AUDIT: '+name);}catch(e){failures.push(name+': '+e.message);console.error(failures.at(-1));}}
 try{
@@ -93,6 +93,7 @@ try{
  });
  await check('practice restart resets the selected clue too',async()=>{
   const p=await open('practice.html?as=him#crossword');await p.click('[data-entry="3"]');
+  assert.equal(await p.locator('.app-dock').isVisible(),false,'navigation stays hidden while practicing a crossword');
   p.once('dialog',d=>d.accept());await p.click('#practice-restart');
   assert.equal(await p.locator('[data-entry="0"]').getAttribute('aria-pressed'),'true');
   await p.context().close();
