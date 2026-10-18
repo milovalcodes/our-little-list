@@ -57,6 +57,8 @@ export async function settleActivityWeeks(db,base,now){
 
 export async function notifyActivityResults(db,base,now){
  const today=activityClock(now).day;if(today<LEAGUE_START_DAY)return;
+ const profile=await db.get(base+'/profiles/couple');
+ const name=person=>person==='her'?(profile?.sunName||'Anely'):(profile?.moonName||'Emilio');
  const duels=await db.list(base+'/wordDuels'),ends=await db.list(base+'/wordDuelEnds');
  const days=[today,...duels.filter(d=>d.format==='trio'&&!ends.some(e=>e.id===d.puzzleId)).map(d=>d.puzzleId)];
  for(const day of days){
@@ -68,11 +70,11 @@ export async function notifyActivityResults(db,base,now){
   const finished=records.filter(r=>(r.revision||0)===revision&&(type==='word'?r.done:timedOver(r,now)));
   if(!finished.length)continue;
   const both=finished.length===2,first=both?[...finished].sort((a,b)=>(a.finishedAt||a.updatedAt||a.startedAt)-(b.finishedAt||b.updatedAt||b.startedAt))[0]:finished[0];
-  const event=both?'reveal':'waiting',id=`${day}-${type}${revision?'-r'+revision:''}-${event}`,path=base+'/activityEvents/'+id;
+  const event=both?'reveal':'waiting',id=`${day}-${type}${revision?'-r'+revision:''}-${event}`,path=base+'/activityEvents/'+(event==='waiting'?`${day}-${type}-waiting`:id);
   if(await db.get(path))continue;
   const to=both?first.person:first.person==='her'?'him':'her';
   const label=type==='word'?'Little Word':type==='search'?'Word Search':'Mini crossword';
-  await db.createMany([{path,fields:{day,createdAt:now}},{path:base+'/outbox/activity-'+id,fields:{to,title:both?'Both rounds are in':label+' · they finished',body:both?'You can peek at their process now.':'Your round is ready whenever you are.',kind:'activity-result',ref:'activities/'+id,url:'activities.html#'+(day.includes('-tie-')?'tiebreaker':type==='word'?'wordle':type),createdAt:now,sendAt:now}}]);
+  await db.createMany([{path,fields:{day,createdAt:now}},{path:base+'/outbox/activity-'+id,fields:{to,title:both?'Both rounds are in':`${name(first.person)} finished ${label}`,body:both?'You can peek at their process now.':'Your turn, whenever you feel like it ✦',kind:both?'activity-result':'game-turn',ref:'activities/'+id,url:'activities.html#'+(day.includes('-tie-')?'tiebreaker':type==='word'?'wordle':type),createdAt:now,sendAt:now}}]);
  }
  }
 }

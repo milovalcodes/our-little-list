@@ -1,3 +1,5 @@
+import {gameFeedback} from './game-comfort.js';
+import {countdownMarkup} from './daily-habit.js';
 import { activityClock } from './activity-clock.js';
 import { DAILY_WORDS, SUNDAY_WORDS, wordForDay } from './daily-words.js';
 import { WORD_LEXICON } from './word-lexicon.js';
@@ -74,6 +76,7 @@ export function startDailyWord({data,viewer,other},options={}){
     guesses.forEach((guess,row)=>[...guess].forEach((letter,i)=>{const score=marks[row]?.[i];if(!score)return;if(!keys[letter]||['absent','present','correct'].indexOf(score)>['absent','present','correct'].indexOf(keys[letter]))keys[letter]=score;}));
     const focused=host.querySelector(':focus')?.dataset.key||'';
     const peekFocused=Boolean(host.querySelector('[data-word-peek]:focus'));
+    const announcement=guesses.length?`Guess ${guesses.length}: ${[...guesses.at(-1)].map((c,i)=>c.toUpperCase()+' '+({correct:'right spot',present:'in the word',absent:'not in the word'}[marks.at(-1)?.[i]]||'')).join(', ')}.`:'';
     const disabled=busy||!ready()||done||!navigator.onLine;
     host.innerHTML=`
       <div class="word-heading"><span>${puzzle?escapeHtml(puzzle.theme||wordTheme(puzzle.word,sunday)):'your guesses'}</span><span>${sunday?'hard · 2× points':`${guesses.length} / ${wordAttempts(day)}`}</span></div>
@@ -84,7 +87,7 @@ export function startDailyWord({data,viewer,other},options={}){
       <p class="word-message" role="status" aria-live="polite">${escapeHtml(error||(!navigator.onLine?'Offline. Reconnect to save your guess.':busy?'saving your guess…':!ready()?'getting today’s word…':finish?finish.text+(mine.won?'':` The word was ${puzzle.word.toUpperCase()}.`):done?`The word was ${puzzle.word.toUpperCase()}.`:' '))}</p>
       ${syncFailure?'<button type="button" data-word-retry>retry sync</button>':''}
       ${!done?`<div class="word-keyboard" aria-label="Word keyboard">${['qwertyuiop','asdfghjkl','↵zxcvbnm⌫'].map(row=>`<div>${[...row].map(letter=>`<button type="button" data-key="${letter}" class="${keys[letter]||''} ${letter==='↵'||letter==='⌫'?'wide-key':''}" aria-label="${letter==='↵'?'Submit guess':letter==='⌫'?'Delete letter':letter.toUpperCase()+(keys[letter]?', '+({correct:'right spot',present:'in the word',absent:'not in the word'}[keys[letter]]):', not tried')}" ${disabled?'disabled':''}>${letter==='↵'?'enter':letter}</button>`).join('')}</div>`).join('')}</div>`:''}
-      <div class="word-legend"><span><i class="word-tile correct">A</i>right spot</span><span><i class="word-tile present">A</i>in the word</span><span><i class="word-tile absent">A</i>not in the word</span></div>
+      <p class="sr-only" role="status" aria-live="polite">${escapeHtml(announcement)}</p><div class="word-legend"><span><i class="word-tile correct">A</i>right spot</span><span><i class="word-tile present">A</i>in the word</span><span><i class="word-tile absent">A</i>not in the word</span></div>
       <p class="word-partner">${partnerLabel()}</p>${resultsMarkup()}${peekMarkup()}`;
     if(focused)host.querySelector(`[data-key="${focused}"]`)?.focus({preventScroll:true});
     if(peekFocused)host.querySelector('[data-word-peek]')?.focus({preventScroll:true});
@@ -125,7 +128,7 @@ export function startDailyWord({data,viewer,other},options={}){
       const s=wordStats([...history.filter(r=>r.day!==day),me],day),top=Math.max(1,...s.distribution);
       stats=`<dl class="result-stats"><div><dt>played</dt><dd>${s.played}</dd></div><div><dt>win %</dt><dd>${s.winRate}</dd></div><div><dt>streak</dt><dd>${s.current}</dd></div><div><dt>best</dt><dd>${s.best}</dd></div></dl><div class="guess-bars" aria-label="Guess distribution">${s.distribution.slice(0,most).map((n,i)=>`<div class="${me.won&&me.attempts===i+1?'today':''}"><span>${i+1}</span><i style="--share:${n/top}"><b>${n}</b></i></div>`).join('')}</div>`;
     }
-    return `<section class="daily-results" aria-label="Today’s results"><div class="result-compare">${side('You',me)}${side(escapeHtml(personName(other)),partner)}</div>${stats}<button type="button" data-share>share my grid</button><small class="share-note" role="status">${escapeHtml(shareNote)}</small></section>`;
+    return `<section class="daily-results" aria-label="Today’s results"><div class="result-compare">${side('You',me)}${side(escapeHtml(personName(other)),partner)}</div>${stats}${countdownMarkup()}<a class="practice-rematch" href="practice.html#word">A little more practice →</a><button type="button" data-share>share my grid</button><small class="share-note" role="status">${escapeHtml(shareNote)}</small></section>`;
   }
   function partnerLabel(){
     const result=results.find(r=>r.day===day&&r.person===other&&revisionOf(r)===revisionOf(puzzle)),name=escapeHtml(personName(other));
@@ -137,11 +140,11 @@ export function startDailyWord({data,viewer,other},options={}){
   }
   async function key(value){
     if(busy||!ready()||mine?.done||closed()||!navigator.onLine)return;
-    error='';syncFailure=false;
+    error='';syncFailure=false;gameFeedback('key');
     if(value==='⌫'){draft=draft.slice(0,-1);render();return;}
     if(value!=='↵'){if(/^[a-z]$/.test(value)&&draft.length<5)draft+=value;render();return;}
-    if(draft.length!==5){error='Five letters, please. No try used.';render();return;}
-    if(!accepted.has(draft)){error='Not in the word book. No try used—try another.';render();return;}
+    if(draft.length!==5){gameFeedback('invalid');error='Five letters, please. No try used.';render();return;}
+    if(!accepted.has(draft)){gameFeedback('invalid');error='Not in the word book. No try used—try another.';render();return;}
     if(mine?.guesses.includes(draft)){error='Already tried that one. No try used.';render();return;}
     busy=true;pendingGuess={word:draft,index:mine?.guesses.length||0};const current=++generation;render();
     try{
@@ -149,7 +152,7 @@ export function startDailyWord({data,viewer,other},options={}){
       const next=await Promise.race([data.submitWordGuess({day,person:viewer,guess:draft,expectedCount:mine?.guesses.length||0,expectedRevision:revisionOf(puzzle)}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('confirmation timeout')),20000);})]).finally(()=>clearTimeout(timer));
       if(current!==generation||revisionOf(next)!==revisionOf(puzzle))return;
       if(!mine||next.guesses.length>=mine.guesses.length)mine=next;
-      if(next.done)completionToCelebrate=next;
+      if(next.done){completionToCelebrate=next;if(next.won)gameFeedback('solve');}
       draft='';
     }catch(problem){
       if(current===generation&&pendingGuess){
@@ -159,7 +162,8 @@ export function startDailyWord({data,viewer,other},options={}){
     }
     finally{if(current===generation){busy=false;render();}}
   }
-  host.addEventListener('click',event=>{const button=event.target.closest('[data-key]');if(button)void key(button.dataset.key);if(event.target.closest('[data-word-retry]'))read();if(event.target.closest('[data-word-peek]'))void peek();if(event.target.closest('[data-share]')&&mine?.done&&puzzle)void shareResult(wordShare(mine,puzzle.word)).then(note=>{shareNote=note;render();});if(event.target.closest('[data-word-peek-retry]'))void peek(true);});
+  const click=event=>{const button=event.target.closest('[data-key]');if(button)void key(button.dataset.key);if(event.target.closest('[data-word-retry]'))read();if(event.target.closest('[data-word-peek]'))void peek();if(event.target.closest('[data-share]')&&mine?.done&&puzzle)void shareResult(wordShare(mine,puzzle.word)).then(note=>{shareNote=note;render();});if(event.target.closest('[data-word-peek-retry]'))void peek(true);};
+  host.addEventListener('click',click);
   const keydown=event=>{
     if(activeBoard!==host)return;
     if([...document.querySelectorAll('dialog[open],[role="dialog"]')].some(dialog=>dialog.getClientRects().length))return;
@@ -174,16 +178,15 @@ export function startDailyWord({data,viewer,other},options={}){
       host.tabIndex=-1;host.focus({preventScroll:true});void key(value);
     }
   };
-  document.addEventListener('keydown',keydown);
   const activate=()=>{activeBoard=host;};
   const disclosure=options.disclosure||document.getElementById('wordle');
-  const opened=()=>{if(disclosure.open)activate();};
-  host.addEventListener('pointerdown',activate);host.addEventListener('focusin',activate);disclosure.addEventListener('toggle',opened);if(disclosure.open||!activeBoard)activate();
+  const opened=()=>{document.removeEventListener('keydown',keydown);if(disclosure.open){activate();document.addEventListener('keydown',keydown);requestAnimationFrame(()=>host.querySelector('.word-keyboard')?.scrollIntoView({block:'end',behavior:'instant'}));}};
+  host.addEventListener('pointerdown',activate);host.addEventListener('focusin',activate);disclosure.addEventListener('toggle',opened);if(disclosure.open)opened();else if(!activeBoard)activate();
   function resume(){if(activityClock().day!==openedDay){location.reload();return;}read();}
   addEventListener('online',resume);addEventListener('offline',render);
   const visible=()=>{if(!document.hidden)resume();};document.addEventListener('visibilitychange',visible);
   addEventListener('littlelist:profile',render);
   const interval=setInterval(()=>{if(activityClock().day!==openedDay)location.reload();else if(closed())render();},30000);
   read();
-  return ()=>{disposed=true;celebration.dispose();if(activeBoard===host)activeBoard=null;unsub.forEach(stop=>stop());clearTimeout(timer);clearInterval(interval);disclosure.removeEventListener('toggle',opened);removeEventListener('online',resume);removeEventListener('offline',render);removeEventListener('littlelist:profile',render);document.removeEventListener('keydown',keydown);document.removeEventListener('visibilitychange',visible);};
+  return ()=>{disposed=true;host.removeEventListener('click',click);host.removeEventListener('pointerdown',activate);host.removeEventListener('focusin',activate);celebration.dispose();if(activeBoard===host)activeBoard=null;unsub.forEach(stop=>stop());clearTimeout(timer);clearInterval(interval);disclosure.removeEventListener('toggle',opened);removeEventListener('online',resume);removeEventListener('offline',render);removeEventListener('littlelist:profile',render);document.removeEventListener('keydown',keydown);document.removeEventListener('visibilitychange',visible);};
 }

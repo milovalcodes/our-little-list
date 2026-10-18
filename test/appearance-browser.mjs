@@ -28,7 +28,7 @@ try {
       assert.ok(frames.length);
       for(const f of frames){
         assert.ok(f.theme.includes(side+'-theme'),`${side}/${month}/${file}: wrong initial theme ${f.theme}`);
-        if(f.greeting)assert.equal(f.greeting,side==='him'?'hi Emilio':'hi Anely');
+        if(f.greeting)assert.match(f.greeting,new RegExp('^good (morning|afternoon|evening), '+(side==='him'?'Emilio':'Anely')+'$'));
         if(side==='him'&&f.loader){const rgb=f.paper.match(/[\d.]+/g).map(Number);assert.ok(rgb.slice(0,3).every(n=>n<100),`moon loader paper should be dark: ${f.paper}`);}
       }
       // A stale cosmetic hint must never prevent the real account theme winning.
@@ -43,7 +43,7 @@ try {
   await context.route('**/firebase-config.js',r=>r.fulfill({contentType:'text/javascript',body:'export const firebaseConfig={};'}));
   await context.addInitScript(()=>{Object.defineProperty(Storage.prototype,'getItem',{value(){throw new Error('storage unavailable');}});});
   const page=await context.newPage();await page.goto(base+'/him.html?as=him',{waitUntil:'domcontentloaded'});
-  assert.equal(await page.locator('#sky-greeting').textContent(),'hi you');assert.ok(await page.locator('body').evaluate(b=>b.classList.contains('him-theme')));
+  assert.match(await page.locator('#sky-greeting').textContent(),/^good (morning|afternoon|evening), Emilio$/);assert.ok(await page.locator('body').evaluate(b=>b.classList.contains('him-theme')));
   await context.close();
   console.log('FIRST PAINT: both sides, all shared pages, three seasons, slow account startup, cached names and unavailable storage pass');
 } finally {await browser.close();}

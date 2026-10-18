@@ -5,6 +5,7 @@
 // hours, which made "remind me at 3pm" mean "sometime this afternoon". Workers
 // cron triggers actually run on the minute.
 
+import {scheduleStreakReminders,streakReminderWanted} from './streak-reminders.js';
 import { settleWordWeeks } from './word-week.js';
 import {settleActivityWeeks,notifyActivityResults} from './activity-week.js';
 import {LEAGUE_WEEK} from '../../league-scores.js';
@@ -63,6 +64,7 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
     scheduleStar(env,db,household).catch(()=>console.error('Nursery notification check will retry next minute.')),
     ...(scheduleReminders?[scheduleListReminders(db,household,now).catch(problem=>console.error(`list reminders skipped: ${problem?.message||problem}`))]:[]),
     ...(scheduleQuestions?[
+      scheduleStreakReminders(db,household,now).catch(()=>console.error('Evening game reminder will retry next minute.')),
       ensureQuestionOfDay(db,household,now).catch(problem=>console.error(`daily question skipped: ${problem?.message||problem}`)),
       (async()=>{await settleWordWeeks(db,household,now,{before:LEAGUE_WEEK});await settleActivityWeeks(db,household,now);await notifyActivityResults(db,household,now);})().catch(problem=>console.error(`weekly word skipped: ${problem?.message||problem}`))
     ]:[])
@@ -160,7 +162,8 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
       if (message.kind === 'activities-open' && String(message.ref || '').split('/').pop() !== questionClock(now).day) {
         await db.remove(message.path); dropped += 1; continue;
       }
-      if(message.kind==='activity-result'){
+      if(message.kind==='game-streak'&&!await streakReminderWanted(db,household,message,now)){await db.remove(message.path);dropped++;continue;}
+      if(message.kind==='activity-result'||message.kind==='game-turn'){
         const match=/^activities\/(\d{4}-\d{2}-\d{2}(?:-tie-\d+)?)-(word|search|crossword)(?:-r(\d+))?-(waiting|reveal)$/.exec(message.ref||'');
         const day=match?.[1],type=match?.[2],revision=Number(match?.[3]||0),event=match?.[4];
         const puzzle=match?await db.get(`${household}/${type==='word'?'wordPuzzles':'timedPuzzles'}/${day}${type==='word'?'':'-'+type}`):null;
@@ -232,7 +235,7 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
       // now ("just got home" at 8am is not), so it comes through silently.
       const quietEnd = message.urgent === true || ['reminder','list-reminder'].includes(message.kind)
         ? 0
-        : quietHoursEndUtc(now, preferences.quietHours, Number(target.utcOffsetMinutes));
+        : quietHoursEndUtc(now, preferences.quietHours, Number(target.utcOffsetMinutes), target.timeZone);
       const quietArrival = Boolean(quietEnd) && message.kind === 'arrival';
       const holdUntil = Math.max(focus.holdUntil, quietArrival ? 0 : quietEnd);
       if (holdUntil) {

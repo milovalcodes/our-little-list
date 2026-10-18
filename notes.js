@@ -11,6 +11,7 @@ const $=id=>document.getElementById(id);
 const { data, viewer: sender, other: recipient } = await bootPage();
 setNames();
 
+document.querySelector('[data-focus-note]')?.addEventListener('click',()=>{quickInput.scrollIntoView({block:'center'});quickInput.focus({preventScroll:true});});
 const moods=NOTE_MOODS;
 let notes=[];let reactions=[];let editingNoteId='';const markedRead=new Set();
 let readFrame=0;

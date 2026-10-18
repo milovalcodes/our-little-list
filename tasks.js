@@ -244,6 +244,7 @@ function render() {
   const empty = byId('empty-state');
   empty.querySelector('span').textContent = labels[2];
   empty.querySelector('strong').textContent = labels[3];
+  const emptyAdd=empty.querySelector('[data-empty-add]');if(emptyAdd){emptyAdd.hidden=tab==='done';emptyAdd.dataset.openSheet='task-form';emptyAdd.textContent=tab==='grocery'?'Add a grocery →':tab==='routines'?'Add a routine →':'Add a little thing →';}
   const hint = empty.querySelector('p'); if (hint) { hint.textContent = labels[4]; hint.hidden = !labels[4]; }
   keepInlineEdits(byId('task-list'), () => { byId('task-list').innerHTML = tab==='grocery'?groceryMarkup(list):list.map(taskMarkup).join(''); });
   renderRecentGroceries();

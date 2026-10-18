@@ -1,3 +1,7 @@
+import {startPersonalProgress} from './personal-progress.js';
+import {startWeeklyRecap} from './weekly-recap.js';
+import {watchDailyStates,startCountdowns,nextPuzzleTime} from './daily-habit.js';
+import {escapeHtml} from './ui-helpers.js';
 import { sharedLayer, onAuthChange } from './data-hub.js';
 import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
 import { setupAuthUI } from './ui-helpers.js';
@@ -43,6 +47,11 @@ for (const name of Object.keys(buckets).filter(name => !['items','routineChecks'
   else data.listenTo(name, receive);
 }
 startPresence(data, viewer, 'home');
+const gameStrip=document.createElement('section');gameStrip.className='daily-strip';gameStrip.setAttribute('aria-label','Today’s games');document.querySelector('.our-sky').after(gameStrip);
+watchDailyStates(data,viewer,(states,rows)=>{Object.assign(buckets,rows,{gamesReady:true});gameStrip.innerHTML=states.every(g=>g.done)?`<p>all done today ✦ · next in <time data-next-puzzle>${nextPuzzleTime()}</time></p>`:states.map(g=>`<a href="${g.href}"><b>${g.name}</b><small>${escapeHtml(g.label)}</small></a>`).join('');scheduleDashboardRender();});
+startCountdowns();
+const progress=document.createElement('details');progress.className='personal-progress';progress.innerHTML='<summary>Your little milestones</summary><div></div>';gameStrip.after(progress);startPersonalProgress({data,viewer},progress.querySelector('div'));
+const recap=document.createElement('section');recap.className='weekly-home-recap';recap.hidden=true;progress.after(recap);startWeeklyRecap({data,viewer},recap);
 // Keeps this phone's push subscription current. Does nothing until
 // notifications have actually been allowed.
 void ensurePushSubscription(data, viewer);
@@ -87,6 +96,7 @@ function renderSky() {
   if (!stage) return;
   const now = Date.now();
   const hour = new Date(now).getHours();
+  const greeting=document.getElementById('sky-greeting');greeting.removeAttribute('data-person-name');greeting.textContent=`good ${hour<12?'morning':hour<18?'afternoon':'evening'}, ${personName(viewer)}`;
   stage.dataset.phase = hour < 5 || hour >= 21 ? 'night' : hour < 8 ? 'dawn' : hour < 17 ? 'day' : 'sunset';
   document.getElementById('sky-time').textContent = new Intl.DateTimeFormat(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(now);
 

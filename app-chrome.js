@@ -10,7 +10,7 @@ import { openEmojiPicker } from './emoji-picker.js';
 
 const SEARCH_COLLECTIONS = ['items', 'notes', 'help', 'dates', 'memories'];
 const page = document.body.dataset.app || (document.body.dataset.viewer ? 'home' : '');
-let sheetCloseTimer=0,sheetFocusTimer=0,sheetFrame=0;
+let sheetCloseTimer=0,sheetFocusTimer=0,sheetFrame=0,sheetReturnFocus=null;
 
 if (page && !document.querySelector('.app-dock')) void boot();
 
@@ -35,13 +35,22 @@ async function boot() {
     // One relevant add button: feature pages open their full composer,
     // while Home keeps the all-purpose quick chooser.
     const contextual = opener.matches('.context-add') ? document.querySelector('.page-add[data-open-sheet]:not([hidden])')?.dataset.openSheet : '';
-    openSheet(contextual || opener.dataset.openSheet);
+    openSheet(contextual || opener.dataset.openSheet,opener);
   });
   document.addEventListener('click', event => {
     const closer = event.target.closest('[data-close-sheet]');
     if (closer) closeSheets();
   });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeSheets(); });
+  document.addEventListener('keydown', event => {
+    if(document.querySelector('dialog[open]'))return;
+    const sheet=document.querySelector('.app-sheet:not([hidden])');if(!sheet)return;
+    if(event.key==='Escape'){event.preventDefault();closeSheets();return;}
+    if(event.key!=='Tab')return;
+    const focusable=[...sheet.querySelectorAll('a[href],button,input,textarea,select,summary,[tabindex]')].filter(n=>!n.disabled&&n.tabIndex>=0&&n.getClientRects().length&&n.checkVisibility?.({visibilityProperty:true})!==false);
+    const first=focusable[0],last=focusable.at(-1);if(!first){event.preventDefault();sheet.focus();return;}
+    if(event.shiftKey&&(document.activeElement===first||document.activeElement===sheet||!sheet.contains(document.activeElement))){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&(document.activeElement===last||!sheet.contains(document.activeElement))){event.preventDefault();first.focus();}
+  });
 
   const openQuick = setupQuickAdd(data, viewer, other);
   document.addEventListener('click', event => {
@@ -158,21 +167,22 @@ function addSheets() {
     </section>`);
 }
 
-function openSheet(name) {
-  closeSheets(false);
+function openSheet(name,opener=document.activeElement) {
+  closeSheets(false,false);
+  if(opener&&!opener.closest('.app-sheet'))sheetReturnFocus=opener;
   const sheet = document.getElementById(`sheet-${name}`) || document.querySelector(`[data-sheet-name="${name}"]`);
   if (!sheet) return;
   sheet.hidden = false;
   document.querySelector('.sheet-scrim').hidden = false;
   document.body.classList.add('sheet-open');
-  window.littleHaptic?.('tap');
+  sheet.tabIndex=-1;sheet.focus({preventScroll:true});
   sheetFrame=requestAnimationFrame(() => sheet.classList.add('is-open'));
   document.dispatchEvent(new CustomEvent('littlelist:sheet-open', { detail: { name } }));
   const firstField = { search:'global-search', quick:'quick-text', 'task-form':'shared-task-title', 'ask-form':'help-title', 'date-form':'date-title', 'memory-form':'memory-text' }[name];
   if (firstField) sheetFocusTimer=window.setTimeout(() => {if(!sheet.hidden)document.getElementById(firstField)?.focus();}, 220);
 }
 
-function closeSheets(animate = true) {
+function closeSheets(animate = true, restoreFocus = true) {
   clearTimeout(sheetCloseTimer);clearTimeout(sheetFocusTimer);cancelAnimationFrame(sheetFrame);
   const open = [...document.querySelectorAll('.app-sheet:not([hidden])')];
   open.forEach(sheet => sheet.classList.remove('is-open'));
@@ -182,6 +192,7 @@ function closeSheets(animate = true) {
     const scrim = document.querySelector('.sheet-scrim');
     if (scrim) scrim.hidden = true;
     document.dispatchEvent(new CustomEvent('littlelist:sheet-close'));
+    if(restoreFocus&&open.length&&sheetReturnFocus?.isConnected)sheetReturnFocus.focus({preventScroll:true});
   };
   animate && open.length ? sheetCloseTimer=window.setTimeout(finish, 190) : finish();
 }
@@ -438,7 +449,7 @@ function setupRowMenus() {
 function setupFridgeNote(data, viewer, other) {
   const launchpad = document.querySelector('.home-next-up');
   if (!launchpad) return;
-  launchpad.insertAdjacentHTML('beforebegin', `<section class="fridge-note" id="fridge-note"><button class="fridge-paper" id="fridge-open" type="button"><span id="fridge-emoji">📌</span><div><small id="fridge-kicker">on the fridge</small><strong id="fridge-copy">tap to pin something</strong></div><i>✎</i></button></section>`);
+  launchpad.insertAdjacentHTML('beforebegin', `<section class="fridge-note" id="fridge-note"><button class="fridge-paper" id="fridge-open" type="button"><span id="fridge-emoji">📌</span><div><small id="fridge-kicker">on the fridge</small><strong id="fridge-copy">pin a little note for today</strong></div><i>✎</i></button></section>`);
   // Home is built before this section exists, so the browser's own jump to
   // #fridge-note (from a "pinned on the fridge" ping) found nothing.
   if (location.hash === '#fridge-note') requestAnimationFrame(() => document.getElementById('fridge-note')?.scrollIntoView({ block: 'center' }));
@@ -450,7 +461,7 @@ function setupFridgeNote(data, viewer, other) {
     const text = pinned?.body || pinned?.message || '';
     const emoji = pinned?.pinEmoji || '📌';
     const author = pinned?.sender || pinned?.from;
-    document.getElementById('fridge-copy').textContent = text || 'tap to pin something';
+    document.getElementById('fridge-copy').textContent = text || 'pin a little note for today';
     document.getElementById('fridge-emoji').textContent = emoji;
     document.getElementById('fridge-kicker').textContent = text && author ? `on the fridge · from ${author === viewer ? 'you' : personName(author)}` : 'on the fridge';
     document.getElementById('fridge-note').classList.toggle('is-empty', !text);

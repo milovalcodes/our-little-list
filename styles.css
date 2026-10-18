@@ -818,7 +818,7 @@ button.home-link { border:none; background:none; font:inherit; cursor:pointer; c
 .him-theme .now-proximity { background:rgba(255,255,255,.07); }
 .him-theme .now-orbit i::after { background:#192950; }
 
-@keyframes skyStageIn { from { opacity:0; translate:0 9px; scale:.99; } }
+@keyframes skyStageIn { from { translate:0 9px; scale:.99; } to { translate:0 0; scale:1; } }
 @keyframes skyFloat { 50% { translate:0 -5px; rotate:1deg; } }
 @keyframes skyTwinkle { 50% { opacity:.18; scale:.72; } }
 @keyframes shootingNote { from { opacity:0; translate:-35% -80%; } }

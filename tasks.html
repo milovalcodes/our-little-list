@@ -7,6 +7,7 @@
   <script src="seasonal-assets.js"></script>
   <script src="seasonal-theme.js"></script>
   <link rel="stylesheet" href="seasonal.css">
+<link rel="stylesheet" href="app-life.css">
 </head>
 <body class="profile-page" data-app="tasks">
   <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">the list ☀︎☾</span></header>
@@ -36,7 +37,7 @@
 
     <section class="list-card" id="task-list-card">
       <div class="list-heading"><div><p class="tiny-kicker" id="list-kicker">our things</p><h2 id="list-title">To do</h2></div><span class="count-bubble" id="item-count">0 left</span></div>
-      <div class="empty-state" id="empty-state"><span>✦</span><strong>Nothing here</strong><p></p></div>
+      <div class="empty-state" id="empty-state"><span>✦</span><strong>Nothing here</strong><p></p><button type="button" data-open-sheet="task-form" data-empty-add>Add a little thing →</button></div>
       <ul class="task-list" id="task-list"></ul>
     </section>
 

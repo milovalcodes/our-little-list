@@ -42,6 +42,7 @@ jobs:
         run: |
           pnpm run test:star
           node test/practice.test.mjs
+          node test/daily-habit.test.mjs
           node test/round-engine.test.mjs
           node test/puzzle-edition.test.mjs
           node test/hard-rounds.test.mjs

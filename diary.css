@@ -889,3 +889,23 @@ html[data-season="christmas"] .attention-badge { width:20px; height:20px; top:-3
 .admin-games button { font-weight: 800; }
 .admin-games :disabled { opacity: .6; }
 .admin-games [role="status"]:empty { display: none; }
+.daily-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin:14px 0; }
+.daily-strip a { display:flex; flex-direction:column; gap:6px; min-height:74px; padding:12px 8px; border:1px solid var(--diary-rule); border-radius:16px; background:var(--diary-panel); color:var(--page-text); text-decoration:none; }
+.daily-strip b { font-size:.78rem; }.daily-strip small { font-size:.67rem; color:var(--page-muted); }.daily-strip>p { grid-column:1/-1; margin:0; padding:12px; text-align:center; }
+.daily-chevron { display:inline-block; transition:transform .18s; font-size:1.4rem; }
+.daily-entry[open]>summary .daily-chevron { transform:rotate(180deg); }
+.daily-entry .daily-state { display:block; color:var(--accent-deep); font-weight:700; }
+.word-keyboard { scroll-margin-bottom:calc(100px + env(safe-area-inset-bottom)); }
+.next-puzzle { font-size:.8rem; color:var(--page-muted); font-variant-numeric:tabular-nums; }
+.practice-rematch { display:block; margin:12px 0; color:var(--accent-deep); }
+.game-comfort { margin:12px 0; font-size:.85rem; }.game-comfort summary { cursor:pointer; min-height:44px; padding:10px 0; }
+.game-comfort label { display:flex; align-items:center; gap:8px; min-height:44px; }.game-comfort input { width:20px; height:20px; min-height:20px; accent-color:var(--accent); }.game-comfort small { display:block; color:var(--page-muted); }
+.personal-progress,.weekly-home-recap { margin:12px 0; padding:14px; border:1px solid var(--diary-rule); border-radius:18px; background:var(--diary-panel); }
+.personal-progress h2,.weekly-home-recap h2 { font-size:1rem; }.personal-progress p,.weekly-home-recap p { font-size:.88rem; }.personal-progress small,.weekly-home-recap small { display:block; color:var(--page-muted); font-size:.76rem; }.personal-progress summary { cursor:pointer; }.personal-progress>div>h2 { display:none; }
+.weekly-home-recap a { display:block; padding-top:12px; color:var(--accent-deep); }.game-badges { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }.game-badges span { padding:6px 9px; border-radius:12px; background:var(--diary-raised); font-size:.75rem; }
+.game-colour-friendly .word-tile.correct,.game-colour-friendly .word-keyboard button.correct { background:#17689c!important; color:#fff!important; border-color:#17689c!important; }
+.game-colour-friendly .word-tile.present,.game-colour-friendly .word-keyboard button.present { background:#bd570e!important; color:#fff!important; border-color:#bd570e!important; }
+#practice-game .crossword-grid { max-width:360px; width:100%; margin:12px auto; }
+#practice-game .crossword-current { position:sticky; top:70px; z-index:3; background:var(--diary-panel); }
+.sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+@media(prefers-reduced-motion:reduce) { .daily-chevron { transition:none; } }

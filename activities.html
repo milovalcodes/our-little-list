@@ -6,6 +6,7 @@
   <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png" type="image/png"><link rel="apple-touch-icon" href="sun-moon-personalized.png">
   <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="diary.css"><link rel="stylesheet" href="practice.css">
   <script src="seasonal-assets.js"></script><script src="seasonal-theme.js"></script><link rel="stylesheet" href="seasonal.css">
+<link rel="stylesheet" href="app-life.css">
 </head>
 <body class="profile-page" data-app="activities">
   <main class="app-shell feature-shell games-shell">
@@ -14,7 +15,7 @@
       <p class="daily-date" id="daily-date"></p>
       <details id="admin-games" class="admin-games" hidden><summary>admin · fresh rounds</summary><div><label for="reset-game">Reset today for both of us</label><select id="reset-game"><option value="all">All three games</option><option value="word">Little Word only</option><option value="search">Word Search only</option><option value="crossword">Mini crossword only</option></select><button class="primary-action" type="button">make new rounds</button><p role="status" aria-live="polite"></p></div></details>
       <details class="daily-entry weekly-entry" id="scoreboard"><summary><span aria-hidden="true">♛</span><strong>The weekly race</strong><span id="weekly-score">…</span></summary><div id="weekly-board"></div></details>
-      <details class="daily-entry" id="daily-question"><summary><span class="daily-stamp" aria-hidden="true">☀☾</span><span><strong>Our question</strong><small id="question-summary">a little check-in</small></span><span aria-hidden="true">＋</span></summary>
+      <details class="daily-entry" id="daily-question"><summary><span class="daily-stamp" aria-hidden="true">☀☾</span><span><strong>Our question</strong><small id="question-summary">a little check-in</small></span><span class="daily-chevron" aria-hidden="true">⌄</span></summary>
     <section class="today-card question-card" id="question">
       <div class="today-card-head"><div><p class="tiny-kicker">one question a day</p><h2 id="question-prompt">loading today’s question…</h2></div><button id="question-reveal" type="button" hidden>see answers</button></div>
       <form id="question-form"><label><span>your answer</span><textarea id="question-answer" maxlength="240" rows="2" placeholder="say the thing" required></textarea></label><button class="primary-action" id="question-save" type="submit">answer</button></form>
@@ -22,10 +23,10 @@
       <button class="question-edit" id="question-edit" type="button" hidden>edit my answer</button>
     </section>
       </details>
-      <details class="daily-entry" id="wordle"><summary><span class="daily-stamp word-stamp" aria-hidden="true">abc</span><span><strong>Little Word</strong><small id="word-summary">5 letters · 6 tries</small></span><span aria-hidden="true">＋</span></summary><section id="word-game" aria-label="Daily word"><p role="status">getting your word…</p></section></details>
+      <details class="daily-entry" id="wordle"><summary><span class="daily-stamp word-stamp" aria-hidden="true">abc</span><span><strong>Little Word</strong><small id="word-summary">5 letters · 6 tries</small></span><span class="daily-chevron" aria-hidden="true">⌄</span></summary><section id="word-game" aria-label="Daily word"><p role="status">getting your word…</p></section></details>
       <section id="tiebreaker" hidden aria-label="Weekly tie-break"></section>
-      <details class="daily-entry" id="search"><summary><span class="daily-stamp" aria-hidden="true">abc</span><span><strong>Word Search</strong><small id="search-summary">getting your puzzle…</small></span><span aria-hidden="true">＋</span></summary><section id="search-game" aria-label="Daily word search"></section></details>
-      <details class="daily-entry" id="crossword"><summary><span class="daily-stamp" aria-hidden="true">▦</span><span><strong>Mini crossword</strong><small id="crossword-summary">getting your puzzle…</small></span><span aria-hidden="true">＋</span></summary><section id="crossword-game" aria-label="Daily crossword"></section></details>
+      <details class="daily-entry" id="search"><summary><span class="daily-stamp" aria-hidden="true">abc</span><span><strong>Word Search</strong><small id="search-summary">getting your puzzle…</small></span><span class="daily-chevron" aria-hidden="true">⌄</span></summary><section id="search-game" aria-label="Daily word search"></section></details>
+      <details class="daily-entry" id="crossword"><summary><span class="daily-stamp" aria-hidden="true">▦</span><span><strong>Mini crossword</strong><small id="crossword-summary">getting your puzzle…</small></span><span class="daily-chevron" aria-hidden="true">⌄</span></summary><section id="crossword-game" aria-label="Daily crossword"></section></details>
     </section>
     <section class="practice-shelf" id="little-star" aria-label="Little Star"><h2>Little Star</h2><p class="practice-caption">Our shared pet · daily points become stardust.</p><a class="primary-action" href="little-star.html">Visit our star →</a></section>
     <section class="practice-shelf" id="practice" aria-label="Practice games"><h2>Practice makes perfect</h2><p class="practice-caption">No clock, no points. Pick a little detour.</p><div id="practice-links"></div></section>

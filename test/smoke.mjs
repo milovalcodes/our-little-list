@@ -339,7 +339,7 @@ async function openSlow(path) {
   await page.goto(`${BASE}/her.html`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(900);
   const after = await page.locator('#fridge-copy').textContent();
-  note(pinnedThere.includes('unpin') && after === 'tap to pin something', 'the fridge is a pinned note, and notes can take it down',
+  note(pinnedThere.includes('unpin') && after === 'pin a little note for today', 'the fridge is a pinned note, and notes can take it down',
        JSON.stringify({ pinnedThere, after }));
   await context.close();
 }

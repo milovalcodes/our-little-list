@@ -2,6 +2,7 @@
 // Run synchronously in the head, before Firebase/module imports can delay paint.
 (function () {
   const root = document.documentElement;
+  try { const comfort=JSON.parse(localStorage.getItem('our-little-list-game-comfort-v1')||'{}');root.toggleAttribute('data-quiet-motion',comfort.motion===false);root.classList.toggle('game-colour-friendly',comfort.colours===true); } catch (_) {}
   const read = (store, key) => { try { return window[store].getItem(key); } catch (_) { return null; } };
   const valid = side => side === 'her' || side === 'him';
   const cachedSide = read('localStorage', 'our-little-list-side');
@@ -24,12 +25,14 @@
   setSide(side);
   function paint() {
     setSide(side);
-    for (const element of document.querySelectorAll('[data-person-name]')) {
-      const raw = profile[element.dataset.personName === 'sun' ? 'sunName' : 'moonName'];
+    for (const element of document.querySelectorAll('[data-person-name],[data-greeting-person]')) {
+      const sun=element.dataset.greetingPerson?(side||element.dataset.greetingPerson)==='her':element.dataset.personName==='sun';
+      const raw = profile[sun ? 'sunName' : 'moonName'];
       const name = String(raw || '').trim().replace(/\s+/g, ' ').slice(0, 24);
-      const value = name || element.dataset.personFallback;
+      const value = name || element.dataset.personFallback || (element.dataset.greetingPerson?(sun?'Anely':'Emilio'):'');
       if (!value) continue;
-      const text = (element.dataset.personFormat || '{name}').replace('{name}', value);
+      const hour=new Date().getHours();
+      const text = element.id==='sky-greeting'?`good ${hour<12?'morning':hour<18?'afternoon':'evening'}, ${value}`:(element.dataset.personFormat || '{name}').replace('{name}', value);
       if (element.textContent !== text) element.textContent = text;
     }
   }

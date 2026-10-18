@@ -1,3 +1,5 @@
+import {startGameComfort} from './game-comfort.js';
+import {watchDailyStates,startCountdowns} from './daily-habit.js';
 import { bootPage } from './page-boot.js';
 import { startPresence } from './presence.js';
 import { startDailyQuestion } from './daily-question.js';
@@ -10,6 +12,9 @@ import {startPracticeLinks} from './practice-links.js';
 import {startGameReset} from './game-reset.js';
 const context=await bootPage();
 startGameReset(context);
+startCountdowns();
+const comfort=document.createElement('section');comfort.className='game-comfort';document.getElementById('daily-date').after(comfort);startGameComfort(comfort);
+watchDailyStates(context.data,context.viewer,states=>{for(const g of states){const title=document.querySelector('#'+g.hash+'>summary strong');let status=title.parentElement.querySelector('.daily-state');if(!status){status=document.createElement('small');status.className='daily-state';title.after(status);}status.textContent=g.label;}});
 startPracticeLinks(context.viewer);
 startPresence(context.data,context.viewer,'activities');
 startDailyQuestion(context);

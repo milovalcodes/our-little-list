@@ -2,6 +2,8 @@
 // waiting). They used to keep two slightly different copies of these rules, so
 // the two lists disagreed: Today showed groceries and timed asks, Home did not,
 // and Home counted "today" in New York time while Today used the phone's clock.
+import {dailyStates} from './daily-habit.js';
+import {activityClock} from './activity-clock.js';
 import { dateKey } from './ui-helpers.js';
 import { friendlyWhen } from './time-format.js';
 import {isRoutine,routineDue,checkedToday,listDay} from './list-schedule.js';
@@ -10,7 +12,7 @@ import {isRoutine,routineDue,checkedToday,listDay} from './list-schedule.js';
 // reminders are now) belongs to its day: "Friday" does not crowd Monday, and it
 // stays until it is done even once answered. Asks without a time wait here until
 // they are answered.
-export function dueRows({ items = [], help = [], routineChecks = [], routinesReady = true }, viewer, now = new Date()) {
+export function dueRows({ items = [], help = [], routineChecks = [], routinesReady = true, wordResults = [], timedResults = [], gamesReady = false }, viewer, now = new Date()) {
   const today = dateKey(now);
   const end = new Date(now); end.setHours(23, 59, 59, 999);
   const due = items
@@ -26,7 +28,8 @@ export function dueRows({ items = [], help = [], routineChecks = [], routinesRea
     })
     .sort((a, b) => (Number(a.dueAt) || Infinity) - (Number(b.dueAt) || Infinity))
     .map(item => ({ id: item.id, kind: 'ask', icon: item.emoji || (Number(item.dueAt) > 0 ? '⏰' : '🙋'), title: item.title, meta: Number(item.dueAt) > 0 ? `⏰ ${friendlyWhen(Number(item.dueAt))}` : 'waiting on you', href: `tasks.html#ask-${item.id}` }));
-  return [...due, ...asks];
+  const games=gamesReady?dailyStates(wordResults,timedResults,viewer,activityClock(now).day).filter(g=>!g.done).map(g=>({id:'daily-'+g.type,kind:'game',icon:'✦',title:g.name,meta:g.label,href:g.href})):[];
+  return [...due, ...asks, ...games];
 }
 
 // Keep each kind represented rather than letting one long list crowd the other

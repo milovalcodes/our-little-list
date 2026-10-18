@@ -1,0 +1,58 @@
+/* A shared tactile layer: colours come from the existing sun/moon/season
+   palettes, so a new screen still feels like the same private little home. */
+.profile-page { --life-ease:cubic-bezier(.22,.8,.24,1); --life-edge:color-mix(in srgb,var(--accent-soft) 28%,var(--diary-rule)); --life-glow:color-mix(in srgb,var(--accent-soft) 13%,transparent); }
+.profile-page .app-shell { position:relative; padding-bottom:calc(24px + env(safe-area-inset-bottom)); }
+.profile-page .feature-shell>.feature-hero { position:relative; min-height:92px; margin-bottom:18px; padding-bottom:32px; border-bottom:1px solid var(--life-edge); }
+.profile-page .feature-shell>.feature-hero h1 { font-size:clamp(1.8rem,6vw,2.35rem); letter-spacing:-.035em; }
+.profile-page .feature-shell>.feature-hero .life-page-caption { position:absolute; left:0; bottom:4px; margin:0; color:var(--page-muted); font-size:.79rem; line-height:1.35; letter-spacing:.01em; }
+.profile-page .feature-shell>.feature-hero.now-hero .life-page-caption { left:0; }
+.profile-page :is(.our-sky,.daily-entry,.home-next-up,.practice-card,.settings-group,.personal-progress,.weekly-home-recap,.list-card,.random-date-card,.now-location-card) { border-color:var(--life-edge); box-shadow:0 2px 3px #00000003,0 10px 25px #00000007,inset 0 1px 0 color-mix(in srgb,var(--diary-panel) 85%,white); }
+.profile-page :is(.daily-entry,.settings-group)[open] { border-color:color-mix(in srgb,var(--accent) 45%,var(--diary-rule)); }
+.profile-page .daily-entry>summary { min-height:84px; padding-top:15px; padding-bottom:15px; }
+.profile-page .daily-stamp { background:linear-gradient(145deg,var(--diary-raised),var(--accent-pale)); border:1px solid var(--life-edge); box-shadow:inset 0 1px 0 #ffffff26,0 4px 10px #00000007; border-radius:15px 19px 14px 18px; }
+.profile-page .daily-entry[open] .daily-stamp { rotate:-5deg; }
+.profile-page .daily-strip a { border-radius:16px; background:linear-gradient(145deg,var(--diary-panel),var(--diary-raised)); box-shadow:inset 0 1px 0 #ffffff20; }
+.profile-page .sky-heading { padding-bottom:12px; }.profile-page #sky-greeting { letter-spacing:-.025em; }
+.profile-page .sky-stage { box-shadow:inset 0 0 28px #ffffff0b,0 8px 20px #00000012; }
+.profile-page .sky-avatar { border-color:color-mix(in srgb,var(--accent-soft) 50%,white); }
+.profile-page .sky-person-label small { max-width:100%; white-space:normal; text-align:center; line-height:1.25; }
+.profile-page a.primary-action { display:inline-flex; align-items:center; justify-content:center; padding:10px 16px; text-decoration:none; }
+.profile-page .fridge-paper { border-radius:6px 18px 18px 18px; box-shadow:0 5px 14px #00000010; }
+.profile-page .home-next-row { min-height:58px; }.profile-page .home-next-row:hover { background:var(--life-glow); }
+.profile-page :is(.task-row,.date-idea-card,.memory-card,.note-thread-row,.focus-person) { border-color:var(--life-edge); }
+.profile-page .task-row.done { background:color-mix(in srgb,var(--diary-panel) 80%,var(--accent-pale)); }
+.profile-page .note-thread-row { border-radius:18px 18px 18px 6px; }
+.profile-page .memory-card { border-radius:6px 18px 18px 18px; box-shadow:0 5px 16px #00000009; }
+.profile-page .memory-card img { border-radius:10px; }
+.profile-page .date-idea-card { border-left:3px solid color-mix(in srgb,var(--accent) 65%,var(--diary-rule)); }
+.profile-page :is(button,a,summary,input,textarea,select) { -webkit-tap-highlight-color:transparent; }
+.profile-page :is(button,a,summary):focus-visible { outline:3px solid var(--accent-deep); outline-offset:4px; }
+.profile-page :is(input,textarea,select):focus-visible { outline:2px solid var(--accent-deep); outline-offset:3px; box-shadow:0 0 0 6px var(--life-glow); }
+.profile-page :is(input,textarea)::placeholder { color:var(--page-muted); opacity:.8; }
+.profile-page :is(.primary-action,.small-action,.tiny-button,.context-add,.thinking-ping) { box-shadow:0 3px 0 color-mix(in srgb,var(--page-text) 18%,transparent),inset 0 1px 0 #ffffff22; }
+.profile-page :is(.primary-action,.small-action,.tiny-button,.context-add):disabled { box-shadow:none; }
+.profile-page :is(.app-sheet,.profile-photo-sheet) { border:1px solid var(--life-edge); box-shadow:0 -12px 60px #00000021,inset 0 1px 0 #ffffff20; border-radius:26px 26px 0 0; }
+.profile-page .sheet-head { padding-bottom:12px; border-bottom:1px solid var(--diary-rule); margin-bottom:14px; }.profile-page .sheet-head h2 { letter-spacing:-.025em; }
+.profile-page .sheet-head [data-close-sheet] { border-radius:50%; background:var(--diary-raised); width:44px; height:44px; }
+.profile-page .app-dock { box-shadow:0 -1px 0 var(--life-edge),0 -8px 25px #00000008; }
+.profile-page .dock-item.is-active { background:var(--life-glow); border-radius:16px; }
+.profile-page .empty-state { padding:28px 16px; text-align:center; }.profile-page .empty-state>span { display:grid; place-items:center; width:48px; height:48px; margin:0 auto 10px; background:var(--accent-pale); border-radius:16px 20px 17px 22px; font-size:1.5rem; }
+.profile-page .empty-state :is(button,a) { display:inline-flex; align-items:center; justify-content:center; margin-top:8px; min-height:44px; padding:8px 14px; border:1px solid var(--life-edge); border-radius:14px; background:var(--diary-raised); color:var(--accent-deep); text-decoration:none; font-size:.85rem; font-weight:800; }
+.profile-page .toast { border:1px solid var(--life-edge); border-radius:18px; box-shadow:0 8px 30px #00000024; padding:13px 19px; font-weight:800; }
+.profile-page .global-failure { border-radius:20px; }.profile-page .is-busy { cursor:progress; }
+.life-tap,.life-spark { position:fixed; pointer-events:none; z-index:150; color:var(--accent-deep); }.life-tap { width:17px; height:17px; border:1.5px solid currentColor; border-radius:50%; }.life-spark { font-size:17px; line-height:1; }
+.app-feel-settings { padding:14px 18px; background:var(--diary-panel); border:1px solid var(--life-edge); border-radius:22px; }.app-feel-settings summary { font-size:1.1rem; font-weight:800; }
+@media(prefers-reduced-motion:no-preference) {
+ .profile-page :is(.primary-action,.small-action,.tiny-button,.context-add,.daily-strip a,.dock-item,.more-grid a,.practice-tabs a,.daily-stamp) { transition:translate .18s var(--life-ease),scale .18s var(--life-ease),box-shadow .18s,background .18s,rotate .25s; }
+ .profile-page :is(.primary-action,.small-action,.tiny-button,.context-add,.daily-strip a,.dock-item,.more-grid a):active { scale:.97; translate:0 1px; }
+ .profile-page :is(.tab,.choice,.status-choice,.quick-kind button) { transition:background .18s,color .18s; }
+ .profile-page :is(input,textarea,select) { transition:box-shadow .2s,border-color .2s; }
+ .profile-page .empty-state>span { animation:life-hello .55s var(--life-ease); }
+ .profile-page .task-row.done .task-check { animation:life-hello .3s var(--life-ease); }
+ @keyframes life-hello { 0% { scale:.9; rotate:-8deg; } 65% { scale:1.06; rotate:3deg; } 100% { scale:1; rotate:0deg; } }
+ @media(hover:hover) { .profile-page :is(.daily-strip a,.more-grid a,.practice-tabs a):hover { translate:0 -2px; box-shadow:0 6px 14px #00000010; } }
+}
+.life-paused * { animation-play-state:paused!important; }
+html[data-quiet-motion] *,html[data-quiet-motion] *::before,html[data-quiet-motion] *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+html[data-quiet-motion] :is(.word-finale,.word-confetti,.life-tap,.life-spark) { display:none!important; }
+@media(max-width:360px) { .profile-page .feature-shell>.feature-hero .life-page-caption { font-size:.72rem; }.profile-page .daily-entry>summary { gap:8px; }.profile-page .daily-strip a { padding:10px 7px; } }

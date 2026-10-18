@@ -1,10 +1,10 @@
 import {PRACTICE_EDITION_WORDS,PRACTICE_EDITION_EXTRAS} from './practice-edition-bank.js';
 import {random,searchGrid} from './daily-puzzles.js';
-import {connectedCrossword} from './connected-crossword.js';
+import {miniLattice} from './mini-crossword.js';
 
 // Changed answers need a separate save namespace; keep old progress intact.
 export const PRACTICE_VERSION=3;
-export const PRACTICE_VERSIONS={word:3,search:3,crossword:4};
+export const PRACTICE_VERSIONS={word:3,search:3,crossword:5};
 export const PRACTICE_COUNTS={word:200,search:100,crossword:100};
 export const PRACTICE_NAMES={word:'Little Word',search:'Word Search',crossword:'Mini crossword'};
 // Spread practice across starting letters, then freeze a shuffled order within
@@ -29,6 +29,23 @@ export const PRACTICE_WORDS=[...practiceWords('normal'),...practiceWords('hard')
 if(PRACTICE_WORDS.length!==200||PRACTICE_WORDS.some(e=>!e))throw Error('Incomplete practice edition');
 const cache=new Map();
 const boardBank=[...PRACTICE_EDITION_WORDS,...PRACTICE_EDITION_EXTRAS];
+const minis=[],miniGrids=new Set();
+function practiceMini(index){
+ // Build in index order so opening puzzle 99 first produces the same edition.
+ while(minis.length<=index){
+  const n=minis.length,level=n>=50?'hard':'normal',pool=boardBank.filter(e=>e.difficulty===level);
+  let mini=null;
+  for(let attempt=0;attempt<500;attempt++){
+   const rng=random('practice-mini-v5:'+n+':'+attempt);
+   let candidate=miniLattice(pool,rng);
+   if(!candidate||miniGrids.has(candidate.grid))candidate=miniLattice(boardBank,rng);
+   if(candidate&&!miniGrids.has(candidate.grid)){mini=candidate;break;}
+  }
+  if(!mini)throw Error('Could not make a distinct practice mini');
+  miniGrids.add(mini.grid);minis.push(mini);
+ }
+ return minis[index];
+}
 export function practicePuzzle(type,index){
  if(!Object.hasOwn(PRACTICE_COUNTS,type)||!Number.isInteger(index)||index<0||index>=PRACTICE_COUNTS[type])throw Error('That practice puzzle is not in this collection.');
  const key=type+':'+index;
@@ -37,7 +54,8 @@ export function practicePuzzle(type,index){
  const bank=boardBank.filter(e=>e.difficulty===difficulty),size=hard?12:11,rng=random('practice-v3:'+key);
  const layout=type==='word'?PRACTICE_WORDS[index]:type==='search'
   ?searchGrid(bank,size,rng,true)
-  :connectedCrossword(bank,hard?21:15,random('practice-crossword-v4:'+index),hard?20:10);
+  :practiceMini(index);
+ if(!layout)throw Error('Could not make a practice mini');
  const puzzle={...layout,type,index,difficulty,id:'practice-v'+PRACTICE_VERSIONS[type]+'-'+key,theme:'A little of everything'};
  cache.set(key,puzzle);return puzzle;
 }

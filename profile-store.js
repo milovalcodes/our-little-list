@@ -24,7 +24,7 @@ export function saveCachedProfile(profile) {
 }
 
 export function personName(person, profile = cachedProfile()) {
-  return person === 'her' ? (profile.sunName || 'her') : (profile.moonName || 'him');
+  return person === 'her' ? (profile.sunName || 'Anely') : (profile.moonName || 'Emilio');
 }
 
 export function applyProfileNames(root = document, profile = cachedProfile()) {

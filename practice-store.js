@@ -17,6 +17,7 @@ export function practiceStore(scope,storage){
     solved:Array.isArray(raw.solved)?[...new Set(raw.solved.filter(n=>Number.isInteger(n)&&n>=0&&n<(type==='crossword'?20:10)))]:[],
     hints:Number.isInteger(raw.hints)?Math.max(0,Math.min(3,raw.hints)):0,
     selected:Number.isInteger(raw.selected)&&raw.selected>=0&&raw.selected<(type==='crossword'?20:10)?raw.selected:0,
+    letters:Array.isArray(raw.letters)?raw.letters:[],
     draft:typeof raw.draft==='string'?raw.draft.slice(0,12):'',completed:raw.completed===true};
   },
   save(type,index,state){write(type+':'+index,state);},

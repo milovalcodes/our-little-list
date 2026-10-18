@@ -12,8 +12,10 @@ async function request(body){
  try{
   const token=await data.getIdToken();
   const response=await fetch(endpoint,{method:'POST',cache:'no-store',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
-  const value=await response.json();
-  if(!response.ok){const error=Error(value.error||'Cannot save right now.');error.uncertain=response.status>=500;error.offline=response.status===401||response.status>=500;throw error;}
+  let value;
+  try{value=await response.json();}catch{throw Error('The nursery could not reply. Reconnect and try again.');}
+  if(!response.ok){const error=Error(value?.error||'Cannot save right now.');error.uncertain=response.status>=500;error.offline=response.status===401||response.status>=500;throw error;}
+  if(!value?.star||!Number.isFinite(value.star.revision))throw Error('The nursery could not reply. Reconnect and try again.');
   live.offline=false;live.weekly=value.weekly;live.scoresPending=value.scoresPending;return value;
  }catch(error){live.offline=error.offline??true;if(error.uncertain===undefined)error.uncertain=true;throw error;}
 }

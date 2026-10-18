@@ -61,7 +61,7 @@ try{
  await page.waitForSelector('.word-coronation[open]');
  assert.equal(await page.locator('.word-coronation').getAttribute('aria-labelledby'),'word-coronation-title');
  await page.waitForSelector('.word-coronation.is-crowned');
- assert.match(await page.locator('.coronation-result').textContent(),/him takes the crown after the tie-break/);
+ assert.match(await page.locator('.coronation-result').textContent(),/Emilio takes the crown after the tie-break/);
  assert.match(await page.locator('.coronation-streak').textContent(),/2 weeks/);
  assert.equal(await page.locator('[data-score="him"]').textContent(),'300');
  assert.equal(await page.locator('.coronation-confetti .word-confetti').count(),84);

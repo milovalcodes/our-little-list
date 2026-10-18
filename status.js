@@ -1,3 +1,4 @@
+import {startPersonalProgress} from './personal-progress.js';
 import { escapeHtml, setButtonBusy, settleQuickly, showFailure, toast } from './ui-helpers.js';
 import { bootPage } from './page-boot.js';
 import { personName } from './profile-store.js';
@@ -32,6 +33,7 @@ let expiryTouched=false;
 let editorDirty=false;
 
 const { data, viewer, other } = await bootPage();
+const milestones=document.createElement('section');milestones.className='personal-progress';document.querySelector('main').append(milestones);startPersonalProgress({data,viewer},milestones);
 let selected = profileRoute(location.hash, viewer).person;
 const editor = document.querySelector('.status-editor-disclosure');
 $('profile-editor-slot').append(editor);
@@ -147,6 +149,7 @@ function blankStatus(){return {state,text:'',category:'',emoji:'',expiresAt:0};}
 function render(){
   const own=selected===viewer;
   document.body.dataset.profileOwner=String(own);
+  milestones.hidden=selected!==viewer;
   $('profile-title').textContent=own?'Your profile':`${personName(selected)}’s profile`;
   document.title=`${personName(selected)} · Our Little App`;
   $('profile-tabs').innerHTML=[viewer,other].map(person=>`<a href="${profileUrl(person).slice('status.html'.length)}" ${person===selected?'aria-current="page"':''}><img src="${person==='her'?'sun':'moon'}-profile.png" alt=""><span>${escapeHtml(personName(person))}${person===viewer?' <small>you</small>':''}</span></a>`).join('');

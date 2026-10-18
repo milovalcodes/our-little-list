@@ -19,6 +19,8 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   });
 }
 
+if(document.body.matches('.profile-page,.landing'))void import('./app-life.js').catch(()=>{});
+
 const syncBackedPage=Boolean(document.getElementById('auth-root'));
 let thinkingTimeout=null;
 
@@ -132,7 +134,7 @@ window.playLittleSound = (choice = 'twinkle') => {
 };
 
 window.littleHaptic = kind => {
-  if (!navigator.vibrate || navigator.userActivation?.hasBeenActive === false || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  if (window.LittleComfort?.().haptics === false || !navigator.vibrate || navigator.userActivation?.hasBeenActive === false || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
   const patterns = { tap:[12], success:[18,35,24], warning:[35,45,35] };
   return navigator.vibrate(patterns[kind] || patterns.tap);
 };

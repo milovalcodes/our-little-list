@@ -18,7 +18,7 @@ for(const day of ['2026-10-12','2026-10-18','2026-11-02','2026-11-08','2026-12-0
  for(let i=0;i<p.entries.length;i++)g=advanceTimedGame(g,p,{index:i,expectedCount:i,now:g.startedAt+(i+1)*(p.durationMs-1000)/p.entries.length});
  assert.ok(g.complete);assert.equal(timedPoints(g),p.hard?100:50);
 }
-for(let i=0;i<100;i++)check(practicePuzzle('crossword',i),i<50?10:20);
+for(let i=0;i<100;i++)check(practicePuzzle('crossword',i),6);
 assert.equal(timedPuzzle('2026-10-11','crossword').durationMs,180000,'today is not reset');
 assert.equal(timedPuzzle('2026-10-11','crossword').entries.length,8);
 const oldKey='our-little-app-practice-v3:test:crossword:50',wordKey='our-little-app-practice-v3:test:word:0';

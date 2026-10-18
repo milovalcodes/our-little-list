@@ -3,6 +3,7 @@ import { focusDelivery,contentSourcePath,contentStillWanted } from '../delivery-
 import { quietHoursEndUtc } from '../notification-policy.js';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
+import {activityClock} from '../activity-clock.js';
 
 const b64url = buf => buf.toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const receiver = crypto.createECDH('prime256v1'); receiver.generateKeys();
@@ -102,6 +103,7 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
         keys: { mapValue: { fields: { p256dh: { stringValue: s.keys.p256dh }, auth: { stringValue: s.keys.auth } } } }
       } } } };
       if (Number.isFinite(raw.utcOffsetMinutes)) fields.utcOffsetMinutes = { integerValue: String(raw.utcOffsetMinutes) };
+      if (raw.timeZone) fields.timeZone = { stringValue: raw.timeZone };
       if (preferences) fields.preferences = { mapValue: { fields: {
         backgroundSound: { stringValue: preferences.backgroundSound || 'default' },
         vibration: { stringValue: preferences.vibration || 'gentle' },
@@ -115,6 +117,10 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
       } } };
       return { name: `p/documents/households/HOUSE/pushSubs/${id}`, fields };
     }) });
+    if (url.includes(':runQuery') && ['wordResults','timedResults'].includes(JSON.parse(options.body).structuredQuery.from[0].collectionId)) {
+      const collection=JSON.parse(options.body).structuredQuery.from[0].collectionId;
+      return Response.json(Object.entries(records).filter(([key])=>key.startsWith(collection+'/')).map(([key,row])=>({document:{name:'p/documents/households/HOUSE/'+key,fields:Object.fromEntries(Object.entries(row).map(([k,v])=>[k,typeof v==='number'?{integerValue:String(v)}:typeof v==='boolean'?{booleanValue:v}:{stringValue:v}]))}})));
+    }
     if (url.includes(':runQuery')) return Response.json(outbox.map(m => ({ document: {
       name: `p/documents/households/HOUSE/outbox/${m.id}`,
       fields: Object.fromEntries(Object.entries(m).filter(([k]) => k !== 'id').map(([k, v]) =>
@@ -589,5 +595,30 @@ for(const mode of ['connect-four','dots-boxes']){
  globalThis.fetch=async(url,options)=>String(url).endsWith('/pushSubs/her')?Response.json({name:url,updateTime:'new',fields:{subscription:{mapValue:{fields:{endpoint:{stringValue:'https://fcm.googleapis.com/new-phone'}}}}}}):fetch(url,options);
  assert.equal((await deliver(ENV)).left,1);assert.ok(!h.deleted.includes('households/HOUSE/pushSubs/her'));
  console.log(' ok  expired endpoint cleanup preserves a concurrently registered phone');
+}
+// New daily-game categories go through the actual sender, including final
+// stale checks, mute switches and clock changes on a registered phone.
+{
+ const at=Date.now(),day=activityClock(at).day;
+ const base={to:'her',sendAt:at,createdAt:at};
+ const turn={...base,id:'TURN',kind:'game-turn',ref:`activities/${day}-word-waiting`};
+ for(const [done,enabled,sent,dropped,muted] of [[false,true,1,0,0],[true,true,0,1,0],[false,false,0,0,1]]){
+  const h=harness({outbox:[turn],records:{[`wordPuzzles/${day}`]:{revision:0},[`wordResults/${day}-her`]:{day,person:'her',done}},subs:{her:{subscription:SUB,preferences:{categories:{gameTurns:enabled}}}}});
+  const result=await deliver(ENV);assert.equal(result.sent,sent);assert.equal(result.dropped,dropped);assert.equal(result.muted,muted);assert.equal(h.pushes.length,sent);
+ }
+ const streak={...base,id:'STREAK',kind:'game-streak',ref:`streak/${day}/word`};
+ for(const [done,enabled,sent,dropped,muted] of [[false,true,1,0,0],[true,true,0,1,0],[false,false,0,0,1]]){
+  const h=harness({outbox:[streak],records:{[`wordResults/${day}-her`]:{day,person:'her',done}},subs:{her:{subscription:SUB,preferences:{categories:{gameStreaks:enabled}}}}});
+  const result=await deliver(ENV);assert.equal(result.sent,sent);assert.equal(result.dropped,dropped);assert.equal(result.muted,muted);assert.equal(h.pushes.length,sent);
+ }
+ console.log(' ok  game turn and streak pings respect completion and their separate mute switches');
+}
+{
+ const savedClock=Date.now,at=Date.parse('2026-11-01T04:30Z');Date.now=()=>at;
+ try{
+  const h=harness({outbox:[{id:'DST',kind:'note',to:'her',sendAt:at,createdAt:at}],subs:{her:{subscription:SUB,timeZone:'America/New_York',utcOffsetMinutes:-240,preferences:{quietHours:{enabled:true,from:'22:00',to:'08:00'}}}}});
+  assert.equal((await deliver(ENV)).held,1);assert.equal(h.pushes.length,0);assert.equal(h.moved[0].sendAt,Date.parse('2026-11-01T13:00Z'));
+ }finally{Date.now=savedClock;}
+ console.log(' ok  the sender holds until the correct local morning across a DST change');
 }
 console.log('\nDELIVERY WORKER CLEAN');

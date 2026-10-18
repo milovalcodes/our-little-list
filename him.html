@@ -8,13 +8,14 @@
   <script src="seasonal-assets.js"></script>
   <script src="seasonal-theme.js"></script>
   <link rel="stylesheet" href="seasonal.css">
+<link rel="stylesheet" href="app-life.css">
 </head>
 <body class="profile-page him-theme compact-dashboard" data-viewer="him">
   <header class="app-topbar"><span class="home-wordmark">our little app ☀︎☾</span></header>
   <main class="app-shell dashboard-shell">
     <section class="our-sky" aria-labelledby="sky-greeting">
       <header class="sky-heading">
-        <div><p class="tiny-kicker">our sky</p><h1 id="sky-greeting" data-person-name="moon" data-person-fallback="you" data-person-format="hi {name}">hi you</h1></div>
+        <div><p class="tiny-kicker">our sky</p><h1 id="sky-greeting" data-greeting-person="him">hello, Emilio</h1></div>
         <span class="sky-time" id="sky-time">some time today</span>
       </header>
       <div class="sky-stage" id="sky-stage" data-orbit="waiting">
@@ -51,7 +52,7 @@
     <details class="today-new home-updates" id="new"><summary>Updates <span class="count-bubble" id="new-count" hidden>0</span></summary>
       <section class="activity-card">
         <div class="activity-heading"><button id="mark-seen" type="button">mark all seen</button></div>
-        <div class="empty-state" id="activity-empty"><span>✦</span><strong>Nothing new</strong></div>
+        <div class="empty-state" id="activity-empty"><span>✦</span><strong>Nothing new</strong><a href="notes.html">Leave a little note →</a></div>
         <ol class="activity-list" id="activity-list"></ol>
         <button class="activity-see-all" id="activity-see-all" type="button" hidden>see all</button>
       </section>

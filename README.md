@@ -384,3 +384,28 @@ The optional `GAME_BROWSER=webkit` word real-time test forwards unary demo-emula
 `test/word-celebration-browser.mjs` checks all finish tiers, one-time coronations, deferred prompts while typing, 320px animation frames, seasonal portraits and reduced motion. Effects live outside the board: do not put repeating reveal animations on guessed tiles.
 
 “Peek their process” reads one partner board on demand only after both players finish that puzzle (winning or using all five guesses). Firestore independently checks both private game documents; `wordGames` collection queries remain owner-only. Keep these checks when changing the UI. `test/word-peek-browser.mjs` covers loading/error retry and the reveal UI; `test/word-rules.test.mjs` and `test/word-realtime-browser.mjs` cover the actual permissions and two-phone unlock. Deploy rules before the frontend for changes to this boundary.
+
+### Friendly daily games and app feel (v120)
+
+The crown remains weekly. This refresh adds no daily crowns, game reactions, head-to-head records, paid hints, fourth game, or scoring changes. Home shows today's three game states and unfinished games in Today. Finished panels count down to the next 9 a.m. Eastern reset and offer more practice to either player. Practice crossword edition 5 contains 100 distinct 5×5 boards with shared letter entry; earlier practice saves and all daily puzzle plans stay intact.
+
+Personal milestones are cosmetic. From October 19, finishing all three games on five days within one Monday–Sunday week earns one freeze for the **all-three-games streak**. A freeze preserves the run through one missed day; it does not add a played day, score, or win. The balance is derived from saved results, so two devices cannot spend or earn it twice. Existing per-game win/clear streaks keep their original meanings.
+
+Settings → App feel controls interaction sounds, haptics, motion and accessible blue/orange game tiles. Sound and taps start off. Reduced motion disables sensory effects; cards remain fully visible even if animation never runs. Pings has separate switches for partner-finished messages and opt-in evening streak reminders. The Worker deduplicates turn messages across same-day resets, sends no scores or guesses, and drops reminders after completion or reset. These backend changes require a separately approved Worker deployment; no Firestore rules change is needed.
+
+The shared app layer covers both themes and seasonal palettes: tactile controls, subtle tap effects, brief card arrivals, improved empty-state actions, readable form focus, and modal keyboard focus/return. Little Star keeps its own visual style, with saved sound and calm-motion controls, visible keyboard focus, safe audio startup, and readable connection recovery. Its generated bundle is rebuilt from the companion source; gameplay, art and rewards are unchanged by this polish.
+
+Push setup reports a retryable failure if service-worker readiness stalls. Quiet hours prefer the registered IANA time zone over a stale UTC offset, including skipped and repeated hours at daylight saving transitions. Old subscriptions retain offset-based behavior until their next registration.
+
+Regression checklist:
+
+- `pnpm test`: reset/DST boundaries, historical puzzles, score preservation, freeze accounting, reminder deduplication, preferences, offline assets and delivery.
+- `test/daily-habit-browser.mjs`: physical keyboard, closed-card guards, offline/reconnect, hidden partner results, Home status, countdowns, Tokyo/New York/London clocks and widths 320/375/430.
+- `test/practice-browser.mjs`: both keyboards, crossing letters, saved progress, restart, both difficulties, and no competitive writes.
+- `test/app-life-browser.mjs`: both themes across nine destinations, phone widths, empty actions, sheet focus, sound opt-in, saved controls and reduced motion. SFX envelopes use a fake audio device in tests.
+- `test/star-polish-browser.mjs`: the shipped Little Star page and live adapter against a disposable nursery, both people, three phone widths, sound/calm persistence, dialog focus, deep links and reconnect. The companion source's `qa.mjs` also validates the renderer and gameplay suites before rebuilding.
+- Notification sender checks include category mutes, stale game reminders, endpoint replacement, retry/deduplication, quiet hours, focus, and independent phone delivery. `scripts/delivery-health.mjs` is a separate read-only production check and needs a Firebase CLI account with project access; passing mocks is not proof of actual phone delivery.
+- Existing recovery, realtime, lifecycle, peek, weekly and touch checks remain required for their respective paths. Two-account Firestore permissions are exercised only against the demo emulator.
+- Before release, check actual iPhone/Android audio, vibration and home-indicator clearance. After an approved backend release, verify opt-in push delivery on the two phones.
+
+If the local sandbox blocks loopback sockets, `node --import ./test/local-preview.mjs test/app-life-browser.mjs` uses an isolated disk-backed preview at the test origin. It stubs Firebase and blocks external requests. Normal CI browser runs still use the HTTP server. This fallback does not replace service-worker network or real-emulator checks.

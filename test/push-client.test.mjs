@@ -53,7 +53,7 @@ function store(initial = {}) {
   };
 }
 
-const { ensurePushSubscription, forgetPushSubscription, registeredPushState } = await import('../push-client.js');
+const { ensurePushSubscription, forgetPushSubscription, registeredPushState, pushState } = await import('../push-client.js');
 
 // 1. The phone that already answers for him must stop doing so when she signs in.
 {
@@ -123,6 +123,16 @@ for(const existing of [null,{endpoint:ENDPOINT}]){
 console.log(' ok  desktop sign-out preserves the phone; concurrent replacement uses atomic endpoint ownership');
 
 console.log('\nPUSH REGISTRATION CLEAN');
+
+{
+ browser();navigator.serviceWorker.ready=new Promise(()=>{});
+ const original=globalThis.setTimeout;
+ globalThis.setTimeout=(fn,ms,...args)=>original(fn,ms===8000?1:ms,...args);
+ try {
+  assert.equal(await pushState(),'failed','a service worker that never activates has a retryable status');
+  assert.equal((await ensurePushSubscription(store(),'her')).state,'failed');
+ } finally { globalThis.setTimeout=original; }
+}
 
 {
  browser();const android={person:'him',subscription:{endpoint:'https://push.example/android'}};

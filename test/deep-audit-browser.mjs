@@ -92,9 +92,9 @@ try{
   await p.context().close();
  });
  await check('practice restart resets the selected clue too',async()=>{
-  const p=await open('practice.html?as=him#crossword');await p.click('[data-clue="3"]');
+  const p=await open('practice.html?as=him#crossword');await p.click('[data-entry="3"]');
   p.once('dialog',d=>d.accept());await p.click('#practice-restart');
-  assert.equal(await p.locator('[data-clue="0"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await p.locator('[data-entry="0"]').getAttribute('aria-pressed'),'true');
   await p.context().close();
  });
  await check('badges wait for snapshots, ignore hidden tabs and recover after errors',async()=>{

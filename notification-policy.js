@@ -11,6 +11,8 @@ export const NOTIFICATION_GROUPS = [
   { id: 'arrivals', label: 'arrivals & on my way', kinds: ['arrival'] },
   { id: 'status', label: 'status & focus', kinds: ['status', 'focus'] },
   { id: 'keepsakes', label: 'date ideas & memories', kinds: ['date', 'memory'] },
+  { id: 'gameTurns', label: 'your turn to play', kinds: ['game-turn'] },
+  { id: 'gameStreaks', label: 'gentle evening game reminder', kinds: ['game-streak'] },
   { id: 'questions', label: 'daily activities', kinds: ['word-week', 'activity-result', 'activity-reset', 'activities-open', 'question-open', 'question-answered', 'question-reveal'] }
 ];
 
@@ -19,6 +21,8 @@ export const NOTIFICATION_GROUPS = [
 // the old status switch they used to be part of.
 function legacyCategory(categories, id) {
   if (categories[id] !== undefined) return categories[id] !== false;
+  if (id === 'gameTurns') return categories.questions !== false;
+  if (id === 'gameStreaks') return false; // New reminders are opt-in.
   if (id === 'listsAdded' || id === 'listsFinished') return categories.lists !== false;
   if (id === 'asks') return !(categories.help === false && categories.reminders === false);
   if (id === 'arrivals') return categories.status !== false;
@@ -34,7 +38,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES = Object.freeze({
   vibration: 'gentle',
   inAppSound: 'twinkle',
   quietHours: Object.freeze({ enabled: false, from: '22:00', to: '08:00' }),
-  categories: Object.freeze(Object.fromEntries(NOTIFICATION_GROUPS.map(group => [group.id, true])))
+  categories: Object.freeze(Object.fromEntries(NOTIFICATION_GROUPS.map(group => [group.id, group.id !== 'gameStreaks'])))
 });
 
 export function normalizeNotificationPreferences(value = {}) {
@@ -55,10 +59,48 @@ export function normalizeNotificationPreferences(value = {}) {
   };
 }
 
+const quietZoneFormats=new Map();
+
 // Offsets are minutes east of UTC, as saved by the phone when it registers.
 // The worker has no access to the phone's local clock. Moving sendAt, rather
 // than swallowing a push, means the browser's userVisibleOnly rule is obeyed.
-export function quietHoursEndUtc(now, quietHours, utcOffsetMinutes) {
+export function quietHoursEndUtc(now, quietHours, utcOffsetMinutes, timeZone) {
+  // Prefer the phone's IANA zone: an offset saved before a DST change is stale.
+  // Check offset transitions before the predicted end, including skipped or
+  // repeated hours. Hourly probes keep this cheap in the delivery Worker.
+  if (quietHours?.enabled && timeZone) {
+    try {
+      let format=quietZoneFormats.get(timeZone);
+      if(!format){
+        format=new Intl.DateTimeFormat('en-US', { timeZone, hour:'2-digit', minute:'2-digit', hourCycle:'h23' });
+        if(quietZoneFormats.size>=8)quietZoneFormats.delete(quietZoneFormats.keys().next().value);
+        quietZoneFormats.set(timeZone,format);
+      }
+      const offsetAt = at => {
+        const parts = Object.fromEntries(format.formatToParts(at).map(p => [p.type, p.value]));
+        const utc = new Date(at);
+        const difference=Number(parts.hour)*60+Number(parts.minute)-utc.getUTCHours()*60-utc.getUTCMinutes();
+        return ((difference+720)%1440+1440)%1440-720;
+      };
+      let cursor=Math.floor(now/60000)*60000;
+      for (let pass=0; pass<4; pass++) {
+        const offset=offsetAt(cursor),end=quietHoursEndUtc(cursor,quietHours,offset);
+        if(!end)return pass?cursor:0;
+        let previous=cursor,transition=0;
+        for(let probe=Math.min(cursor+3600000,end);probe<=end;probe=Math.min(probe+3600000,end)) {
+          if(offsetAt(probe)!==offset){
+            let low=previous/60000,high=probe/60000;
+            while(high-low>1){const middle=Math.floor((low+high)/2);if(offsetAt(middle*60000)===offset)low=middle;else high=middle;}
+            transition=high*60000;break;
+          }
+          if(probe===end)break;
+          previous=probe;
+        }
+        if(!transition)return end;
+        cursor=transition;
+      }
+    } catch (_) { /* Invalid legacy zones fall back to the saved offset. */ }
+  }
   if (!quietHours?.enabled || !Number.isFinite(utcOffsetMinutes)) return 0;
   const toMinutes = value => { const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value || ''); return match ? Number(match[1]) * 60 + Number(match[2]) : -1; };
   const from = toMinutes(quietHours.from);

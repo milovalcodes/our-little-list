@@ -13,6 +13,16 @@ function pushSupported() {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
 
+// A failed installation must not leave Settings or sign-in waiting forever.
+async function readyRegistration() {
+  let timer;
+  try {
+    return await Promise.race([navigator.serviceWorker.ready, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Notifications are still connecting. Please try again.')), 8000);
+    })]);
+  } finally { clearTimeout(timer); }
+}
+
 // Reports what is standing between this phone and a background notification,
 // without asking for anything. Used by the phone checker.
 export async function pushState() {
@@ -26,11 +36,11 @@ export async function pushState() {
   if (Notification.permission === 'denied') return 'blocked';
   if (Notification.permission !== 'granted') return 'needs-permission';
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await readyRegistration();
     const existing = await registration.pushManager.getSubscription();
     return existing ? 'ready' : 'needs-subscribe';
   } catch (_) {
-    return 'unsupported';
+    return 'failed';
   }
 }
 
@@ -42,7 +52,7 @@ export async function ensurePushSubscription(data, person, {replace=false}={}) {
   if (!data || data.mode === 'local') return { state: 'no-sync' };
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await readyRegistration();
     let subscription = await registration.pushManager.getSubscription();
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
@@ -55,6 +65,7 @@ export async function ensurePushSubscription(data, person, {replace=false}={}) {
       person,
       subscription: record,
       preferences: readNotificationPreferences(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       utcOffsetMinutes: -new Date().getTimezoneOffset(),
       updatedAt: Date.now(),
       device: navigator.userAgent.slice(0, 180)
@@ -77,7 +88,7 @@ export async function registeredPushState(data,person){
   if(state!=='ready')return state;
   if(!data||data.mode==='local')return 'no-sync';
   try{
-    const registration=await navigator.serviceWorker.ready;
+    const registration=await readyRegistration();
     const subscription=await registration.pushManager.getSubscription();
     const rows=await data.readOnce(PUSH_SUBS,{fromServer:true});
     const saved=rows.find(row=>row.id===person)?.subscription?.endpoint;

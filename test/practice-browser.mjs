@@ -37,20 +37,25 @@ try{
  await page.click('[data-practice-tab=crossword]');await page.waitForSelector('.crossword-grid');
  await page.clock.install();await page.clock.fastForward(180000);
  const crossword=practicePuzzle('crossword',0);
- await page.fill('#practice-answer','ZZZZZ');await page.locator('.crossword-answer button').click();assert.match(await page.locator('[data-feedback]').textContent(),/Not quite/);
  for(let i=0;i<crossword.entries.length;i++){
-  await page.locator('[data-clue="'+i+'"]').click();await page.fill('#practice-answer',crossword.entries[i].word);await page.locator('.crossword-answer button').click();
+  if(await page.locator('.practice-done').count())break;
+  await page.locator('[data-entry="'+i+'"]').click();
+  await page.locator('[data-square="'+crossword.entries[i].start+'"]').click();
+  // Selecting the clue may advance to its first empty crossing. Select the
+  // starting square and restore direction explicitly for whole-word typing.
+  const across=crossword.entries[i].step===1;
+  if(!await page.locator('.crossword-current [data-flip] b').textContent().then(t=>t.includes(across?'across':'down')))await page.locator('[data-flip]').click();
+  await page.keyboard.type(crossword.entries[i].word.toLowerCase());
  }
  assert.match(await page.locator('[data-feedback]').textContent(),/all found/);
  await page.selectOption('#practice-picker','49');await page.click('#practice-next');assert.equal(await page.locator('#practice-picker').inputValue(),'0');
  await page.click('[data-practice-level=hard]');await page.waitForFunction(()=>document.querySelector('#practice-picker').value==='50');
  assert.equal(await page.locator('#practice-picker option').count(),50);
  const hard=practicePuzzle('crossword',50);
- await page.locator('[data-clue="19"]').click();await page.fill('#practice-answer',hard.entries[19].word);await page.locator('.crossword-answer button').click();
- await page.reload();await page.waitForSelector('[data-clue="19"].found');
- const crossing=hard.entries.findIndex((_,i)=>i!==19&&entryCells(hard,i).some(c=>entryCells(hard,19).includes(c)));
- await page.locator('[data-clue="'+crossing+'"]').click();
- assert.ok(await page.locator('.crossword-pattern .known').count(),'crossing letters help solve another clue');
+ assert.equal(await page.locator('.puzzle-cell').count(),21);
+ await page.locator('[data-entry="0"]').click();await page.keyboard.type(hard.entries[0].word.toLowerCase());
+ await page.reload();await page.waitForSelector('.crossword-grid');
+ assert.ok((await page.locator('.puzzle-cell span').allTextContents()).filter(Boolean).length>=5,'crossing letters persist');
  await page.selectOption('#practice-picker','99');await page.click('#practice-next');assert.equal(await page.locator('#practice-picker').inputValue(),'50');
  await page.click('[data-practice-tab=search]');assert.match(page.url(),/#search-hard$/);
  await page.waitForFunction(()=>document.querySelector('#practice-progress').textContent.includes('hard'));

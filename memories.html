@@ -7,6 +7,7 @@
   <script src="seasonal-assets.js"></script>
   <script src="seasonal-theme.js"></script>
   <link rel="stylesheet" href="seasonal.css">
+<link rel="stylesheet" href="app-life.css">
 </head>
 <body class="profile-page" data-app="memories">
   <header class="app-topbar"><a class="home-link back-to-side" href="index.html">← home</a><span class="mini-brand">memories ◒</span></header>
@@ -14,7 +15,7 @@
     <section class="feature-hero memory-hero"><span class="feature-icon">◒</span><p class="tiny-kicker">evidence we had fun</p><h1>Memories</h1></section>
     <nav class="tabs memory-tabs" aria-label="Memory categories"><button type="button" class="tab active" data-memory-category="yours" aria-pressed="true">Your memories</button><button type="button" class="tab" data-memory-category="app" aria-pressed="false">App memories</button></nav>
     <section class="memory-random" id="memory-random" hidden></section>
-    <section class="list-card memory-list-card" aria-label="Our memories"><div class="list-heading"><div class="diary-heading-actions"><button class="tiny-button" id="memory-pick" type="button">pull one out</button><button class="page-add" type="button" data-open-sheet="memory-form">＋ add</button></div></div><div class="memory-grid" id="memory-list"></div><div class="empty-state" id="memory-empty"><span>◌</span><strong>Jar is empty</strong></div></section>
+    <section class="list-card memory-list-card" aria-label="Our memories"><div class="list-heading"><div class="diary-heading-actions"><button class="tiny-button" id="memory-pick" type="button">pull one out</button><button class="page-add" type="button" data-open-sheet="memory-form">＋ add</button></div></div><div class="memory-grid" id="memory-list"></div><div class="empty-state" id="memory-empty"><span>◌</span><strong>Our story starts small</strong><p>A photo, a sentence, a moment worth keeping.</p><button type="button" data-open-sheet="memory-form">Save our first memory →</button></div></section>
     <section class="composer-card memory-composer" hidden>
       <form id="memory-form"><label for="memory-date">When was it?</label><input id="memory-date" type="date" required><label for="memory-text">What happened?</label><textarea id="memory-text" required maxlength="500" placeholder="something worth keeping"></textarea><label class="photo-picker"><input id="memory-photo" type="file" accept="image/*"><span>add a photo</span><small id="photo-name"></small></label><button class="primary-action" id="memory-save" type="submit">put it in the jar</button></form>
     </section>

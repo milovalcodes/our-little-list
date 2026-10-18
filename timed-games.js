@@ -1,3 +1,5 @@
+import {gameFeedback} from './game-comfort.js';
+import {countdownMarkup} from './daily-habit.js';
 import {activityClock} from './activity-clock.js';
 import {timedPuzzle,PUZZLE_NAMES,entryCells,selectedSearchWord,isHardDay} from './daily-puzzles.js';
 import {millis,timedPoints,timedOver,timedLimit,timedMax,timeBonus,TIME_BONUS_MAX,timedSummary} from './timed-game.js';
@@ -70,7 +72,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   for(const i of correctEntries(puzzle,letters))if(!mine.solved.includes(i))pendingSearch.add(i);
   drainSearch();
  }
- function edit(next){letters=next.letters;cursor=next.cursor;saveLetters();creditWords();render();}
+ function edit(next){gameFeedback('key');letters=next.letters;cursor=next.cursor;saveLetters();creditWords();render();}
  function moveTo(next){cursor=next;render();}
  function render(){
   if(disposed)return;
@@ -127,7 +129,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
    const s=timedStats([...history.filter(r=>r.day!==day),timedSummary(mine)],type,day);
    stats=`<dl class="result-stats"><div><dt>played</dt><dd>${s.played}</dd></div><div><dt>cleared</dt><dd>${s.cleared}</dd></div><div><dt>streak</dt><dd>${s.current}</dd></div><div><dt>best time</dt><dd>${s.bestTime===null?'–':clock(s.bestTime)}</dd></div></dl>`;
   }
-  return `<section class="daily-results" aria-label="Today’s results"><div class="result-compare">${side('You',mine)}${side(esc(personName(other)),theirs)}</div>${stats}<button type="button" data-share>share my result</button><small class="share-note" role="status">${esc(shareNote)}</small></section>`;
+  return `<section class="daily-results" aria-label="Today’s results"><div class="result-compare">${side('You',mine)}${side(esc(personName(other)),theirs)}</div>${stats}${countdownMarkup()}<a class="practice-rematch" href="practice.html#${type}">A little more practice →</a><button type="button" data-share>share my result</button><small class="share-note" role="status">${esc(shareNote)}</small></section>`;
  }
  function peekMarkup(){
   if(!timedOver(partner()))return '<p class="word-partner">waiting for '+esc(personName(other))+' · their process stays private</p>';
@@ -150,6 +152,8 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
    if(disposed||current!==action||!next||revisionOf(next)!==revisionOf(puzzle))return;
    if(!mine||next.solved.length>=mine.solved.length)mine=next;
    if(type==='search'&&Number.isInteger(options.index)){flash=options.index;clearTimeout(flashTimer);flashTimer=setTimeout(()=>{host.querySelectorAll('.just-found').forEach(c=>c.classList.remove('just-found'));flash=-1;},700);}
+   if(next.done&&next.complete)gameFeedback('solve');
+   else if(type==='search'&&Number.isInteger(options.index))gameFeedback('notice');
    if(next.done)celebration.play({done:true,won:next.complete,guesses:Array(3),revision:revisionOf(next)},next.solved.length?{tier:next.complete?'brilliant':'win',icon:'✦',text:`${pointsText(next)} · ${next.complete?'all found!':'nicely done ♡'}`,pieces:next.complete?24:0,duration:2600}:undefined);
   }catch(error){if(!disposed&&current===action){pendingSearch.clear();message=error.message||'Couldn’t save. Check your connection and retry.';expiredRetryAt=Date.now()+15000;}}
   finally{clearTimeout(timer);if(!disposed&&current===action){pendingSearch.delete(options.index);busy=false;if(finished())pendingSearch.clear();render();drainSearch();}}
