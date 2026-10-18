@@ -183,7 +183,10 @@ export function startDailyWord({data,viewer,other},options={}){
   };
   const activate=()=>{activeBoard=host;};
   const disclosure=options.disclosure||document.getElementById('wordle');
-  const opened=event=>{document.removeEventListener('keydown',keydown);if(disclosure.open){activate();document.addEventListener('keydown',keydown);if(event&&!mine?.done)bringGameIntoView(disclosure);}else typing.suspend();};
+  // The keydown handler checks that this card is open; toggle events arrive a task
+  // late, so attaching it on open would drop keys typed right after a tap.
+  const opened=event=>{if(disclosure.open){activate();if(event&&!mine?.done)bringGameIntoView(disclosure);}else typing.suspend();};
+  document.addEventListener('keydown',keydown);
   host.addEventListener('pointerdown',activate);host.addEventListener('focusin',activate);disclosure.addEventListener('toggle',opened);if(disclosure.open)opened();else if(!activeBoard)activate();
   function resume(){if(activityClock().day!==openedDay){location.reload();return;}read();}
   addEventListener('online',resume);addEventListener('offline',render);
