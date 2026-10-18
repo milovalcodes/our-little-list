@@ -1,4 +1,4 @@
-import {createGameTyping} from './game-typing.js';
+import {createGameTyping,bringGameIntoView} from './game-typing.js';
 import {gameFeedback} from './game-comfort.js';
 import {countdownMarkup} from './daily-habit.js';
 import { activityClock } from './activity-clock.js';
@@ -183,7 +183,7 @@ export function startDailyWord({data,viewer,other},options={}){
   };
   const activate=()=>{activeBoard=host;};
   const disclosure=options.disclosure||document.getElementById('wordle');
-  const opened=()=>{document.removeEventListener('keydown',keydown);if(disclosure.open){activate();document.addEventListener('keydown',keydown);}else typing.suspend();};
+  const opened=event=>{document.removeEventListener('keydown',keydown);if(disclosure.open){activate();document.addEventListener('keydown',keydown);if(event&&!mine?.done)bringGameIntoView(disclosure);}else typing.suspend();};
   host.addEventListener('pointerdown',activate);host.addEventListener('focusin',activate);disclosure.addEventListener('toggle',opened);if(disclosure.open)opened();else if(!activeBoard)activate();
   function resume(){if(activityClock().day!==openedDay){location.reload();return;}read();}
   addEventListener('online',resume);addEventListener('offline',render);

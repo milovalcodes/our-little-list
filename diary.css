@@ -929,3 +929,9 @@ body:has(#practice-game.game-active) .app-dock { display:none; }
 @media(prefers-reduced-motion:reduce) { .daily-chevron { transition:none; } }
 
 body:has(.game-native-field input:focus) .app-dock { display:none; }
+
+/* Game keys stay in reach while a round is on. Daily rounds and practice
+   crosswords hide the dock, so the keys sit on the bottom edge; practice
+   Little Word keeps the dock, so its keys sit just above it. */
+:is(.game-active,.timed-playing) .word-keyboard,#practice-game .word-keyboard { position:sticky; bottom:calc(var(--app-dock-height,64px) + max(8px,env(safe-area-inset-bottom)) + 6px); z-index:14; margin-top:8px; padding:8px 0; background:var(--diary-panel); box-shadow:0 -3px 0 var(--diary-rule); }
+body:has(#daily:not([hidden]) .daily-entry[open] :is(.game-active,.timed-playing)) .word-keyboard,body:has(#practice-game.game-active) .word-keyboard { bottom:env(safe-area-inset-bottom); }

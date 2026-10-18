@@ -2,6 +2,7 @@ import {chromium,webkit} from 'playwright';
 import assert from 'node:assert/strict';
 import {weeklyRounds} from '../round-engine.js';
 import {timedPoints} from '../timed-game.js';
+import {crosswordWindow} from '../crossword-view.js';
 const base='http://127.0.0.1:8777',browser=await(process.env.GAME_BROWSER==='webkit'?webkit:chromium).launch(),errors=[];
 try{
  for(const [day,width] of [['2026-10-20',390],['2026-10-25',320]]){
@@ -22,7 +23,8 @@ try{
   await page.locator('#crossword .puzzle-cell.cursor').waitFor();
   assert.equal(await page.locator('#crossword .puzzle-cell').count(),mini.grid.replaceAll('#','').length);
   assert.ok(mini.size>5);
-  assert.equal(await page.locator('#crossword .puzzle-wall').count(),mini.grid.split('#').length-1);
+  // Only the playable window is drawn: edge rows and columns of walls are trimmed.
+  assert.equal(await page.locator('#crossword .puzzle-wall').count(),crosswordWindow(mini).cells.filter(i=>mini.grid[i]==='#').length);
   // The keyboard works straight after start, without tapping a square first.
   const first=mini.entries[0];
   for(const ch of first.word)await page.keyboard.press(ch.toLowerCase());

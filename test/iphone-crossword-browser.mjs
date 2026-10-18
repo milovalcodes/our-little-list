@@ -33,6 +33,7 @@ try{
    check(await host.locator('.crossword-focus').evaluate(p=>{const a=p.querySelector('.current').getBoundingClientRect(),b=p.getBoundingClientRect();return a.left>=b.left-1&&a.right<=b.right+1;}),label+': current letter remains visible in the answer strip');
    check(!await dock.isVisible(),label+': keyboard viewport has no dock');
    await host.locator('.puzzle-grid').evaluate(n=>window.scrollTo(0,n.getBoundingClientRect().top+scrollY+70));
+   await page.waitForFunction(()=>new Promise(done=>{let last=scrollY;const t=setInterval(()=>{if(scrollY===last){clearInterval(t);done(true);}last=scrollY;},80);})); // html scrolls smoothly
    const clue=await host.locator('.crossword-current').boundingBox();
    check(clue.y>=0&&clue.y<60&&clue.height<dimensions.height/2,label+': sticky clue fits shortened viewport');
    check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),label+': no page-wide horizontal overflow');

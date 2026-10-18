@@ -2,7 +2,7 @@ import {weekForDay,wordPoints,wordTable,wordAttempts,normalizeWeekRecord} from '
 import {timedPoints,timedOver} from './timed-game.js';
 import {LEAGUE_START_DAY,isHardDay} from './daily-puzzles.js';
 import {activityWindow} from './activity-clock.js';
-export const SCORE_GAMES=[{id:'word',name:'Little Word',icon:'W',max:60},{id:'search',name:'Word Search',icon:'⌕',max:50},{id:'crossword',name:'Mini crossword',icon:'▦',max:50}];
+export const SCORE_GAMES=[{id:'word',name:'Little Word',icon:'W',max:60},{id:'search',name:'Word Search',icon:'⌕',max:50},{id:'crossword',name:'Crossword',icon:'▦',max:50}];
 const people=['her','him'];
 // Older days keep the maximum they were played under.
 export const gameMax=(game,day)=>game.id==='word'?wordTable(day)[0]:game.max;

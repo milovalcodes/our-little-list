@@ -305,7 +305,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         if(!plan.exists())transaction.set(planRef,{week,days:planned,createdAt:Date.now()});
         const record={day,scope,requestId,by:ADMIN_UID,before,createdAt:Date.now()};
         transaction.set(receipt,record);
-        transaction.set(doc(named(OUTBOX),'reset-'+requestId),{to:'her',kind:'activity-reset',title:'Fresh rounds ♡',body:(scope==='all'?'The three games':scope==='word'?'Little Word':scope==='search'?'Word Search':'Mini crossword')+' got a fresh start. New answers, fresh attempts.',ref:'gameResets/'+requestId,url:'activities.html#'+(scope==='all'?'daily':scope==='word'?'wordle':scope),createdAt:record.createdAt,sendAt:record.createdAt});
+        transaction.set(doc(named(OUTBOX),'reset-'+requestId),{to:'her',kind:'activity-reset',title:'Fresh rounds ♡',body:(scope==='all'?'The three games':scope==='word'?'Little Word':scope==='search'?'Word Search':'Crossword')+' got a fresh start. New answers, fresh attempts.',ref:'gameResets/'+requestId,url:'activities.html#'+(scope==='all'?'daily':scope==='word'?'wordle':scope),createdAt:record.createdAt,sendAt:record.createdAt});
         return record;
       });
       wakeDelivery();return saved;

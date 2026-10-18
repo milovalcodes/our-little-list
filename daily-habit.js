@@ -1,7 +1,7 @@
 import {activityClock,activityWindow} from './activity-clock.js';
 import {wordPoints} from './word-scores.js';
 import {timedOver,timedPoints} from './timed-game.js';
-export const DAILY_GAMES=[{type:'word',name:'Little Word',hash:'wordle'},{type:'search',name:'Word Search',hash:'search'},{type:'crossword',name:'Mini crossword',hash:'crossword'}];
+export const DAILY_GAMES=[{type:'word',name:'Little Word',hash:'wordle'},{type:'search',name:'Word Search',hash:'search'},{type:'crossword',name:'Crossword',hash:'crossword'}];
 export const gameDone=r=>Boolean(r&&(r.type?timedOver(r):r.done));
 export const gamePoints=r=>r?.type?timedPoints(r):wordPoints(r);
 export function dailyStates(words,timed,viewer,day=activityClock().day){

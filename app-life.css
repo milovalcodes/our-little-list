@@ -112,3 +112,19 @@ html[data-quiet-motion] :is(.word-finale,.word-confetti,.life-tap,.life-spark) {
 .sound-volume output { min-width:3em; font-variant-numeric:tabular-nums; }
 .sound-previews { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
 .sound-previews button { min-height:44px; padding:8px 14px; color:var(--page-text); background:var(--diary-raised); border:1px solid var(--diary-rule); border-radius:10px; font:inherit; }
+
+/* One disclosure cue across the app: a drawn chevron that turns when opened.
+   Old glyph slots (⌄, ＋, ›, ▶) keep their place but draw the same mark. */
+.profile-page details>summary { list-style:none; }
+.profile-page details>summary::-webkit-details-marker { display:none; }
+.profile-page :is(.daily-chevron,.guide-topic summary>i,.status-editor-disclosure summary>i,.saved-places>summary>i,.profile-quick>summary>span[aria-hidden]) { display:inline-grid; place-items:center; font-size:0; transform:none; }
+.profile-page :is(.daily-chevron,.guide-topic summary>i,.status-editor-disclosure summary>i,.saved-places>summary>i,.profile-quick>summary>span[aria-hidden])::before,
+.profile-page :is(.today-new,.personal-progress,.game-comfort details,.date-more-details,.status-suggestions,.admin-games,.score-help,.phone-health,.settings-group)>summary::after { content:""; display:inline-block; flex:none; width:.5rem; height:.5rem; margin-inline:.55rem .25rem; border:solid currentColor; border-width:0 2px 2px 0; opacity:.65; rotate:45deg; translate:0 -.12rem; transition:rotate .16s ease,translate .16s ease; }
+.profile-page details[open]>summary :is(.daily-chevron,i,span[aria-hidden])::before,
+.profile-page details[open]>summary::after { rotate:225deg; translate:0 .12rem; }
+.profile-page :is(.today-new,.personal-progress,.game-comfort details,.date-more-details,.status-suggestions,.admin-games,.score-help,.phone-health,.settings-group)>summary { display:flex; align-items:center; }
+.profile-page :is(.today-new,.personal-progress,.game-comfort details,.date-more-details,.status-suggestions,.admin-games,.score-help,.phone-health)>summary::after { margin-left:auto; }
+.profile-page .history-group summary::before { content:none; }
+.profile-page .history-group summary::after { content:""; flex:none; width:.5rem; height:.5rem; margin-inline:.55rem .25rem; border:solid currentColor; border-width:0 2px 2px 0; opacity:.65; rotate:45deg; translate:0 -.12rem; transition:rotate .16s ease,translate .16s ease; }
+.profile-page .history-group[open] summary::after { rotate:225deg; translate:0 .12rem; }
+@media (prefers-reduced-motion:reduce) { .profile-page details>summary::after,.profile-page details>summary :is(.daily-chevron,i,span[aria-hidden])::before { transition:none; } }
