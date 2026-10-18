@@ -120,6 +120,11 @@ function addDock(viewer) {
     <button class="dock-item" type="button" data-open-sheet="more"><i>•••</i><span>more</span></button>
   </nav>`);
   document.body.classList.add('has-app-dock');
+  // Text zoom can make the dock taller. Reserve its actual height, and keep
+  // that space while a game hides it so closing a board does not jump.
+  const dock=document.querySelector('.app-dock');
+  const sizeDock=()=>{if(dock.offsetHeight)document.documentElement.style.setProperty('--app-dock-height',dock.offsetHeight+'px');};
+  new ResizeObserver(sizeDock).observe(dock);sizeDock();
   document.querySelector('.app-dock .is-active')?.setAttribute('aria-current','page');
 }
 

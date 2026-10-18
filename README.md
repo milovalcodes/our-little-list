@@ -409,3 +409,9 @@ Regression checklist:
 - Before release, check actual iPhone/Android audio, vibration and home-indicator clearance. After an approved backend release, verify opt-in push delivery on the two phones.
 
 If the local sandbox blocks loopback sockets, `node --import ./test/local-preview.mjs test/app-life-browser.mjs` uses an isolated disk-backed preview at the test origin. It stubs Firebase and blocks external requests. Normal CI browser runs still use the HTTP server. This fallback does not replace service-worker network or real-emulator checks.
+
+### Clarity and phone controls (v121)
+
+Daily games hide the bottom dock while an unfinished board is open. Current crossword clues and search words stay above the board as you scroll. Little Word and daily/practice crosswords offer a real phone keyboard; its input survives board redraws, supports mobile input/deletion, and keeps the game keyboard available as an alternative. Practice Little Word supports the same input.
+
+`test/clarity-browser.mjs` checks WCAG A/AA findings across both profiles, all three seasonal palettes, expanded panels, and 200% text at 320px. `test/game-accessibility-browser.mjs` checks native input, focus persistence, dock visibility, sticky game context, and a shortened keyboard viewport in Chromium or WebKit. Desktop WebKit checks do not emulate the physical iOS keyboard or Safari toolbar animations; actual-device confirmation is still useful for those OS behaviors.

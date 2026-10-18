@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v120';
+const CACHE = 'our-little-list-v121';
 // v114: authenticated shared Little Star alpha, competition earnings and care pings.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
@@ -20,7 +20,7 @@ const PAGES = [
 
 const ASSETS = [
   './little-star-live.js', './little-star-live.css',
-  './connected-crossword.js', './daily-habit.js', './practice-crossword.js', './game-progress.js', './personal-progress.js', './game-comfort.js', './weekly-recap.js', './app-life.js', './app-life.css',
+  './connected-crossword.js', './daily-habit.js', './practice-crossword.js', './game-progress.js', './personal-progress.js', './game-comfort.js', './game-typing.js', './weekly-recap.js', './app-life.js', './app-life.css',
   './puzzle-edition.js', './puzzle-edition-bank.js', './puzzle-edition-seasonal.js', './practice-edition-bank.js',
   './round-engine.js', './round-revision.js', './round-library.js', './game-reset.js',
   './navigation-attention.js', './home-extras.js',

@@ -12,8 +12,7 @@ try{
   await page.goto(base+'/activities.html?as=her#wordle');await page.locator('#word-game [data-key]:not([disabled])').first().waitFor();
   await page.waitForFunction(()=>document.querySelector('#wordle .daily-state')?.textContent==='not played');
   assert.match(await page.locator('.word-partner').textContent(),/Emilio hasn’t tried/);
-  const keyboard=await page.locator('#word-game .word-keyboard').boundingBox();
-  const dock=await page.locator('.app-dock').boundingBox();assert.ok(keyboard.y+keyboard.height<=(dock?.y||812),'keyboard clears bottom navigation');
+  await page.locator('.app-dock').waitFor({state:'hidden'}); // Navigation never covers an open daily board.
   await page.locator('#wordle>summary').click();await page.keyboard.type('abc');
   await page.locator('#wordle>summary').click();assert.equal(await page.locator('#word-game .word-row').first().textContent(),'');
   await page.keyboard.press('Control+a');assert.equal(await page.locator('#word-game .word-row').first().textContent(),'');

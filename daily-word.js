@@ -1,3 +1,4 @@
+import {createGameTyping} from './game-typing.js';
 import {gameFeedback} from './game-comfort.js';
 import {countdownMarkup} from './daily-habit.js';
 import { activityClock } from './activity-clock.js';
@@ -30,6 +31,7 @@ export function startDailyWord({data,viewer,other},options={}){
   let puzzle=null,mine=null,results=[],draft='',busy=false,error='',syncFailure=false,unsub=[],loaded=new Set(),timer;
   const summary=options.summary||document.getElementById('word-summary');
   const closed=()=>Boolean(puzzle&&Date.now()>=puzzle.closesAt);
+  const typing=createGameTyping(host,{label:'Little Word',onKey:key}),view=typing.view;
   function read(){
     unsub.forEach(stop=>stop());unsub=[];loaded=new Set();error='';syncFailure=false;clearTimeout(timer);
     const fail=()=>{syncFailure=true;error='Couldn’t sync the word. Check your connection, then retry.';render();};
@@ -78,15 +80,16 @@ export function startDailyWord({data,viewer,other},options={}){
     const peekFocused=Boolean(host.querySelector('[data-word-peek]:focus'));
     const announcement=guesses.length?`Guess ${guesses.length}: ${[...guesses.at(-1)].map((c,i)=>c.toUpperCase()+' '+({correct:'right spot',present:'in the word',absent:'not in the word'}[marks.at(-1)?.[i]]||'')).join(', ')}.`:'';
     const disabled=busy||!ready()||done||!navigator.onLine;
-    host.innerHTML=`
+    host.classList.toggle('game-active',Boolean(ready()&&!done));typing.update(Boolean(ready()&&!done),disabled);
+    view.innerHTML=`
       <div class="word-heading"><span>${puzzle?escapeHtml(puzzle.theme||wordTheme(puzzle.word,sunday)):'your guesses'}</span><span>${sunday?'hard · 2× points':`${guesses.length} / ${wordAttempts(day)}`}</span></div>
       <div class="word-grid" role="group" aria-label="${wordAttempts(day)} guesses">${Array.from({length:wordAttempts(day)},(_,row)=>{
         const text=guesses[row]||(!done&&row===guesses.length?draft:'');
-        return `<div class="word-row" aria-label="Guess ${row+1}">${Array.from({length:5},(_,i)=>`<span class="word-tile ${marks[row]?.[i]||''}" aria-label="${text[i]?escapeHtml(text[i].toUpperCase())+', '+(marks[row]?.[i]||'not submitted'):'empty'}">${escapeHtml(text[i]||'')}</span>`).join('')}</div>`;
+        return `<div role="group" class="word-row" aria-label="Guess ${row+1}">${Array.from({length:5},(_,i)=>`<span role="img" class="word-tile ${marks[row]?.[i]||''}" aria-label="${text[i]?escapeHtml(text[i].toUpperCase())+', '+(marks[row]?.[i]||'not submitted'):'empty'}">${escapeHtml(text[i]||'')}</span>`).join('')}</div>`;
       }).join('')}</div>
       <p class="word-message" role="status" aria-live="polite">${escapeHtml(error||(!navigator.onLine?'Offline. Reconnect to save your guess.':busy?'saving your guess…':!ready()?'getting today’s word…':finish?finish.text+(mine.won?'':` The word was ${puzzle.word.toUpperCase()}.`):done?`The word was ${puzzle.word.toUpperCase()}.`:' '))}</p>
       ${syncFailure?'<button type="button" data-word-retry>retry sync</button>':''}
-      ${!done?`<div class="word-keyboard" aria-label="Word keyboard">${['qwertyuiop','asdfghjkl','↵zxcvbnm⌫'].map(row=>`<div>${[...row].map(letter=>`<button type="button" data-key="${letter}" class="${keys[letter]||''} ${letter==='↵'||letter==='⌫'?'wide-key':''}" aria-label="${letter==='↵'?'Submit guess':letter==='⌫'?'Delete letter':letter.toUpperCase()+(keys[letter]?', '+({correct:'right spot',present:'in the word',absent:'not in the word'}[keys[letter]]):', not tried')}" ${disabled?'disabled':''}>${letter==='↵'?'enter':letter}</button>`).join('')}</div>`).join('')}</div>`:''}
+      ${!done?`<div role="group" class="word-keyboard" aria-label="Word keyboard">${['qwertyuiop','asdfghjkl','↵zxcvbnm⌫'].map(row=>`<div>${[...row].map(letter=>`<button type="button" data-key="${letter}" class="${keys[letter]||''} ${letter==='↵'||letter==='⌫'?'wide-key':''}" aria-label="${letter==='↵'?'Submit guess':letter==='⌫'?'Delete letter':letter.toUpperCase()+(keys[letter]?', '+({correct:'right spot',present:'in the word',absent:'not in the word'}[keys[letter]]):', not tried')}" ${disabled?'disabled':''}>${letter==='↵'?'enter':letter}</button>`).join('')}</div>`).join('')}</div>`:''}
       <p class="sr-only" role="status" aria-live="polite">${escapeHtml(announcement)}</p><div class="word-legend"><span><i class="word-tile correct">A</i>right spot</span><span><i class="word-tile present">A</i>in the word</span><span><i class="word-tile absent">A</i>not in the word</span></div>
       <p class="word-partner">${partnerLabel()}</p>${resultsMarkup()}${peekMarkup()}`;
     if(focused)host.querySelector(`[data-key="${focused}"]`)?.focus({preventScroll:true});
@@ -98,7 +101,7 @@ export function startDailyWord({data,viewer,other},options={}){
     if(!canPeek()||!puzzle)return '';
     const board=peekGame&&peekGame.guesses.map((guess,row)=>{
       const marks=scoreGuess(guess,puzzle.word);
-      return `<div class="word-row" aria-label="Guess ${row+1}">${[...guess].map((letter,i)=>`<span class="word-tile ${marks[i]}" aria-label="${escapeHtml(letter.toUpperCase())}, ${marks[i]}">${escapeHtml(letter)}</span>`).join('')}</div>`;
+      return `<div role="group" class="word-row" aria-label="Guess ${row+1}">${[...guess].map((letter,i)=>`<span role="img" class="word-tile ${marks[i]}" aria-label="${escapeHtml(letter.toUpperCase())}, ${marks[i]}">${escapeHtml(letter)}</span>`).join('')}</div>`;
     }).join('');
     return `<div class="word-peek"><button type="button" data-word-peek aria-expanded="${peekOpen}" ${peekBusy?'aria-busy="true"':''}>${peekBusy?'getting their guesses…':peekOpen?'close their process':'peek their process'}</button>${peekOpen?`<div class="word-peek-board"><h3>${escapeHtml(personName(other))}’s guesses</h3>${peekError?`<p role="status">${escapeHtml(peekError)}</p><button type="button" data-word-peek-retry>try again</button>`:peekBusy?'<p role="status">one second…</p>':`<div class="word-grid" role="group" aria-label="Partner’s guesses">${board||''}</div>`}</div>`:''}</div>`;
   }
@@ -165,7 +168,7 @@ export function startDailyWord({data,viewer,other},options={}){
   const click=event=>{const button=event.target.closest('[data-key]');if(button)void key(button.dataset.key);if(event.target.closest('[data-word-retry]'))read();if(event.target.closest('[data-word-peek]'))void peek();if(event.target.closest('[data-share]')&&mine?.done&&puzzle)void shareResult(wordShare(mine,puzzle.word)).then(note=>{shareNote=note;render();});if(event.target.closest('[data-word-peek-retry]'))void peek(true);};
   host.addEventListener('click',click);
   const keydown=event=>{
-    if(activeBoard!==host)return;
+    if(event.defaultPrevented||activeBoard!==host)return;
     if([...document.querySelectorAll('dialog[open],[role="dialog"]')].some(dialog=>dialog.getClientRects().length))return;
     if(!(options.disclosure||document.getElementById('wordle')).open||document.getElementById('daily').hidden||event.ctrlKey||event.metaKey||event.altKey||event.isComposing||event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
     // Let focused buttons keep their ordinary Enter behavior.
@@ -180,7 +183,7 @@ export function startDailyWord({data,viewer,other},options={}){
   };
   const activate=()=>{activeBoard=host;};
   const disclosure=options.disclosure||document.getElementById('wordle');
-  const opened=()=>{document.removeEventListener('keydown',keydown);if(disclosure.open){activate();document.addEventListener('keydown',keydown);requestAnimationFrame(()=>host.querySelector('.word-keyboard')?.scrollIntoView({block:'end',behavior:'instant'}));}};
+  const opened=()=>{document.removeEventListener('keydown',keydown);if(disclosure.open){activate();document.addEventListener('keydown',keydown);}else typing.suspend();};
   host.addEventListener('pointerdown',activate);host.addEventListener('focusin',activate);disclosure.addEventListener('toggle',opened);if(disclosure.open)opened();else if(!activeBoard)activate();
   function resume(){if(activityClock().day!==openedDay){location.reload();return;}read();}
   addEventListener('online',resume);addEventListener('offline',render);
@@ -188,5 +191,5 @@ export function startDailyWord({data,viewer,other},options={}){
   addEventListener('littlelist:profile',render);
   const interval=setInterval(()=>{if(activityClock().day!==openedDay)location.reload();else if(closed())render();},30000);
   read();
-  return ()=>{disposed=true;host.removeEventListener('click',click);host.removeEventListener('pointerdown',activate);host.removeEventListener('focusin',activate);celebration.dispose();if(activeBoard===host)activeBoard=null;unsub.forEach(stop=>stop());clearTimeout(timer);clearInterval(interval);disclosure.removeEventListener('toggle',opened);removeEventListener('online',resume);removeEventListener('offline',render);removeEventListener('littlelist:profile',render);document.removeEventListener('keydown',keydown);document.removeEventListener('visibilitychange',visible);};
+  return ()=>{disposed=true;typing.dispose();host.classList.remove('game-active');host.removeEventListener('click',click);host.removeEventListener('pointerdown',activate);host.removeEventListener('focusin',activate);celebration.dispose();if(activeBoard===host)activeBoard=null;unsub.forEach(stop=>stop());clearTimeout(timer);clearInterval(interval);disclosure.removeEventListener('toggle',opened);removeEventListener('online',resume);removeEventListener('offline',render);removeEventListener('littlelist:profile',render);document.removeEventListener('keydown',keydown);document.removeEventListener('visibilitychange',visible);};
 }

@@ -17,6 +17,7 @@ try{
   await page.locator('#crossword .timed-ready').waitFor();
   if(!await page.locator('#crossword').evaluate(d=>d.open))await page.locator('#crossword>summary').click();
   assert.match(await page.locator('#crossword .timed-ready').textContent(),new RegExp((mini.hard?'3:00':'2:00')+'.*up to '+(mini.hard?120:60)+' points'));
+  await page.locator('#wordle').evaluate(d=>d.open=true); // Another open board must not steal crossword keystrokes.
   await page.locator('#crossword [data-start]:not([disabled])').click();
   await page.locator('#crossword .puzzle-cell.cursor').waitFor();
   assert.equal(await page.locator('#crossword .puzzle-cell').count(),21,'a 5x5 lattice has 21 open squares');
@@ -26,6 +27,7 @@ try{
   for(const ch of first.word)await page.keyboard.press(ch.toLowerCase());
   assert.equal(await page.locator('#crossword .timed-toolbar span').textContent(),'5 / 21 squares');
   assert.equal(await page.locator('#crossword .found').count(),0);
+  assert.equal(await page.locator('#word-game .word-row').first().textContent(),'','crossword typing never edits another open game');
   for(let i=0;i<mini.entries.length;i++){
    const e=mini.entries[i];if(!await page.locator('#crossword .crossword-keys').count())break;
    await page.locator(`#crossword [data-clue="${i}"]`).click();

@@ -2,9 +2,9 @@
    palettes, so a new screen still feels like the same private little home. */
 .profile-page { --life-ease:cubic-bezier(.22,.8,.24,1); --life-edge:color-mix(in srgb,var(--accent-soft) 28%,var(--diary-rule)); --life-glow:color-mix(in srgb,var(--accent-soft) 13%,transparent); }
 .profile-page .app-shell { position:relative; padding-bottom:calc(24px + env(safe-area-inset-bottom)); }
-.profile-page .feature-shell>.feature-hero { position:relative; min-height:92px; margin-bottom:18px; padding-bottom:32px; border-bottom:1px solid var(--life-edge); }
+.profile-page .feature-shell>.feature-hero { position:relative; min-height:92px; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--life-edge); }
 .profile-page .feature-shell>.feature-hero h1 { font-size:clamp(1.8rem,6vw,2.35rem); letter-spacing:-.035em; }
-.profile-page .feature-shell>.feature-hero .life-page-caption { position:absolute; left:0; bottom:4px; margin:0; color:var(--page-muted); font-size:.79rem; line-height:1.35; letter-spacing:.01em; }
+.profile-page .feature-shell>.feature-hero .life-page-caption { position:static; margin:8px 0 0; color:var(--page-muted); font-size:.79rem; line-height:1.35; letter-spacing:.01em; }
 .profile-page .feature-shell>.feature-hero.now-hero .life-page-caption { left:0; }
 .profile-page :is(.our-sky,.daily-entry,.home-next-up,.practice-card,.settings-group,.personal-progress,.weekly-home-recap,.list-card,.random-date-card,.now-location-card) { border-color:var(--life-edge); box-shadow:0 2px 3px #00000003,0 10px 25px #00000007,inset 0 1px 0 color-mix(in srgb,var(--diary-panel) 85%,white); }
 .profile-page :is(.daily-entry,.settings-group)[open] { border-color:color-mix(in srgb,var(--accent) 45%,var(--diary-rule)); }
@@ -56,3 +56,37 @@
 html[data-quiet-motion] *,html[data-quiet-motion] *::before,html[data-quiet-motion] *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
 html[data-quiet-motion] :is(.word-finale,.word-confetti,.life-tap,.life-spark) { display:none!important; }
 @media(max-width:360px) { .profile-page .feature-shell>.feature-hero .life-page-caption { font-size:.72rem; }.profile-page .daily-entry>summary { gap:8px; }.profile-page .daily-strip a { padding:10px 7px; } }
+
+/* Readable labels and unmistakable keyboard focus in every seasonal palette. */
+.profile-page :is(button,a,summary,[tabindex]):focus-visible { outline:3px solid var(--page-text); outline-offset:3px; }
+.profile-page :is(input,textarea,select):focus-visible { outline-color:var(--page-text); }
+.profile-page :is(input,textarea)::placeholder { color:var(--page-muted); opacity:1; }
+.profile-page :is(.tiny-kicker,.life-page-caption,.daily-state,.daily-strip small,.status-presence,.status-blank,.practice-caption,.dock-item span,.settings-group small,.personal-badges span) { font-size:.8125rem; line-height:1.45; }
+.profile-page .app-dock .dock-item span { font-size:.75rem; }
+.profile-page :is(.small-action,.tiny-button,.chip,.soft-chip,.settings-jump a,.practice-tabs a,.practice-levels a,.profile-photo-edit) { min-height:44px; }
+.profile-page .profile-photo-edit { min-width:44px; }
+.profile-page .trip-bar:not(.is-on) #trip-toggle,.profile-page .compact-choice-row input:checked+span,.profile-page .place-presets button.active { color:var(--diary-pressed-ink); }
+.profile-page :is(.compact-choice-row span,.place-presets button,.trip-bar button) { min-height:44px; font-size:.8125rem; }
+.profile-page .compact-choice-row input:focus-visible+span,.profile-page .quiet-hours-switch input:focus-visible+i { outline:3px solid var(--page-text); outline-offset:3px; }
+.profile-page .place-preview { background:var(--diary-raised); }
+.profile-page .place-preview small { color:var(--page-text); font-size:.8125rem; line-height:1.4; }
+.profile-page .status-blank { opacity:1; }
+@media(prefers-contrast:more) {
+ .profile-page { --diary-rule:var(--page-muted); }
+ .profile-page :is(.daily-entry,.task-row,.settings-group,.person-status-card,.word-tile,.puzzle-cell) { border-width:2px; }
+}
+@media(forced-colors:active) {
+ :is(button,a,input,textarea,select,summary):focus-visible { outline:3px solid Highlight; }
+ .word-tile,.puzzle-cell { border:1px solid CanvasText; }
+ .word-tile.correct { border:3px double CanvasText; }
+ .word-tile.present { border:3px dashed CanvasText; }
+}
+
+.profile-page .permission-help.fail { color:var(--page-text)!important; border-left:3px solid var(--accent-deep); }
+.profile-page .feature-shell .status-row :is(p,.small-action) { font-size:.875rem; }
+.profile-page .feature-shell .status-row .small-action { min-height:44px; }
+.profile-page .app-dock .dock-item span { white-space:normal; overflow-wrap:anywhere; line-height:1.2; }
+.has-app-dock { padding-bottom:calc(var(--app-dock-height,82px) + 24px + env(safe-area-inset-bottom)); }
+
+.profile-page :is(.practice-tabs,.practice-levels) a[aria-current="page"],.profile-page #practice-next { color:var(--diary-pressed-ink); background:var(--accent-deep); }
+.profile-page .puzzle-grid .puzzle-cell:is(.cursor,.found,.tracing,.pending-find) { color:var(--diary-pressed-ink); background:var(--accent-deep); }

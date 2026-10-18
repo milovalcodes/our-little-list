@@ -1,3 +1,4 @@
+import {createGameTyping} from './game-typing.js';
 import {startGameComfort,gameFeedback} from './game-comfort.js';
 import {practiceCrossword} from './practice-crossword.js';
 import {bootPage} from './page-boot.js';
@@ -16,7 +17,7 @@ const host=document.getElementById('practice-game'),picker=document.getElementBy
 host.tabIndex=-1;
 const comfort=document.createElement('section');comfort.className='game-comfort';host.before(comfort);startGameComfort(comfort);
 let type,index,puzzle,state,selected=0,message='',tapStart=null,drag=null,celebration,flashTimer,difficulty='normal';
-let stopCrossword;
+let stopCrossword,wordTyping;
 const isDone=()=>type==='word'?state.guesses.includes(puzzle.word.toLowerCase())||state.guesses.length>=WORD_ATTEMPTS:state.solved.length===puzzle.entries.length;
 function save(){state.selected=selected;store.save(type,index,state);document.getElementById('practice-warning').textContent=store.warning;}
 function progress(){
@@ -32,7 +33,7 @@ function open(){
  document.querySelectorAll('[data-practice-tab]').forEach(a=>{if(a.dataset.practiceTab===type)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
 }
 function load(){
- stopCrossword?.();stopCrossword=null;cancelTrace();clearTimeout(flashTimer);celebration?.dispose();host.setAttribute('aria-busy','true');
+ stopCrossword?.();stopCrossword=null;wordTyping?.dispose();wordTyping=null;cancelTrace();clearTimeout(flashTimer);celebration?.dispose();host.setAttribute('aria-busy','true');
  puzzle=practicePuzzle(type,index);state=store.load(type,index);message='';
  state.solved=state.solved.filter(n=>n<puzzle.entries?.length);
  selected=Math.min(state.selected,puzzle.entries?.length-1||0);
@@ -43,7 +44,7 @@ function load(){
  document.getElementById('practice-title').textContent=PRACTICE_NAMES[type];
  const half=PRACTICE_COUNTS[type]/2,offset=difficulty==='hard'?half:0;
  picker.innerHTML=Array.from({length:half},(_,n)=>`<option value="${n+offset}">${n+1} / ${half} · ${difficulty}</option>`).join('');
- picker.value=index;render();host.setAttribute('aria-busy','false');
+ picker.value=index;if(type==='word')wordTyping=createGameTyping(host,{label:'Practice word',onKey:wordKey});render();host.setAttribute('aria-busy','false');
 }
 function feedback(text){message=text;const node=host.querySelector('[data-feedback]');if(node)node.textContent=text;}
 function celebrate(){
@@ -61,13 +62,14 @@ function hintText(){
 function renderWord(){
  const done=isDone(),won=state.guesses.includes(puzzle.word.toLowerCase()),keys={},rank={absent:1,present:2,correct:3};
  for(const guess of state.guesses)scoreGuess(guess,puzzle.word.toLowerCase()).forEach((mark,i)=>{if((rank[keys[guess[i]]]||0)<rank[mark])keys[guess[i]]=mark;});
- host.innerHTML=`<div class="word-grid" aria-label="Practice guesses">${Array.from({length:WORD_ATTEMPTS},(_,row)=>{
+ wordTyping.update(!done);
+ wordTyping.view.innerHTML=`<div role="group" class="word-grid" aria-label="Practice guesses">${Array.from({length:WORD_ATTEMPTS},(_,row)=>{
   const guess=state.guesses[row],marks=guess?scoreGuess(guess,puzzle.word.toLowerCase()):[];
-  return `<div class="word-row" ${!guess&&row===state.guesses.length?'data-draft-row':''}>${Array.from({length:5},(_,i)=>`<span class="word-tile ${marks[i]||''}" aria-label="${guess?guess[i].toUpperCase()+', '+{absent:'not in word',present:'wrong spot',correct:'right spot'}[marks[i]]:'empty'}">${guess?.[i]||(!guess&&row===state.guesses.length?state.draft[i]||'':'')}</span>`).join('')}</div>`;
+  return `<div role="group" class="word-row" ${!guess&&row===state.guesses.length?'data-draft-row':''}>${Array.from({length:5},(_,i)=>`<span role="img" class="word-tile ${marks[i]||''}" aria-label="${guess?guess[i].toUpperCase()+', '+{absent:'not in word',present:'wrong spot',correct:'right spot'}[marks[i]]:'empty'}">${guess?.[i]||(!guess&&row===state.guesses.length?state.draft[i]||'':'')}</span>`).join('')}</div>`;
  }).join('')}</div>
  <p class="word-message ${done?'practice-done':''}" data-feedback role="status">${esc(done?(won?'got it ♡':`It was ${puzzle.word}. Another go?`):message)}</p>
  <div class="word-legend"><span><i class="word-tile correct" aria-hidden="true">a</i>right spot</span><span><i class="word-tile present" aria-hidden="true">b</i>wrong spot</span><span><i class="word-tile absent" aria-hidden="true">c</i>not in word</span></div>
- ${!done?`<div class="word-keyboard" aria-label="Practice keyboard">${['qwertyuiop','asdfghjkl','↵zxcvbnm⌫'].map(row=>`<div>${[...row].map(letter=>`<button type="button" data-key="${letter}" class="${keys[letter]||''} ${letter==='↵'||letter==='⌫'?'wide-key':''}" aria-label="${letter==='↵'?'Submit guess':letter==='⌫'?'Delete letter':letter.toUpperCase()+(keys[letter]?', '+{correct:'right spot',present:'wrong spot',absent:'not in word'}[keys[letter]]:'')}">${letter==='↵'?'enter':letter}</button>`).join('')}</div>`).join('')}</div><div class="practice-hints"><button type="button" data-hint ${state.hints>=3?'disabled':''}>${state.hints===0?'a clue, please':state.hints>=3?'all clues open':'another little clue'}</button></div>`:''}
+ ${!done?`<div role="group" class="word-keyboard" aria-label="Practice keyboard">${['qwertyuiop','asdfghjkl','↵zxcvbnm⌫'].map(row=>`<div>${[...row].map(letter=>`<button type="button" data-key="${letter}" class="${keys[letter]||''} ${letter==='↵'||letter==='⌫'?'wide-key':''}" aria-label="${letter==='↵'?'Submit guess':letter==='⌫'?'Delete letter':letter.toUpperCase()+(keys[letter]?', '+{correct:'right spot',present:'wrong spot',absent:'not in word'}[keys[letter]]:'')}">${letter==='↵'?'enter':letter}</button>`).join('')}</div>`).join('')}</div><div class="practice-hints"><button type="button" data-hint ${state.hints>=3?'disabled':''}>${state.hints===0?'a clue, please':state.hints>=3?'all clues open':'another little clue'}</button></div>`:''}
  <p class="practice-clue" data-hints>${esc(hintText())}</p>`;
 }
 function wordKey(key){
