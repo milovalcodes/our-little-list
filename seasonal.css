@@ -20,25 +20,25 @@ html[data-season="spooky"] .her-theme {
   --accent:#db8437; --accent-deep:#824224; --accent-pale:#fff0d7; --accent-soft:#e7b77f;
   --page-text:#4f332c; --page-muted:#76594f; --paper:rgba(255,248,231,.94);
   --diary-panel:rgba(255,248,231,.97); --diary-raised:#fff0d9; --diary-rule:rgba(112,65,43,.22); --diary-pressed-ink:#fff9ed;
-  background:radial-gradient(circle at 86% 2%,#ffd178 0 4rem,rgba(245,162,76,.22) 4rem 23rem,transparent 34rem),radial-gradient(circle at 0 54%,#eed1be 0,transparent 27rem),linear-gradient(160deg,#fff8e8,#f8e2ce 58%,#e8c0b7);
+  background:linear-gradient(160deg,#fcf5e9,#f3e5d8);
 }
 html[data-season="spooky"] .him-theme {
   --accent:#e1b16e; --accent-deep:#f3c784; --accent-pale:#352a50; --accent-soft:#8d719c;
   --page-text:#fff3df; --page-muted:#dfc9d8; --paper:rgba(32,25,53,.92);
   --diary-panel:rgba(35,27,56,.97); --diary-raised:#392d58; --diary-rule:rgba(234,187,151,.24); --diary-pressed-ink:#2c203f;
-  background:radial-gradient(circle at 86% 2%,rgba(255,211,140,.77) 0 3.5rem,rgba(189,116,95,.10) 4rem 22rem,transparent 33rem),radial-gradient(circle at 4% 45%,rgba(125,62,118,.39) 0,transparent 29rem),linear-gradient(155deg,#302444,#1f1b35 58%,#141427);
+  background:linear-gradient(160deg,#292139,#191626);
 }
 html[data-season="christmas"] .her-theme {
   --accent:#bb5957; --accent-deep:#873d46; --accent-pale:#fff0e7; --accent-soft:#e1aba3;
   --page-text:#4f3338; --page-muted:#775c5d; --paper:rgba(255,250,239,.95);
   --diary-panel:rgba(255,250,239,.97); --diary-raised:#f8eee3; --diary-rule:rgba(128,72,68,.20); --diary-pressed-ink:#fff9ef;
-  background:radial-gradient(circle at 86% 2%,#fff0bd 0 4rem,rgba(237,193,137,.18) 4rem 23rem,transparent 34rem),radial-gradient(circle at 0 54%,#e5eadd 0,transparent 28rem),linear-gradient(160deg,#fffaf0,#f5e8df 57%,#e5d1ca);
+  background:linear-gradient(160deg,#faf6ed,#eee5de);
 }
 html[data-season="christmas"] .him-theme {
   --accent:#9dcfc0; --accent-deep:#bee8ce; --accent-pale:#254744; --accent-soft:#678e84;
   --page-text:#f4fae9; --page-muted:#cadfda; --paper:rgba(19,47,49,.94);
   --diary-panel:rgba(22,51,52,.97); --diary-raised:#2a5956; --diary-rule:rgba(202,231,212,.25); --diary-pressed-ink:#173b39;
-  background:radial-gradient(circle at 86% 2%,rgba(247,247,222,.80) 0 3.5rem,rgba(161,216,194,.10) 4rem 22rem,transparent 33rem),radial-gradient(circle at 4% 45%,rgba(71,131,123,.37) 0,transparent 29rem),linear-gradient(155deg,#1d4a4b,#17383e 58%,#102b36);
+  background:linear-gradient(160deg,#203d3f,#142b32);
 }
 
 /* Theme the shared surfaces, not just the home screen. */
@@ -47,16 +47,6 @@ html[data-season="spooky"] .her-theme .fridge-paper { color:#55372e; border-colo
 html[data-season="christmas"] .her-theme .fridge-paper { color:#493737; border-color:#d7b7a4; background:linear-gradient(145deg,#fff5dc,#f5dfc9); }
 html[data-season="spooky"] .him-theme .fridge-paper { color:#fff4e2; border-color:#9b7592; background:linear-gradient(145deg,#4b355e,#3c315a); }
 html[data-season="christmas"] .him-theme .fridge-paper { color:#f4fae9; border-color:#76a695; background:linear-gradient(145deg,#33615d,#254e51); }
-html[data-season="spooky"] .him-theme :is(.primary-action,.random-date-card button#pick-random),
-html[data-season="spooky"] .him-theme :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active),
-html[data-season="spooky"] .him-theme .random-date-card.date-roulette .roulette-chip-group button.active { color:#2c203f; background:#f0bf81; border-color:#f0bf81; }
-html[data-season="christmas"] .him-theme :is(.primary-action,.random-date-card button#pick-random),
-html[data-season="christmas"] .him-theme :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active),
-html[data-season="christmas"] .him-theme .random-date-card.date-roulette .roulette-chip-group button.active { color:#173b39; background:#bce3ce; border-color:#bce3ce; }
-html[data-season="spooky"] .him-theme .context-add span { color:#2c203f; }
-html[data-season="christmas"] .him-theme .context-add span { color:#173b39; }
-html[data-season="spooky"] .her-theme :is(.primary-action,.random-date-card button#pick-random,.tab.active,.soft-chip.active,.choice.active) { background:#824224; }
-html[data-season="christmas"] .her-theme :is(.primary-action,.random-date-card button#pick-random,.tab.active,.soft-chip.active,.choice.active) { background:#873d46; }
 html[data-season="spooky"] .him-theme .app-dock { background:rgba(31,25,48,.94); border-color:var(--diary-rule); }
 html[data-season="christmas"] .him-theme .app-dock { background:rgba(19,47,49,.95); border-color:var(--diary-rule); }
 html[data-season="spooky"] .her-theme .auth-gate { background:rgba(91,50,66,.37); }
@@ -88,40 +78,20 @@ html[data-season="christmas"] .him-theme .sky-stage[data-phase] { background:rad
 html[data-season="spooky"] .redirect-page { background:#302444; color:#fff3df; }
 html[data-season="christmas"] .redirect-page { background:#1d4a4b; color:#f4fae9; }
 
-/* Festive details: the sky gets illustrated; every other page gets the same
-   little ribbon and paper trim. Decoration never receives taps. */
+/* Seasonal artwork stays in the sky; other pages use the shared palette
+   and a quiet caption. Decoration never receives taps. */
 html[data-season="spooky"] .profile-page { --season-trim:#e99857; --season-glow:rgba(246,157,86,.22); }
 html[data-season="christmas"] .profile-page { --season-trim:#c85e66; --season-glow:rgba(227,144,121,.22); }
 html[data-season="spooky"] .him-theme { --season-trim:#e4ae78; --season-glow:rgba(239,174,128,.18); }
 html[data-season="christmas"] .him-theme { --season-trim:#a9dcc4; --season-glow:rgba(169,220,196,.17); }
 
-html[data-season="spooky"] .profile-page :is(.our-sky,.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary),
-html[data-season="christmas"] .profile-page :is(.our-sky,.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary) {
-  box-shadow:inset 0 3px 0 var(--season-trim),var(--diary-shadow);
-  border-color:color-mix(in srgb,var(--season-trim) 42%,var(--diary-rule));
-}
-html[data-season="spooky"] .profile-page :is(.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary) {
-  background-image:radial-gradient(circle at 8px 8px,rgba(195,105,65,.11) 1px,transparent 1.5px);
-  background-size:28px 28px;
-}
-html[data-season="christmas"] .profile-page :is(.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary) {
-  background-image:radial-gradient(circle at 8px 8px,rgba(122,166,147,.15) 1.2px,transparent 1.7px);
-  background-size:27px 27px;
-}
-html[data-season="spooky"] .him-theme :is(.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary) { background-image:radial-gradient(circle at 8px 8px,rgba(248,203,164,.10) 1px,transparent 1.5px); }
-html[data-season="christmas"] .him-theme :is(.home-next-up,.feature-shell>.list-card,.feature-shell>.today-card,.feature-shell>.status-card,.feature-shell>.note-maker,.feature-shell>.activity-card,.feature-shell>.random-date-card,.feature-shell>.notification-settings-card,.feature-shell>.now-location-card,.settings-group>summary) { background-image:radial-gradient(circle at 8px 8px,rgba(210,243,223,.11) 1.2px,transparent 1.7px); }
-
 html[data-season="spooky"] .seasonal-whisper,
 html[data-season="christmas"] .seasonal-whisper {
-  display:block; width:100%; min-height:42px; margin:6px 0 10px; padding:10px 14px;
-  border:1px solid var(--diary-rule); border-radius:12px 12px 18px 18px;
-  color:#fff9eb; font-family:var(--font-display); font-size:.89rem; font-weight:600;
-  line-height:1.25; letter-spacing:.005em; box-shadow:0 5px 15px var(--season-glow);
+  display:block; width:100%; margin:0 0 12px; padding:0;
+  border:0; border-radius:0; background:none; box-shadow:none;
+  color:var(--page-muted); font-family:var(--font-body); font-size:.8125rem; font-weight:600;
+  line-height:1.5;
 }
-html[data-season="spooky"] .seasonal-whisper { background:linear-gradient(105deg,#854863,#a65449 65%,#c67449); }
-html[data-season="christmas"] .seasonal-whisper { background:linear-gradient(105deg,#285d52,#39735d 57%,#9b4957); }
-html[data-season="spooky"] .seasonal-whisper::after { content:'✦  ✧'; float:right; margin-left:8px; opacity:.76; }
-html[data-season="christmas"] .seasonal-whisper::after { content:'❄  ✧'; float:right; margin-left:8px; opacity:.86; }
 
 .seasonal-sky-art { position:absolute; inset:0; z-index:1; width:100%; height:100%; pointer-events:none; object-fit:fill; animation:seasonalBreathe 7s ease-in-out infinite alternate; }
 .landing-copy { position:relative; isolation:isolate; }
@@ -133,12 +103,6 @@ html[data-season="spooky"] .sky-stage { box-shadow:inset 0 0 0 2px rgba(255,204,
 html[data-season="christmas"] .sky-stage { box-shadow:inset 0 0 0 2px rgba(228,255,226,.36),inset 0 -38px 70px rgba(13,48,48,.24),0 8px 22px rgba(43,103,88,.13); }
 html[data-season="spooky"] .sky-avatar { border-color:#ffcf9a; }
 html[data-season="christmas"] .sky-avatar { border-color:#e8f7dc; }
-html[data-season="spooky"] .profile-page .app-dock { border-color:var(--season-trim); box-shadow:0 0 0 3px var(--season-glow),0 13px 38px rgba(31,27,43,.18); }
-html[data-season="christmas"] .profile-page .app-dock { border-color:var(--season-trim); box-shadow:0 0 0 3px var(--season-glow),0 13px 38px rgba(31,27,43,.18); }
-html[data-season="spooky"] .profile-page .context-add { color:#342339; background:#f2aa66; }
-html[data-season="spooky"] .profile-page .context-add span { color:#342339; }
-html[data-season="christmas"] .profile-page .context-add { color:#fff9ef; background:#ae4b55; }
-html[data-season="christmas"] .profile-page .context-add span { color:#fff9ef; }
 @keyframes seasonalBreathe { to { translate:0 2px; opacity:.86; } }
 @media (prefers-reduced-motion:reduce) { .seasonal-sky-art { animation:none; } }
 @media (max-width:520px) { html[data-season="spooky"] .seasonal-whisper,html[data-season="christmas"] .seasonal-whisper { font-size:.84rem; } }
@@ -149,9 +113,6 @@ html[data-season="spooky"] { --season-mark:url("season-mark-spooky.svg"); --seas
 html[data-season="christmas"] { --season-mark:url("season-mark-christmas.svg"); --season-thread:rgba(255,244,224,.19); }
 html[data-season]:not([data-season="normal"]) .profile-page :where(button,a[role="button"]) {
   border-color:var(--diary-rule); -webkit-tap-highlight-color:var(--season-glow);
-}
-html[data-season]:not([data-season="normal"]) .profile-page :is(.primary-action,.page-add,.context-add,.thinking-ping) {
-  background-image:repeating-linear-gradient(135deg,transparent 0 12px,var(--season-thread) 12px 14px,transparent 14px 24px);
 }
 html[data-season]:not([data-season="normal"]) .profile-page :is(.soft-chip,.status-choice,.energy-choice,.repeat-chip,.reaction-pick,.more-grid a) { border-color:var(--diary-rule); }
 html[data-season]:not([data-season="normal"]) .profile-page :is(button,a,input,select,textarea):focus-visible { outline-color:var(--accent-deep); }

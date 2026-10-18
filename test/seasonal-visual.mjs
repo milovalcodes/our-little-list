@@ -48,8 +48,8 @@ try {
         }
         colors.set(season, `${state.background}|${state.card}`);
         if (side === 'him' && state.dockAdd) {
-          if (season === 'spooky') assert.equal(state.dockAdd, 'rgb(242, 170, 102)', `${pageName}: October add button`);
-          if (season === 'christmas') assert.equal(state.dockAdd, 'rgb(174, 75, 85)', `${pageName}: December add button`);
+          if (season === 'spooky') assert.equal(state.dockAdd, 'rgb(53, 42, 80)', `${pageName}: October add button uses the shared secondary surface`);
+          if (season === 'christmas') assert.equal(state.dockAdd, 'rgb(37, 71, 68)', `${pageName}: December add button uses the shared secondary surface`);
         }
         checked++;
         if (['home','today'].includes(pageName) && season !== 'normal') {

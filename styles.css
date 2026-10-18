@@ -483,21 +483,14 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 .her-theme {
   --accent:#e9a62f; --accent-deep:#9b5b20; --accent-pale:#fff5c9; --accent-soft:#f3cf72;
   --page-text:#5a3b26; --page-muted:#8d684b; --paper:rgba(255,253,239,.88);
-  background:
-    radial-gradient(circle at 86% 2%,#fff3a9 0 5rem,rgba(255,227,113,.23) 5.1rem 24rem,transparent 35rem),
-    radial-gradient(circle at 0 52%,#ffd6a1 0,transparent 27rem),
-    linear-gradient(160deg,#fffaf0,#fff1cf 54%,#fbd5bc);
+  background:linear-gradient(160deg,#fcf8ed,#f4ead9);
 }
 .him-theme {
   --accent:#c9b5f4; --accent-deep:#b99ae9; --accent-pale:rgba(114,128,192,.22); --accent-soft:#7383bd;
   --page-text:#fff8df; --page-muted:#c1c7dc; --paper:rgba(18,31,62,.84); --line:rgba(255,255,255,.11);
-  background:
-    radial-gradient(circle at 86% 2%,rgba(255,246,194,.92) 0 3.8rem,rgba(255,245,191,.08) 4rem 22rem,transparent 33rem),
-    radial-gradient(circle at 4% 45%,rgba(104,83,163,.42) 0,transparent 28rem),
-    linear-gradient(155deg,#172750,#0e1935 54%,#080f23);
+  background:linear-gradient(160deg,#1c2945,#101a2f);
   color:var(--page-text);
 }
-.him-theme::before { content:""; position:fixed; inset:0; pointer-events:none; background-image:radial-gradient(circle,#fff6ce 1.2px,transparent 1.6px); background-size:64px 64px; opacity:.26; }
 .her-theme .mood-sticker { background:linear-gradient(145deg,#fff8cf,#ffd85f); box-shadow:0 0 40px rgba(242,183,55,.35); }
 .him-theme .mood-sticker { background:linear-gradient(145deg,#fff7d1,#d7d6e8); box-shadow:0 0 42px rgba(255,243,181,.18); }
 .him-theme .composer-card,.him-theme .list-card,.him-theme .feature-hero,.him-theme .note-maker,.him-theme .activity-card,.him-theme .status-card,.him-theme .person-status-card { border-color:rgba(255,255,255,.1); box-shadow:0 18px 52px rgba(0,0,0,.24); }

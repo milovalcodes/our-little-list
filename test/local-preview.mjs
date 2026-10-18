@@ -11,7 +11,7 @@ const mime={'.js':'text/javascript','.mjs':'text/javascript','.html':'text/html'
 for(const type of [chromium,webkit,firefox]){
  const launch=type.launch.bind(type);
  type.launch=async options=>{
-  const browser=await launch(options),newContext=browser.newContext.bind(browser);
+  const browser=await launch({...options,...(type===chromium&&process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})}),newContext=browser.newContext.bind(browser);
   browser.newContext=async options=>{
    const context=await newContext(options);
    await context.route('**/*',async route=>{

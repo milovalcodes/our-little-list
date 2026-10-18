@@ -30,8 +30,8 @@ document.addEventListener('littlelist:feedback',e=>{
   star.animate([{transform:'translate(-50%,-50%) scale(.6)',opacity:1},{transform:`translate(${(i-1)*26-8}px,-45px) rotate(${(i-1)*35}deg) scale(.2)`,opacity:0}],{duration:560,easing:'ease-out'}).finished.catch(()=>{}).finally(()=>star.remove());
  }
 });
-const captions={activities:'a little play, a little us',practice:'take your time. this one is just for you.',tasks:'the little things, shared',notes:'a place to leave a little love',dates:'something to look forward to',memories:'the moments we get to keep',status:'two people, one little world', 'phone-check':'make yourself at home',guide:'a little help, whenever you need it'};
-const hero=document.querySelector('.feature-hero'),page=document.body.dataset.app;
+const captions={activities:'a little play, a little us',practice:'pick your pace. no clock or points.',tasks:'the little things, shared',notes:'a place to leave a little love',dates:'something to look forward to',memories:'the moments we get to keep',status:'two people, one little world', 'phone-check':'make yourself at home',guide:'a little help, whenever you need it'};
+const hero=document.querySelector('.feature-hero'),page=document.body.hasAttribute('data-practice')?'practice':document.body.dataset.app;
 if(hero&&captions[page]&&!hero.querySelector('.life-page-caption')){
  const caption=document.createElement('p');caption.className='life-page-caption';caption.textContent=captions[page];hero.append(caption);
 }

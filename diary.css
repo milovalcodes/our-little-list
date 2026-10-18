@@ -34,7 +34,7 @@ button.status-avatar { border:0; background:none; border-radius:20px; }
 .profile-page {
   --diary-radius: 22px;
   --diary-small-radius: 14px;
-  --diary-gap: 10px;
+  --diary-gap: 12px;
   --diary-shadow: 0 7px 24px rgba(77, 51, 31, .07);
   --diary-rule: rgba(116, 76, 43, .16);
   --diary-panel: rgba(255, 251, 235, .94);
@@ -230,19 +230,16 @@ button.status-avatar { border:0; background:none; border-radius:20px; }
 .feature-shell > .page-add { margin:9px 0 0 auto; }
 .profile-page :is(.primary-action,.random-date-card button#pick-random) {
   min-height:48px; border:0; border-radius:var(--diary-small-radius);
-  color:#fff9ec; background:#84512a; box-shadow:none; font-size:.92rem;
+  color:var(--diary-pressed-ink); background:var(--accent-deep); box-shadow:none; font-size:.92rem;
 }
-.him-theme :is(.primary-action,.random-date-card button#pick-random) { color:#19264a; background:#d1b9fa; }
 .profile-page :is(.tab,.soft-chip,.choice,.note-starters button,.status-choice,.energy-choice,.repeat-chip,.roulette-chip-group button,.quick-kind button) {
   min-height:44px; border:1px solid var(--diary-rule); border-radius:999px;
   background:var(--accent-pale); color:var(--page-text); box-shadow:none; font-size:.82rem;
 }
 .profile-page :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active) {
-  border-color:transparent; color:var(--diary-pressed-ink); background:#84512a; box-shadow:none;
+  border-color:transparent; color:var(--diary-pressed-ink); background:var(--accent-deep); box-shadow:none;
 }
-.him-theme :is(.tab.active,.soft-chip.active,.choice.active,.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active) { background:#d1b9fa; }
-.profile-page .random-date-card.date-roulette .roulette-chip-group button.active { color:#fff9ec; background:#84512a; border-color:#84512a; }
-.him-theme .random-date-card.date-roulette .roulette-chip-group button.active { color:#19264a; background:#d1b9fa; border-color:#d1b9fa; }
+.profile-page .random-date-card.date-roulette .roulette-chip-group button.active { color:var(--diary-pressed-ink); background:var(--accent-deep); border-color:var(--accent-deep); }
 .profile-page .tabs { padding:8px 0 0; gap:7px; mask-image:none; }
 .profile-page :is(input,select,textarea) { border-color:var(--diary-rule); border-radius:var(--diary-small-radius); }
 .feature-shell :is(.task-meta,.date-idea-card small,.note-thread-row small,.status-presence,.today-row small,.memory-card small) {
@@ -364,9 +361,6 @@ button.status-avatar { border:0; background:none; border-radius:20px; }
 .him-theme :is(.quick-add-form,.fridge-sheet) :is(input,textarea),
 .him-theme .settings-names input { color:#19264a; }
 .him-theme .settings-names .profile-name-person > span { color:#2b2350; }
-@media (max-width:520px) {
-  .feature-shell > .feature-hero:not(.today-hero),.feature-shell > .feature-hero:not(.now-hero):not(.today-hero) { padding-right:54px; }
-}
 /* v71: less chrome, more of the actual thing. */
 .feature-shell > .feature-hero .feature-icon { width:24px!important; height:24px!important; flex:0 0 24px!important; margin:0!important; border:0!important; border-radius:0!important; background:none!important; box-shadow:none!important; transform:none!important; font-size:1.2rem!important; pointer-events:none; }
 .feature-shell :is(.list-heading,.today-card-head,.activity-heading,.settings-heading,.roulette-head) .tiny-kicker { display:none; }
@@ -534,8 +528,7 @@ button:disabled:not(.is-busy) { cursor:default; }
 .context-add { display:inline-flex; align-items:center; justify-content:center; gap:5px; min-height:44px; padding:8px 13px; border:1px solid var(--diary-rule); border-radius:14px; background:var(--accent-pale); color:var(--accent-deep); font:inherit; font-weight:800; cursor:pointer; white-space:nowrap; }
 .context-add i { font-style:normal; }
 .context-add[hidden] { display:none!important; }
-.feature-shell>.feature-hero.has-context-action { padding-right:148px!important; }
-.feature-hero .context-add { position:absolute; top:50%; right:51px; translate:0 -50%; }
+.feature-hero .context-add { grid-column:2; grid-row:1; }
 .app-topbar.has-context-action { gap:8px; }
 .app-topbar.has-context-action .home-wordmark { flex:1; font-size:.85rem; }
 .app-topbar.has-context-action .context-add { order:1; }
@@ -576,7 +569,7 @@ button:disabled:not(.is-busy) { cursor:default; }
 /* Daily pages use the same paper, ink and seasonal accents as the diary. */
 .daily-activities[hidden] { display:none; }
 .daily-date { margin:0 0 12px; color:var(--page-muted); font-size:.82rem; }
-.daily-entry { margin:10px 0; border:1px solid var(--diary-rule); border-radius:20px; background:var(--diary-panel); overflow:visible; }
+.daily-entry { margin:var(--diary-gap) 0; border:1px solid var(--diary-rule); border-radius:var(--diary-radius); background:var(--diary-panel); overflow:visible; }
 .daily-entry>summary { min-height:72px; display:flex; align-items:center; gap:12px; padding:14px; cursor:pointer; list-style:none; }
 .daily-entry>summary::-webkit-details-marker { display:none; }
 .daily-entry>summary>span:nth-child(2) { display:grid; gap:4px; flex:1; }
@@ -584,7 +577,7 @@ button:disabled:not(.is-busy) { cursor:default; }
 .daily-entry small { font-size:.8rem; color:var(--page-muted); }
 .daily-entry>summary>span:last-child { margin-left:auto; }
 .daily-stamp { display:grid; place-items:center; width:42px; height:42px; border-radius:14px; background:var(--accent-pale); color:var(--accent-deep); font-size:1rem; }
-.word-stamp { font-weight:900; letter-spacing:-2px; transform:rotate(-7deg); }
+.word-stamp { font-weight:800; letter-spacing:-1px; }
 .daily-entry .question-card { margin:0!important; padding:0 14px 14px!important; border:0!important; box-shadow:none; background:transparent!important; }
 .daily-entry .question-card .tiny-kicker { display:none; }
 .daily-entry #word-game,.tie-board { padding:0 12px 14px; }

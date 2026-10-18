@@ -1,8 +1,10 @@
 .practice-shell { max-width:700px; }
-.practice-back { display:inline-flex; align-items:center; min-height:44px; color:var(--accent); font-weight:800; text-decoration:none; }
+.practice-back { display:inline-flex; align-items:center; min-height:44px; color:var(--accent-deep); font-weight:800; text-decoration:none; }
 .practice-caption { color:var(--page-muted); font-size:.88rem; margin:6px 0 14px; }
-.practice-card,.practice-shelf { padding:18px; background:var(--diary-panel); border:1px solid var(--diary-rule); border-radius:22px; margin:12px 0; }
+.practice-card,.practice-shelf { padding:18px; background:var(--diary-panel); border:1px solid var(--diary-rule); border-radius:var(--diary-radius); margin:var(--diary-gap) 0; }
 .practice-shelf h2 { margin:0 0 4px; font-size:1.15rem; }
+#practice-links h3 { margin:20px 0 8px; color:var(--page-muted); font-size:.8125rem; font-weight:700; }
+#practice-links section:first-child h3 { margin-top:16px; }
 .practice-tabs { display:flex; gap:6px; margin:12px 0; }
 .practice-tabs a { flex:1; display:grid; place-items:center; min-height:44px; padding:6px; text-align:center; text-decoration:none; border-radius:14px; border:1px solid var(--diary-rule); background:var(--diary-raised); color:var(--page-text); font-size:.88rem; font-weight:800; }
 .practice-tabs a[aria-current="page"] { background:var(--accent); color:var(--button-text,#241c32); }
@@ -24,7 +26,7 @@
 .practice-storage { color:var(--page-text); border-left:3px solid var(--accent); padding:8px; font-size:.86rem; }
 .practice-link { display:flex; gap:12px; align-items:center; justify-content:space-between; padding:12px 0; min-height:56px; text-decoration:none; color:var(--page-text); border-top:1px solid var(--diary-rule); }
 .practice-link small { display:block; color:var(--page-muted); font-size:.82rem; margin-top:2px; }
-.practice-count { white-space:nowrap; font-size:.9rem; font-variant-numeric:tabular-nums; color:var(--accent); font-weight:800; }
+.practice-count { white-space:nowrap; font-size:.9rem; font-variant-numeric:tabular-nums; color:var(--accent-deep); font-weight:800; }
 .practice-count i { font-style:normal; margin-left:5px; }
 #practice-game .word-tile { animation:none; }
 #practice-game .word-row.practice-reveal .word-tile { animation:practice-pop .3s ease-out both; }

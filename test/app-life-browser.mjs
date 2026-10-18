@@ -17,7 +17,18 @@ try{
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);await page.clock.setFixedTime(Date.parse('2026-10-20T18:00Z'));
   for(const file of [side,'activities','tasks','notes','dates','memories','status','phone-check','practice']){
    await page.goto(`${base}/${file}.html?as=${side}`);await page.locator('.app-dock').waitFor();await page.locator('.thinking-screen').waitFor({state:'hidden'});
-   for(const width of [320,375,430]){await page.setViewportSize({width,height:812});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${file} ${side} ${width} overflow`);}
+   for(const width of [320,375,430,1024]){
+    await page.setViewportSize({width,height:812});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${file} ${side} ${width} overflow`);
+    const header=await page.evaluate(()=>{
+     const hero=document.querySelector('.feature-hero');if(!hero)return null;
+     const heading=hero.querySelector('h1').getBoundingClientRect(),bounds=hero.getBoundingClientRect();
+     const caption=hero.querySelector('.life-page-caption')?.getBoundingClientRect();
+     const controls=[...hero.querySelectorAll('.context-add,.topbar-search')].filter(n=>!n.hidden).map(n=>n.getBoundingClientRect());
+     return {aligned:Math.abs(heading.left-bounds.left)<2,contained:controls.every(r=>r.right<=bounds.right+1&&r.left>=heading.right-1),captionBelow:!caption||caption.top>=Math.max(heading.bottom,...controls.map(r=>r.bottom))-1};
+    });
+    if(header)assert.deepEqual(header,{aligned:true,contained:true,captionBelow:true},`${file} ${side} ${width}: title, actions and caption must not collide`);
+   }
    await page.setViewportSize({width:375,height:812});
    if([side,'activities','tasks','notes','dates','memories','phone-check'].includes(file))await page.screenshot({path:new URL(side+'-'+file+'.png',output).pathname.replace(/^\/([A-Za-z]:)/,'$1'),fullPage:true});
   }
@@ -44,5 +55,5 @@ try{
   await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#feel summary').click();await page.locator('#feel [data-comfort=sound]').check();await page.waitForFunction(()=>window.soundCount>0); // Explicit audio preference is independent from motion.
   await context.close();
  }
- assert.deepEqual(errors,[]);console.log('App life: both themes, nine destinations, 320/375/430px, empty actions, sheet focus, muted defaults, saved comfort and reduced motion pass');
+ assert.deepEqual(errors,[]);console.log('App life: both themes, nine destinations, 320/375/430/1024px, header alignment, empty actions, sheet focus, muted defaults, saved comfort and reduced motion pass');
 }finally{await browser.close();}
