@@ -769,6 +769,7 @@ body[data-app="activities"]:has(.timed-playing) #sync-chip { opacity:0; pointer-
 .crossword-current button { min-height:44px; border:1px solid var(--diary-rule); border-radius:10px; color:var(--page-text); background:var(--diary-panel); font:inherit; }
 .crossword-current :is([data-clue-step],[data-step]) { flex:0 0 44px; font-size:1.3rem; font-weight:800; }
 .crossword-current [data-flip] { flex:1; min-width:0; padding:8px 10px; text-align:left; font-size:.9rem; line-height:1.35; }
+.crossword-current [data-flip] { max-height:min(240px,40vh); max-height:min(240px,40svh); overflow-y:auto; overscroll-behavior-y:contain; }
 .crossword-keys { margin-top:10px; }
 .crossword-keys button { text-transform:none; }
 .timed-feedback { min-height:1.4em; font-size:.9rem; line-height:1.5; }

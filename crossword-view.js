@@ -14,3 +14,9 @@ export function revealFocusedLetter(host){
  strip.scrollLeft=Math.max(0,left-(strip.clientWidth-button.offsetWidth)/2);
 }
 export function themeCaption(puzzle){return puzzle.themeDescription?`<p class="crossword-theme-detail">${esc(puzzle.themeDescription)} The marked theme clue is the longer answer that brings it together.</p>`:'';}
+// Preserve a scrolled long clue while typing; a different clue starts at its top.
+export function rememberClueScroll(host){
+ const current=()=>{const e=host.querySelector('.crossword-clues [aria-pressed="true"]');return e?.dataset.clue??e?.dataset.entry;};
+ const entry=current(),top=host.querySelector('.crossword-current [data-flip]')?.scrollTop||0;
+ return ()=>{const clue=host.querySelector('.crossword-current [data-flip]');if(clue&&entry!=null&&entry===current())clue.scrollTop=top;};
+}

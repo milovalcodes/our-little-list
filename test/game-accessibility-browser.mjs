@@ -26,6 +26,9 @@ try{
   const mini=weeklyRounds(day)[day].crossword;
   await page.evaluate(async p=>{const d=await(await import('./data-hub.js')).sharedLayer();await d.setTo('timedPuzzles',p.day+'-crossword',p);},mini);
   await page.locator('#crossword [data-start]:not([disabled])').click();await page.locator('#crossword .cursor').waitFor();await dock.waitFor({state:'hidden'});
+  const activeClue=Number(await page.locator('#crossword .crossword-clues [aria-pressed="true"]').getAttribute('data-clue'));
+  const clueSnapshot=await page.locator('#crossword [data-flip]').ariaSnapshot();
+  assert.ok(clueSnapshot.includes(mini.entries[activeClue].clue),'the current clue is included in its screen-reader name: '+clueSnapshot);
   await page.locator('#crossword .game-input-controls>button:not(.game-native-submit)').click();const input=page.locator('#crossword input');await input.evaluate(n=>window.originalCrosswordInput=n);
   await page.keyboard.insertText('ab');assert.match(await page.locator('#crossword .timed-toolbar span').textContent(),/^2 \/ /);
   await input.evaluate(n=>n.dispatchEvent(new InputEvent('beforeinput',{inputType:'deleteContentBackward',bubbles:true,cancelable:true})));assert.match(await page.locator('#crossword .timed-toolbar span').textContent(),/^1 \/ /);

@@ -52,6 +52,24 @@ try{
   }
   await page.locator('[data-practice-tab="search"]').tap();await page.locator('.search-grid').waitFor();
   check(await dock.isVisible(),label+': leaving crossword restores navigation');
+  if(width===320){
+   // The longest practice clue, enlarged while the keyboard leaves little room.
+   await page.locator('[data-practice-tab="crossword"]').tap();
+   await page.waitForFunction(()=>document.querySelector('#practice-title')?.textContent==='Crossword');
+   await page.locator('#practice-picker').selectOption('52');
+   await host.locator('[data-entry="6"]').tap();await host.locator('.game-input-controls>button:not(.game-native-submit)').tap();
+   await page.setViewportSize({width:320,height:480});await page.evaluate(()=>{document.documentElement.style.fontSize='200%';document.documentElement.style.scrollBehavior='auto';});
+   await page.waitForTimeout(400); // Let WebKit finish the text-size/viewport reflow before the user scrolls.
+   await host.locator('.puzzle-grid').evaluate(n=>window.scrollTo(0,n.getBoundingClientRect().top+scrollY+50));
+   await page.waitForTimeout(350);
+   const clue=await host.locator('.crossword-current').boundingBox();
+   check(clue.y>=0&&clue.y<60&&clue.height<240,label+': enlarged clue leaves room for the board');
+   check(await host.locator('[data-flip]').evaluate(n=>{n.scrollTop=n.scrollHeight;return n.scrollTop>0;}),label+': enlarged clue can be scrolled to its end');
+   await page.keyboard.insertText('x');
+   check(await host.locator('[data-flip]').evaluate(n=>n.scrollTop>0),label+': typing preserves the long clue scroll position');
+   check(await input.evaluate(n=>n===document.activeElement),label+': enlarged clue retains native typing');
+   await page.screenshot({path:`node_modules/.cache/iphone-qa/${engine.name()}-large-text-clue.png`});
+  }
   await context.close();
  }
  console.log(JSON.stringify({engine:engine.name(),failures,errors}));assert.deepEqual(failures,[]);assert.deepEqual(errors,[]);

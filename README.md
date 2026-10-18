@@ -414,7 +414,8 @@ If the local sandbox blocks loopback sockets, `node --import ./test/local-previe
 
 Practice crosswords hide the dock while unfinished with either keyboard, restore
 navigation on completion or exit, and retain horizontal scroll while keeping the
-selected square visible. Both crossword modes use 44px clue-arrow targets.
+selected square visible. Both crossword modes use 44px clue-arrow targets. Long
+clues scroll within a bounded height, including at 200% text in a short viewport.
 `test/iphone-crossword-browser.mjs` checks touch interactions in WebKit at
 320/390/430px, both profiles, normal/hard practice, landscape rotation, a shortened
 keyboard viewport, stable input focus, sticky clues and completing a hard board.
