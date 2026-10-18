@@ -2,10 +2,16 @@ import compiled from './compiled-crosswords.json' with {type:'json'};
 import {timedPuzzle,random} from '../../daily-puzzles.js';
 import {wordForDay} from '../../daily-words.js';
 import {weekForDay,shiftDay} from '../../word-scores.js';
+import {puzzleSeason} from '../../seasonal-puzzles.js';
 // Board generation can exceed a free Worker's CPU allowance before it ever
 // queues the morning ping. Daily layouts are compiled unchanged ahead of time.
 // Hard tie templates are shuffled by set and theme, then saved immutably too.
 export function workerTimedPuzzle(day,type,now=Date.now()){
+ if(type==='crossword'&&day.includes('-tie-')&&day.slice(0,10)>='2026-10-19'){
+  const season=puzzleSeason(day,now),pool=compiled.themedTies[season||'regular'];
+  const board=pool[Math.floor(random(day+':themed-tie-v8')()*pool.length)];
+  return {day,type,hard:true,difficulty:'hard',...board,opensAt:now,closesAt:4102444800000,durationMs:300000};
+ }
  if(!day.includes('-tie-')&&day>=compiled.engineStart){
   if(!compiled.rounds[day]?.[type])throw Error('Compiled daily calendar needs extending before '+day);
   return compiled.rounds[day][type];

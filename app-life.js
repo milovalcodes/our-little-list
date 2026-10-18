@@ -13,9 +13,15 @@ function ripple(target,x,y){
  animation.finished.catch(()=>{}).finally(()=>dot.remove());
 }
 document.addEventListener('pointerup',e=>{const target=e.target.closest(controls);if(target&&!target.disabled&&!gameTarget(target)){lastPoint={x:e.clientX,y:e.clientY,at:performance.now()};ripple(target,e.clientX,e.clientY);}},{passive:true});
-document.addEventListener('click',e=>{const target=e.target.closest(controls);if(!target||target.disabled||target.getAttribute('aria-disabled')==='true'||gameTarget(target))return;feedback(target.matches('[data-close-sheet]')?'close':target.matches('[data-open-sheet],summary')?'open':'key');});
-document.addEventListener('littlelist:feedback',()=>{
- feedback('notice');
+document.addEventListener('click',e=>{
+ const target=e.target.closest(controls);
+ if(!target||target.disabled||target.getAttribute('aria-disabled')==='true'||gameTarget(target)||target.closest('.game-comfort'))return;
+ const kind=target.matches('[data-close-sheet]')?'close':target.matches('summary')?(target.closest('details')?.open?'close':'open'):target.matches('[data-open-sheet]')?'open':target.matches('a[href]')?'navigate':'tap';
+ feedback(kind);
+});
+document.addEventListener('change',e=>{if(e.target.matches('input[type="checkbox"]')&&!e.target.closest('.game-comfort')&&!gameTarget(e.target))feedback(e.target.checked?'on':'off');});
+document.addEventListener('littlelist:feedback',e=>{
+ feedback(e.detail?.kind||'notice');
  if(!moving()||!lastPoint||performance.now()-lastPoint.at>4000)return;
  // Three tiny paper stars acknowledge a saved action; never a full-screen burst.
  for(let i=0;i<3;i++){

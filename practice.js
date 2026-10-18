@@ -102,7 +102,7 @@ function solve(i){
  if(isDone())return;
  if(state.solved.includes(i)){feedback('Already found that one.');return;}
  state.solved.push(i);state.draft='';message='nice, got it';save();
- if(isDone())celebrate();else gameFeedback('notice');
+ if(isDone())celebrate();else gameFeedback('found');
  save();render();
  for(const p of entryCells(puzzle,i))host.querySelector(`[data-cell="${p}"]`)?.classList.add('just-found');
  clearTimeout(flashTimer);flashTimer=setTimeout(()=>host.querySelectorAll('.just-found').forEach(n=>n.classList.remove('just-found')),600);

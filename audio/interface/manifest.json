@@ -1,0 +1,98 @@
+[
+  {
+    "file": "tap-1.wav",
+    "original": "WAV/Minimalist1.wav",
+    "seconds": 0.128,
+    "bytes": 5704,
+    "sourceSha256": "64160d1edb36a343c269ccbc98c0e0c48fdfa35c38fef1df5a8c31057946da2a",
+    "sha256": "1e0457efe202ab8c88e7480f82439b244f723b437bb6db6bf69c251c17668782"
+  },
+  {
+    "file": "tap-2.wav",
+    "original": "WAV/Minimalist2.wav",
+    "seconds": 0.133,
+    "bytes": 5906,
+    "sourceSha256": "60953576246a7ca2bf6464afc1027f3def105bf8c7284c8e02a77b782b519153",
+    "sha256": "214546aaea5ef6663068e305358c361d2e35159e8a47499d8d74b9880d6de5fd"
+  },
+  {
+    "file": "open.wav",
+    "original": "WAV/Modern2.wav",
+    "seconds": 0.179,
+    "bytes": 7916,
+    "sourceSha256": "fa4d5e2f055d61f87a41eaf6be95b28806c58ee619381433581275df89f916a0",
+    "sha256": "285d18baa8b2c09845c33f632f1797cbb94f8602539454f76b583291bb6c2884"
+  },
+  {
+    "file": "close.wav",
+    "original": "WAV/Modern3.wav",
+    "seconds": 0.189,
+    "bytes": 8390,
+    "sourceSha256": "4902a5d7b7f8e4345c04f36770957b1fc5b33f243430c778b018256ec8b3e4d0",
+    "sha256": "4dda21f1429f0127bcb9c2e45cf6bbad1c62786032923696f5a76a5185f5de44"
+  },
+  {
+    "file": "save.wav",
+    "original": "WAV/Modern14.wav",
+    "seconds": 0.756,
+    "bytes": 33388,
+    "sourceSha256": "70ebb4203a967bdf777317dcc476018732a765ced195673d5f3bf202a5d686c0",
+    "sha256": "c0e88248f4a49d7e2a7ad44f924829ed906a759b8db5ac37dd0de9caa2b9c38e"
+  },
+  {
+    "file": "found.wav",
+    "original": "WAV/Modern10.wav",
+    "seconds": 0.155,
+    "bytes": 6890,
+    "sourceSha256": "cb3265cdb75424bccccac60b156881b919cce9fb41f9f2d2a2d5f2e9b1131bc0",
+    "sha256": "1d9847ec8c7a97eb47ec0378faa2b207741f3fe07139dcef9b6284bfdf4e24c7"
+  },
+  {
+    "file": "solve.wav",
+    "original": "WAV/African4.wav",
+    "seconds": 0.801,
+    "bytes": 35356,
+    "sourceSha256": "5972439aa9041044d2b63eedc245910a5da8adb573b14a70a43a69206e6a07c5",
+    "sha256": "e2a8773d04d08d708271d210bd073c1dff26aece8789dc606794aef1720d344d"
+  },
+  {
+    "file": "notice.wav",
+    "original": "WAV/African2.wav",
+    "seconds": 0.592,
+    "bytes": 26156,
+    "sourceSha256": "2b040a31281d0a0de0a035c9bb026a3225759061c2e0e64bc9c68016eaf7f859",
+    "sha256": "559dae903fe5a6b91f834fc343c7aadfed79ba1a8829371536a5cf7a155bef12"
+  },
+  {
+    "file": "invalid.wav",
+    "original": "WAV/Coffee2.wav",
+    "seconds": 0.394,
+    "bytes": 17430,
+    "sourceSha256": "77d5f92e41bad075b1acc4d99678f8f42303674ce2ce4dda1b4a67dca1b93afa",
+    "sha256": "6ac872f9d7cbfcc9dc1253f7b63e1d9e5da950d3be120bc5c7e0a7f107a6639e"
+  },
+  {
+    "file": "on.wav",
+    "original": "WAV/Wood Block1.wav",
+    "seconds": 0.445,
+    "bytes": 19672,
+    "sourceSha256": "df5be4198e50c55b0ffca2eb655f5e191b0e89de917c3faf8b2a0659a3ea6a36",
+    "sha256": "3eb07dd31fa486591db2799005d3e330abaea306db21ab5d5081b3268e0e8da7"
+  },
+  {
+    "file": "off.wav",
+    "original": "WAV/Wood Block2.wav",
+    "seconds": 0.45,
+    "bytes": 19880,
+    "sourceSha256": "cfc254e6a1a5127723fc20f31255a3633d4262b949b7f1e14a0f958a2a48f3e8",
+    "sha256": "2d381a8a597bcab74dcac3241515654456c455b5e58fde00148518e25b058005"
+  },
+  {
+    "file": "navigate.wav",
+    "original": "WAV/Minimalist4.wav",
+    "seconds": 0.174,
+    "bytes": 7716,
+    "sourceSha256": "3a441242497e198bf25258e869f065c856c852e1ada7753635144f73b66f222b",
+    "sha256": "e3130c03cf33b0784a9caea41dce176e18a044220a2be0cfd35b10b4cbd02a0d"
+  }
+]

@@ -12,8 +12,7 @@ try{
   // Windows WebKit. Browser gestures, preferences and motion gates stay real.
   await context.addInitScript(()=>{
    window.soundCount=0;
-   const parameter=()=>({setValueAtTime(){},exponentialRampToValueAtTime(){}});
-   window.AudioContext=class{state='running';currentTime=0;destination={};resume(){return Promise.resolve();}createGain(){return{gain:parameter(),connect(){return this;}};}createOscillator(){window.soundCount++;return{frequency:parameter(),connect(){},start(){},stop(){}};}};
+   window.AudioContext=class{state='running';currentTime=0;destination={};resume(){return Promise.resolve();}decodeAudioData(){return Promise.resolve({duration:.2});}createGain(){return{gain:{value:0},connect(){return this;},disconnect(){}};}createBufferSource(){return{connect(){},disconnect(){},start(){window.soundCount++;},stop(){this.onended?.();}};}};
   });
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);await page.clock.setFixedTime(Date.parse('2026-10-20T18:00Z'));
   for(const file of [side,'activities','tasks','notes','dates','memories','status','phone-check','practice']){
@@ -34,7 +33,7 @@ try{
   await page.locator('#feel [data-comfort=sound]').uncheck();const count=await page.evaluate(()=>window.soundCount);
   await page.locator('#feel [data-comfort=motion]').uncheck();assert.equal(await page.locator('html').getAttribute('data-quiet-motion'),'');assert.equal(await page.evaluate(()=>window.soundCount),count);
   await page.reload();await page.locator('#feel').waitFor();assert.equal(await page.locator('html').getAttribute('data-quiet-motion'),'');
-  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#feel summary').click();await page.locator('#feel [data-comfort=sound]').check();assert.equal(await page.evaluate(()=>window.soundCount),0,'reduced motion keeps effects silent');
+  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#feel summary').click();await page.locator('#feel [data-comfort=sound]').check();await page.waitForFunction(()=>window.soundCount>0); // Explicit audio preference is independent from motion.
   await context.close();
  }
  assert.deepEqual(errors,[]);console.log('App life: both themes, nine destinations, 320/375/430px, empty actions, sheet focus, muted defaults, saved comfort and reduced motion pass');

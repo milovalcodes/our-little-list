@@ -106,7 +106,7 @@ $('test-notification').addEventListener('click', async event => {
     if (state === 'ready' || state === 'needs-subscribe') {
       const result = await ensurePushSubscription(data, viewer);
       if (result.state !== 'ready') {
-        toast(result.state==='other-device'?'Choose “use this phone” in setup first.':'Registration did not finish. Reconnect and retry.');return;
+        toast(result.state==='other-device'?'Choose “use this phone” in setup first.':'Registration did not finish. Reconnect and retry.',{kind:'notice'});return;
       }
     }
     // An iPhone that has not been added to the Home Screen has no Notification
@@ -114,7 +114,7 @@ $('test-notification').addEventListener('click', async event => {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
       // The row that fixes this is right above on the same page now.
       document.getElementById('notification-symbol')?.closest('.status-row')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      toast('allow notifications first ↑');
+      toast('allow notifications first ↑',{kind:'notice'});
       return;
     }
     // Exercise the real server -> push provider -> service worker path.

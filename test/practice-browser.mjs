@@ -52,7 +52,7 @@ try{
  await page.click('[data-practice-level=hard]');await page.waitForFunction(()=>document.querySelector('#practice-picker').value==='50');
  assert.equal(await page.locator('#practice-picker option').count(),50);
  const hard=practicePuzzle('crossword',50);
- assert.equal(await page.locator('.puzzle-cell').count(),21);
+ assert.equal(await page.locator('.puzzle-cell').count(),hard.grid.replaceAll('#','').length);
  await page.locator('[data-entry="0"]').click();await page.keyboard.type(hard.entries[0].word.toLowerCase());
  await page.reload();await page.waitForSelector('.crossword-grid');
  assert.ok((await page.locator('.puzzle-cell span').allTextContents()).filter(Boolean).length>=5,'crossing letters persist');

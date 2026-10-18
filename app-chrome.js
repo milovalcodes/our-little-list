@@ -371,7 +371,7 @@ function setupDeepLinkHighlight() {
   show();
   const deadline=window.setTimeout(() => {
     observer.disconnect();
-    if(!highlighted&&navigator.onLine)toast('That item is no longer here, or hasn’t synced yet.');
+    if(!highlighted&&navigator.onLine)toast('That item is no longer here, or hasn’t synced yet.',{kind:'notice'});
   },15000);
   cancelDeepLink=()=>{observer.disconnect();clearTimeout(clearTimer);clearTimeout(deadline);highlighted?.classList.remove('is-deep-linked');};
 }
@@ -551,7 +551,7 @@ function addSyncTray() {
   chip.addEventListener('click', () => { tray.hidden = !tray.hidden; });
   retry.addEventListener('click', () => {
     if (failed) { failed = 0; tray.hidden = true; paint(); return; }
-    if (navigator.onLine === false) { toast('still offline'); return; }
+    if (navigator.onLine === false) { toast('still offline',{kind:'notice'}); return; }
     // Firestore listens for this and retries its connection straight away
     // instead of waiting out its backoff. Whether that worked is for the
     // writes themselves to report.

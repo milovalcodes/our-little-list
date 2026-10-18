@@ -741,6 +741,13 @@ body[data-app="activities"]:has(.timed-playing) #sync-chip { opacity:0; pointer-
 .search-words .missed-word { border:1px dashed var(--accent); text-decoration:underline; text-underline-offset:3px; }
 .puzzle-cell:focus-visible { outline:3px solid var(--page-text); z-index:1; }
 .puzzle-wall { aspect-ratio:1; border-radius:3px; background:var(--page-text); opacity:.18; }
+.crossword-theme-detail { font-size:.9rem; line-height:1.5; margin:6px 0 16px; }
+.crossword-focus { display:flex; position:relative; gap:4px; max-width:100%; overflow-x:auto; padding:5px 2px 10px; margin:4px 0; overscroll-behavior-x:contain; }
+.crossword-focus button { flex:0 0 44px; width:44px; min-height:44px; padding:4px; border:1px solid var(--diary-rule); border-radius:7px; background:var(--diary-raised); color:var(--page-text); font-family:inherit; font-weight:800; font-size:1.15rem; line-height:1.2; }
+.crossword-focus button.current { background:var(--accent-deep); color:var(--diary-pressed-ink); border:2px solid var(--page-text); }
+.crossword-grid .puzzle-wall { border-radius:1px; opacity:.45; }
+.puzzle-scroll .crossword-grid { min-width:calc(var(--grid-size) * 27px); }
+#practice-game .puzzle-scroll .crossword-grid { max-width:560px; }
 .search-words { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 12px; margin:14px 0 8px; font-size:.8rem; font-weight:700; }
 .search-words .found { text-decoration:line-through; opacity:.6; }
 .puzzle-hint { display:block; text-align:center; color:var(--page-muted); }

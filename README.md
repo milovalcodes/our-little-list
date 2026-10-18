@@ -410,6 +410,62 @@ Regression checklist:
 
 If the local sandbox blocks loopback sockets, `node --import ./test/local-preview.mjs test/app-life-browser.mjs` uses an isolated disk-backed preview at the test origin. It stubs Firebase and blocks external requests. Normal CI browser runs still use the HTTP server. This fallback does not replace service-worker network or real-emulator checks.
 
+### Themed crosswords and interface sounds (v122)
+
+New daily plans from **2026-10-19** use catalog 8. The crossword returns to
+10 answers / 3 minutes, or 20 answers / 5 minutes on Sunday. Practice crossword
+edition 6 contains 100 distinct prebuilt boards. Practice Word/Search answers
+and save namespaces remain unchanged; their clue/subject metadata is refreshed.
+Published daily records, frozen weekly reservations, score rules and old
+crossword editions are preserved. The old mini constructor remains readable.
+
+`crossword-themes.js` defines 36 original subjects and anchor sets. Construction
+places a longest answer of at least seven letters first, requires at least four
+theme-related entries and three crossings through the anchor, then scores
+compactness, crossing loops and fewer single-crossing branches. Every board is
+one component, every contiguous word run has a clue, and word lengths vary.
+Seasonal subjects get first choice in October/December; depleted weekly pools
+can use a year-round subject, never the other holiday's vocabulary. Weekly
+exclusions cover all three games. Build-time compilation keeps generation out
+of the notification Worker's request path. Admin resets construct locally.
+
+Construction references reviewed:
+
+- [William Johnston's construction workshop](https://www.fleetingimage.com/wij/puzzles/art-of-construction.pdf), including grids by Rich Norris, Bob Klahn, Paula Gamache and Patrick Jordan: related long entries establish a theme, crossing fill gives multiple routes into it, and each clue must identify the intended sense. We author our own themes, clues and layouts.
+- [Crossword Compiler's theme-placement guide](https://ftp.crossword-compiler.com/en/help/html/themeplace.htm): place theme entries before filling around them and evaluate alternative placements.
+- [Deb Amlen's construction discussion](https://withasideofpod.nd.edu/episodes/4-2-on-crosswords-and-wordplay-deb-amlen-the-new-york-times/): begin with the theme and build the grid around its entries.
+
+These are short blocked crosswords with unchecked letters, not full newspaper
+American grids with every letter checked and rotational symmetry. We favor
+recognizable fill and a manageable timed round over forcing symmetry or obscure
+words. `test/themed-crossword.test.mjs` audits every compiled daily, tie and
+practice board. `word-book.js` provides explicit subjects and original clues
+for all 2,120 current playable and new theme answers, including 847 previously unclued answers; the large
+accepted-guess spelling whitelist is separate and is not used as a clue bank.
+
+The current-word strip gives 44px selection targets alongside the larger board.
+Native phone typing, sticky clues, silent competitive checking, and dock hiding
+remain in place. Selecting a strip letter never reveals whether it is correct.
+
+Interface samples are by **Nathan Gibson**, from
+[Universal UI/Menu Soundpack](https://cyrex-studios.itch.io/universal-ui-soundpack),
+rated **4.9/5 from 65 ratings** when reviewed on 2026-10-17. The author specifies
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); attribution appears
+in App feel and `audio/interface/LICENSE.txt`. Twelve chosen clips were trimmed,
+converted to mono 22.05 kHz PCM WAV, level-adjusted and edge-faded: 194,404 bytes
+total, each under a second. `manifest.json` records originals, hashes and lengths;
+`scripts/prepare-interface-audio.py` reproduces them from the official archive.
+[Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds) was also
+reviewed (CC0), but is not included in this release.
+
+Sounds stay opt-in, honor saved mute/volume, stop when hidden, and have per-event
+cooldowns and priority so rapid taps do not stack. Typing clicks are a separate
+opt-in. Motion and sound have independent controls. Notification sounds and
+Little Star's existing musical gameplay cues retain their own settings.
+Chromium tests decode the real clips. Windows WebKit lacks Web Audio in this
+test environment, so it verifies graceful absence and mocked playback controls;
+physical iPhone speaker/keyboard testing remains a device check.
+
 ### Clarity and phone controls (v121)
 
 Daily games hide the bottom dock while an unfinished board is open. Current crossword clues and search words stay above the board as you scroll. Little Word and daily/practice crosswords offer a real phone keyboard; its input survives board redraws, supports mobile input/deletion, and keeps the game keyboard available as an alternative. Practice Little Word supports the same input.

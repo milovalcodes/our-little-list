@@ -90,3 +90,8 @@ html[data-quiet-motion] :is(.word-finale,.word-confetti,.life-tap,.life-spark) {
 
 .profile-page :is(.practice-tabs,.practice-levels) a[aria-current="page"],.profile-page #practice-next { color:var(--diary-pressed-ink); background:var(--accent-deep); }
 .profile-page .puzzle-grid .puzzle-cell:is(.cursor,.found,.tracing,.pending-find) { color:var(--diary-pressed-ink); background:var(--accent-deep); }
+.sound-volume { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.sound-volume input { min-height:44px; max-width:100%; flex:1 1 140px; accent-color:var(--accent-deep); }
+.sound-volume output { min-width:3em; font-variant-numeric:tabular-nums; }
+.sound-previews { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+.sound-previews button { min-height:44px; padding:8px 14px; color:var(--page-text); background:var(--diary-raised); border:1px solid var(--diary-rule); border-radius:10px; font:inherit; }

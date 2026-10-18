@@ -26,7 +26,7 @@ export function startGameReset({data}){
  const choice=host.querySelector('select'),button=host.querySelector('button'),message=host.querySelector('[role="status"]');
  button.addEventListener('click',async()=>{
   if(busy)return;
-  const scope=choice.value,label={all:'all three games',word:'Little Word',search:'Word Search',crossword:'Mini crossword'}[scope];
+  const scope=choice.value,label={all:'all three games',word:'Little Word',search:'Word Search',crossword:'Crossword'}[scope];
   if(!confirm(`Reset ${label} for BOTH of you?\n\nToday’s attempts and points for ${scope==='all'?'these games':'this game'} will be removed. You’ll get new answers and fresh attempts. Other days and the daily question stay as they are.`))return;
   busy=true;button.disabled=true;choice.disabled=true;button.setAttribute('aria-busy','true');message.textContent='making fresh boards…';
   requestId??=crypto.randomUUID();

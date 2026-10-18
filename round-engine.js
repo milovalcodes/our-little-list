@@ -4,12 +4,15 @@ import {random,searchGrid,isHardDay} from './daily-puzzles.js';
 import {connectedCrossword} from './connected-crossword.js';
 import {miniLattice,MINI_ENTRIES} from './mini-crossword.js';
 import {cluePool,answerPool} from './round-library.js';
+import {themedCrossword,isThemedDay} from './themed-crossword.js';
+import {wordDetails,WORD_BOOK} from './word-book.js';
+import {CROSSWORD_THEMES,themeEntry} from './crossword-themes.js';
 
 export const ROUND_ENGINE_START='2026-10-13';
 export const ROUND_TYPES=['word','search','crossword'];
-// Daily crosswords from this game day are 5x5 minis (catalog 7, 2:00 / 3:00).
+// Retain catalog 7 compatibility; themed boards supersede its planned start.
 export const MINI_CROSSWORD_START='2026-10-19';
-export const isMiniDay=day=>day>=MINI_CROSSWORD_START;
+export const isMiniDay=day=>day>=MINI_CROSSWORD_START&&!isThemedDay(day);
 export const crosswordDuration=(day,hard)=>isMiniDay(day)?(hard?180000:120000):(hard?300000:180000);
 export {revisionOf,assertRevision} from './round-revision.js';
 export const roundWords=puzzle=>puzzle?.word?[puzzle.word.toUpperCase()]:(puzzle?.entries||[]).map(e=>e.word.toUpperCase());
@@ -31,8 +34,13 @@ export function freshRounds({day,types=ROUND_TYPES,used=[],seed=day,now=Date.now
   if(type==='word'){
    const entry=shuffled(answerPool(hard,season).filter(e=>!excluded.has(e.word.toUpperCase())),rng)[0];
    if(!entry)throw Error('No fresh words remain this week. Nothing was reset.');
-   rounds.word={day,word:entry.word,theme,difficulty:hard?'hard':'normal',catalogVersion:6,entryId:entry.id,revision:0,...window};
+   rounds.word={day,word:entry.word,theme,difficulty:hard?'hard':'normal',catalogVersion:6,entryId:entry.id,revision:0,...window,...(isThemedDay(day)?{...wordDetails(entry.word),catalogVersion:8}:{})};
   }else{
+   if(isThemedDay(day)){
+    const layout=type==='crossword'?themedCrossword({hard,season,excluded,rng}):themedSearch(hard,season,excluded,rng);
+    rounds[type]={day,type,hard,difficulty:hard?'hard':'normal',revision:0,...layout,...window,durationMs:type==='crossword'?(hard?300000:180000):(hard?150000:120000)};
+    roundWords(rounds[type]).forEach(w=>excluded.add(w));continue;
+   }
    const bank=shuffled(cluePool(hard,season).filter(e=>!excluded.has(e.word)),rng),mini=type==='crossword'&&isMiniDay(day);
    const entries=mini?MINI_ENTRIES:type==='crossword'&&hard?20:10;
    if(bank.length<(mini?MINI_ENTRIES*3:type==='crossword'&&hard?25:15))throw Error('Not enough fresh words remain for a full board. Nothing was reset.');
@@ -45,6 +53,15 @@ export function freshRounds({day,types=ROUND_TYPES,used=[],seed=day,now=Date.now
   roundWords(rounds[type]).forEach(w=>excluded.add(w));
  }
  return rounds;
+}
+function themedSearch(hard,season,excluded,rng){
+ const book=new Map(WORD_BOOK.map(e=>[e.word,e]));
+ for(const t of [...shuffled(CROSSWORD_THEMES.filter(t=>t.season===season),rng),...(season?shuffled(CROSSWORD_THEMES.filter(t=>!t.season),rng):[])]){
+  const pool=[...t.words].map(w=>book.get(w)).filter(e=>e&&!excluded.has(e.word)&&e.word.length>=4&&e.word.length<=(hard?10:9));
+  if(pool.length<12)continue;
+  return {...searchGrid(pool.map(e=>themeEntry(t,e)),hard?12:11,rng,true),theme:t.title,themeDescription:t.description,themeId:'search-v8-'+t.id,catalogVersion:8};
+ }
+ throw Error('Not enough fresh themed search words. Saved boards have not changed.');
 }
 // The day's own bank first. If its five-letter words cannot interlock, widen
 // step by step (the season's other difficulty, then everyday words) rather

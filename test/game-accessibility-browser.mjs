@@ -30,6 +30,7 @@ try{
   await page.keyboard.insertText('ab');assert.match(await page.locator('#crossword .timed-toolbar span').textContent(),/^2 \/ /);
   await input.evaluate(n=>n.dispatchEvent(new InputEvent('beforeinput',{inputType:'deleteContentBackward',bubbles:true,cancelable:true})));assert.match(await page.locator('#crossword .timed-toolbar span').textContent(),/^1 \/ /);
   await page.locator('#crossword [data-clue="1"]').click();assert.ok(await input.evaluate(n=>n===window.originalCrosswordInput&&n===document.activeElement),'clue changes retain native keyboard');
+  const focusCell=page.locator('#crossword [data-focus-cell]').first();const cellIndex=await focusCell.getAttribute('data-focus-cell');await focusCell.click();assert.equal(await page.locator('#crossword .cursor').getAttribute('data-cell'),cellIndex);
   await page.keyboard.insertText('xy');assert.ok(await input.evaluate(n=>n===document.activeElement));
   await audit(page,'#crossword-game');await page.setViewportSize({width,height:480});
   await page.locator('#crossword .puzzle-grid').evaluate(n=>window.scrollTo(0,n.getBoundingClientRect().top+scrollY));

@@ -14,7 +14,7 @@ export function setupAuthUI(data,user){
 }
 
 export function escapeHtml(value){return String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-export function toast(message){document.querySelector('.toast')?.remove();const el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.setAttribute('aria-live','polite');el.textContent=message;document.body.append(el);document.dispatchEvent(new CustomEvent('littlelist:feedback'));setTimeout(()=>el.remove(),3200);}
+export function toast(message,{kind='save'}={}){document.querySelector('.toast')?.remove();const el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.setAttribute('aria-live','polite');el.textContent=message;document.body.append(el);document.dispatchEvent(new CustomEvent('littlelist:feedback',{detail:{kind}}));setTimeout(()=>el.remove(),3200);}
 export function dateKey(value){return `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`;}
 // A tap answers at once: the button locks so it cannot be pressed twice, but
 // the "saving…" label and spinner only appear if the work is still going after

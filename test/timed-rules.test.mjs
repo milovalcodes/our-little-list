@@ -1,3 +1,6 @@
+import {miniLattice} from '../mini-crossword.js';
+import {cluePool} from '../round-library.js';
+import {random} from '../daily-puzzles.js';
 import assert from 'node:assert/strict';
 import {timedPuzzle} from '../daily-puzzles.js';
 import {newTimedGame,advanceTimedGame,timedSummary} from '../timed-game.js';
@@ -90,7 +93,14 @@ for(let i=0;i<20;i++){
 }
 assert.ok(twenty.complete);assert.equal(twenty.solved.length,20);
 // 5x5 minis (catalog 7): exactly 5x5, six answers, 2:00 normal / 3:00 hard, only from 2026-10-19.
-const mini={...weeklyRounds('2026-11-10')['2026-11-11'].crossword,opensAt:Date.now()-1000,closesAt:Date.now()+86400000};
+const current={...weeklyRounds('2026-11-10')['2026-11-10'].crossword,opensAt:Date.now()-1000,closesAt:Date.now()+86400000};
+assert.equal(current.catalogVersion,8);assert.equal(current.durationMs,180000);
+for(const change of [{durationMs:120000},{entries:current.entries.slice(0,6)},{size:5,grid:'A'.repeat(25)},{anchor:7},{themeDescription:'x'.repeat(241)}])await write('him','timedPuzzles/'+current.day+'-crossword',{...current,...change},false);
+await write('him','timedPuzzles/'+current.day+'-crossword',current);
+let ten=await commit('him',newTimedGame(current,'him'),{start:true});
+for(let i=0;i<10;i++)ten=await commit('him',advanceTimedGame(ten,current,{index:i,expectedCount:i}));
+assert.ok(ten.complete);
+const mini={...weeklyRounds('2026-11-10')['2026-11-11'].crossword,...miniLattice(cluePool(false,''),random('legacy-rules')),catalogVersion:7,durationMs:120000,opensAt:Date.now()-1000,closesAt:Date.now()+86400000};
 assert.equal(mini.catalogVersion,7);assert.equal(mini.durationMs,120000);
 await write('him','timedPuzzles/'+mini.day+'-crossword',{...mini,durationMs:180000},false);
 await write('him','timedPuzzles/'+mini.day+'-crossword',{...mini,entries:mini.entries.slice(0,5)},false);
@@ -101,7 +111,7 @@ await write('him','timedPuzzles/'+mini.day+'-crossword',mini);
 let six=await commit('him',newTimedGame(mini,'him'),{start:true});
 for(let i=0;i<6;i++)six=await commit('him',advanceTimedGame(six,mini,{index:i,expectedCount:i}));
 assert.ok(six.complete);assert.equal(six.solved.length,6);
-const hardMini={...weeklyRounds('2026-11-10')['2026-11-15'].crossword,opensAt:Date.now()-1000,closesAt:Date.now()+86400000};
+const hardMini={...mini,day:'2026-11-15',hard:true,difficulty:'hard',durationMs:180000};
 assert.equal(hardMini.durationMs,180000);
 await write('him','timedPuzzles/'+hardMini.day+'-crossword',{...hardMini,durationMs:300000},false);
 await write('him','timedPuzzles/'+hardMini.day+'-crossword',hardMini);

@@ -21,7 +21,7 @@ export function createGameTyping(host,{label,onKey,enterLabel='Submit guess'}){
  function focus(){if(native&&available&&!blocked)input.focus({preventScroll:true});}
  toggle.addEventListener('click',()=>{native=!native;host.classList.toggle('game-native-mode',native);toggle.textContent=native?'Game keys':'Use phone keyboard';toggle.setAttribute('aria-pressed',String(native));field.hidden=!native;submit.hidden=!native;if(native)focus();else input.blur();});
  // Selecting another square/clue should keep the phone keyboard open.
- const preserve=event=>{if(native&&available&&event.target.closest('.crossword-grid,.crossword-current,.crossword-clues,.word-grid'))event.preventDefault();};
+ const preserve=event=>{if(native&&available&&event.target.closest('.crossword-grid,.crossword-current,.crossword-clues,.crossword-focus,.word-grid'))event.preventDefault();};
  host.addEventListener('pointerdown',preserve);
  return {view,get active(){return native&&available;},focus,
   update(show,disabled=false){available=show;blocked=disabled;controls.hidden=!show;input.readOnly=disabled;toggle.disabled=disabled;submit.disabled=disabled;if(!show)input.blur();},

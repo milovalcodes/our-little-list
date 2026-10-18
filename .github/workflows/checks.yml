@@ -44,6 +44,8 @@ jobs:
           node test/practice.test.mjs
           node test/daily-habit.test.mjs
           node test/round-engine.test.mjs
+          node test/themed-crossword.test.mjs
+          node test/interface-audio.test.mjs
           node test/puzzle-edition.test.mjs
           node test/hard-rounds.test.mjs
           node test/connected-crossword.test.mjs

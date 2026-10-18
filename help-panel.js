@@ -51,12 +51,12 @@ export function initHelpPanel({ data, viewer, other, openGroceries = () => {} })
     if (!title) return;
     const forMe=$('ask-for-me').checked;
     if(forMe&&urgency!=='timed'){
-      pickUrgency('timed');toast('pick a time for your own reminder');return;
+      pickUrgency('timed');toast('pick a time for your own reminder',{kind:'notice'});return;
     }
     let dueAt = 0;
     if (urgency === 'timed') {
       const chosen = moment.chosen();
-      if (!chosen) { toast('pick a day and time first'); return; }
+      if (!chosen) { toast('pick a day and time first',{kind:'invalid'}); return; }
       // Accepting "today" plus a time that has already gone by saved a nudge
       // that could never go off.
       if (chosen.getTime() <= Date.now()) {
