@@ -3,8 +3,9 @@ const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const moving=()=>!reduced.matches&&comfortSettings().motion&&!document.hidden;
 const controls='button,a[href],summary,[role="button"]';
 const gameTarget=node=>node.closest('#word-game,#practice-game,.timed-game,.word-coronation');
-let lastFeedback=0,lastPoint=null;
-function feedback(kind){const now=performance.now();if(now-lastFeedback<85)return;lastFeedback=now;gameFeedback(kind);}
+let lastPoint=null;
+// The audio layer handles rate limits and lets a confirmed save outrank its tap.
+function feedback(kind){gameFeedback(kind);}
 function ripple(target,x,y){
  if(!moving()||!target.animate)return;
  const box=target.getBoundingClientRect(),dot=document.createElement('span');dot.className='life-tap';dot.setAttribute('aria-hidden','true');
@@ -22,7 +23,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{if(e.target.matches('input[type="checkbox"]')&&!e.target.closest('.game-comfort')&&!gameTarget(e.target))feedback(e.target.checked?'on':'off');});
 document.addEventListener('littlelist:feedback',e=>{
  feedback(e.detail?.kind||'notice');
- if(!moving()||!lastPoint||performance.now()-lastPoint.at>4000)return;
+ if(e.detail?.kind!=='save'||!moving()||!lastPoint||performance.now()-lastPoint.at>4000)return;
  // Three tiny paper stars acknowledge a saved action; never a full-screen burst.
  for(let i=0;i<3;i++){
   const star=document.createElement('span');star.className='life-spark';star.textContent='✦';star.setAttribute('aria-hidden','true');star.style.left=lastPoint.x+'px';star.style.top=lastPoint.y+'px';document.body.append(star);

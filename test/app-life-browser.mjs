@@ -30,6 +30,14 @@ try{
   await page.goto(`${base}/phone-check.html?as=${side}#feel`);await page.locator('#feel summary').click();
   assert.equal(await page.locator('#feel [data-comfort=sound]').isChecked(),false,'sounds begin muted');
   await page.locator('#feel [data-comfort=sound]').check();await page.waitForFunction(()=>window.soundCount>0);
+  const immediateSave=await page.evaluate(async()=>{
+   const audio=await import('./interface-audio.js');await audio.primeInterfaceAudio();audio.stopInterfaceAudio();
+   await new Promise(r=>setTimeout(r,200));
+   const before=window.soundCount,button=document.createElement('button');document.body.append(button);
+   button.click();document.dispatchEvent(new CustomEvent('littlelist:feedback',{detail:{kind:'save'}}));
+   await new Promise(r=>setTimeout(r,50));button.remove();return window.soundCount-before;
+  });
+  assert.equal(immediateSave,2,'a fast confirmed save is not swallowed by the preceding tap');
   await page.locator('#feel [data-comfort=sound]').uncheck();const count=await page.evaluate(()=>window.soundCount);
   await page.locator('#feel [data-comfort=motion]').uncheck();assert.equal(await page.locator('html').getAttribute('data-quiet-motion'),'');assert.equal(await page.evaluate(()=>window.soundCount),count);
   await page.reload();await page.locator('#feel').waitFor();assert.equal(await page.locator('html').getAttribute('data-quiet-motion'),'');
