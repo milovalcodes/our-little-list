@@ -4,7 +4,7 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
  const shell=document.createElement('section');shell.className='crossword-board';
  shell.innerHTML=`<div class="crossword-board-tools" role="group" aria-label="Board view"><button type="button" data-board-view="out" aria-label="Zoom out">−</button><output aria-label="Board zoom" aria-live="off">100%</output><button type="button" data-board-view="in" aria-label="Zoom in">+</button><button type="button" data-board-view="fit" aria-label="Fit whole board">Fit</button><button type="button" data-board-view="current" aria-label="Show current square" title="Current square">◎</button></div><div class="puzzle-scroll crossword-viewport" tabindex="0" role="region" aria-label="Crossword board. Drag to move, pinch to zoom. Use plus and minus to zoom, arrow keys to move."><div class="crossword-canvas"></div></div><p class="crossword-view-hint">Pinch to zoom · drag to move · tap a square to type</p>`;
  const pane=shell.querySelector('.crossword-viewport'),canvas=shell.querySelector('.crossword-canvas'),tools=shell.querySelector('.crossword-board-tools');
- const points=new Map();let grid,key,cell,zoom=1,base=0,width=0,height=0,initialized=false,moved=false,suppressClick=false,disposed=false;
+ const points=new Map();let grid,key,cell,word='',zoom=1,base=0,width=0,height=0,initialized=false,moved=false,suppressClick=false,disposed=false;
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  const maxZoom=()=>Math.max(3,Math.min(8,64*Number(grid?.style.getPropertyValue('--grid-size')||1)/Math.max(1,base)));
  const center=()=>{const r=pane.getBoundingClientRect();return {x:r.left+pane.clientLeft+pane.clientWidth/2,y:r.top+pane.clientTop+pane.clientHeight/2};};
@@ -37,12 +37,25 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
   if(a.left<left+8)pane.scrollLeft-=left+8-a.left;else if(a.right>left+pane.clientWidth-8)pane.scrollLeft+=a.right-left-pane.clientWidth+8;
   if(a.top<top+8)pane.scrollTop-=top+8-a.top;else if(a.bottom>top+pane.clientHeight-8)pane.scrollTop+=a.bottom-top-pane.clientHeight+8;
  }
+ function frameWord(){
+  if(!initialized)return;
+  const squares=[...grid.querySelectorAll('.chosen')].map(n=>n.getBoundingClientRect());
+  if(squares.length){
+   const paneRect=pane.getBoundingClientRect();
+   const x=(Math.min(...squares.map(r=>r.left))+Math.max(...squares.map(r=>r.right)))/2;
+   const y=(Math.min(...squares.map(r=>r.top))+Math.max(...squares.map(r=>r.bottom)))/2;
+   pane.scrollLeft+=x-paneRect.left-pane.clientLeft-pane.clientWidth/2;
+   pane.scrollTop+=y-paneRect.top-pane.clientTop-pane.clientHeight/2;
+  }
+  // A long word at a user's chosen zoom may not fit. Keep its cursor reachable.
+  reveal();
+ }
  function resize(){
   if(disposed||!grid||!pane.clientWidth||!pane.clientHeight)return;
   if(initialized&&width===pane.clientWidth&&height===pane.clientHeight)return;
   width=pane.clientWidth;height=pane.clientHeight;base=Math.max(1,Math.min(width,height)-24);
-  if(!initialized){zoom=clamp(32*Number(grid.style.getPropertyValue('--grid-size'))/base,1,2);initialized=true;}
-  zoom=clamp(zoom,1,maxZoom());layout();reveal();
+  if(!initialized){const cells=Number(grid.style.getPropertyValue('--grid-size'));zoom=base/cells>=28?1:clamp(32*cells/base,1,2);initialized=true;}
+  zoom=clamp(zoom,1,maxZoom());layout();frameWord();
  }
  function fit(){if(!initialized)return;zoom=1;layout();pane.scrollLeft=0;pane.scrollTop=0;}
  function capture(id){try{pane.setPointerCapture(id);}catch(_){/* The pointer may have already ended. */}}
@@ -93,7 +106,7 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
   const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?pane.clientHeight:1);
   zoomAt(zoom*Math.exp(-delta*.008),{x:e.clientX,y:e.clientY});
  };
- const command=action=>{if(action==='fit')fit();else if(action==='current')reveal();else zoomAt(zoom*(action==='in'?1.25:.8));};
+ const command=action=>{if(action==='fit')fit();else if(action==='current')frameWord();else zoomAt(zoom*(action==='in'?1.25:.8));};
  const toolClick=e=>{const action=e.target.closest('[data-board-view]')?.dataset.boardView;if(action){command(action);keepTyping();}};
  const keyboard=e=>{
   if(e.target!==pane||e.ctrlKey||e.metaKey||e.altKey)return;
@@ -132,7 +145,9 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
     for(const child of children.slice(at+1))view.append(child);
    }
    resize();controls();
-   if(!points.size&&(changed||cell!==currentCell||revealCurrent))reveal();
+   const nextWord=[...grid.querySelectorAll('.chosen')].map(n=>n.dataset.cell??n.dataset.square).join(',');
+   if(!points.size){if(changed||word!==nextWord)frameWord();else if(cell!==currentCell||revealCurrent)reveal();}
+   word=nextWord;
    cell=currentCell;
   },
   cancel,

@@ -10,7 +10,10 @@ for(const engine of [chromium,webkit]){
   await context.route('**/firebase-config.js',r=>r.fulfill({contentType:'text/javascript',body:'export const firebaseConfig={};'}));
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   const requests=[];page.on('request',r=>{if(r.url().endsWith('.wav'))requests.push(r.url());});
-  await page.goto(base+'/phone-check.html?as=her#feel');await page.locator('#feel summary').click();
+  await page.goto(base+'/phone-check.html?as=her#feel');
+  await page.locator('#feel summary').click();
+  // Wait for the disclosure before interacting with its native range control.
+  await page.waitForFunction(()=>document.querySelector('#feel details')?.open);
   assert.equal(requests.length,0,'muted page does not request audio');
   assert.equal(await page.locator('[data-comfort=typing]').isChecked(),false);
   await page.locator('[data-sound-volume]').fill('20');

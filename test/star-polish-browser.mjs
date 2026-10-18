@@ -43,6 +43,13 @@ try{
   assert.equal(await page.locator('button[data-calm]').getAttribute('aria-pressed'),'true','calm mode survives reload');
   for(const width of [320,375,430]){
    await page.setViewportSize({width,height:812});
+   await page.locator('[data-tab=nursery]').click();
+   await page.locator('button[data-care=feed]').click();
+   await page.locator('.star-room[data-care-phase=choose]').waitFor();
+   for(const care of ['feed','wash','cuddle','sleep'])assert.ok(await page.locator(`button[data-care=${care}]`).evaluate(n=>{const r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));}),care+' remains tappable above the snack tray');
+   await page.screenshot({path:new URL(side+'-care-'+width+'.png',output).pathname.replace(/^\/([A-Za-z]:)/,'$1'),fullPage:true});
+   await page.locator('button[data-care=wash]').click();await page.locator('.star-room[data-care=wash]').waitFor();
+   await page.locator('.care-exit').click();
    for(const tab of ['nursery','play','shop','journal']){
     await page.locator(`[data-tab=${tab}]`).click();
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),side+' '+tab+' fits '+width);

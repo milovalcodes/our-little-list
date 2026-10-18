@@ -525,6 +525,34 @@ service cloud.firestore {
       allow create, update: if inHousehold(householdId) && summary(request.resource.data);
       allow delete: if gameAdmin(householdId) && (resource == null || resettingTimed(householdId,resource.data.day,resource.data.type));
     }
+    match /households/{householdId}/gameReactions/{id} {
+      function ended(g, type) {
+        return g.done || (type != 'word' && g.startedAt is timestamp
+          && (request.time.toMillis() >= g.startedAt.toMillis() + timedDuration(g) || request.time.toMillis() >= g.closesAt));
+      }
+      function bothFinished(g) {
+        let resultCollection = g.type == 'word' ? 'wordResults' : 'timedResults';
+        let puzzleCollection = g.type == 'word' ? 'wordPuzzles' : 'timedPuzzles';
+        let round = g.type == 'word' ? g.day : g.day + '-' + g.type;
+        let puzzle = get(/databases/$(database)/documents/households/$(householdId)/$(puzzleCollection)/$(round)).data;
+        let a = get(/databases/$(database)/documents/households/$(householdId)/$(resultCollection)/$(round + '-her')).data;
+        let b = get(/databases/$(database)/documents/households/$(householdId)/$(resultCollection)/$(round + '-him')).data;
+        return puzzle.get('revision',0) == g.revision
+          && a.get('revision',0) == g.revision && b.get('revision',0) == g.revision
+          && ended(a,g.type) && ended(b,g.type);
+      }
+      allow read: if inHousehold(householdId);
+      allow create, update: if inHousehold(householdId)
+        && request.resource.data.keys().hasOnly(['day','type','revision','person','emoji'])
+        && request.resource.data.person == mySide()
+        && request.resource.data.day is string && request.resource.data.day.size() <= 40
+        && request.resource.data.type in ['word','search','crossword']
+        && request.resource.data.revision is int && request.resource.data.revision >= 0
+        && request.resource.data.emoji in ['👑','😭','🔥','😂']
+        && id == request.resource.data.day + '-' + request.resource.data.type + '-' + string(request.resource.data.revision) + '-' + mySide()
+        && bothFinished(request.resource.data);
+      allow delete: if inHousehold(householdId) && resource.data.person == mySide();
+    }
     match /households/{householdId}/activityEvents/{id} {
       allow read: if inHousehold(householdId);
       allow create: if inHousehold(householdId) && request.resource.data.keys().hasOnly(['day','createdAt'])

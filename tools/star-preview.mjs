@@ -28,6 +28,6 @@ http.createServer(async(req,res)=>{
    const response=await fixture(match[1]).fetch(new Request('https://internal/',{method:'POST',body:JSON.stringify({op:body.op,actor:match[2],command:body.command})}));res.writeHead(response.status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(await response.text());return;
   }
   const path=resolve(root,'.'+decodeURIComponent(url.pathname));if(!path.startsWith(root))throw Error('not found');
-  const bytes=await readFile(path);res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png'})[extname(path)]||'application/octet-stream','Cache-Control':'no-store'});res.end(bytes);
+  const bytes=await readFile(path);res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.webp':'image/webp','.png':'image/png'})[extname(path)]||'application/octet-stream','Cache-Control':'no-store'});res.end(bytes);
  }catch{res.writeHead(404);res.end('Not found');}
 }).listen(8892,'127.0.0.1',()=>console.log('Disposable Little Star QA at http://127.0.0.1:8892/little-star.html?scene=ready'));

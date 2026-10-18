@@ -8,6 +8,8 @@ import { createDeliveryWake } from './delivery-wake.js';
 import { HOUSEHOLD_ID, ADMIN_UID, configured as householdConfigured } from './household.js';
 import {activityClock} from './activity-clock.js';
 import {revisionOf,assertRevision} from './round-revision.js';
+import {competingRound,roundWaitMessage} from './timed-round-guard.js';
+import {reactionId,comparisonReady,ROUND_REACTIONS} from './shared-round.js';
 import { GAME_ID, nextGame, gameMessage, selectedGameId, gameNeedsPing } from './couple-game.js';
 
 const configured = firebaseConfig?.apiKey && !firebaseConfig.apiKey.startsWith('REPLACE_');
@@ -176,6 +178,15 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       return { id: entry.id };
     },
     setTo: (name, id, item) => applied(setDoc(doc(named(name), id), item, { merge: true }), name),
+    async saveGameReaction(item) {
+      if(!signedIn()||navigator.onLine===false)throw Error('Reconnect to react.');
+      // Transactions fail offline and resolve only after server acknowledgement.
+      return runTransaction(db,async transaction=>{
+        const ref=doc(named('gameReactions'),reactionId(item));
+        await transaction.get(ref);
+        transaction.set(ref,item);
+      });
+    },
     async setDateDone(id, done, viewer) {
       if (!signedIn() || navigator.onLine === false) throw new Error('Connect to finish this date.');
       // The date and its memory are one action. Transactions also prevent two
@@ -254,6 +265,13 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         const puzzle=p.exists()?p.data():null;
         let game=current.exists()?current.data():null;
         assertRevision(puzzle,options.expectedRevision||0,game);
+        if(options.start&&!game){
+          const otherType=options.type==='search'?'crossword':'search';
+          const otherGame=await transaction.get(doc(named('timedGames'),`${options.day}-${otherType}-${options.person}`));
+          const otherPuzzle=await transaction.get(doc(named('timedPuzzles'),`${options.day}-${otherType}`));
+          const conflict=competingRound(otherGame.exists()?[otherGame.data()]:[],options,otherPuzzle.exists()?[otherPuzzle.data()]:[]);
+          if(conflict)throw Error(roundWaitMessage(conflict));
+        }
         if(options.start){if(game)return;game={...newTimedGame(puzzle,options.person),startedAt:serverTimestamp()};}
         else {
           if(!game||game.person!==options.person)throw Error('Start your round first.');
@@ -472,6 +490,15 @@ function createLocalLayer(onAuth, onReady) {
       else items.push({ id, ...item });
       write(name, items);
     },
+    async saveGameReaction(item) {
+      const {day,type,person,revision,emoji}=item,other=person==='her'?'him':'her';
+      if(!['her','him'].includes(person)||!['word','search','crossword'].includes(type)||!Number.isInteger(revision)||revision<0||!ROUND_REACTIONS.some(([value])=>value===emoji))throw Error('Invalid reaction.');
+      const collection=type==='word'?'wordResults':'timedResults';
+      const results=read(collection).filter(r=>r.day===day&&(type==='word'||r.type===type));
+      const puzzle=read(type==='word'?'wordPuzzles':'timedPuzzles').find(p=>p.day===day&&(type==='word'||p.type===type))||(type==='word'?wordForDay(day):timedPuzzle(day,type));
+      if(revision!==revisionOf(puzzle)||!comparisonReady(type,results.find(r=>r.person===person),results.find(r=>r.person===other),puzzle))throw Error('Finish both rounds first.');
+      return this.setTo('gameReactions',reactionId(item),item);
+    },
     async submitWordGuess(options) {
       const play = () => {
         const id = `${options.day}-${options.person}`;
@@ -490,13 +517,15 @@ function createLocalLayer(onAuth, onReady) {
         if(options.day.includes('-tie-')&&read('wordDuelEnds').some(e=>e.id===options.day))throw Error('This sudden-death set has finished.');
         const before=games.find(g=>g.id===id);
         if(options.start&&before)return before;
+        const conflict=options.start&&competingRound(games,options,read('timedPuzzles'));
+        if(conflict)throw Error(roundWaitMessage(conflict));
         if(!options.start&&Number.isInteger(options.index)&&options.answer!==puzzle.entries[options.index]?.word)throw Error('That answer does not fit.');
         const next=options.start?newTimedGame(puzzle,options.person):advanceTimedGame(before,puzzle,options);
         write('timedGames',[...games.filter(g=>g.id!==id),{id,...next}]);
         write('timedResults',[...read('timedResults').filter(g=>g.id!==id),{id,...timedSummary(next)}]);
         return next;
       };
-      return navigator.locks?navigator.locks.request('little-list-timed-'+options.day+'-'+options.type,play):play();
+      return navigator.locks?navigator.locks.request('little-list-timed-'+options.day+'-'+options.person,play):play();
     },
     async answerQuestion(day, person, text, at) {
       const key = `${day}-${person}`;

@@ -38,7 +38,7 @@ try{
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  await page.click('[data-word-peek]');assert.equal(await page.locator('.word-peek-board').count(),0);
  await page.click('[data-word-peek]');assert.equal(await page.locator('.word-peek-board .word-row').count(),5);
- assert.equal(await page.evaluate(()=>window.peekReads),2,'reopening uses the immutable finished board');
+ assert.equal(await page.evaluate(()=>window.peekReads),3,'one shared-grid read plus failed/successful peek reads; reopening never refetches');
  await page.reload();await page.waitForSelector('[data-word-peek]');
  assert.equal(await page.locator('.word-peek-board').count(),0,'peek stays optional after reopening');
  assert.deepEqual(errors,[]);

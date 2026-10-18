@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v125';
+const CACHE = 'our-little-list-v126';
 // v114: authenticated shared Little Star alpha, competition earnings and care pings.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
@@ -9,13 +9,14 @@ importScripts('./old-links.js');
 importScripts('./seasonal-assets.js');
 
 const LIBRARY_CACHE = 'our-little-list-libraries';
+const STAR_ART_CACHE = 'our-little-list-star-art';
 
 const PAGES = [
   // Old addresses (reminders, activity, profiles…) are no longer pages:
   // old-links.js maps them to where those things live now.
   './', './index.html', './her.html', './him.html', './old-links.js',
   './status.html', './dates.html', './tasks.html', './notes.html',
-  './phone-check.html', './games.html', './activities.html', './today.html', './memories.html', './guide.html'
+  './phone-check.html', './games.html', './activities.html', './today.html', './memories.html', './guide.html', './little-star.html'
 ];
 
 const ASSETS = [
@@ -44,7 +45,7 @@ const ASSETS = [
   './appearance-boot.js',
   './alter-ego.js',
   './list-schedule.js', './list-fields.js', './routine-checks.js',
-  './timed-games.js','./timed-game.js','./crossword-entry.js','./mini-crossword.js','./daily-results.js','./share-result.js','./daily-puzzles.js','./memory-catalog.js','./weekly-report.js','./weekly-tracker.js','./puzzle-catalog.js', './seasonal-puzzles.js','./puzzle-bank.js','./league-scores.js',
+  './shared-round.js', './timed-round-guard.js', './timed-games.js','./timed-game.js','./crossword-entry.js','./mini-crossword.js','./daily-results.js','./share-result.js','./daily-puzzles.js','./memory-catalog.js','./weekly-report.js','./weekly-tracker.js','./puzzle-catalog.js', './seasonal-puzzles.js','./puzzle-bank.js','./league-scores.js',
   './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './guide.js', './profile-store.js', './profile-route.js', './couple-game.js', './arcade-game.js', './profile-names.js',
   './profiles.js', './status.js', './dates.js', './dashboard.js', './activities.js', './activity-clock.js', './daily-word.js', './daily-words.js', './word-game.js', './word-lexicon.js', './word-scores.js', './word-crowns.js', './word-tiebreaker.js', './word-celebration.js', './word-coronation.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
   './notification-policy.js', './notification-preferences.js',
@@ -78,7 +79,7 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys
-        .filter(key => key.startsWith('our-little-list-') && key !== CACHE && key !== LIBRARY_CACHE)
+        .filter(key => key.startsWith('our-little-list-') && key !== CACHE && key !== LIBRARY_CACHE && key !== STAR_ART_CACHE)
         .map(key => caches.delete(key))))
       .then(() => pruneLibraries())
       .then(() => self.clients.claim())
@@ -135,6 +136,18 @@ self.addEventListener('fetch', event => {
         }))
       );
     }
+    return;
+  }
+
+  // Content-addressed art is immutable. Do not download it again on a cache hit.
+  if (/\/little-star\/art\/[a-f0-9]{20}\.webp$/.test(url.pathname)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(STAR_ART_CACHE), cached = await cache.match(request);
+      if (cached) return cached;
+      const response = await fetch(request);
+      if (response.ok && response.type === 'basic') await cache.put(request, response.clone()).catch(() => {});
+      return response;
+    })());
     return;
   }
 

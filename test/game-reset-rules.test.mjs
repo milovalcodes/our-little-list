@@ -6,7 +6,7 @@ import {prepareReset} from '../game-reset.js';
 import {nextWordAttempt,wordSummary} from '../word-game.js';
 import {weeklyRounds} from '../round-engine.js';
 const host=process.env.FIRESTORE_EMULATOR_HOST;
-assert.match(host||'',/^(127\.0\.0\.1|localhost):8089$/,'emulator only');
+assert.match(host||'',/^(127\.0\.0\.1|localhost):808[89]$/,'emulator only');
 const project='demo-little-list',uid='oLSxADOwjqS04hSS2aHGOcvozmz2',root=`projects/${project}/databases/(default)/documents`,base=`http://${host}/v1/${root}`,prefix=root+'/households/'+uid+'/';
 const day=activityClock().day,now=Date.now();
 const value=v=>v===null?{nullValue:null}:Array.isArray(v)?{arrayValue:{values:v.map(value)}}:typeof v==='string'?{stringValue:v}:typeof v==='number'?{integerValue:String(v)}:typeof v==='boolean'?{booleanValue:v}:{mapValue:{fields:Object.fromEntries(Object.entries(v).map(([k,x])=>[k,value(x)]))}};

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {nextWordAttempt,wordSummary} from '../word-game.js';
 const host=process.env.FIRESTORE_EMULATOR_HOST;
-assert.match(host||'',/^(127\.0\.0\.1|localhost):8089$/,'never run against live data');
+assert.match(host||'',/^(127\.0\.0\.1|localhost):808[89]$/,'never run against live data');
 const project='demo-little-list',household='oLSxADOwjqS04hSS2aHGOcvozmz2';
 const root=`projects/${project}/databases/(default)/documents`,base='http://'+host+'/v1/'+root;
 const path=name=>'households/'+household+'/'+name;

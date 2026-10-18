@@ -41,6 +41,9 @@ try{
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   if(process.env.QA_SCREENSHOTS){await mkdir('node_modules/.cache/clarity-visual',{recursive:true});await page.screenshot({path:`node_modules/.cache/clarity-visual/crossword-${width}.png`});}
   await page.locator('#crossword>summary').click();await dock.waitFor();assert.ok(await input.evaluate(n=>n!==document.activeElement));
+  // Closing a card does not pause its clock. Let this round expire before
+  // starting the next timed accessibility fixture.
+  await page.clock.setFixedTime(Date.parse(day+'T18:06Z'));
   await page.setViewportSize({width,height:844});await page.locator('#search>summary').click();await page.locator('#search [data-start]:not([disabled])').click();await page.locator('#search .search-grid').waitFor();await dock.waitFor({state:'hidden'});
   await page.locator('#search .search-grid').evaluate(n=>window.scrollTo(0,n.getBoundingClientRect().top+scrollY));const words=await page.locator('#search .search-words').boundingBox();assert.ok(words.y>=0&&words.y<60,'search words remain above the board');
   await audit(page,'#search-game');await page.locator('#search>summary').click();await dock.waitFor();await page.goto(base+'/practice.html?as=her#word');

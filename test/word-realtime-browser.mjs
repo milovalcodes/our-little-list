@@ -8,7 +8,7 @@ import {wordForDay} from '../daily-words.js';
 import {wordPoints,wordAttempts} from '../word-scores.js';
 import {timedPuzzle as makeTimedPuzzle} from '../daily-puzzles.js';
 const host=process.env.FIRESTORE_EMULATOR_HOST;
-assert.match(host||'',/^(127\.0\.0\.1|localhost):8089$/,'emulator required; never run against production');
+assert.match(host||'',/^(127\.0\.0\.1|localhost):808[89]$/,'emulator required; never run against production');
 const isWebKit=process.env.GAME_BROWSER==='webkit';
 const project='demo-little-list',base='http://127.0.0.1:8777',sdk='https://www.gstatic.com/firebasejs/12.19.0';
 const cleared=await fetch(`http://${host}/emulator/v1/projects/${project}/databases/(default)/documents`,{method:'DELETE'});
@@ -46,7 +46,7 @@ async function phone(side) {
       // Windows WebKit's localhost emulator channels need long polling.
       // Chromium retains the production options; no app setting is changed.
       const db=real.initializeFirestore(app,${isWebKit?'{...options,experimentalForceLongPolling:true,experimentalAutoDetectLongPolling:false}':'options'});
-      real.connectFirestoreEmulator(db,'127.0.0.1',8089,{mockUserToken:{sub:'${uid}',user_id:'${uid}'}});
+      real.connectFirestoreEmulator(db,'127.0.0.1',${Number(host.split(':').at(-1))},{mockUserToken:{sub:'${uid}',user_id:'${uid}'}});
       return db;
     }
     export function onSnapshot(ref,...args){
@@ -68,14 +68,14 @@ async function phone(side) {
   });
   const page=await context.newPage();page.setDefaultTimeout(35000);
   if(isWebKit){
-    page.on('requestfailed',r=>{if(r.url().includes(':8089/'))console.log('WebKit emulator transport:',new URL(r.url()).pathname,r.failure()?.errorText);});
-    page.on('response',r=>{if(r.url().includes(':8089/')&&r.status()>=400)console.log('WebKit emulator response:',r.status(),new URL(r.url()).pathname,r.headers()['access-control-allow-origin']||'no CORS header');});
+    page.on('requestfailed',r=>{if(r.url().includes(':'+host.split(':').at(-1)+'/'))console.log('WebKit emulator transport:',new URL(r.url()).pathname,r.failure()?.errorText);});
+    page.on('response',r=>{if(r.url().includes(':'+host.split(':').at(-1)+'/')&&r.status()>=400)console.log('WebKit emulator response:',r.status(),new URL(r.url()).pathname,r.headers()['access-control-allow-origin']||'no CORS header');});
   }
   page.on('pageerror',e=>{
     // WebKit reports cancelled cross-origin emulator channels as page errors
     // during navigation/offline tests. Keep those separate, not arbitrary JS
     // errors or production failures; successful catch-up is asserted below.
-    if(isWebKit&&/^\/127\.0\.0\.1:8089\/google\.firestore\.v1\.Firestore\/(Write|Listen)\/channel\?.+ due to access control checks\.$/.test(e.message))transportWarnings.push(e.message);
+    if(isWebKit&&/^\/127\.0\.0\.1:808[89]\/google\.firestore\.v1\.Firestore\/(Write|Listen)\/channel\?.+ due to access control checks\.$/.test(e.message))transportWarnings.push(e.message);
     else errors.push(e.message);
   });
   return {page,context};
@@ -87,7 +87,8 @@ try {
  const puzzle=wordForDay(activityClock().day);await seedPuzzle('wordPuzzles',puzzle.day,puzzle);
  await moon.goto(base+'/activities.html#wordle');
  await sun.goto(base+'/activities.html#wordle');await secondMoon.goto(base+'/activities.html#wordle');
- await Promise.all([moon,sun,secondMoon].map(p=>p.waitForSelector('.word-keyboard button:not([disabled])')));
+ try{await Promise.all([moon,sun,secondMoon].map(p=>p.waitForSelector('.word-keyboard button:not([disabled])')));}
+ catch(error){console.error('Emulator board startup',errors,await Promise.all([moon,sun,secondMoon].map(p=>p.locator('.word-message,.global-failure,#word-summary').allTextContents())));throw error;}
  const submit=(page,guess,count)=>page.evaluate(async({guess,count,day})=>{
    try{const {sharedLayer}=await import('./data-hub.js'),data=await sharedLayer();return {ok:true,game:await data.submitWordGuess({day,person:'him',guess,expectedCount:count})};}
    catch(e){return {ok:false,error:e.message};}
@@ -136,6 +137,12 @@ try {
  assert.equal(await moon.locator('.word-peek-board .word-row').textContent(),puzzle.word);
  assert.equal(await sun.locator('.word-peek-board .word-row').last().textContent(),puzzle.word);
  assert.equal(await sun.locator('.word-peek-board .correct').count()>=5,true);
+
+ await sun.locator('[data-round-react="🔥"]').click();
+ await moon.waitForFunction(()=>document.querySelector('#word-game .shared-reaction-status')?.textContent.includes('reacted 🔥'));
+ await moon.locator('[data-round-react="😂"]').click();
+ await sun.waitForFunction(()=>document.querySelector('#word-game .shared-reaction-status')?.textContent.includes('reacted 😂'));
+ console.log('REAL REACTIONS: both authenticated accounts exchange saved reactions through the emulator');
  console.log('word: both phones unlock each other’s exact guesses only after both finish');
  // Confirm the explicit query used for a private board is accepted by rules.
  assert.deepEqual(errors,[]);
@@ -200,6 +207,14 @@ try {
  const week=await moon.evaluate(async day=>(await import('./round-engine.js')).weekDays(day)[0],puzzle.day);
  const settled=await fetch(`http://${host}/v1/${docs}/households/oLSxADOwjqS04hSS2aHGOcvozmz2/wordWeeks/${week}`,{method:'PATCH',headers:{authorization:'Bearer owner','content-type':'application/json'},body:JSON.stringify({fields:{week:{stringValue:week}}})});
  assert.ok(settled.ok);const refused=await resetGame(moon,'all','browser-reset-settled-123456789');assert.equal(refused.ok,false);assert.match(refused.error,/crowned/);
+
+ const raceDay='2026-10-28',raceNow=Date.now();
+ for(const type of ['search','crossword'])await seedPuzzle('timedPuzzles',raceDay+'-'+type,{...makeTimedPuzzle(raceDay,type),opensAt:raceNow-1000,closesAt:raceNow+86400000});
+ const startOther=(page,type)=>page.evaluate(async({day,type})=>{try{const d=await(await import('./data-hub.js')).sharedLayer();await d.playTimedPuzzle({day,type,person:'him',start:true});return {ok:true};}catch(e){return {ok:false,error:e.message};}},{day:raceDay,type});
+ const competingStarts=await Promise.all([startOther(moon,'search'),startOther(secondMoon,'crossword')]);
+ assert.equal(competingStarts.filter(r=>r.ok).length,1,'server transactions allow only one competing timer');
+ assert.match(competingStarts.find(r=>!r.ok).error,/Finish (Word Search|Crossword) first/);
+ console.log('REAL TIMER GUARD: simultaneous starts from independent devices commit only one running round');
  assert.deepEqual(errors,[]);
  console.log('ADMIN UI: account-gated controls, confirmation, atomic fresh boards, live reset on three screens, stale tries rejected, retry-safe all reset and isolated individual resets pass');
 }finally{await browser.close();}

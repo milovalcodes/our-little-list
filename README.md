@@ -131,6 +131,22 @@ Deletes have a short undo window. The site can be installed on iPhone or Android
 
 ## Isolated manual QA
 
+The v126 game pass adds a shared result reveal and one reaction per player,
+game and puzzle revision. `gameReactions` only accepts the four supported emoji
+from the authenticated owner once both current rounds have ended. Deploy its
+Firestore rules before publishing the v126 site. Reactions do not alter scores
+or create pings. Resetting a puzzle isolates its previous reactions and reveal.
+Timed starts also read the other timed game in the same Firebase transaction;
+the second competing start returns the running round's remaining time. Closing
+a card still never pauses a scored clock.
+
+Little Star's build publishes content-hashed WebP files in `little-star/art/`.
+Its smaller HTML is precached with the shell; artwork is cached on first use
+and retained across shell upgrades. The standalone source demo still embeds
+its artwork. Publish the generated art directory with the HTML, and retain old
+hashes so already-open game pages can finish loading. Never edit generated
+Little Star output directly.
+
 `node tools/qa-preview.mjs` serves the ordinary app at `http://127.0.0.1:8879/him.html?as=him` with local-only storage and an empty Firebase configuration. A second tab using `?as=her` checks the other side without touching live accounts. No service worker is installed on this QA origin. For Little Star, use `node tools/star-preview.mjs` as documented in `little-star/README.md`; it runs the real game adapter against disposable RAM state. The release builder also copies the actual UI restore function into a generated CI fixture so clock-only sync, stale replies and active-game protection can be tested without duplicating its logic.
 
 Old links still work: `reminders.html`, `activity.html`, `notifications.html`,

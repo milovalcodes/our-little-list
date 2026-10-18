@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {nextGame,gameMessage,gameNeedsPing} from '../couple-game.js';
 import {startArcade,moveArcade,playout,FOUR_DRAW} from './arcade-fixtures.mjs';
 const host=process.env.FIRESTORE_EMULATOR_HOST;
-assert.match(host||'',/^(127\.0\.0\.1|localhost):8089$/,'refuse to test against a live database');
+assert.match(host||'',/^(127\.0\.0\.1|localhost):808[89]$/,'refuse to test against a live database');
 const project='demo-little-list', household='oLSxADOwjqS04hSS2aHGOcvozmz2';
 const base=`http://${host}/v1/projects/${project}/databases/(default)/documents/households/${household}`;
 const uid={her:'cwQndCjlRlcaHasR1xzp9EYICFz2',him:household,stranger:'stranger'};

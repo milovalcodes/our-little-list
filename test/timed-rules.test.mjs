@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {timedPuzzle} from '../daily-puzzles.js';
 import {newTimedGame,advanceTimedGame,timedSummary} from '../timed-game.js';
 import {weeklyRounds} from '../round-engine.js';
-const host=process.env.FIRESTORE_EMULATOR_HOST;assert.match(host||'',/^(127\.0\.0\.1|localhost):8089$/,'emulator only');
+const host=process.env.FIRESTORE_EMULATOR_HOST;assert.match(host||'',/^(127\.0\.0\.1|localhost):808[89]$/,'emulator only');
 const project='demo-little-list',household='oLSxADOwjqS04hSS2aHGOcvozmz2',root=`projects/${project}/databases/(default)/documents`,base='http://'+host+'/v1/'+root;
 const path=name=>'households/'+household+'/'+name;
 function token(p){const uid=p==='her'?'cwQndCjlRlcaHasR1xzp9EYICFz2':p==='him'?household:'stranger';return Buffer.from('{"alg":"none","typ":"JWT"}').toString('base64url')+'.'+Buffer.from(JSON.stringify({iss:'https://securetoken.google.com/'+project,aud:project,sub:uid,user_id:uid,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+3600,firebase:{sign_in_provider:'custom'}})).toString('base64url')+'.';}

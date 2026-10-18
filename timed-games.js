@@ -15,6 +15,8 @@ import {escapeHtml as esc} from './ui-helpers.js';
 import {personName} from './profile-store.js';
 import {createWordCelebration} from './word-celebration.js';
 import {revisionOf} from './round-revision.js';
+import {competingRound,roundWaitMessage} from './timed-round-guard.js';
+import {createSharedRound} from './shared-round.js';
 import {isAcross,clueOrder,clueNumbers,cleanLetters,firstCursor,activeEntry,selectCell,selectClue,toggleDirection,nextClue,typeLetter,eraseLetter,moveCursor,correctEntries,filledCount} from './crossword-entry.js';
 const time=ms=>`${Math.floor(Math.max(0,ms)/60000)}:${String(Math.floor(Math.max(0,ms)/1000)%60).padStart(2,'0')}`;
 // "52 points" or "60 points · +10 time bonus".
@@ -24,6 +26,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  host.classList.add('timed-game');
  let puzzle=null,mine=null,results=[],busy=false,message='',dragStart=null,tapStart=null,peek=null,peekOpen=false,peekBusy=false,peekError='',closed=false,disposed=false,unsubs=[],action=0,flash=-1,flashTimer,expiredRetryAt=0,expiredDrawn=false;
  const celebration=createWordCelebration(host,viewer,day+'-'+type);
+ const together=createSharedRound({data,viewer,other,day,type,host,onChange:render});
  // Immediate visual acknowledgement is separate from saved credit. Queue
  // quick finds serially so slow mobile networks never lock the search grid.
  const pendingSearch=new Set();
@@ -32,6 +35,8 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  let letters=[],lettersKey='',cursor=null,focusGrid=false;
  let history=[],shareNote='';
  let partnerFinished=false;
+ let ownRounds=[],dayPuzzles=[];
+ const conflict=()=>!mine&&competingRound(ownRounds,{day,type,person:viewer},dayPuzzles);
  let latestMine=null;
  const finished=()=>mine&&(closed||timedOver(mine)||puzzle&&Date.now()>=puzzle.closesAt);
  const partner=()=>results.find(r=>r.person===other&&revisionOf(r)===revisionOf(puzzle));
@@ -41,6 +46,8 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  function listen(){
   unsubs.forEach(fn=>fn());unsubs=[];
   const fail=()=>{message='Couldn’t sync this puzzle. Check your connection and retry.';render();};
+  unsubs.push(data.listenToQuery('timedGames',{where:[{field:'day',value:day},{field:'person',value:viewer}]},rows=>{ownRounds=rows;render();},{onError:fail}));
+  unsubs.push(data.listenToQuery('timedPuzzles',{where:{field:'day',value:day}},rows=>{dayPuzzles=rows;render();},{onError:fail}));
   unsubs.push(data.listenToQuery('timedPuzzles',{where:[{field:'day',value:day},{field:'type',value:type}]},rows=>{
    const next=rows[0]||(data.mode==='local'?timedPuzzle(day,type):null);
    if(puzzle&&next&&revisionOf(next)<revisionOf(puzzle))return;
@@ -84,6 +91,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  function moveTo(next){cursor=next;revealBoard=true;render();}
  function render(){
   if(disposed)return;
+  together.update({mine,partner:partner(),puzzle});
   if(dragStart!==null){if(!finished())return;dragStart=null;tapStart=null;}
   const done=finished(),solved=new Set(mine?.solved||[]),available=Boolean(puzzle&&!closed&&Date.now()<puzzle.closesAt);
   host.classList.toggle('timed-playing',Boolean(mine&&!done));
@@ -91,7 +99,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   summary.textContent=closed?'set finished':done?`${pointsText(mine)} · ${solved.size} / ${puzzle?.entries.length||mine.total} found`:mine&&type==='crossword'?'checked when it ends':mine?`${solved.size} / ${puzzle?.entries.length||'…'} found`:puzzle?`${puzzle.hard?'hard · double points · ':''}${puzzle.entries.length} words · ${time(timedLimit(type,puzzle))}`:'getting your puzzle…';
   if(!puzzle){view.innerHTML=`<p role="status">${esc(message||'getting your puzzle…')}</p><button type="button" data-retry>retry</button>`;return;}
   if(!mine){
-   view.innerHTML=`<div class="timed-ready"><p class="puzzle-theme">${esc(puzzle.theme)} · ${puzzle.hard?'hard':'normal'}</p>${type==='crossword'?themeCaption(puzzle):''}<span class="puzzle-doodle" aria-hidden="true">${type==='search'?'a b c':'▦'}</span><p>${type==='search'?'Find as many words as you can.':'Fill the grid square by square. Nothing is checked until time runs out or the whole grid is right.'}</p><small>${time(timedLimit(type,puzzle))} · up to ${timedMax(day)} points, based on words found${newScoring(day)?`, plus up to ${TIME_BONUS_MAX*(puzzle.hard?2:1)} for time left when you find them all`:''}. The clock starts when you tap start and keeps going if you leave.</small><button type="button" data-start ${busy||!available||!navigator.onLine?'disabled':''}>${busy?'getting ready…':closed?'set finished':!available?'back at 9 a.m.':'start my round'}</button><p class="timed-feedback" role="status">${esc(message||(!navigator.onLine?'Reconnect to start.':''))}</p></div>`;return;
+   view.innerHTML=`<div class="timed-ready"><p class="puzzle-theme">${esc(puzzle.theme)} · ${puzzle.hard?'hard':'normal'}</p>${type==='crossword'?themeCaption(puzzle):''}<span class="puzzle-doodle" aria-hidden="true">${type==='search'?'a b c':'▦'}</span><p>${type==='search'?'Find as many words as you can.':'Fill the grid square by square. Nothing is checked until time runs out or the whole grid is right.'}</p><small>${time(timedLimit(type,puzzle))} · up to ${timedMax(day)} points, based on words found${newScoring(day)?`, plus up to ${TIME_BONUS_MAX*(puzzle.hard?2:1)} for time left when you find them all`:''}. The clock starts when you tap start and keeps going if you leave.</small><button type="button" data-start ${busy||!available||!navigator.onLine||conflict()?'disabled':''}>${busy?'getting ready…':closed?'set finished':!available?'back at 9 a.m.':conflict()?esc(roundWaitMessage(conflict())):'start my round'}</button>${conflict()?`<button type="button" data-continue-round="${conflict().type}">continue my round →</button>`:''}<p class="timed-feedback" role="status">${esc(message||(!navigator.onLine?'Reconnect to start.':''))}</p></div>`;return;
   }
   if(type==='crossword'){ensureLetters();renderCrossword(done,solved);return;}
   const revealed=new Set([...solved].flatMap(index=>entryCells(puzzle,index))),active=new Set();
@@ -104,6 +112,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
    return `<button type="button" class="puzzle-cell ${pendingCells.has(index)?'pending-find':''} ${missed.has(index)?'missed-word':''} ${tapStart===index?'tracing':''} ${revealed.has(index)?'found':''} ${active.has(index)?'chosen':''} ${flash>=0&&entryCells(puzzle,flash).includes(index)?'just-found':''}" data-cell="${index}" tabindex="${index===[...puzzle.grid].findIndex(c=>c!=='#')?0:-1}" aria-label="${type==='crossword'&&numbers.has(index)?numbers.get(index)+', ':''}${known?letter:'empty'}, row ${Math.floor(index/puzzle.size)+1}, column ${index%puzzle.size+1}" ${done||(busy&&type!=='search')?'disabled':''}>${type==='crossword'&&numbers.has(index)?`<small>${numbers.get(index)}</small>`:''}<span>${known?letter:''}</span></button>`;
   }).join('');
   view.innerHTML=`<p class="puzzle-theme">${esc(puzzle.theme)} · ${puzzle.hard?'hard · 2× points':'normal'}</p><div class="timed-toolbar"><strong data-timer>${done?'finished':time(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)))}</strong><span>${solved.size} / ${puzzle.entries.length}</span></div>${type==='search'?`<div class="search-words">${puzzle.entries.map((e,i)=>`<span class="${solved.has(i)?'found':done?'missed-word':pendingSearch.has(i)?'pending-find':''}">${e.word}</span>`).join('')}</div>`:''}<div class="puzzle-scroll"><div class="puzzle-grid ${type==='search'?'search-grid':'crossword-grid'}" style="--grid-size:${puzzle.size}" aria-label="${esc(PUZZLE_NAMES[type])} grid">${cells}</div></div>${type==='search'?`<small class="puzzle-hint">${done?'Outlined letters show the words you missed.':'Drag a word, or tap its first letter, then its last.'}</small>`:''}<p class="timed-feedback" role="status">${esc(message||(mine.done?(mine.solved.length?`${pointsText(mine)} · nicely done ♡`:'you did your best :c'):done?`time’s up · ${timedPoints(mine)} points`:pendingSearch.size?'saving selections…':busy?'saving…':''))}</p>${message?'<button type="button" data-retry>retry sync</button>':''}${done?resultsMarkup()+peekMarkup():''}`;
+  together.mounted();
 
  }
  function renderCrossword(done,solved){
@@ -121,6 +130,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   const keys=['QWERTYUIOP','ASDFGHJKL','⇄ZXCVBNM⌫'].map(row=>`<div>${[...row].map(k=>`<button type="button" data-ckey="${k}" class="${k==='⇄'||k==='⌫'?'wide-key':''}" aria-label="${k==='⌫'?'delete':k==='⇄'?'switch across or down':k}">${k}</button>`).join('')}</div>`).join('');
   const status=message||(done?(mine.complete?`${pointsText(mine)} · solved it ♡`:`time’s up · ${timedPoints(mine)} points · dashed squares were wrong`):'');
   board.render(view,`<p class="puzzle-theme">${esc(puzzle.theme)} · ${puzzle.hard?'hard · 2× points':'normal'}</p><div class="timed-toolbar"><strong data-timer>${done?'finished':time(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)))}</strong><span>${done?`${solved.size} / ${puzzle.entries.length} words`:`${filledCount(puzzle,letters)} / ${white} squares`}</span></div>${done?'':`<div class="crossword-current"><button type="button" data-clue-step="-1" aria-label="Previous clue">‹</button><button type="button" data-flip title="Switch across or down"><b>${numbers.get(clue.start)} ${isAcross(clue)?'across':'down'}</b> ${esc(clue.clue)} <small>(${clue.word.length})${clue.word===puzzle.anchor?" · theme clue":""}</small></button><button type="button" data-clue-step="1" aria-label="Next clue">›</button></div>`}${done?'':crosswordFocus(puzzle,index,letters,cursor,'data-focus-cell')}<div class="puzzle-scroll"><div class="puzzle-grid crossword-grid" style="--grid-size:${frame.columns}" role="group" aria-label="${esc(PUZZLE_NAMES[type])} grid">${cells}</div></div>${done?'':`<div class="word-keyboard crossword-keys" aria-label="Crossword keyboard">${keys}</div><small class="puzzle-hint">Tap a square twice, or ⇄, to switch between across and down. Words aren’t checked until the round ends.</small>`}<div class="crossword-clues"><h3>Across</h3>${clues(true)}<h3>Down</h3>${clues(false)}</div><p class="timed-feedback" role="status">${esc(status)}</p>${message?'<button type="button" data-retry>retry sync</button>':''}${done?resultsMarkup()+peekMarkup():''}`,{puzzleKey:lettersKey+":"+puzzle.grid,currentCell:cursor.cell,revealCurrent:revealBoard});
+  together.mounted();
   const mark=host.querySelector('.puzzle-cell.cursor');revealBoard=false;
   revealFocusedLetter(host);restoreClue();
   // Starting the round hands the keyboard straight to the grid.
@@ -138,7 +148,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
    const s=timedStats([...history.filter(r=>r.day!==day),timedSummary(mine)],type,day);
    stats=`<dl class="result-stats"><div><dt>played</dt><dd>${s.played}</dd></div><div><dt>cleared</dt><dd>${s.cleared}</dd></div><div><dt>streak</dt><dd>${s.current}</dd></div><div><dt>best time</dt><dd>${s.bestTime===null?'–':clock(s.bestTime)}</dd></div></dl>`;
   }
-  return `<section class="daily-results" aria-label="Today’s results"><div class="result-compare">${side('You',mine)}${side(esc(personName(other)),theirs)}</div>${stats}${countdownMarkup()}<a class="practice-rematch" href="practice.html#${type}">A little more practice →</a><button type="button" data-share>share my result</button><small class="share-note" role="status">${esc(shareNote)}</small></section>`;
+  return `<section class="daily-results" aria-label="Today’s results"><div class="result-compare">${side('You',mine)}${side(esc(personName(other)),theirs)}</div>${together.markup()}${stats}${countdownMarkup()}<a class="practice-rematch" href="practice.html#${type}">A little more practice →</a><button type="button" data-share>share my result</button><small class="share-note" role="status">${esc(shareNote)}</small></section>`;
  }
  function peekMarkup(){
   if(!timedOver(partner()))return '<p class="word-partner">waiting for '+esc(personName(other))+' · their process stays private</p>';
@@ -154,6 +164,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  }
  async function play(options){
   if(busy||disposed||closed)return;
+  if(options.start&&conflict()){message=roundWaitMessage(conflict());render();return;}
   if(!navigator.onLine){pendingSearch.clear();message='Reconnect to save. The clock keeps going.';render();return;}
   busy=true;message='';const current=++action;render();let timer;
   try{
@@ -185,7 +196,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  const down=event=>{if(type!=='search'||finished()||dragStart!==null||event.isPrimary===false||event.button>0||!event.target.closest('[data-cell],[data-focus-cell]'))return;event.preventDefault();dragPointer=event.pointerId;dragStart=tapStart??Number(event.target.closest('[data-cell],[data-focus-cell]').dataset.cell);host.querySelector(`[data-cell="${dragStart}"]`)?.classList.add('tracing');host.querySelector('.puzzle-grid').setPointerCapture?.(event.pointerId);};
  const move=event=>{if(dragStart==null)return;const end=cellAt(event);if(end==null)return;host.querySelectorAll('.tracing').forEach(c=>c.classList.remove('tracing'));const r=dragStart/puzzle.size|0,c=dragStart%puzzle.size,dr=(end/puzzle.size|0)-r,dc=end%puzzle.size-c;if(dr&&dc&&Math.abs(dr)!==Math.abs(dc))return;for(let i=0;i<=Math.max(Math.abs(dr),Math.abs(dc));i++)host.querySelector(`[data-cell="${dragStart+i*(Math.sign(dr)*puzzle.size+Math.sign(dc))}"]`)?.classList.add('tracing');};
  const up=event=>{if(dragStart==null||event.pointerId!==dragPointer)return;const end=cellAt(event),start=dragStart;dragStart=null;dragPointer=null;const grid=host.querySelector('.puzzle-grid');if(grid?.hasPointerCapture?.(event.pointerId))grid.releasePointerCapture(event.pointerId);if(end==null){cancel();return;}if(start===end){tapStart=tapStart===start?null:start;render();}else search(start,end);};
- const click=event=>{if(event.target.closest('[data-start]')){focusGrid=type==='crossword';void play({start:true});}if(event.target.closest('[data-retry]')){message='';listen();render();}if(event.target.closest('[data-peek]'))void loadPeek();if(event.target.closest('[data-share]')&&mine&&finished())void shareResult(timedShare(timedSummary(mine),PUZZLE_NAMES[type])).then(note=>{shareNote=note;render();});if(type!=='crossword'||!mine||!puzzle||finished())return;
+ const click=event=>{const resume=event.target.closest('[data-continue-round]');if(resume){const target=disclosure.closest('[data-trio]')?.parentElement?.querySelector('[data-trio="'+resume.dataset.continueRound+'"]')||document.getElementById(resume.dataset.continueRound);if(target){target.open=true;bringGameIntoView(target);}return;}if(event.target.closest('[data-start]')){focusGrid=type==='crossword';void play({start:true});}if(event.target.closest('[data-retry]')){message='';listen();render();}if(event.target.closest('[data-peek]'))void loadPeek();if(event.target.closest('[data-share]')&&mine&&finished())void shareResult(timedShare(timedSummary(mine),PUZZLE_NAMES[type])).then(note=>{shareNote=note;render();});if(type!=='crossword'||!mine||!puzzle||finished())return;
   const clue=event.target.closest('[data-clue]'),cell=event.target.closest('[data-cell],[data-focus-cell]'),key=event.target.closest('[data-ckey]'),step=event.target.closest('[data-clue-step]');
   if(clue)moveTo(selectClue(puzzle,letters,Number(clue.dataset.clue)));
   else if(cell)moveTo(selectCell(puzzle,cursor,Number(cell.dataset.cell??cell.dataset.focusCell)));
@@ -210,10 +221,10 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   const button=event.target.closest('[data-cell],[data-focus-cell]');if(!button)return;const p=Number(button.dataset.cell),offset={ArrowRight:1,ArrowLeft:-1,ArrowDown:puzzle.size,ArrowUp:-puzzle.size}[event.key];if(offset){event.preventDefault();let next=p+offset;while(next>=0&&next<puzzle.grid.length&&puzzle.grid[next]==='#')next+=offset;host.querySelector(`[data-cell="${next}"]`)?.focus();}if(type==='search'&&['Enter',' '].includes(event.key)){event.preventDefault();if(tapStart==null){tapStart=p;button.classList.add('tracing');}else search(tapStart,p);}};
  const cancel=()=>{dragStart=null;dragPointer=null;tapStart=null;host.querySelectorAll('.tracing').forEach(c=>c.classList.remove('tracing'));render();};
  host.addEventListener('click',click);host.addEventListener('pointerdown',down);host.addEventListener('pointermove',move);host.addEventListener('pointerup',up);host.addEventListener('pointercancel',cancel);host.addEventListener('keydown',key);
- const tick=()=>{if(disposed)return;if(partnerFinished!==timedOver(partner())){partnerFinished=timedOver(partner());render();}if(!mine||mine.done||closed||!puzzle)return;const remaining=Math.min(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)),puzzle.closesAt-Date.now());const timer=host.querySelector('[data-timer]');if(timer){timer.textContent=time(remaining);timer.classList.toggle('time-low',remaining<15000);}if(remaining<=0){if(!expiredDrawn){expiredDrawn=true;cancel();}if(!busy&&navigator.onLine&&Date.now()>=expiredRetryAt)void play({index:null});}};
+ const tick=()=>{if(disposed)return;if(!mine){const button=view.querySelector('[data-start]'),blocked=conflict();if(button&&blocked)button.textContent=roundWaitMessage(blocked);else if(view.querySelector('[data-continue-round]'))render();}if(partnerFinished!==timedOver(partner())){partnerFinished=timedOver(partner());render();}if(!mine||mine.done||closed||!puzzle)return;const remaining=Math.min(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)),puzzle.closesAt-Date.now());const timer=host.querySelector('[data-timer]');if(timer){timer.textContent=time(remaining);timer.classList.toggle('time-low',remaining<15000);}if(remaining<=0){if(!expiredDrawn){expiredDrawn=true;cancel();}if(!busy&&navigator.onLine&&Date.now()>=expiredRetryAt)void play({index:null});}};
  const interval=setInterval(tick,300);
  const toggle=()=>{if(!disclosure.open){typing?.suspend();board?.cancel();}};disclosure.addEventListener('toggle',toggle);
  const resume=()=>{if(activityClock().day!==openedDay){location.reload();return;}if(!document.hidden){listen();tick();creditWords();}};
  addEventListener('online',resume);addEventListener('offline',render);document.addEventListener('visibilitychange',resume);listen();
- return ()=>{disposed=true;board?.dispose();typing?.dispose();host.classList.remove('timed-playing');disclosure.removeEventListener('toggle',toggle);action++;unsubs.forEach(fn=>fn());clearInterval(interval);clearTimeout(flashTimer);celebration.dispose();removeEventListener('online',resume);removeEventListener('offline',render);document.removeEventListener('visibilitychange',resume);for(const [name,handler]of Object.entries({click,pointerdown:down,pointermove:move,pointerup:up,pointercancel:cancel,keydown:key}))host.removeEventListener(name,handler);};
+ return ()=>{disposed=true;together.dispose();board?.dispose();typing?.dispose();host.classList.remove('timed-playing');disclosure.removeEventListener('toggle',toggle);action++;unsubs.forEach(fn=>fn());clearInterval(interval);clearTimeout(flashTimer);celebration.dispose();removeEventListener('online',resume);removeEventListener('offline',render);document.removeEventListener('visibilitychange',resume);for(const [name,handler]of Object.entries({click,pointerdown:down,pointermove:move,pointerup:up,pointercancel:cancel,keydown:key}))host.removeEventListener(name,handler);};
 }

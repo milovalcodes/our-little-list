@@ -16,6 +16,7 @@ import {SEASONAL_WORDS} from './seasonal-puzzles.js';
 import {EDITION_WORDS} from './puzzle-edition.js';
 import {revisionOf} from './round-revision.js';
 import {answerPool} from './round-library.js';
+import {createSharedRound} from './shared-round.js';
 
 let activeBoard=null;
 const accepted=new Set([...WORD_LEXICON,...DAILY_WORDS,...SUNDAY_WORDS,...SEASONAL_WORDS.map(e=>e.word),...EDITION_WORDS.map(e=>e.word),...[false,true].flatMap(h=>['','october','december'].flatMap(s=>answerPool(h,s).map(e=>e.word)))]);
@@ -27,6 +28,7 @@ export function startDailyWord({data,viewer,other},options={}){
   let latestMine=null,generation=0;
   let peekOpen=false,peekBusy=false,peekGame=null,peekError='',peekRequest=0;
   const celebration=createWordCelebration(host,viewer,day);
+  const together=createSharedRound({data,viewer,other,day,type:'word',host,onChange:render});
   let history=[],shareNote='';
   let puzzle=null,mine=null,results=[],draft='',busy=false,error='',syncFailure=false,unsub=[],loaded=new Set(),timer;
   const summary=options.summary||document.getElementById('word-summary');
@@ -69,6 +71,7 @@ export function startDailyWord({data,viewer,other},options={}){
   function ready(){return puzzle&&loaded.has('wordGames')&&loaded.has('wordPuzzles');}
   function render(){
     if(disposed)return;
+    together.update({mine,partner:results.find(r=>r.person===other&&revisionOf(r)===revisionOf(puzzle)),puzzle});
     if(ready())clearTimeout(timer);
     const guesses=mine?.guesses||[],done=mine?.done||closed(),sunday=tie||new Date(day+'T12:00:00Z').getUTCDay()===0;
     const finish=wordFinish(mine);
@@ -91,10 +94,11 @@ export function startDailyWord({data,viewer,other},options={}){
       ${syncFailure?'<button type="button" data-word-retry>retry sync</button>':''}
       ${!done?`<div role="group" class="word-keyboard" aria-label="Word keyboard">${['qwertyuiop','asdfghjkl','↵zxcvbnm⌫'].map(row=>`<div>${[...row].map(letter=>`<button type="button" data-key="${letter}" class="${keys[letter]||''} ${letter==='↵'||letter==='⌫'?'wide-key':''}" aria-label="${letter==='↵'?'Submit guess':letter==='⌫'?'Delete letter':letter.toUpperCase()+(keys[letter]?', '+({correct:'right spot',present:'in the word',absent:'not in the word'}[keys[letter]]):', not tried')}" ${disabled?'disabled':''}>${letter==='↵'?'enter':letter}</button>`).join('')}</div>`).join('')}</div>`:''}
       <p class="sr-only" role="status" aria-live="polite">${escapeHtml(announcement)}</p><div class="word-legend"><span><i class="word-tile correct">A</i>right spot</span><span><i class="word-tile present">A</i>in the word</span><span><i class="word-tile absent">A</i>not in the word</span></div>
-      <p class="word-partner">${partnerLabel()}</p>${resultsMarkup()}${peekMarkup()}`;
+      ${mine?.done?'':`<p class="word-partner">${partnerLabel()}</p>`}${resultsMarkup()}${peekMarkup()}`;
     if(focused)host.querySelector(`[data-key="${focused}"]`)?.focus({preventScroll:true});
     if(peekFocused)host.querySelector('[data-word-peek]')?.focus({preventScroll:true});
     if(completionToCelebrate&&!busy){celebration.play(completionToCelebrate);completionToCelebrate=null;}
+    together.mounted();
   }
   function canPeek(){return mine?.done&&results.some(r=>r.day===day&&r.person===other&&r.done&&revisionOf(r)===revisionOf(puzzle));}
   function peekMarkup(){
@@ -131,7 +135,7 @@ export function startDailyWord({data,viewer,other},options={}){
       const s=wordStats([...history.filter(r=>r.day!==day),me],day),top=Math.max(1,...s.distribution);
       stats=`<dl class="result-stats"><div><dt>played</dt><dd>${s.played}</dd></div><div><dt>win %</dt><dd>${s.winRate}</dd></div><div><dt>streak</dt><dd>${s.current}</dd></div><div><dt>best</dt><dd>${s.best}</dd></div></dl><div class="guess-bars" aria-label="Guess distribution">${s.distribution.slice(0,most).map((n,i)=>`<div class="${me.won&&me.attempts===i+1?'today':''}"><span>${i+1}</span><i style="--share:${n/top}"><b>${n}</b></i></div>`).join('')}</div>`;
     }
-    return `<section class="daily-results" aria-label="Today’s results"><div class="result-compare">${side('You',me)}${side(escapeHtml(personName(other)),partner)}</div>${stats}${countdownMarkup()}<a class="practice-rematch" href="practice.html#word">A little more practice →</a><button type="button" data-share>share my grid</button><small class="share-note" role="status">${escapeHtml(shareNote)}</small></section>`;
+    return `<section class="daily-results" aria-label="Today’s results"><div class="result-compare">${side('You',me)}${side(escapeHtml(personName(other)),partner)}</div>${together.markup()}${stats}${countdownMarkup()}<a class="practice-rematch" href="practice.html#word">A little more practice →</a><button type="button" data-share>share my grid</button><small class="share-note" role="status">${escapeHtml(shareNote)}</small></section>`;
   }
   function partnerLabel(){
     const result=results.find(r=>r.day===day&&r.person===other&&revisionOf(r)===revisionOf(puzzle)),name=escapeHtml(personName(other));
@@ -194,5 +198,5 @@ export function startDailyWord({data,viewer,other},options={}){
   addEventListener('littlelist:profile',render);
   const interval=setInterval(()=>{if(activityClock().day!==openedDay)location.reload();else if(closed())render();},30000);
   read();
-  return ()=>{disposed=true;typing.dispose();host.classList.remove('game-active');host.removeEventListener('click',click);host.removeEventListener('pointerdown',activate);host.removeEventListener('focusin',activate);celebration.dispose();if(activeBoard===host)activeBoard=null;unsub.forEach(stop=>stop());clearTimeout(timer);clearInterval(interval);disclosure.removeEventListener('toggle',opened);removeEventListener('online',resume);removeEventListener('offline',render);removeEventListener('littlelist:profile',render);document.removeEventListener('keydown',keydown);document.removeEventListener('visibilitychange',visible);};
+  return ()=>{disposed=true;together.dispose();typing.dispose();host.classList.remove('game-active');host.removeEventListener('click',click);host.removeEventListener('pointerdown',activate);host.removeEventListener('focusin',activate);celebration.dispose();if(activeBoard===host)activeBoard=null;unsub.forEach(stop=>stop());clearTimeout(timer);clearInterval(interval);disclosure.removeEventListener('toggle',opened);removeEventListener('online',resume);removeEventListener('offline',render);removeEventListener('littlelist:profile',render);document.removeEventListener('keydown',keydown);document.removeEventListener('visibilitychange',visible);};
 }

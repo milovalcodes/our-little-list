@@ -5,6 +5,7 @@ import {readFileSync,writeFileSync,mkdirSync,copyFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 const source=process.argv[2]?resolve(process.argv[2]):fileURLToPath(new URL('../../../outputs/baby-star-demo/',import.meta.url));
 const root=new URL('../',import.meta.url);
 execFileSync(process.execPath,[resolve(source,'build.mjs')],{stdio:'inherit'});
@@ -24,6 +25,16 @@ const touchTests=readFileSync(resolve(source,'star-touch.test.mjs'),'utf8').spli
  .replace('new URL(name,import.meta.url)',"new URL('./fixtures/'+name,import.meta.url)");
 writeFileSync(new URL('test/star-touch.test.mjs',root),'// Generated controller touch regressions; source: companion star-touch.test.mjs.\n'+touchTests);
 let html=readFileSync(resolve(source,'dist/alpha.html'),'utf8');
+// Publish the standalone prototype's artwork as immutable files: a small UI
+// update must not download the entire wardrobe again.
+mkdirSync(new URL('little-star/art/',root),{recursive:true});
+const atlases=new Set();
+html=html.replace(/data:image\/webp;base64,([A-Za-z0-9+/=]+)/g,(_,encoded)=>{
+ const bytes=Buffer.from(encoded,'base64'),hash=createHash('sha256').update(bytes).digest('hex').slice(0,20);
+ const path=`little-star/art/${hash}.webp`;
+ writeFileSync(new URL(path,root),bytes);atlases.add(path);return path;
+});
+console.log(`Published ${atlases.size} immutable WebP atlases.`);
 const bootstrap=`<script>globalThis.starLive={offline:false};starLive.ready=new Promise(resolve=>{starLive.resolve=resolve;});</script><nav class="star-live-links" aria-label="App links"><a href="activities.html">← Activities</a><a href="phone-check.html">Notifications</a></nav><div id="star-connection" class="star-connection" role="status">Connecting…</div><div id="auth-root"></div><script type="module" src="little-star-live.js"></script>`;
 html=html.replace(/<script>[\s\S]*?<\/script>/,()=>bootstrap)
  .replace('<title>Little Star · private alpha</title>','<title>Little Star</title>')
