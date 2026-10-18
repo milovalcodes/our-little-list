@@ -46,5 +46,6 @@ for name, original in selection.items():
         clip.writeframes(struct.pack('<' + 'h' * len(samples), *samples))
     manifest.append({'file': name+'.wav', 'original': 'WAV/'+original+'.wav', 'seconds': round(len(samples)/22050, 3), 'bytes': output.stat().st_size, 'sourceSha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'sha256': hashlib.sha256(output.read_bytes()).hexdigest()})
 (target / 'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8')
-(target / 'LICENSE.txt').write_text((source / 'readme.txt').read_text(encoding='utf-8')+'\nAdapted for Our Little List: converted to mono 22.05 kHz WAV, silence trimmed, peak level adjusted, and short edge fades applied.\nSource: https://cyrex-studios.itch.io/universal-ui-soundpack\nLicense: https://creativecommons.org/licenses/by/4.0/\n', encoding='utf-8')
+license_text = '\n'.join(line.rstrip() for line in (source / 'readme.txt').read_text(encoding='utf-8').splitlines())+'\n'
+(target / 'LICENSE.txt').write_text(license_text+'\nAdapted for Our Little List: converted to mono 22.05 kHz WAV, silence trimmed, peak level adjusted, and short edge fades applied.\nSource: https://cyrex-studios.itch.io/universal-ui-soundpack\nLicense: https://creativecommons.org/licenses/by/4.0/\n', encoding='utf-8')
 print(json.dumps({'clips': len(manifest), 'bytes': sum(m['bytes'] for m in manifest), 'durations': {m['file']: m['seconds'] for m in manifest}}))

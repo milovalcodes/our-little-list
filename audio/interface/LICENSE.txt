@@ -6,7 +6,7 @@ Creation date: 27/9/2021
 License: Attribution 4.0 International (CC BY 4.0)
 https://creativecommons.org/licenses/by/4.0/
 
-Support me by crediting Nathan Gibson or https://nathangibson.myportfolio.com 
+Support me by crediting Nathan Gibson or https://nathangibson.myportfolio.com
 
 Adapted for Our Little List: converted to mono 22.05 kHz WAV, silence trimmed, peak level adjusted, and short edge fades applied.
 Source: https://cyrex-studios.itch.io/universal-ui-soundpack
