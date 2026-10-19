@@ -65,6 +65,9 @@ export class StarNursery {
     if(input.op==='wanted')return starPingWanted(record,input.ping,now);
     if(!record&&!['read','act'].includes(input.op))return {pending:[]};
     record??=freshRecord(now);
+    // Pets saved before ingredient recipes have no larder. Upgrade at the
+    // storage boundary so reads, purchases, arcade rewards and retries agree.
+    record.state.larder??={};
     if(input.op==='ack'){record.pending=record.pending.filter(p=>!input.ids.includes(p.id));await tx.put('nursery',record);return {ok:true};}
     if(input.op==='sync'){creditResults(record,input.results,now);await tx.put('nursery',record);return {ok:true};}
     if(input.op==='tick'){collectStarPings(record,now);await tx.put('nursery',record);return {pending:record.pending};}
