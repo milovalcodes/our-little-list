@@ -119,6 +119,7 @@ export function mountKitchen(host,ctx,legacy){
   if(s.kind==='pour')cue='Drop on the next glow when the amount needle is GOLD';
   if(s.kind==='flip')cue=s.sub?'Catch as the ring meets the gold circle':s.elapsed<3.7?'Cooking… wait for gold':'Swipe UP when the needle is GOLD';
   const cueEl=host.querySelector('.skill-cue');if(cueEl.textContent!==cue)cueEl.textContent=cue;
+  const feedback=host.querySelector('.recipe-feedback');if(s.feedback&&feedback.textContent!==s.feedback)feedback.textContent=s.feedback;
   host.querySelectorAll('[data-paint]').forEach(el=>el.style.opacity=s.paint[+el.dataset.paint]);
   if(s.kind==='chop')for(let i=0;i<3;i++){const cut=s.index>=Math.min(5,(i+1)*2);host.querySelector('.skill-uncut-'+i).hidden=cut;const piece=host.querySelector('.skill-cut-'+i);piece.hidden=!cut;piece.classList.toggle('skill-cut-show',cut);}
   host.querySelector('.skill-cloud')?.style.setProperty('opacity',String(1-Math.min(1,s.index/Math.max(1,s.trace.length-1))));

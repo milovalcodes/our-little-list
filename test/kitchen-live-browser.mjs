@@ -25,7 +25,7 @@ try{
   await page.goto(base+'/little-star.html?scene=ready&as='+actor);await page.locator('#little-star-demo:not([hidden])').waitFor();
   await choose(page,recipe);const initial=await read(actor),session={...initial.cookSessions[actor],wallStart:Date.now()};
   for(const station of def.stations){const grade=await play(page,station);assert.equal(grade,100,recipe+'/'+station+' full UI perfect input');await page.locator('[data-skill-next]').click();}
-  await page.locator('.skill-report').waitFor();assert.match(await page.locator('.skill-result-copy').innerText(),/9 meals/);await untilServer(session);
+  await page.locator('.skill-report').waitFor();assert.match(await page.locator('.skill-result-copy').innerText(),/9 meals/);await page.screenshot({path:'node_modules/.cache/skill-kitchen/live-'+recipe+'.png',fullPage:true});await untilServer(session);
   if(recipe==='onigiri'){
    let intercepted=false;const lost=Promise.withResolvers();
    await page.route('**/star',async route=>{const input=route.request().postDataJSON();if(!intercepted&&input.command?.type==='cook'){intercepted=true;await route.fetch();await route.abort('connectionreset');lost.resolve();}else await route.continue();});

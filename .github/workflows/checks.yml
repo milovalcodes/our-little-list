@@ -179,6 +179,7 @@ jobs:
         with:
           name: kitchen-visual-review
           path: node_modules/.cache/skill-kitchen/*.png
+          include-hidden-files: true
 
       - name: Browser flows fit a phone and stay script-error free
         run: |

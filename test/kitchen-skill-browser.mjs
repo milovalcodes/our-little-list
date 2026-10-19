@@ -25,7 +25,7 @@ try{
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    const grades=[];
    for(const kind of def.stations){
-    const issues=await page.locator('.skill-worktop').evaluate(el=>{const r=el.getBoundingClientRect(),issues=[];for(const x of el.querySelectorAll('.skill-overlay button,.skill-object')){const b=x.getBoundingClientRect();if(b.left<r.left-1||b.right>r.right+1||b.top<r.top-1||b.bottom>r.bottom+1)issues.push(x.className+' outside worktop');}const overlay=el.querySelector('.skill-overlay');if(overlay){const p=overlay.querySelector('p').getBoundingClientRect(),b=overlay.querySelector('button').getBoundingClientRect();if(p.bottom>b.top)issues.push('instruction overlaps Start');}return issues;});assert.deepEqual(issues,[],recipe+'/'+kind+' width '+width);
+    const issues=await page.locator('.skill-worktop').evaluate(el=>{const r=el.getBoundingClientRect(),issues=[];for(const x of el.querySelectorAll('.skill-overlay button,.skill-object')){if(!x.getClientRects().length)continue;const b=x.getBoundingClientRect();if(b.left<r.left-1||b.right>r.right+1||b.top<r.top-1||b.bottom>r.bottom+1)issues.push(x.className+' outside worktop');}const overlay=el.querySelector('.skill-overlay');if(overlay){const p=overlay.querySelector('p').getBoundingClientRect(),b=overlay.querySelector('button').getBoundingClientRect();if(p.bottom>b.top)issues.push('instruction overlaps Start');}return issues;});assert.deepEqual(issues,[],recipe+'/'+kind+' width '+width);
     grades.push(await play(page,kind));await page.locator('[data-skill-next]').click();
    }
    await page.locator('.skill-report').waitFor();assert.ok(Number(await page.locator('body').getAttribute('data-score'))>=90);
