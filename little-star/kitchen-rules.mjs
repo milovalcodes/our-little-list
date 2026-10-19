@@ -6,7 +6,7 @@ export const STATIONS={
  stir:{name:'stir',seconds:14,title:'Stir without spilling',help:'Trace the glowing dots around the pot. Keep a steady pace, then reverse when the arrow changes. Stay near the ring.'},
  whisk:{name:'whisk',seconds:13,title:'Whisk a smooth batter',help:'Trace the glowing dots in order. Keep moving steadily around the bowl. Reverse direction halfway; rushing or cutting across spills batter.'},
  spread:{name:'spread',seconds:14,title:'Spread right to the edges',help:'Paint all twelve patches with smooth strokes. Stay inside the dotted toast surface; smearing the counter costs points.'},
- heat:{name:'heat',seconds:15,title:'Keep a steady simmer',help:'Switch between low and high heat to keep the needle in the moving green zone. Fill the cooking meter. Too hot for too long burns the dish.'},
+ heat:{name:'heat',seconds:15,title:'Keep a steady simmer',help:'Switch between low and high heat to keep the needle in the moving gold zone. Fill the cooking meter. Too hot for too long burns the dish.'},
  top:{name:'garnish',seconds:10,title:'Plate with care',help:'Drag each berry from the tray to the numbered glow, in order. Aim for the center. Dropping outside the dish wastes a topping.'},
  crack:{name:'crack',seconds:9,title:'Crack, then open',help:'Tap CRACK as the needle crosses the gold center. Then swipe from left to right along the shell guide to open the egg cleanly.'},
  pour:{name:'pour',seconds:14,title:'Pour three even pancakes',help:'Drag the jug onto each numbered pan spot. Release when the moving amount needle is in gold. Aim and timing both count.'},

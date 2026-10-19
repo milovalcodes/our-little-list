@@ -56,4 +56,5 @@
 #little-star-demo .skill-kitchen .skill-taster .toy-pet{display:block;width:100%;height:100%}
 #little-star-demo .skill-kitchen .skill-simmer{animation:skill-simmer .45s steps(2,end) infinite alternate}
 @keyframes skill-simmer{to{translate:0 -1px}}
+#little-star-demo[data-calm=true] .skill-kitchen *{animation:none!important;transition:none!important}
 @media(prefers-reduced-motion:reduce){#little-star-demo .skill-kitchen *{animation:none!important;transition:none!important}}

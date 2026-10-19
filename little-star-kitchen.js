@@ -164,7 +164,7 @@ export function mountKitchen(host,ctx,legacy){
  }
  function showPause(){
   if(host.querySelector('.skill-pause'))return;
-  const el=document.createElement('div');el.className='skill-overlay skill-pause';el.setAttribute('role','group');el.setAttribute('aria-label','Kitchen paused');el.innerHTML='<strong>Kitchen paused</strong><p>'+(ctx.practice?'Practice is paused. The clock is stopped.':persisted?'The clock is stopped. Your batch is saved on this device.':'The clock is stopped. Device storage is full; keep this screen open until you collect.')+'</p><button type="button" class="main-button" data-skill-resume>resume</button><button type="button" data-skill-discard>'+(ctx.practice?'end practice':'discard batch · no rewards')+'</button>';host.querySelector('.skill-worktop').append(el);el.querySelector('button').focus();
+  const el=document.createElement('div');el.className='skill-overlay skill-pause';el.setAttribute('role','group');el.setAttribute('aria-label','Kitchen paused');el.innerHTML='<strong>Kitchen paused</strong><p>'+(ctx.practice?'Practice is paused. The clock is stopped.':persisted?'The clock is stopped. Your batch is saved on this device.':'The clock is stopped. This device could not save your progress; keep this screen open until you collect.')+'</p><button type="button" class="main-button" data-skill-resume>resume</button><button type="button" data-skill-discard>'+(ctx.practice?'end practice':'discard batch · no rewards')+'</button>';host.querySelector('.skill-worktop').append(el);el.querySelector('button').focus();
  }
  on(host,'click',e=>{
   const b=e.target.closest('button');if(!b)return;
@@ -208,7 +208,8 @@ const entryNote=()=>{
  let note=button.parentElement.querySelector('.skill-entry-note');if(!note){note=document.createElement('p');note.className='skill-entry-note';button.before(note);}
  const bridge=globalThis.starLive?.kitchenContext?.(),session=bridge?.session,saved=session&&bridge.load(),selected=button.parentElement.querySelector('[data-pick-recipe][aria-pressed="true"]')?.dataset.pickRecipe;
  const resumable=session?.challengeVersion===KITCHEN_VERSION&&!session.done&&saved?.sessionId===session.id&&saved.recipe===selected;
- const text=resumable?'Your batch is saved. Resume without spending more ingredients.':'Timed skill challenge · ruined dishes use their ingredients and earn nothing. Perfect: 9 meals + up to 8 ✦. Practice is free. A saved batch resumes when you choose its recipe.';
+ const held=session?.challengeVersion===KITCHEN_VERSION&&!session.done&&saved?.sessionId===session.id;
+ const text=resumable?'Your batch is saved. Resume without spending more ingredients.':held?'Starting this recipe discards your saved '+(RECIPES[session.recipe]?.name||'batch')+' and its ingredients. Choose that recipe to resume it.':'Timed skill challenge · ruined dishes use their ingredients and earn nothing. Perfect: 9 meals + up to 8 ✦. Practice is free. A saved batch resumes when you choose its recipe.';
  if(note.textContent!==text)note.textContent=text;
  const buy=button.parentElement.querySelector('[data-buy-ingredients="'+selected+'"]');
  if(resumable){button.disabled=false;button.dataset.skillResume='true';const label='resume '+RECIPES[selected].name;if(button.textContent!==label)button.textContent=label;if(buy)buy.hidden=true;}
