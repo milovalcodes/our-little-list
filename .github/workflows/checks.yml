@@ -164,6 +164,14 @@ jobs:
             console.log("every id in household.js appears in firestore.rules");
           '
 
+      - name: Skill cooking playthroughs and calibration before release
+        run: |
+          pnpm exec playwright install --with-deps chromium webkit
+          node test/kitchen-skill.test.mjs
+          node test/kitchen-skill-live.test.mjs
+          node test/kitchen-skill-browser.mjs
+          STAR_BROWSER=webkit node test/kitchen-skill-browser.mjs
+
       - name: Browser flows fit a phone and stay script-error free
         run: |
           pnpm exec playwright install --with-deps chromium webkit

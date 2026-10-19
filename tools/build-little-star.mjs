@@ -6,6 +6,7 @@ import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
+import {attachSkillKitchen} from './build-star-kitchen.mjs';
 const source=process.argv[2]?resolve(process.argv[2]):fileURLToPath(new URL('../../../outputs/baby-star-demo/',import.meta.url));
 const root=new URL('../',import.meta.url);
 execFileSync(process.execPath,[resolve(source,'build.mjs')],{stdio:'inherit'});
@@ -43,5 +44,5 @@ html=html.replace(/<script>[\s\S]*?<\/script>/,()=>bootstrap)
  .replace('class="prototype-tag">local alpha','class="prototype-tag">alpha')
  .replace('aria-label="Simulated visitor"','aria-label="Signed-in visitor"')
  .replace('aria-label="Little Star: private alpha"','aria-label="Little Star"');
-writeFileSync(new URL('little-star.html',root),html);
+writeFileSync(new URL('little-star.html',root),attachSkillKitchen(html));
 console.log('Built live Little Star and shared authoritative engine.');

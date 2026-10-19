@@ -20,7 +20,7 @@ function fixture(scene){
 http.createServer(async(req,res)=>{
  try{
   const url=new URL(req.url,'http://127.0.0.1:8892');
-  if(url.pathname==='/__kitchen'){res.setHeader('Content-Type','text/html');res.end(await kitchenLayout(url));return;}
+  if(['/__kitchen','/__skill'].includes(url.pathname)){res.setHeader('Content-Type','text/html');res.end(await kitchenLayout(url));return;}
   if(url.pathname==='/page-boot.js'){res.setHeader('Content-Type','text/javascript');res.end(`export async function bootPage(){const p=new URLSearchParams(location.search),viewer=p.get('as')==='her'?'her':'him',scene=['ready','legacy'].includes(p.get('scene'))?p.get('scene'):'egg';return {viewer,data:{mode:'firebase',getIdToken:async()=>['qa',scene,viewer].join('.')}};}`);return;}
   if(url.pathname==='/push-config.js'){res.setHeader('Content-Type','text/javascript');res.end(`export const DELIVERY_URL=location.origin+'/dispatch';`);return;}
   if(url.pathname==='/service-worker.js'){res.writeHead(404);res.end();return;}

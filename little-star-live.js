@@ -1,6 +1,7 @@
 import {bootPage} from './page-boot.js';
 import {DELIVERY_URL} from './push-config.js';
 import {sideForUid} from './household.js';
+import './little-star-kitchen.js';
 
 const live=globalThis.starLive,endpoint=new URL('./star',DELIVERY_URL).href;
 let data,viewer,uiKey,started=false,inFlight=false,polling=false,listener=null,latest=null;
@@ -8,6 +9,14 @@ navigator.serviceWorker?.addEventListener('controllerchange',()=>{if(!started)lo
 const status=document.getElementById('star-connection');
 function loadUI(){try{return JSON.parse(localStorage.getItem(uiKey)||'null')||{};}catch{return {};}}
 live.saveUI=value=>{try{localStorage.setItem(uiKey,JSON.stringify(value));return true;}catch{return false;}};
+function kitchenKey(session,kind='run'){return 'little-star-kitchen-v1:'+viewer+':'+session.petId+':'+session.id+':'+kind;}
+function kitchenRead(session,kind){try{return JSON.parse(localStorage.getItem(kitchenKey(session,kind))||'null');}catch{return null;}}
+function kitchenWrite(session,kind,value){try{localStorage.setItem(kitchenKey(session,kind),JSON.stringify(value));}catch{}}
+live.kitchenContext=()=>{
+ const session=latest?.star.cookSessions?.[viewer];
+ return {state:latest?.star,actor:viewer,now:latest?.now||Date.now(),session,
+  load:()=>session?kitchenRead(session,'run'):null,save:run=>session&&kitchenWrite(session,'run',run),proof:value=>session&&kitchenWrite(session,'proof',value)};
+};
 async function request(body){
  try{
   const token=await data.getIdToken();
@@ -20,9 +29,16 @@ async function request(body){
  }catch(error){live.offline=error.offline??true;if(error.uncertain===undefined)error.uncertain=true;throw error;}
 }
 live.action=async command=>{
+ if(command.type==='start-cook'){
+  const session=latest?.star.cookSessions?.[viewer],saved=session&&kitchenRead(session,'run');
+  command={...command,payload:{...command.payload,challengeVersion:1,...(session?.challengeVersion===1&&!session.done&&session.recipe===command.payload.recipe&&saved?{resumeSessionId:session.id}:{})}};
+ }
  // A finished recipe has one grade per station (three, four or five).
  // Also repairs persisted pending meals created by the four-station UI.
- if(command.type==='cook'&&Array.isArray(command.payload?.grades))command={...command,payload:{...command.payload,steps:command.payload.grades.length}};
+ if(command.type==='cook'&&Array.isArray(command.payload?.grades)){
+  const session=latest?.star.cookSessions?.[viewer],proof=session?.id===command.payload.sessionId&&kitchenRead(session,'proof');
+  command={...command,payload:{...command.payload,steps:command.payload.grades.length,...(proof?{challenge:proof}:{})}};
+ }
  inFlight=true;
  try{const result=await request({op:'act',command});latest=result;return {...result,state:result.star};}
  finally{inFlight=false;}

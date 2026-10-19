@@ -2,6 +2,7 @@
 import {freshStar,projectStar,petSnapshot,applyAction,settleGrowth,servicePings,eggProgress,gameDay,clock,longRest} from '../../little-star/engine.mjs';
 import {wordPoints} from '../../word-scores.js';
 import {timedPoints} from '../../timed-game.js';
+import {applyKitchenAction} from './star-kitchen.js';
 
 export const STAR_ACTIONS=new Set(['wish','incubate','hatch','visit','rename','feed','wash','cuddle','nap','wake','vacation','buy-food','buy-ingredients','coffee','start-cook','cook','cancel-cook','start-play','play','buy','equip','magic','transfer','goal','adopt-second','switch-pet','prefs']);
 const clone=value=>structuredClone(value);
@@ -89,13 +90,14 @@ export class StarNursery {
      if(c.type==='start-play'&&c.payload.arcadeVersion!==2)throw Error('Refresh the game to play.');
      if(c.type==='play'&&!c.payload.arcade)throw Error('Finish the challenge first.');
      if(c.type==='cook'&&(!Array.isArray(c.payload.grades)||c.payload.steps!==c.payload.grades.length))throw Error('Finish every cooking station.');
-     if(c.type==='cook'&&now-(oriented.cookSessions[input.actor]?.at||now)<8000)throw Error('Finish the cooking stations before collecting.');
+     if(c.type==='cook'&&!oriented.cookSessions[input.actor]?.challengeVersion&&now-(oriented.cookSessions[input.actor]?.at||now)<8000)throw Error('Finish the cooking stations before collecting.');
      if(c.type==='play'){
       const elapsed=Math.max(0,(now-(oriented.playSessions[input.actor]?.at||now))/1000),a=c.payload.arcade;
       const minimum=c.payload.game==='catch'?(a.caught||0)*.24:c.payload.game==='echo'?Math.max(0,(a.longest||0)-1)*(a.longest||0)*.1:(a.matched||0)*.16;
       if(minimum>elapsed+1)throw Error('That result arrived before the challenge could finish.');
      }
-     const result=applyAction(oriented,{type:c.type,id:input.actor+'-'+c.id,actor:input.actor,payload:c.payload},now);
+     const command={type:c.type,id:input.actor+'-'+c.id,actor:input.actor,payload:c.payload};
+     const result=applyKitchenAction(oriented,command,now)||applyAction(oriented,command,now);
      record.state=result.state;record.selected[input.actor]=result.state.petId;
      reply={message:result.message,effect:result.effect};
      await tx.put(key,{fingerprint,reply,at:now});
