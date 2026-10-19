@@ -10,9 +10,10 @@ const status=document.getElementById('star-connection');
 const skillUI=document.getElementById('little-star-demo')?.dataset?.kitchenVersion==='1';
 function loadUI(){try{return JSON.parse(localStorage.getItem(uiKey)||'null')||{};}catch{return {};}}
 live.saveUI=value=>{try{localStorage.setItem(uiKey,JSON.stringify(value));return true;}catch{return false;}};
+const kitchenMemory=new Map();
 function kitchenKey(session,kind='run'){return 'little-star-kitchen-v1:'+viewer+':'+session.petId+':'+session.id+':'+kind;}
-function kitchenRead(session,kind){try{return JSON.parse(localStorage.getItem(kitchenKey(session,kind))||'null');}catch{return null;}}
-function kitchenWrite(session,kind,value){try{localStorage.setItem(kitchenKey(session,kind),JSON.stringify(value));}catch{}}
+function kitchenRead(session,kind){const key=kitchenKey(session,kind);if(kitchenMemory.has(key))return kitchenMemory.get(key);try{return JSON.parse(localStorage.getItem(key)||'null');}catch{return null;}}
+function kitchenWrite(session,kind,value){const key=kitchenKey(session,kind);kitchenMemory.set(key,value);try{localStorage.setItem(key,JSON.stringify(value));return true;}catch{return false;}}
 live.kitchenContext=()=>{
  const session=latest?.star.cookSessions?.[viewer];
  return {state:latest?.star,actor:viewer,now:latest?.now||Date.now(),session,

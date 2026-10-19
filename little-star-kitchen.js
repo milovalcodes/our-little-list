@@ -16,10 +16,10 @@ export function mountKitchen(host,ctx,legacy){
  let run=paid?bridge.load():null;
  if(!run||run.version!==KITCHEN_VERSION||run.sessionId!==session?.id||run.recipe!==ctx.recipe||run.phase>=stations.length&&run.mode!=='result')run=null;
  run??={version:KITCHEN_VERSION,sessionId:session?.id||null,recipe:ctx.recipe,phase:0,grades:[],stages:[],failed:false,mode:'brief',stage:createStage(stations[0],seed+':0')};
- let paused=run.mode==='playing',destroyed=false,raf=0,last=performance.now(),lastSave=0,drag=null,cursor={x:160,y:140},keys=new Set(),keyDown=false,keyboardUsed=false,completed=false,renderedSub=-1;
+ let paused=run.mode==='playing',destroyed=false,raf=0,last=performance.now(),lastSave=0,drag=null,cursor={x:160,y:140},keys=new Set(),keyDown=false,keyboardUsed=false,completed=false,renderedSub=-1,persisted=true;
  const listeners=[];
  const on=(el,type,fn,opts)=>{el.addEventListener(type,fn,opts);listeners.push(()=>el.removeEventListener(type,fn,opts));};
- const save=()=>{if(paid)bridge.save(safeClone(run));};
+ const save=()=>{if(paid)persisted=bridge.save(safeClone(run))!==false;};
  const current=()=>run.stage;
  const sound=kind=>ctx.fx?.(kind);
  function evidence(){return {version:KITCHEN_VERSION,sessionId:session?.id,failed:run.failed,stages:safeClone(run.stages)};}
@@ -164,7 +164,7 @@ export function mountKitchen(host,ctx,legacy){
  }
  function showPause(){
   if(host.querySelector('.skill-pause'))return;
-  const el=document.createElement('div');el.className='skill-overlay skill-pause';el.setAttribute('role','group');el.setAttribute('aria-label','Kitchen paused');el.innerHTML='<strong>Kitchen paused</strong><p>'+(ctx.practice?'Practice is paused. The clock is stopped.':'The clock is stopped. Your batch is saved on this device.')+'</p><button type="button" class="main-button" data-skill-resume>resume</button><button type="button" data-skill-discard>'+(ctx.practice?'end practice':'discard batch · no rewards')+'</button>';host.querySelector('.skill-worktop').append(el);el.querySelector('button').focus();
+  const el=document.createElement('div');el.className='skill-overlay skill-pause';el.setAttribute('role','group');el.setAttribute('aria-label','Kitchen paused');el.innerHTML='<strong>Kitchen paused</strong><p>'+(ctx.practice?'Practice is paused. The clock is stopped.':persisted?'The clock is stopped. Your batch is saved on this device.':'The clock is stopped. Device storage is full; keep this screen open until you collect.')+'</p><button type="button" class="main-button" data-skill-resume>resume</button><button type="button" data-skill-discard>'+(ctx.practice?'end practice':'discard batch · no rewards')+'</button>';host.querySelector('.skill-worktop').append(el);el.querySelector('button').focus();
  }
  on(host,'click',e=>{
   const b=e.target.closest('button');if(!b)return;

@@ -31,6 +31,9 @@ await live.action({id:'recover-skill-run',type:'cook',payload:{sessionId:bridge.
 star.cookSessions.him={...star.cookSessions.him,id:'different-session'};
 assert.equal(live.kitchenContext().load(),null,'saved progress cannot leak into a new session');
 await live.action({id:'new-session-claim',type:'cook',payload:{sessionId:'different-session',grades:[100,100,100,100,100]}});assert.equal(sent.at(-1).command.payload.challenge,undefined,'a different session cannot inherit a perfect proof');
+context.localStorage.setItem=()=>{throw Error('Storage full');};
+const held=live.kitchenContext(),memoryProof={...proof,sessionId:held.session.id};assert.equal(held.save({...run,sessionId:held.session.id}),false);held.proof(memoryProof);
+await live.action({id:'storage-full-claim',type:'cook',payload:{sessionId:held.session.id,grades:[100,100,100,100,100]}});assert.deepEqual(sent.at(-1).command.payload.challenge,memoryProof,'full device storage cannot softlock collection in the open game');
 context.document.getElementById=()=>({});await vm.runInNewContext('(async()=>{'+source+'})()',context);
 await live.action({id:'mixed-cache-start',type:'start-cook',payload:{recipe:'toast'}});assert.equal(sent.at(-1).command.payload.challengeVersion,undefined,'old cached HTML retains its legacy contract during upgrade');
 console.log('COOKING ADAPTER: every recipe and persisted pending meal uses its real grade count without changing receipt IDs');
