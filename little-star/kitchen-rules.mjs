@@ -37,10 +37,10 @@ export function createStage(kind,seed){
  s.order=['carrot-cut','potato','herb'].map(v=>({v,r:rand()})).sort((a,b)=>a.r-b.r).map(v=>v.v);
  s.cuts=Array.from({length:5},(_,i)=>{let x=85+i*37,y=95+rand()*10,lean=(rand()-.5)*20;return [{x:x-lean,y},{x:x+lean,y:175+rand()*8}];});
  s.targets=Array.from({length:3},(_,i)=>({x:[140,180,160][i]+(rand()-.5)*6,y:[139,139,164][i]+(rand()-.5)*6}));
- if(kind==='stir'||kind==='whisk')s.trace=Array.from({length:17},(_,i)=>{const a=-Math.PI/2+(i<=8?i:16-i)*Math.PI/4;return {x:160+49*Math.cos(a),y:130+35*Math.sin(a)};});
- if(kind==='rinse')s.trace=[{x:125,y:115},{x:188,y:115},{x:131,y:131},{x:188,y:143},{x:130,y:148},{x:181,y:161},{x:139,y:163}];
+ if(kind==='stir'||kind==='whisk')s.trace=Array.from({length:17},(_,i)=>{const a=-Math.PI/2+(i<=8?i:16-i)*Math.PI/4;return {x:160+43*Math.cos(a),y:130+20*Math.sin(a)};});
+ if(kind==='rinse')s.trace=[{x:125,y:128},{x:183,y:125},{x:135,y:138},{x:185,y:139},{x:143,y:146},{x:175,y:146},{x:160,y:131}];
  if(kind==='shape')s.trace=[{x:160,y:88},{x:186,y:133},{x:208,y:176},{x:160,y:176},{x:113,y:176},{x:136,y:132},{x:160,y:88}];
- if(kind==='ladle')s.trace=Array.from({length:9},(_,i)=>({x:78+i*20.5,y:146-Math.sin(i*Math.PI/8)*53}));
+ if(kind==='ladle')s.trace=Array.from({length:9},(_,i)=>({x:74+i*177/8,y:131+i*12/8-Math.sin(i*Math.PI/8)*46}));
  return s;
 }
 export function finishStage(s,score){s.done=true;s.score=Math.round(clamp(score));s.last=null;return s;}

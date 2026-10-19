@@ -46,7 +46,7 @@ export function mountKitchen(host,ctx,legacy){
   if(kind==='spread')return object('bread',80,65,160)+Array.from({length:12},(_,i)=>'<i class="skill-jam" data-paint="'+i+'" style="left:'+(104+(i%4)*28)/3.2+'%;top:'+(102+Math.floor(i/4)*27)/2.5+'%"></i>').join('');
   if(kind==='crack')return object(s.sub?'yolk':'egg',105,84,110);
   if(kind==='pour'||kind==='flip')return object('pan',90,25,190)+(kind==='flip'?object('pancake',123,101,76,76,'skill-cake'):object('jug',35,38,54,54,'skill-jug'));
-  if(kind==='rinse')return '<span class="skill-object" style="left:25%;top:28%;width:50%;height:64%">'+ctx.sprite('bowl')+'<i class="skill-cloud"></i></span>';
+  if(kind==='rinse')return '<span class="skill-object" style="left:25%;top:28%;width:50%;height:64%">'+ctx.sprite('bowl')+'<i class="skill-rice-water"></i><i class="skill-cloud"></i></span>';
   if(kind==='shape'||kind==='wrap')return object('riceball',100,78,120)+(kind==='wrap'?object('seaweed',s.sub?143:41,s.sub?130:33,48,48,'skill-seaweed'):'');
   return dishArt()+s.targets.map((_,i)=>object('berries',43+i*95,32,44,44,'skill-berry skill-berry-'+i)).join('');
  }
@@ -194,7 +194,7 @@ export function mountKitchen(host,ctx,legacy){
   raf=requestAnimationFrame(frame);
  }
  render();if(run.mode==='result')conclude();raf=requestAnimationFrame(frame);
- return {pause,destroy(){destroyed=true;cancelAnimationFrame(raf);save();listeners.forEach(fn=>fn());host.classList.remove('skill-kitchen');},snapshot:()=>({started:run.mode!=='brief',phase:run.phase,...safeClone(run)})};
+ return {pause,destroy(){destroyed=true;cancelAnimationFrame(raf);save();listeners.forEach(fn=>fn());host.classList.remove('skill-kitchen');},snapshot:()=>({started:paid||run.mode!=='brief',phase:run.phase,...safeClone(run)})};
 }
 
 globalThis.starKitchenChallenge={mount:mountKitchen};

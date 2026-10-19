@@ -32,7 +32,7 @@ try{
    await page.locator('[data-serve-cook]').click();await lost.promise;assert.equal(intercepted,true);
    const recovered=page.waitForResponse(r=>r.url().endsWith('/star')&&r.request().postDataJSON()?.command?.type==='cook');await page.reload();const response=await recovered;assert.equal((await response.json()).duplicate,true,'lost-reply recovery uses original receipt and proof');
   }else if(recipe==='porridge'){
-   await page.locator('[data-cook-again]').click();await page.locator('[data-skill-begin]').waitFor();assert.notEqual((await read(actor)).cookSessions[actor].id,session.id,'cook again starts a new session');await page.locator('[data-arcade-exit]').click();
+   await page.locator('[data-cook-again]').click();await page.locator('[data-skill-begin]').waitFor();assert.notEqual((await read(actor)).cookSessions[actor].id,session.id,'cook again starts a new session');await page.locator('[data-arcade-exit]').click();await page.locator('[data-skill-discard]').click();await page.locator('[data-serve-cook]').click();
   }else await page.locator('[data-serve-cook]').click();
   const result=await read(actor);assert.equal(result.pantry[def.dish],(initial.pantry[def.dish]||0)+9);assert.equal(result.wallets[actor],initial.wallets[actor]+8);assert.deepEqual(result.larder,initial.larder);assert.deepEqual(errors,[]);
   console.log('LIVE UI '+actor+' '+recipe+': 100%, nine meals, chef bonus, ingredients and collection'+(recipe==='onigiri'?' / lost reply recovered exactly once':''));
