@@ -916,13 +916,13 @@ html[data-season="christmas"] .attention-badge { width:20px; height:20px; top:-3
 .personal-progress h2,.weekly-home-recap h2 { font-size:1rem; }.personal-progress p,.weekly-home-recap p { font-size:.88rem; }.personal-progress small,.weekly-home-recap small { display:block; color:var(--page-muted); font-size:.76rem; }.personal-progress summary { cursor:pointer; }.personal-progress>div>h2 { display:none; }
 .weekly-home-recap a { display:block; padding-top:12px; color:var(--accent-deep); }.game-badges { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }.game-badges span { padding:6px 9px; border-radius:12px; background:var(--diary-raised); font-size:.75rem; }
 .shared-round{margin:16px 0;padding:16px 12px;border:1px solid var(--line,#ddcbbb);border-radius:18px;background:var(--paper,#fffaf3);text-align:center}
-.shared-round-result{font-weight:700;margin:0 0 12px}.shared-round-result>span{display:inline-block;color:#87532c;font-size:1.7em;vertical-align:middle}
+.shared-round-result{font-weight:700;margin:0 0 12px}
 .shared-grids{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin:12px 0 18px}.shared-grid small{display:block;margin-bottom:8px;font-size:12px}
 .shared-word-row{display:flex;gap:3px;margin-bottom:3px}.shared-grid .word-tile{display:grid;place-items:center;width:28px;height:32px;min-width:0;min-height:0;border-radius:4px;border-width:1px;padding:0;font-size:17px}
 .shared-reaction-label{font-size:13px;margin:12px 0 8px}.round-reactions{display:flex;justify-content:center;gap:8px}.round-reactions button{min-width:44px;min-height:44px;font-size:23px;border:1px solid var(--line,#ddcbbb);border-radius:12px;background:transparent}
 .round-reactions button[aria-pressed=true]{border:2px solid #87532c;background:#f6e7d3}.shared-reaction-status,.shared-grid-status{font-size:12px;line-height:1.5;margin:10px 0 0}.shared-round button:focus-visible{outline:2px solid #87532c;outline-offset:3px}
-.shared-round.is-revealing .shared-grid{animation:round-flip .65s ease both}.shared-round.is-revealing .shared-grid:nth-child(2){animation-delay:.18s}.shared-round.is-revealing .shared-round-result>span{animation:round-crown .7s .3s ease both}
-@keyframes round-flip{from{opacity:0;transform:perspective(400px) rotateY(65deg)}to{opacity:1;transform:none}}@keyframes round-crown{from{opacity:0;transform:translateY(-14px) scale(.8)}to{opacity:1;transform:none}}
+.shared-round.is-revealing .shared-grid{animation:round-flip .65s ease both}.shared-round.is-revealing .shared-grid:nth-child(2){animation-delay:.18s}
+@keyframes round-flip{from{opacity:0;transform:perspective(400px) rotateY(65deg)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.shared-round.is-revealing *{animation:none!important}}
 [data-quiet-motion] .shared-round.is-revealing *{animation:none!important}
 .timed-ready [data-start]:not(:disabled){background:#70492e;color:#fff;border-color:#70492e}.timed-ready [data-continue-round]{display:block;margin:12px auto 0;min-height:44px}
