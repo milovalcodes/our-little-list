@@ -40,7 +40,7 @@ export function mountKitchen(host,ctx,legacy){
  function art(){
   const s=current(),kind=s.kind;
   if(run.mode==='result')return dishArt()+(s.kind==='top'&&!run.failed?s.targets.map(p=>object('berries',p.x-12,p.y-12,24)).join(''):'')+(!run.failed&&ctx.pet?'<span class="skill-taster">'+ctx.pet+'</span>':'');
-  if(kind==='chop')return [0,1,2].map((i)=>object(ctx.recipe==='stew'?'carrot':'berries',68+i*65,98,65)).join('')+object('carrot-cut',97,163,125,50,'skill-cut-pieces');
+  if(kind==='chop')return [0,1,2].map(i=>object(ctx.recipe==='stew'?'carrot':'berries',68+i*65,98,65,65,'skill-uncut-'+i)+'<span class="skill-object skill-cut-'+i+'" style="left:'+(68+i*65)/3.2+'%;top:39.2%;width:20.3125%;height:26%">'+(ctx.recipe==='stew'?icon('carrot-cut'):ctx.sprite('sliced'))+'</span>').join('');
   if(['stir','heat','add','ladle'].includes(kind))return kind==='ladle'?'<span class="skill-object" style="left:6%;top:35%;width:34%;height:43.52%">'+ctx.sprite('pot')+'</span>'+object('stew',209,111,84):'<span class="skill-object" style="left:25%;top:27%;width:50%;height:64%">'+ctx.sprite('pot')+'</span>'+(kind==='add'?['herb','carrot-cut','potato'].map((n,i)=>object(n,41+i*95,38,48)).join(''):'');
   if(kind==='whisk')return object('batter',80,68,160);
   if(kind==='spread')return object('bread',80,65,160)+Array.from({length:12},(_,i)=>'<i class="skill-jam" data-paint="'+i+'" style="left:'+(104+(i%4)*28)/3.2+'%;top:'+(102+Math.floor(i/4)*27)/2.5+'%"></i>').join('');
@@ -86,7 +86,7 @@ export function mountKitchen(host,ctx,legacy){
   host.innerHTML='<div class="recipe-heading"><span>'+(ctx.practice?'PRACTICE':'YOUR RECIPE')+'<b>'+ctx.recipeName+'</b></span><span class="recipe-ticket">'+(result?'READY':run.phase+1+' / '+stations.length)+'</span></div>'+
    '<ol class="recipe-stations" style="--station-count:'+stations.length+'" aria-label="Recipe progress">'+stations.map((k,i)=>'<li data-state="'+(i<run.phase||result?'done':i===run.phase?'active':'next')+'"><span>'+(run.grades[i]===undefined?i+1:run.grades[i]+'%')+'</span>'+STATIONS[k].name+'</li>').join('')+'</ol>'+
    '<h4 class="recipe-title">'+(result?(run.failed?'A kitchen mishap…':'Your kitchen report'):spec.title)+'</h4>'+
-   '<div class="recipe-worktop skill-worktop" data-recipe-phase="'+(result?3:({chop:0,crack:0,rinse:0,shape:0,stir:1,whisk:1,spread:1,add:1,heat:2,pour:2,flip:2}[s.kind]??3))+'" tabindex="0" role="application" aria-label="'+(result?'Finished dish':spec.title+'. Use arrows to move, Space to lift or lower tool, Enter for timing actions.')+'"><div class="skill-art">'+art()+'</div><svg class="skill-guides" viewBox="0 0 320 250" aria-hidden="true"></svg><span class="skill-hand" hidden></span><span class="skill-key-cursor" hidden>+</span>'+
+   '<div class="recipe-worktop skill-worktop" data-failed="'+(result&&run.failed)+'" data-recipe-phase="'+(result?3:({chop:0,crack:0,rinse:0,shape:0,stir:1,whisk:1,spread:1,add:1,heat:2,pour:2,flip:2}[s.kind]??3))+'" tabindex="0" role="application" aria-label="'+(result?'Finished dish':spec.title+'. Use arrows to move, Space to lift or lower tool, Enter for timing actions.')+'"><div class="skill-art">'+art()+'</div><svg class="skill-guides" viewBox="0 0 320 250" aria-hidden="true"></svg><span class="skill-hand" hidden></span><span class="skill-key-cursor" hidden>+</span>'+
    (run.mode==='brief'?'<div class="skill-overlay"><strong>'+spec.seconds+' seconds</strong><p>'+spec.help+'</p><button type="button" class="main-button" data-skill-begin>ready · start timer</button></div>':'')+
    (run.mode==='grade'?'<div class="skill-overlay"><strong>'+s.score+'%</strong><p>'+(s.score===100?'Clean work!':s.score>=90?'Beautifully done.':s.score>=70?'A few rough edges.':'That was close…')+'</p><button type="button" class="main-button" data-skill-next>'+(run.phase===stations.length-1?'see dish':'next station')+'</button></div>':'')+
    (result?'<div class="skill-report '+(run.failed?'skill-ruined':'')+'"><strong>'+pay.label+' · '+run.score+'%</strong></div>':'<div class="skill-stage-controls">'+controls()+'</div>')+'</div>'+
@@ -104,7 +104,10 @@ export function mountKitchen(host,ctx,legacy){
   let progress=s.trace.length?Math.min(s.index,s.trace.length-1)+' / '+(s.trace.length-1):s.kind==='chop'?s.index+' / 5':s.kind==='spread'?s.index+' / 12':s.kind==='wrap'?s.sub+' / 3':['top','pour','add'].includes(s.kind)?s.index+' / 3':'';
   host.querySelector('[data-skill-progress]').textContent=progress;
   const meter=host.querySelector('.skill-meter'),pulse=['crack','pour'].includes(s.kind)&&s.sub===0||['rinse','shape'].includes(s.kind)&&s.sub===1;
-  meter.hidden=!(pulse||s.kind==='heat'||s.kind==='flip'&&s.sub===0);
+  // Reserve this HUD slot through both parts of a timing station. Removing it
+  // would recenter the dialog and move the food under a player's finger.
+  meter.hidden=!['crack','pour','heat','flip','rinse','shape'].includes(s.kind);
+  meter.style.visibility=pulse||s.kind==='heat'||s.kind==='flip'&&s.sub===0?'visible':'hidden';
   const position=s.kind==='heat'?s.temperature:s.kind==='flip'?Math.max(0,Math.min(1,(s.elapsed-2)/4)):timingPosition(s.elapsed-(s.pulseAt||0));
   meter.querySelector('b').style.left=position*100+'%';const zone=s.kind==='heat'?.5+.12*Math.sin(s.elapsed*.95):.5,grace=s.kind==='heat'?.145:.075;
   meter.querySelector('i').style.left=(zone-grace)*100+'%';meter.querySelector('i').style.width=grace*200+'%';
@@ -116,6 +119,7 @@ export function mountKitchen(host,ctx,legacy){
   if(s.kind==='flip')cue=s.sub?'Catch as the ring meets the gold circle':s.elapsed<3.7?'Cooking… wait for gold':'Swipe UP when the needle is GOLD';
   const cueEl=host.querySelector('.skill-cue');if(cueEl.textContent!==cue)cueEl.textContent=cue;
   host.querySelectorAll('[data-paint]').forEach(el=>el.style.opacity=s.paint[+el.dataset.paint]);
+  if(s.kind==='chop')for(let i=0;i<3;i++){const cut=s.index>=Math.min(5,(i+1)*2);host.querySelector('.skill-uncut-'+i).hidden=cut;const piece=host.querySelector('.skill-cut-'+i);piece.hidden=!cut;piece.classList.toggle('skill-cut-show',cut);}
   host.querySelector('.skill-cloud')?.style.setProperty('opacity',String(1-Math.min(1,s.index/Math.max(1,s.trace.length-1))));
   if(s.kind==='flip'){const cake=host.querySelector('.skill-cake');cake.style.filter='brightness('+(1.1-Math.min(.35,s.elapsed*.045))+')';cake.style.translate=s.sub?'0 '+(-Math.sin(Math.min(1,(s.elapsed-s.airAt)/.78)*Math.PI)*100)+'%':'0 0';}
   if(s.kind==='top')host.querySelectorAll('.skill-berry').forEach((el,i)=>{el.hidden=i<s.index;});
@@ -129,14 +133,16 @@ export function mountKitchen(host,ctx,legacy){
   if(s.kind==='add')return ['herb','carrot-cut','potato'].find((_,i)=>Math.hypot(p.x-(65+i*95),p.y-62)<32);
   return null;
  }
+ function changes(before){const s=current();if(s.mistakes>before.mistakes)sound('miss');else if(s.points.length>before.points)sound(s.kind==='chop'||s.kind==='crack'?'cut':s.kind==='flip'?'whoosh':'plate');}
+ const checkpoint=()=>({mistakes:current().mistakes,points:current().points.length});
  function down(p,id){
   if(paused||run.mode!=='playing'||drag)return;
   drag={id,path:[p],source:sourceAt(p)};current().last=null;traceStage(current(),p);moveHand(p);paint();
  }
- function move(p){if(!drag||paused||run.mode!=='playing')return;drag.path.push(p);if(drag.path.length>800)drag.path.splice(1,1);traceStage(current(),p);moveHand(p);paint();settle();}
+ function move(p){if(!drag||paused||run.mode!=='playing')return;drag.path.push(p);if(drag.path.length>800)drag.path.splice(1,1);const before=checkpoint();traceStage(current(),p);changes(before);moveHand(p);paint();settle();}
  function up(p,cancel=false){
   if(!drag)return;const d=drag;drag=null;
-  if(!cancel){d.path.push(p);strokeStage(current(),d.path,d.source);}
+  if(!cancel){const before=checkpoint();d.path.push(p);strokeStage(current(),d.path,d.source);changes(before);}
   if(!current().done){const {index,loss}=current();releaseTrace(current());if(cancel){current().index=index;current().loss=loss;}}hideHand();paint();settle();
  }
  function moveHand(p){const h=host.querySelector('.skill-hand');if(!h)return;h.hidden=false;h.style.left=p.x/3.2+'%';h.style.top=p.y/2.5+'%';const k=current().kind;h.dataset.tool=k;h.innerHTML=['chop','spread'].includes(k)?ctx.sprite('knife'):k==='stir'?ctx.sprite('spoon'):icon(k==='whisk'?'whisk':k==='pour'?'jug':k==='ladle'?'ladle':k==='top'?'berries':k==='wrap'?'seaweed':'');}
@@ -150,13 +156,13 @@ export function mountKitchen(host,ctx,legacy){
   work.onpointercancel=e=>{if(drag?.id===e.pointerId)up(point(e,work),true);};
   work.onlostpointercapture=e=>{if(drag?.id===e.pointerId)up(drag.path.at(-1),true);};
  }
- function action(name){if(paused||run.mode!=='playing')return;const sub=current().sub;tapStage(current(),name);paint();settle();if(run.mode==='playing'&&sub!==current().sub)render();}
+ function action(name){if(paused||run.mode!=='playing')return;const before=checkpoint();tapStage(current(),name);changes(before);paint();settle();}
  function pause(){
   if(run.mode==='result'||paused)return;up(drag?.path.at(-1)||{...cursor,t:performance.now()},true);paused=true;keys.clear();keyDown=false;save();showPause();
  }
  function showPause(){
   if(host.querySelector('.skill-pause'))return;
-  const el=document.createElement('div');el.className='skill-overlay skill-pause';el.setAttribute('role','group');el.setAttribute('aria-label','Kitchen paused');el.innerHTML='<strong>Kitchen paused</strong><p>The clock is stopped. Your batch is saved on this device.</p><button type="button" class="main-button" data-skill-resume>resume</button><button type="button" data-skill-discard>'+(ctx.practice?'end practice':'discard batch · no rewards')+'</button>';host.querySelector('.skill-worktop').append(el);el.querySelector('button').focus();
+  const el=document.createElement('div');el.className='skill-overlay skill-pause';el.setAttribute('role','group');el.setAttribute('aria-label','Kitchen paused');el.innerHTML='<strong>Kitchen paused</strong><p>'+(ctx.practice?'Practice is paused. The clock is stopped.':'The clock is stopped. Your batch is saved on this device.')+'</p><button type="button" class="main-button" data-skill-resume>resume</button><button type="button" data-skill-discard>'+(ctx.practice?'end practice':'discard batch · no rewards')+'</button>';host.querySelector('.skill-worktop').append(el);el.querySelector('button').focus();
  }
  on(host,'click',e=>{
   const b=e.target.closest('button');if(!b)return;

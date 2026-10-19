@@ -171,6 +171,14 @@ jobs:
           node test/kitchen-skill-live.test.mjs
           node test/kitchen-skill-browser.mjs
           STAR_BROWSER=webkit node test/kitchen-skill-browser.mjs
+          node test/kitchen-live-browser.mjs
+
+      - name: Save cooking visual review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kitchen-visual-review
+          path: node_modules/.cache/skill-kitchen/*.png
 
       - name: Browser flows fit a phone and stay script-error free
         run: |
