@@ -20,7 +20,7 @@
 #little-star-demo .skill-kitchen .skill-hand[data-tool=whisk]{transform:translate(-65%,-32%)}
 #little-star-demo .skill-kitchen .skill-hand[data-tool=chop],#little-star-demo .skill-kitchen .skill-hand[data-tool=spread]{transform:translate(-26%,-31%)}
 #little-star-demo .skill-kitchen .skill-hand[data-tool=stir]{transform:translate(-26%,-72%)}
-#little-star-demo .skill-kitchen .skill-hand[data-tool=ladle]{transform:translate(-25%,-70%)}
+#little-star-demo .skill-kitchen .skill-hand[data-tool=ladle]{transform:translate(-36%,-71%)}
 #little-star-demo .skill-kitchen .skill-hand[data-tool=pour]{transform:translate(-22%,-45%)}
 #little-star-demo .skill-kitchen .skill-key-cursor{position:absolute;z-index:6;font:24px monospace;color:#fff;translate:-50% -50%;text-shadow:1px 1px #1c3140;pointer-events:none}
 #little-star-demo .skill-kitchen [hidden]{display:none!important}
@@ -44,8 +44,8 @@
 #little-star-demo .skill-kitchen .skill-help{margin:16px 0;font-size:13px;line-height:1.5;color:#e6ddbf}
 #little-star-demo .skill-kitchen .skill-help summary{cursor:pointer;min-height:36px;padding:7px 0}
 #little-star-demo .skill-kitchen .skill-jam{position:absolute;width:8.75%;height:10.8%;background:#a85f9aab;border-radius:30%;opacity:0;pointer-events:none;mix-blend-mode:multiply}
-#little-star-demo .skill-kitchen .skill-cloud{position:absolute;left:17%;right:17%;top:23%;height:23%;border-radius:50%;background:#f1ead4bb;pointer-events:none}
-#little-star-demo .skill-kitchen .skill-rice-water{position:absolute;left:17%;right:17%;top:23%;height:23%;border-radius:50%;background:radial-gradient(ellipse,#fff5da 0 2px,transparent 3px) 0 0/11px 8px,#9bc6c9;box-shadow:inset 0 -3px #6cacae;pointer-events:none}
+#little-star-demo .skill-kitchen .skill-cloud{position:absolute;left:15%;right:12%;top:25%;height:31%;border-radius:50%;background:#f1ead4bb;pointer-events:none}
+#little-star-demo .skill-kitchen .skill-rice-water{position:absolute;left:15%;right:12%;top:25%;height:31%;border-radius:50%;background:radial-gradient(ellipse,#fff5da 0 2px,transparent 3px) 0 0/11px 8px,#9bc6c9;box-shadow:inset 0 -3px #6cacae;pointer-events:none}
 #little-star-demo .skill-kitchen .skill-report{position:absolute;left:8%;right:8%;top:4%;padding:8px;text-align:center;color:#fff0b7;background:#2b4d47;border:2px solid #b9b98b;z-index:5}
 #little-star-demo .skill-kitchen .skill-report.skill-ruined{background:#694850;color:#fce3ce}
 #little-star-demo .skill-kitchen .skill-worktop[data-failed=true] .skill-art{filter:saturate(.2) brightness(.65)}

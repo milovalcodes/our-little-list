@@ -47,7 +47,7 @@ export function mountKitchen(host,ctx,legacy){
   if(kind==='crack')return object(s.sub?'yolk':'egg',105,84,110);
   if(kind==='pour'||kind==='flip')return object('pan',90,25,190)+(kind==='flip'?object('pancake',123,101,76,76,'skill-cake'):object('jug',35,38,54,54,'skill-jug'));
   if(kind==='rinse')return '<span class="skill-object" style="left:25%;top:28%;width:50%;height:64%">'+ctx.sprite('bowl')+'<i class="skill-rice-water"></i><i class="skill-cloud"></i></span>';
-  if(kind==='shape'||kind==='wrap')return object('riceball',100,78,120)+(kind==='wrap'?object('seaweed',s.sub?143:41,s.sub?130:33,48,48,'skill-seaweed'):'');
+  if(kind==='shape'||kind==='wrap')return object('riceball',100,78,120)+(kind==='wrap'?object('seaweed',s.sub?136:41,s.sub?124:33,48,48,'skill-seaweed'):'');
   return dishArt()+s.targets.map((_,i)=>object('berries',43+i*95,32,44,44,'skill-berry skill-berry-'+i)).join('');
  }
  function dishArt(){
@@ -94,7 +94,7 @@ export function mountKitchen(host,ctx,legacy){
    (result?'<p class="skill-result-copy">'+(ctx.practice?'Practice · no ingredients or rewards':run.failed?'No meals or stardust. Ingredients used.':pay.portions+' meals'+(run.score===100?' · 3× standard batch':'')+(pay.tip?' · +'+pay.tip+' ✦':''))+'</p>':'<div class="skill-clock"><span data-skill-time></span><span data-skill-progress></span><meter min="0" max="'+s.limit+'" value="'+(s.limit-s.elapsed)+'" aria-label="Seconds remaining"></meter></div><div class="skill-meter" hidden><i></i><b></b></div><p class="skill-cue"></p>')+
    '<p class="recipe-feedback" role="status" aria-live="polite">'+(result&&run.failed?(s.feedback||'This dish did not make the cut.'):result?'':'Four major mistakes ruin the dish. Aim for a clean run.')+'</p><div class="recipe-access skill-controls">'+(result?'<button type="button" class="main-button" data-serve-cook>'+(ctx.practice?'finish practice':run.failed?'finish batch':'collect '+pay.portions+' meals')+'</button>'+(again?'<button type="button" data-cook-again>'+(ctx.practice?'practice again':'finish & cook again')+'</button>':''):'')+'</div>'+
    (!result?'<details class="skill-help"><summary>station help & controls</summary><p>'+spec.help+'</p><p>Touch or mouse: drag the tool. Keyboard: arrows move the crosshair; Space picks up / puts down. Enter: timing action. H / L: heat. Four major mistakes ruin a dish. Under 55% earns nothing. Perfect: 9 meals + up to 8 ✦, with three chef bonuses per day.</p></details>':'');
-  onWorktop();paint();if(paused)showPause();
+  onWorktop();paint();if(paused){showPause();return;}
   const focus=host.querySelector('[data-skill-begin]')||host.querySelector('[data-skill-next]')||host.querySelector('[data-skill-action]')||host.querySelector('.skill-controls button')||host.querySelector('.skill-worktop');focus?.focus({preventScroll:true});
  }
  function paint(){
@@ -194,7 +194,7 @@ export function mountKitchen(host,ctx,legacy){
   }
   raf=requestAnimationFrame(frame);
  }
- render();if(run.mode==='result')conclude();raf=requestAnimationFrame(frame);
+ save();render();if(run.mode==='result')conclude();raf=requestAnimationFrame(frame);
  return {pause,destroy(){destroyed=true;cancelAnimationFrame(raf);save();listeners.forEach(fn=>fn());host.classList.remove('skill-kitchen');},snapshot:()=>({started:paid||run.mode!=='brief',phase:run.phase,...safeClone(run)})};
 }
 
@@ -202,8 +202,16 @@ globalThis.starKitchenChallenge={mount:mountKitchen};
 // Explain the stakes before ingredients are committed, alongside the existing
 // recipe picker and free practice action. The companion owns that sheet.
 const entryNote=()=>{
+ if(document.getElementById('little-star-demo')?.dataset?.kitchenVersion!=='1')return;
  const button=document.querySelector('.nursery-sheet[data-type="kitchen"] [data-start-cook]');
- if(!button||button.parentElement.querySelector('.skill-entry-note'))return;
- const note=document.createElement('p');note.className='skill-entry-note';note.textContent='Timed skill challenge · ruined dishes use their ingredients and earn nothing. Perfect: 9 meals + up to 8 ✦. Practice is free. A saved batch resumes when you choose its recipe.';button.before(note);
+ if(!button)return;
+ let note=button.parentElement.querySelector('.skill-entry-note');if(!note){note=document.createElement('p');note.className='skill-entry-note';button.before(note);}
+ const bridge=globalThis.starLive?.kitchenContext?.(),session=bridge?.session,saved=session&&bridge.load(),selected=button.parentElement.querySelector('[data-pick-recipe][aria-pressed="true"]')?.dataset.pickRecipe;
+ const resumable=session?.challengeVersion===KITCHEN_VERSION&&!session.done&&saved?.sessionId===session.id&&saved.recipe===selected;
+ const text=resumable?'Your batch is saved. Resume without spending more ingredients.':'Timed skill challenge · ruined dishes use their ingredients and earn nothing. Perfect: 9 meals + up to 8 ✦. Practice is free. A saved batch resumes when you choose its recipe.';
+ if(note.textContent!==text)note.textContent=text;
+ const buy=button.parentElement.querySelector('[data-buy-ingredients="'+selected+'"]');
+ if(resumable){button.disabled=false;button.dataset.skillResume='true';const label='resume '+RECIPES[selected].name;if(button.textContent!==label)button.textContent=label;if(buy)buy.hidden=true;}
+ else if(button.dataset.skillResume){delete button.dataset.skillResume;const definition=RECIPES[selected],missing=definition&&Object.entries(definition.ingredients).some(([k,n])=>(bridge.state.larder?.[k]||0)<n);button.disabled=!!missing;button.textContent=missing?'buy the ingredients to cook':'cook '+(definition?.name||'');if(buy)buy.hidden=false;}
 };
 if(typeof MutationObserver!=='undefined'){new MutationObserver(entryNote).observe(document.body,{childList:true,subtree:true});entryNote();}

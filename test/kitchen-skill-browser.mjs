@@ -32,8 +32,8 @@ try{
    await page.screenshot({path:fileURLToPath(new URL(recipe+'-'+width+'.png',output)),fullPage:true});console.log('UI PLAYTHROUGH '+width+'px '+recipe+': '+grades.join('/'));
   }
   // Frozen instructions, real deadline, pause and motion-safe presentation.
-  await page.goto(base+'/__skill?recipe=pancakes&station=flip');await page.locator('[data-skill-begin]').waitFor();await page.clock.runFor(30000);assert.equal(await page.locator('[data-skill-time]').innerText(),STATIONS.flip.seconds+'s');
-  await page.locator('[data-skill-begin]').click();await page.clock.runFor(1000);await page.locator('#pause').click();const left=await page.locator('[data-skill-time]').innerText();await page.clock.runFor(30000);assert.equal(await page.locator('[data-skill-time]').innerText(),left);await page.locator('[data-skill-resume]').click();await page.clock.runFor(15000);assert.match(await page.locator('.skill-report').innerText(),/RUINED/);assert.equal(await page.locator('body').getAttribute('data-score'),'0');
+  await page.goto(base+'/__skill?recipe=pancakes&station=flip');await page.locator('[data-skill-begin]').waitFor();await page.clock.fastForward(30000);assert.equal(await page.locator('[data-skill-time]').innerText(),STATIONS.flip.seconds+'s');
+  await page.locator('[data-skill-begin]').click();await page.clock.runFor(1000);await page.locator('#pause').click();const left=await page.locator('[data-skill-time]').innerText();await page.clock.fastForward(30000);assert.equal(await page.locator('[data-skill-time]').innerText(),left);await page.locator('[data-skill-resume]').click();await page.clock.fastForward(15000);assert.match(await page.locator('.skill-report').innerText(),/RUINED/);assert.equal(await page.locator('body').getAttribute('data-score'),'0');
   await context.close();
  }
  assert.deepEqual(errors,[]);console.log('SKILL KITCHEN BROWSER: every full recipe at phone/desktop widths, real gestures, precise timing, layout, pause and zero-reward timeout pass');
