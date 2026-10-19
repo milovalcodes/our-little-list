@@ -13,9 +13,9 @@ const base='http://127.0.0.1:8892';
 for(let i=0;i<100;i++){try{const r=await fetch(base+'/little-star.html');if(r.ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
 const browser=await chromium.launch();let lastPage;
 await mkdir('node_modules/.cache/skill-kitchen',{recursive:true});
-const read=async actor=>{const r=await fetch(base+'/star',{method:'POST',headers:{Authorization:'Bearer qa.ready.'+actor},body:JSON.stringify({op:'read'})});assert.equal(r.status,200);return (await r.json()).star;};
+const read=async(actor,scene='ready')=>{const r=await fetch(base+'/star',{method:'POST',headers:{Authorization:'Bearer qa.'+scene+'.'+actor},body:JSON.stringify({op:'read'})});assert.equal(r.status,200);return (await r.json()).star;};
 const untilServer=async session=>{const left=session.activeMs+700-(Date.now()-session.wallStart);if(left>0)await new Promise(r=>setTimeout(r,left));};
-async function settledRead(actor,condition){let state;for(let i=0;i<100;i++){state=await read(actor);if(condition(state))return state;await new Promise(r=>setTimeout(r,50));}assert.fail('The cooking transaction did not settle.');}
+async function settledRead(actor,condition,scene='ready'){let state;for(let i=0;i<100;i++){state=await read(actor,scene);if(condition(state))return state;await new Promise(r=>setTimeout(r,50));}assert.fail('The cooking transaction did not settle.');}
 async function choose(page,recipe){
  await page.locator('[data-kitchen]').click();await page.locator('[data-pick-recipe='+recipe+']').click();
  const buy=page.locator('[data-buy-ingredients='+recipe+']');if(await buy.count()&&await buy.isVisible()&&await page.locator('[data-start-cook]').isDisabled()){await buy.click();await page.locator('[data-start-cook]:not(:disabled)').waitFor();}
@@ -45,10 +45,10 @@ try{
  }
  const context=await browser.newContext({viewport:{width:320,height:844},serviceWorkers:'block'}),page=await context.newPage();
  lastPage=page;
- await page.goto(base+'/little-star.html?scene=ready&as=her');await page.locator('#little-star-demo:not([hidden])').waitFor();await choose(page,'toast');const before=await read('her');
- await page.reload();await page.locator('#little-star-demo:not([hidden])').waitFor();await choose(page,'toast');await page.locator('[data-skill-begin]').waitFor();assert.equal((await read('her')).cookSessions.her.id,before.cookSessions.her.id,'the briefing is saved before the first gesture');
+ await page.goto(base+'/little-star.html?scene=legacy&as=her');await page.locator('#little-star-demo:not([hidden])').waitFor();await choose(page,'toast');const before=await read('her','legacy');assert.equal(before.larder.bread,0,'one basket was bought and reserved');assert.equal(before.wallets.her,487);
+ await page.reload();await page.locator('#little-star-demo:not([hidden])').waitFor();await choose(page,'toast');await page.locator('[data-skill-begin]').waitFor();assert.equal((await read('her','legacy')).cookSessions.her.id,before.cookSessions.her.id,'the briefing is saved before the first gesture');
  await page.locator('[data-skill-begin]').click();await page.locator('[data-arcade-pause]').click();await page.reload();await page.locator('#little-star-demo:not([hidden])').waitFor();await choose(page,'toast');await page.locator('[data-skill-resume]').waitFor();
- const resumed=await read('her');assert.equal(resumed.cookSessions.her.id,before.cookSessions.her.id);assert.deepEqual(resumed.larder,before.larder);assert.deepEqual(resumed.wallets,before.wallets,'resuming never buys ingredients again');
- await page.locator('[data-skill-discard]').click();await page.locator('[data-serve-cook]').click();const failed=await settledRead('her',s=>s.cookSessions.her.failed);assert.deepEqual(failed.pantry,before.pantry);assert.deepEqual(failed.wallets,before.wallets);assert.deepEqual(failed.larder,before.larder);
+ const resumed=await read('her','legacy');assert.equal(resumed.cookSessions.her.id,before.cookSessions.her.id);assert.deepEqual(resumed.larder,before.larder);assert.deepEqual(resumed.wallets,before.wallets,'resuming never buys ingredients again');
+ await page.locator('[data-skill-discard]').click();await page.locator('[data-serve-cook]').click();const failed=await settledRead('her',s=>s.cookSessions.her.failed,'legacy');assert.deepEqual(failed.pantry,before.pantry);assert.deepEqual(failed.wallets,before.wallets);assert.deepEqual(failed.larder,before.larder);
  await context.close();console.log('LIVE UI: reload resumes same paid batch, pause restores, discard settles zero rewards without ingredient refunds');
 }catch(error){if(lastPage&&!lastPage.isClosed()){console.error(await lastPage.locator('body').innerText());await lastPage.screenshot({path:'node_modules/.cache/skill-kitchen/live-failure.png',fullPage:true});}console.error(logs);throw error;}finally{await browser.close();server.kill();}
