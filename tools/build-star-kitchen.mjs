@@ -9,6 +9,8 @@ export function attachSkillKitchen(html){
   const matches=[...html.matchAll(hook)];if(matches.length!==1)throw Error('Expected exactly one cooking mount. Recheck the companion UI hook.');
   html=html.replace(hook,(_,mount,query)=>'.controller=(/* skill-kitchen-hook:v1 */(h,c)=>globalThis.starKitchenChallenge.mount(h,c,'+mount+'))('+query+'(".arcade-cooking"),{sprite:');
  }
+ html=html.replace(/\(h,c\)=>globalThis\.starKitchenChallenge\.mount\(h,c,([\w$]+)\)/g,(_,legacy)=>'(h,c)=>globalThis.starKitchenChallenge?.mount?globalThis.starKitchenChallenge.mount(h,c,'+legacy+'):'+legacy+'(h,c)');
+ if(!html.includes('data-kitchen-version="1"'))html=html.replace('<div id="little-star-demo"','<div id="little-star-demo" data-kitchen-version="1"');
  if(!html.includes('href="little-star-kitchen.css"'))html=html.replace('</head>','<link rel="stylesheet" href="little-star-kitchen.css"></head>');
  return html;
 }

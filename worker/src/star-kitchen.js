@@ -5,6 +5,7 @@ import {KITCHEN_VERSION,STATIONS,kitchenPayout} from '../../little-star/kitchen-
 // their original contract. The enclosing durable transaction owns receipts.
 export function applyKitchenAction(input,command,now){
  const {actor,type,id,payload}=command,old=input.cookSessions?.[actor];
+ if(type==='start-cook'&&old?.challengeVersion===KITCHEN_VERSION&&!old.done&&payload.challengeVersion!==KITCHEN_VERSION)throw Error('Refresh Little Star to resume your skill cooking batch.');
  if(type==='start-cook'&&payload.challengeVersion===KITCHEN_VERSION){
   if(payload.resumeSessionId){
    if(!old||old.done||old.id!==payload.resumeSessionId||old.recipe!==payload.recipe||old.challengeVersion!==KITCHEN_VERSION)throw Error('That cooking session is no longer active.');

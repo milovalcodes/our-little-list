@@ -7,6 +7,7 @@ const live=globalThis.starLive,endpoint=new URL('./star',DELIVERY_URL).href;
 let data,viewer,uiKey,started=false,inFlight=false,polling=false,listener=null,latest=null;
 navigator.serviceWorker?.addEventListener('controllerchange',()=>{if(!started)location.reload();});
 const status=document.getElementById('star-connection');
+const skillUI=document.getElementById('little-star-demo')?.dataset?.kitchenVersion==='1';
 function loadUI(){try{return JSON.parse(localStorage.getItem(uiKey)||'null')||{};}catch{return {};}}
 live.saveUI=value=>{try{localStorage.setItem(uiKey,JSON.stringify(value));return true;}catch{return false;}};
 function kitchenKey(session,kind='run'){return 'little-star-kitchen-v1:'+viewer+':'+session.petId+':'+session.id+':'+kind;}
@@ -31,7 +32,7 @@ async function request(body){
 live.action=async command=>{
  if(command.type==='start-cook'){
   const session=latest?.star.cookSessions?.[viewer],saved=session&&kitchenRead(session,'run');
-  command={...command,payload:{...command.payload,challengeVersion:1,...(session?.challengeVersion===1&&!session.done&&session.recipe===command.payload.recipe&&saved?{resumeSessionId:session.id}:{})}};
+  command={...command,payload:{...command.payload,...(skillUI?{challengeVersion:1}:{}),...(skillUI&&session?.challengeVersion===1&&!session.done&&session.recipe===command.payload.recipe&&saved?{resumeSessionId:session.id}:{})}};
  }
  // A finished recipe has one grade per station (three, four or five).
  // Also repairs persisted pending meals created by the four-station UI.

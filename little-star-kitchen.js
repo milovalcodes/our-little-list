@@ -95,7 +95,7 @@ export function mountKitchen(host,ctx,legacy){
    '<p class="recipe-feedback" role="status" aria-live="polite">'+(result&&run.failed?(s.feedback||'This dish did not make the cut.'):result?'':'Four major mistakes ruin the dish. Aim for a clean run.')+'</p><div class="recipe-access skill-controls">'+(result?'<button type="button" class="main-button" data-serve-cook>'+(ctx.practice?'finish practice':run.failed?'finish batch':'collect '+pay.portions+' meals')+'</button>'+(again?'<button type="button" data-cook-again>'+(ctx.practice?'practice again':'finish & cook again')+'</button>':''):'')+'</div>'+
    (!result?'<details class="skill-help"><summary>station help & controls</summary><p>'+spec.help+'</p><p>Touch or mouse: drag the tool. Keyboard: arrows move the crosshair; Space picks up / puts down. Enter: timing action. H / L: heat. Four major mistakes ruin a dish. Under 55% earns nothing. Perfect: 9 meals + up to 8 ✦, with three chef bonuses per day.</p></details>':'');
   onWorktop();paint();if(paused)showPause();
-  const focus=host.querySelector('[data-skill-begin],[data-skill-next],.skill-controls button,.skill-worktop');focus?.focus({preventScroll:true});
+  const focus=host.querySelector('[data-skill-begin]')||host.querySelector('[data-skill-next]')||host.querySelector('[data-skill-action]')||host.querySelector('.skill-controls button')||host.querySelector('.skill-worktop');focus?.focus({preventScroll:true});
  }
  function paint(){
   if(destroyed||run.mode==='result')return;

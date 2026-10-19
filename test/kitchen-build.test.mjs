@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+import {attachSkillKitchen} from '../tools/build-star-kitchen.mjs';
+const before='<head></head><div id="little-star-demo" hidden><script>const o={};o.controller=legacy(q(".arcade-cooking"),{sprite:x});result=o.controller;</script>',after=attachSkillKitchen(before);
+assert.equal(attachSkillKitchen(after),after,'hook generation is idempotent');assert.match(after,/data-kitchen-version="1"/);
+const script=after.match(/<script>([\s\S]*)<\/script>/)[1];
+const context={legacy:()=> 'legacy',q:()=>({}),x(){}};vm.runInNewContext(script,context);assert.equal(context.result,'legacy','new HTML can use an older adapter during cache activation');
+const upgraded={...context,starKitchenChallenge:{mount:(_host,_ctx,legacy)=>legacy()+'-skill'}};vm.runInNewContext(script,upgraded);assert.equal(upgraded.result,'legacy-skill');
+const published=readFileSync(new URL('../little-star.html',import.meta.url),'utf8');assert.equal(attachSkillKitchen(published),published,'release is generated from the current hook');
+assert.throws(()=>attachSkillKitchen('<head></head>'),/exactly one cooking mount/);
+console.log('KITCHEN BUILD: deterministic hook, released output and old/new adapter cache compatibility pass');

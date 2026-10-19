@@ -8,7 +8,7 @@ let initialized=false;
 const live={resolve(){initialized=true;}},context={starLive:live,URL,URLSearchParams,AbortSignal,crypto,console,
  DELIVERY_URL:'https://fixture.test/dispatch',sideForUid:()=> 'him',
  bootPage:async()=>({viewer:'him',data:{mode:'firebase',getIdToken:async()=> 'fixture'}}),
- navigator:{},document:{getElementById:()=>({}),addEventListener(){}},
+ navigator:{},document:{getElementById:id=>id==='little-star-demo'?{dataset:{kitchenVersion:'1'}}:{},addEventListener(){}},
  localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},location:{search:''},window:{addEventListener(){}},setInterval(){},
  fetch:async(_url,options)=>{sent.push(JSON.parse(options.body));return {ok:true,json:async()=>({star,now:star.updatedAt})};}
 };
@@ -31,4 +31,6 @@ await live.action({id:'recover-skill-run',type:'cook',payload:{sessionId:bridge.
 star.cookSessions.him={...star.cookSessions.him,id:'different-session'};
 assert.equal(live.kitchenContext().load(),null,'saved progress cannot leak into a new session');
 await live.action({id:'new-session-claim',type:'cook',payload:{sessionId:'different-session',grades:[100,100,100,100,100]}});assert.equal(sent.at(-1).command.payload.challenge,undefined,'a different session cannot inherit a perfect proof');
+context.document.getElementById=()=>({});await vm.runInNewContext('(async()=>{'+source+'})()',context);
+await live.action({id:'mixed-cache-start',type:'start-cook',payload:{recipe:'toast'}});assert.equal(sent.at(-1).command.payload.challengeVersion,undefined,'old cached HTML retains its legacy contract during upgrade');
 console.log('COOKING ADAPTER: every recipe and persisted pending meal uses its real grade count without changing receipt IDs');
