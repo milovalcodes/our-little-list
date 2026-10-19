@@ -171,6 +171,7 @@ jobs:
           python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
           node test/update-freshness-browser.mjs
           pnpm run test:browser
+          STAR_BROWSER=webkit node test/star-kitchen-layout-browser.mjs
           GAME_BROWSER=webkit node test/crossword-viewport-browser.mjs
           pnpm run test:lifecycle
           node test/touch-polish-browser.mjs
