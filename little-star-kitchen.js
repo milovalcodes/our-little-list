@@ -1,5 +1,5 @@
 import {KITCHEN_VERSION,STATIONS,createStage,tickStage,tapStage,strokeStage,traceStage,releaseTrace,timingPosition,kitchenReward,kitchenPayout} from './little-star/kitchen-rules.mjs';
-import {clock} from './little-star/engine.mjs';
+import {clock,RECIPES,longRest} from './little-star/engine.mjs';
 
 const icon=name=>'<span class="kitchen-icon" data-kicon="'+name+'" aria-hidden="true"></span>';
 const object=(name,x,y,w,h=w,extra='')=>'<span class="skill-object '+extra+'" style="left:'+x/3.2+'%;top:'+y/2.5+'%;width:'+w/3.2+'%;height:'+h/2.5+'%">'+icon(name)+'</span>';
@@ -30,7 +30,7 @@ export function mountKitchen(host,ctx,legacy){
   render();
   if(!completed){completed=true;ctx.complete({score:run.score,grades:[...run.grades],quality:payout().portions,practice:!!ctx.practice});sound(run.failed?'miss':'clear');}
  }
- function payout(){return paid?kitchenPayout(bridge.state,bridge.actor,session,run.score,run.failed,clock(bridge.now).day):kitchenReward(run.score,run.failed);}
+ function payout(){return paid?kitchenPayout(bridge.state,bridge.actor,{...session,form:longRest(bridge.state,bridge.now)?null:session.form},run.score,run.failed,clock(bridge.now).day):kitchenReward(run.score,run.failed);}
  function settle(){
   const s=current();if(!s.done||run.mode!=='playing')return;
   drag=null;keys.clear();keyDown=false;run.grades[run.phase]=s.score;run.stages[run.phase]={kind:s.kind,score:s.score,elapsed:Math.round(s.elapsed*1000)/1000,failed:s.failed};
@@ -81,6 +81,7 @@ export function mountKitchen(host,ctx,legacy){
  }
  function render(){
   const s=current(),spec=STATIONS[s.kind],result=run.mode==='result',pay=result?payout():null;
+  const again=!paid||Object.entries(RECIPES[ctx.recipe].ingredients).every(([name,n])=>(bridge.state.larder?.[name]||0)>=n);
   renderedSub=s.sub;
   host.classList.add('skill-kitchen');host.dataset.recipe=ctx.recipe;host.dataset.stationKind=result?'done':s.kind;
   host.innerHTML='<div class="recipe-heading"><span>'+(ctx.practice?'PRACTICE':'YOUR RECIPE')+'<b>'+ctx.recipeName+'</b></span><span class="recipe-ticket">'+(result?'READY':run.phase+1+' / '+stations.length)+'</span></div>'+
@@ -91,7 +92,7 @@ export function mountKitchen(host,ctx,legacy){
    (run.mode==='grade'?'<div class="skill-overlay"><strong>'+s.score+'%</strong><p>'+(s.score===100?'Clean work!':s.score>=90?'Beautifully done.':s.score>=70?'A few rough edges.':'That was close…')+'</p><button type="button" class="main-button" data-skill-next>'+(run.phase===stations.length-1?'see dish':'next station')+'</button></div>':'')+
    (result?'<div class="skill-report '+(run.failed?'skill-ruined':'')+'"><strong>'+pay.label+' · '+run.score+'%</strong></div>':'<div class="skill-stage-controls">'+controls()+'</div>')+'</div>'+
    (result?'<p class="skill-result-copy">'+(ctx.practice?'Practice · no ingredients or rewards':run.failed?'No meals or stardust. Ingredients used.':pay.portions+' meals'+(run.score===100?' · 3× standard batch':'')+(pay.tip?' · +'+pay.tip+' ✦':''))+'</p>':'<div class="skill-clock"><span data-skill-time></span><span data-skill-progress></span><meter min="0" max="'+s.limit+'" value="'+(s.limit-s.elapsed)+'" aria-label="Seconds remaining"></meter></div><div class="skill-meter" hidden><i></i><b></b></div><p class="skill-cue"></p>')+
-   '<p class="recipe-feedback" role="status" aria-live="polite">'+(result&&run.failed?(s.feedback||'This dish did not make the cut.'):result?'':'Four major mistakes ruin the dish. Aim for a clean run.')+'</p><div class="recipe-access skill-controls">'+(result?'<button type="button" class="main-button" data-serve-cook>'+(ctx.practice?'finish practice':run.failed?'finish batch':'collect '+pay.portions+' meals')+'</button><button type="button" data-cook-again>'+(ctx.practice?'practice again':'finish & cook again')+'</button>':'')+'</div>'+
+   '<p class="recipe-feedback" role="status" aria-live="polite">'+(result&&run.failed?(s.feedback||'This dish did not make the cut.'):result?'':'Four major mistakes ruin the dish. Aim for a clean run.')+'</p><div class="recipe-access skill-controls">'+(result?'<button type="button" class="main-button" data-serve-cook>'+(ctx.practice?'finish practice':run.failed?'finish batch':'collect '+pay.portions+' meals')+'</button>'+(again?'<button type="button" data-cook-again>'+(ctx.practice?'practice again':'finish & cook again')+'</button>':''):'')+'</div>'+
    (!result?'<details class="skill-help"><summary>station help & controls</summary><p>'+spec.help+'</p><p>Touch or mouse: drag the tool. Keyboard: arrows move the crosshair; Space picks up / puts down. Enter: timing action. H / L: heat. Four major mistakes ruin a dish. Under 55% earns nothing. Perfect: 9 meals + up to 8 ✦, with three chef bonuses per day.</p></details>':'');
   onWorktop();paint();if(paused)showPause();
   const focus=host.querySelector('[data-skill-begin],[data-skill-next],.skill-controls button,.skill-worktop');focus?.focus({preventScroll:true});
