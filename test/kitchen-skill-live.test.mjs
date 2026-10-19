@@ -34,6 +34,7 @@ try{
   }
   const f=fixture(),r=await start(f,actor,recipe),session=r.star.cookSessions[actor];
   const resumed=await f.act(actor,'start-cook',{recipe,challengeVersion:1,resumeSessionId:session.id});assert.equal(resumed.star.cookSessions[actor].id,session.id);assert.deepEqual(resumed.star.larder,r.star.larder);
+  assert.equal((await f.act(actor,'start-cook',{recipe})).status,400,'an old client cannot refund or replace an active skill batch');
   const cancel=await f.act(actor,'cancel-cook');assert.equal(cancel.status,200);assert.deepEqual(cancel.star.larder,r.star.larder,'discard consumes ingredients');assert.deepEqual(cancel.star.pantry,r.star.pantry);
  }
  const f=fixture();for(let batch=0;batch<4;batch++){const r=await start(f,'him','porridge'),payload=resultPayload(r,'him');now+=60000;const done=await f.act('him','cook',payload);assert.equal(done.status,200);assert.equal(done.star.wallets.him-r.star.wallets.him,batch<3?8:0,'three chef bonus cap');}

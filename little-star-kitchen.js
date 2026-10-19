@@ -16,7 +16,7 @@ export function mountKitchen(host,ctx,legacy){
  let run=paid?bridge.load():null;
  if(!run||run.version!==KITCHEN_VERSION||run.sessionId!==session?.id||run.recipe!==ctx.recipe||run.phase>=stations.length&&run.mode!=='result')run=null;
  run??={version:KITCHEN_VERSION,sessionId:session?.id||null,recipe:ctx.recipe,phase:0,grades:[],stages:[],failed:false,mode:'brief',stage:createStage(stations[0],seed+':0')};
- let paused=run.mode==='playing',destroyed=false,raf=0,last=performance.now(),lastSave=0,drag=null,cursor={x:160,y:140},keys=new Set(),keyDown=false,completed=false,renderedSub=-1;
+ let paused=run.mode==='playing',destroyed=false,raf=0,last=performance.now(),lastSave=0,drag=null,cursor={x:160,y:140},keys=new Set(),keyDown=false,keyboardUsed=false,completed=false,renderedSub=-1;
  const listeners=[];
  const on=(el,type,fn,opts)=>{el.addEventListener(type,fn,opts);listeners.push(()=>el.removeEventListener(type,fn,opts));};
  const save=()=>{if(paid)bridge.save(safeClone(run));};
@@ -87,7 +87,7 @@ export function mountKitchen(host,ctx,legacy){
   host.innerHTML='<div class="recipe-heading"><span>'+(ctx.practice?'PRACTICE':'YOUR RECIPE')+'<b>'+ctx.recipeName+'</b></span><span class="recipe-ticket">'+(result?'READY':run.phase+1+' / '+stations.length)+'</span></div>'+
    '<ol class="recipe-stations" style="--station-count:'+stations.length+'" aria-label="Recipe progress">'+stations.map((k,i)=>'<li data-state="'+(i<run.phase||result?'done':i===run.phase?'active':'next')+'"><span>'+(run.grades[i]===undefined?i+1:run.grades[i]+'%')+'</span>'+STATIONS[k].name+'</li>').join('')+'</ol>'+
    '<h4 class="recipe-title">'+(result?(run.failed?'A kitchen mishap…':'Your kitchen report'):spec.title)+'</h4>'+
-   '<div class="recipe-worktop skill-worktop" data-failed="'+(result&&run.failed)+'" data-recipe-phase="'+(result?3:({chop:0,crack:0,rinse:0,shape:0,stir:1,whisk:1,spread:1,add:1,heat:2,pour:2,flip:2}[s.kind]??3))+'" tabindex="0" role="application" aria-label="'+(result?'Finished dish':spec.title+'. Use arrows to move, Space to lift or lower tool, Enter for timing actions.')+'"><div class="skill-art">'+art()+'</div><svg class="skill-guides" viewBox="0 0 320 250" aria-hidden="true"></svg><span class="skill-hand" hidden></span><span class="skill-key-cursor" hidden>+</span>'+
+   '<div class="recipe-worktop skill-worktop" data-failed="'+(result&&run.failed)+'" data-recipe-phase="'+(result?3:({chop:0,crack:0,rinse:0,shape:0,stir:1,whisk:1,spread:1,add:1,heat:2,pour:2,flip:2}[s.kind]??3))+'" tabindex="0" role="application" aria-label="'+(result?'Finished dish':spec.title+'. Use arrows to move, Space to lift or lower tool, Enter for timing actions.')+'"><div class="skill-art">'+art()+'</div><svg class="skill-guides" viewBox="0 0 320 250" aria-hidden="true"></svg><span class="skill-hand" hidden></span><span class="skill-key-cursor" aria-hidden="true" style="left:'+cursor.x/3.2+'%;top:'+cursor.y/2.5+'%" '+(keyboardUsed?'':'hidden')+'>+</span>'+
    (run.mode==='brief'?'<div class="skill-overlay"><strong>'+spec.seconds+' seconds</strong><p>'+spec.help+'</p><button type="button" class="main-button" data-skill-begin>ready · start timer</button></div>':'')+
    (run.mode==='grade'?'<div class="skill-overlay"><strong>'+s.score+'%</strong><p>'+(s.score===100?'Clean work!':s.score>=90?'Beautifully done.':s.score>=70?'A few rough edges.':'That was close…')+'</p><button type="button" class="main-button" data-skill-next>'+(run.phase===stations.length-1?'see dish':'next station')+'</button></div>':'')+
    (result?'<div class="skill-report '+(run.failed?'skill-ruined':'')+'"><strong>'+pay.label+' · '+run.score+'%</strong></div>':'<div class="skill-stage-controls">'+controls()+'</div>')+'</div>'+
@@ -99,7 +99,7 @@ export function mountKitchen(host,ctx,legacy){
  }
  function paint(){
   if(destroyed||run.mode==='result')return;
-  if(run.mode==='playing'&&current().sub!==renderedSub){drag=null;render();return;}
+  if(run.mode==='playing'&&current().sub!==renderedSub){drag=null;keyDown=false;keys.clear();render();return;}
   const s=current();host.querySelector('.skill-guides').innerHTML=guide();
   host.querySelector('[data-skill-time]').textContent=Math.ceil(s.limit-s.elapsed)+'s';host.querySelector('.skill-clock meter').value=Math.max(0,s.limit-s.elapsed);host.querySelector('.skill-clock').dataset.urgent=String(s.limit-s.elapsed<5);
   let progress=s.trace.length?Math.min(s.index,s.trace.length-1)+' / '+(s.trace.length-1):s.kind==='chop'?s.index+' / 5':s.kind==='spread'?s.index+' / 12':s.kind==='wrap'?s.sub+' / 3':['top','pour','add'].includes(s.kind)?s.index+' / 3':'';
@@ -179,11 +179,11 @@ export function mountKitchen(host,ctx,legacy){
   if(run.mode!=='playing'||paused)return;
   if(['h','l'].includes(e.key.toLowerCase())){action(e.key.toLowerCase()==='h'?'high':'low');return;}
   if(e.target.closest('button'))return;
-  if(e.key.startsWith('Arrow')){e.preventDefault();keys.add(e.key);host.querySelector('.skill-key-cursor').hidden=false;}
+  if(e.key.startsWith('Arrow')){e.preventDefault();keys.add(e.key);keyboardUsed=true;host.querySelector('.skill-key-cursor').hidden=false;}
   if(e.code==='Space'&&!e.repeat){e.preventDefault();keyDown=!keyDown;if(keyDown)down({...cursor,t:performance.now()},'key');else up({...cursor,t:performance.now()});}
   if(e.key==='Enter'&&!e.repeat){e.preventDefault();action('timing');}
  });
- on(window,'keyup',e=>keys.delete(e.key));on(window,'blur',pause);on(document,'visibilitychange',()=>{if(document.hidden)pause();});
+ on(window,'keyup',e=>keys.delete(e.key));on(window,'blur',pause);on(window,'orientationchange',pause);on(document,'visibilitychange',()=>{if(document.hidden)pause();});
  function frame(now){
   if(destroyed)return;const dt=Math.max(0,(now-last)/1000);last=now;
   if(!paused&&run.mode==='playing'){
