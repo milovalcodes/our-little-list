@@ -2,20 +2,20 @@
 // The renderer and the server share scoring, limits and reward tiers.
 export const KITCHEN_VERSION=1;
 export const STATIONS={
- chop:{name:'cut',seconds:18,title:'Follow the cut lines',help:'Swipe along each arrow, from the round end to the point. Clean, straight cuts keep all 100 points.'},
- stir:{name:'stir',seconds:22,title:'Stir without spilling',help:'Trace the glowing dots around the pot. Keep a steady pace, then reverse when the arrow changes. Stay near the ring.'},
- whisk:{name:'whisk',seconds:20,title:'Whisk a smooth batter',help:'Trace the glowing dots in order. Keep moving steadily around the bowl. Reverse direction halfway; rushing or cutting across spills batter.'},
- spread:{name:'spread',seconds:18,title:'Spread right to the edges',help:'Paint all twelve patches with smooth strokes. Stay inside the dotted toast surface; smearing the counter costs points.'},
- heat:{name:'heat',seconds:22,title:'Keep a steady simmer',help:'Switch between low and high heat to keep the needle in the moving green zone. Fill the cooking meter. Too hot for too long burns the dish.'},
- top:{name:'garnish',seconds:16,title:'Plate with care',help:'Drag each berry from the tray to the numbered glow, in order. Aim for the center. Dropping outside the dish wastes a topping.'},
- crack:{name:'crack',seconds:12,title:'Crack, then open',help:'Tap CRACK as the needle crosses the gold center. Then swipe from left to right along the shell guide to open the egg cleanly.'},
- pour:{name:'pour',seconds:20,title:'Pour three even pancakes',help:'Drag the jug onto each numbered pan spot. Release when the moving amount needle is in gold. Aim and timing both count.'},
- flip:{name:'flip',seconds:14,title:'Flip and catch',help:'Wait until the cooking needle reaches gold, then swipe up along the arrow. Tap CATCH when the falling ring meets the gold line.'},
- add:{name:'add',seconds:18,title:'Remember the recipe',help:'Memorize the three ingredients on the ticket. After it folds away, drag them into the pot in that order. The wrong ingredient costs points.'},
- ladle:{name:'serve',seconds:22,title:'Carry without spilling',help:'Start in the pot and trace the curved route to the bowl. Follow every glow at a steady speed. Carry two scoops; cutting corners spills them.'},
- rinse:{name:'rinse',seconds:20,title:'Wash, then drain',help:'Trace the swishing route through the water. Then tap DRAIN as the needle crosses gold. Sloppy swishes lose rice.'},
- shape:{name:'shape',seconds:18,title:'Shape a neat triangle',help:'Trace the rice ball outline through every glow. Then tap PRESS when the shrinking ring reaches gold. A steady hand keeps it together.'},
- wrap:{name:'wrap',seconds:18,title:'Wrap and fold',help:'Drag the seaweed onto the center mark. Then swipe each fold along its arrow. Line up the sheet and fold neatly.'}
+ chop:{name:'cut',seconds:12,title:'Follow the cut lines',help:'Swipe along each arrow, from the round end to the point. Clean, straight cuts keep all 100 points.'},
+ stir:{name:'stir',seconds:14,title:'Stir without spilling',help:'Trace the glowing dots around the pot. Keep a steady pace, then reverse when the arrow changes. Stay near the ring.'},
+ whisk:{name:'whisk',seconds:13,title:'Whisk a smooth batter',help:'Trace the glowing dots in order. Keep moving steadily around the bowl. Reverse direction halfway; rushing or cutting across spills batter.'},
+ spread:{name:'spread',seconds:14,title:'Spread right to the edges',help:'Paint all twelve patches with smooth strokes. Stay inside the dotted toast surface; smearing the counter costs points.'},
+ heat:{name:'heat',seconds:15,title:'Keep a steady simmer',help:'Switch between low and high heat to keep the needle in the moving green zone. Fill the cooking meter. Too hot for too long burns the dish.'},
+ top:{name:'garnish',seconds:10,title:'Plate with care',help:'Drag each berry from the tray to the numbered glow, in order. Aim for the center. Dropping outside the dish wastes a topping.'},
+ crack:{name:'crack',seconds:9,title:'Crack, then open',help:'Tap CRACK as the needle crosses the gold center. Then swipe from left to right along the shell guide to open the egg cleanly.'},
+ pour:{name:'pour',seconds:14,title:'Pour three even pancakes',help:'Drag the jug onto each numbered pan spot. Release when the moving amount needle is in gold. Aim and timing both count.'},
+ flip:{name:'flip',seconds:10,title:'Flip and catch',help:'Wait until the cooking needle reaches gold, then swipe up along the arrow. Tap CATCH when the falling ring meets the gold line.'},
+ add:{name:'add',seconds:13,title:'Remember the recipe',help:'Memorize the three ingredients on the ticket. After it folds away, drag them into the pot in that order. The wrong ingredient costs points.'},
+ ladle:{name:'serve',seconds:15,title:'Carry without spilling',help:'Start in the pot and trace the curved route to the bowl. Follow every glow at a steady speed. Carry two scoops; cutting corners spills them.'},
+ rinse:{name:'rinse',seconds:13,title:'Wash, then drain',help:'Trace the swishing route through the water. Then tap DRAIN as the needle crosses gold. Sloppy swishes lose rice.'},
+ shape:{name:'shape',seconds:12,title:'Shape a neat triangle',help:'Trace the rice ball outline through every glow. Then tap PRESS when the shrinking ring reaches gold. A steady hand keeps it together.'},
+ wrap:{name:'wrap',seconds:10,title:'Wrap and fold',help:'Drag the seaweed onto the center mark. Then swipe each fold along its arrow. Line up the sheet and fold neatly.'}
 };
 export const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);

@@ -8,6 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {chromium,webkit} from 'playwright';
 import {kitchenLayout} from '../tools/kitchen-layout.mjs';
 import {RECIPES} from '../little-star/engine.mjs';
+import {STATIONS} from '../little-star/kitchen-rules.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const server=http.createServer(async(req,res)=>{try{const url=new URL(req.url,'http://127.0.0.1');if(url.pathname==='/__skill'){res.setHeader('Content-Type','text/html');res.end(await kitchenLayout(url));return;}const path=resolve(root,'.'+decodeURIComponent(url.pathname));if(!path.startsWith(root))throw Error();const bytes=await readFile(path);res.setHeader('Content-Type',({'.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.webp':'image/webp'})[extname(path)]||'application/octet-stream');res.end(bytes);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
@@ -50,7 +51,7 @@ async function play(page,kind){
  }else if(kind==='wrap'){
   await stroke({x:65,y:57},{x:160,y:148});for(let i=0;i<2;i++){const [x,y,xx,yy]=(await arrows())[0];await stroke({x,y},{x:xx,y:yy});}
  }
- await page.locator('[data-skill-next]').waitFor({timeout:2000});
+ try{await page.locator('[data-skill-next]').waitFor({timeout:2000});}catch(error){console.error('Failed station '+kind+': '+await page.locator('.arcade-cooking').innerText());throw error;}
  const grade=Number((await page.locator('.skill-overlay strong').innerText()).replace('%',''));assert.ok(grade>=90,kind+' should reward accurate gestures, got '+grade);
  return grade;
 }
@@ -70,7 +71,7 @@ try{
    await page.screenshot({path:fileURLToPath(new URL(recipe+'-'+width+'.png',output)),fullPage:true});console.log('UI PLAYTHROUGH '+width+'px '+recipe+': '+grades.join('/'));
   }
   // Frozen instructions, real deadline, pause and motion-safe presentation.
-  await page.goto(base+'/__skill?recipe=pancakes&station=flip');await page.locator('[data-skill-begin]').waitFor();await page.clock.runFor(30000);assert.equal(await page.locator('[data-skill-time]').innerText(),'14s');
+  await page.goto(base+'/__skill?recipe=pancakes&station=flip');await page.locator('[data-skill-begin]').waitFor();await page.clock.runFor(30000);assert.equal(await page.locator('[data-skill-time]').innerText(),STATIONS.flip.seconds+'s');
   await page.locator('[data-skill-begin]').click();await page.clock.runFor(1000);await page.locator('#pause').click();const left=await page.locator('[data-skill-time]').innerText();await page.clock.runFor(30000);assert.equal(await page.locator('[data-skill-time]').innerText(),left);await page.locator('[data-skill-resume]').click();await page.clock.runFor(15000);assert.match(await page.locator('.skill-report').innerText(),/RUINED/);assert.equal(await page.locator('body').getAttribute('data-score'),'0');
   await context.close();
  }

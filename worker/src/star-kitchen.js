@@ -1,4 +1,4 @@
-import {applyAction,projectStar,RECIPES,cookingPayout,clock,longRest} from '../../little-star/engine.mjs';
+import {applyAction,projectStar,RECIPES,clock,longRest} from '../../little-star/engine.mjs';
 import {KITCHEN_VERSION,STATIONS,kitchenPayout} from '../../little-star/kitchen-rules.mjs';
 
 // New skill sessions are settled here, while already-open legacy batches keep
@@ -41,14 +41,13 @@ export function applyKitchenAction(input,command,now){
  const projected=projectStar(input,now),session=projected.cookSessions[actor],day=clock(now).day;
  // Keep the engine's care, memories and pet helpers for a successful meal,
  // then replace its legacy payout with the skill challenge's shared payout.
- const legacy=cookingPayout(projected,actor,session,score,now),pay=kitchenPayout(projected,actor,{...session,form:longRest(projected,now)?null:session.form},score,false,day);
+ const pay=kitchenPayout(projected,actor,{...session,form:longRest(projected,now)?null:session.form},score,false,day);
  const result=applyAction(input,command,now),s=result.state,def=RECIPES[session.recipe],key=day+':'+actor;
  s.pantry[def.dish]=Math.min(99,(projected.pantry[def.dish]||0)+pay.portions);
  s.wallets[actor]=projected.wallets[actor]+pay.tip;
  s.daily[key].cookBonuses=(projected.daily[key]?.cookBonuses||0)+(pay.tip?1:0);
  // Helpers are awarded by the engine only after success; no failed batch
  // goes through it, so a failure cannot mint food, care, XP or a memory.
- void legacy;
  s.cookSessions[actor].challengeScore=score;
  result.message=`${pay.label} · ${score}%. ${pay.portions} meals in the pantry.${pay.tip?' +'+pay.tip+' stardust.':''}${score===100?' Triple the standard batch!':''}`;
  return result;
