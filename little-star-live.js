@@ -20,6 +20,9 @@ async function request(body){
  }catch(error){live.offline=error.offline??true;if(error.uncertain===undefined)error.uncertain=true;throw error;}
 }
 live.action=async command=>{
+ // A finished recipe has one grade per station (three, four or five).
+ // Also repairs persisted pending meals created by the four-station UI.
+ if(command.type==='cook'&&Array.isArray(command.payload?.grades))command={...command,payload:{...command.payload,steps:command.payload.grades.length}};
  inFlight=true;
  try{const result=await request({op:'act',command});latest=result;return {...result,state:result.star};}
  finally{inFlight=false;}

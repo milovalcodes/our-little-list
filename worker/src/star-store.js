@@ -76,6 +76,11 @@ export class StarNursery {
     if(input.op==='act'){
      const {command:c}=input;
      if(!c||!STAR_ACTIONS.has(c.type)||typeof c.id!=='string'||!/^[\w-]{5,90}$/.test(c.id)||!c.payload||Array.isArray(c.payload)||typeof c.payload!=='object')throw Error('Invalid nursery action.');
+     // Older open kitchens send the original four-station marker for every
+     // recipe. Count their real grades before fingerprinting, so stuck batches
+     // and pending retries share a receipt with the corrected client. The
+     // engine still requires every valid grade for the session's actual recipe.
+     if(c.type==='cook'&&c.payload.steps===4&&Array.isArray(c.payload.grades)&&[3,5].includes(c.payload.grades.length))c.payload={...c.payload,steps:c.payload.grades.length};
      const key=`receipt:${input.actor}:${c.id}`,fingerprint=JSON.stringify([c.type,c.petId,c.payload]),receipt=await tx.get(key);
      if(receipt){if(receipt.fingerprint!==fingerprint)throw Error('This save ID belongs to a different action.');return {...view(record,input.actor,now),...receipt.reply,duplicate:true};}
      const oriented=orient(record.state,record.selected[input.actor]);

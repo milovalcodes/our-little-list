@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v129';
+const CACHE = 'our-little-list-v130';
 // v114: authenticated shared Little Star alpha, competition earnings and care pings.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a

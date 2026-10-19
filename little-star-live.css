@@ -1,2 +1,35 @@
 html{background:#172b33!important;color-scheme:dark}body{margin:0;color:#f7eedc;font-family:"Nunito",ui-rounded,"SF Pro Rounded",sans-serif}a{color:inherit}.star-live-links{display:flex;justify-content:space-between;gap:16px;max-width:540px;margin:auto;padding:14px 14px 0;font-size:14px}.star-live-links a{padding:8px 0;min-height:44px;display:flex;align-items:center}.star-connection{max-width:480px;margin:28px auto;padding:20px;text-align:center}.star-connection button{min-height:44px;padding:8px 18px}#little-star-demo[hidden]{display:none!important}#little-star-demo .demo-toolbox,#little-star-demo .nursery-person>span,#little-star-demo [data-person]:not([aria-pressed="true"]){display:none!important}#little-star-demo [data-person]{cursor:default}.auth-gate{position:fixed;inset:0;z-index:10000;background:#172b33;display:grid;place-items:center;padding:20px}.auth-card{width:min(100%,340px);padding:24px;border:1px solid #748e84;border-radius:22px;background:#293b42;box-sizing:border-box}.auth-card label{display:grid;gap:8px;margin:16px 0}.auth-card input,.auth-card button{box-sizing:border-box;width:100%;font:inherit;min-height:44px;padding:10px;border:1px solid #748e84;border-radius:14px}.auth-error{color:#ffb7a3}.auth-card .auth-icon,.auth-card .tiny-kicker{display:none}.incoming-note{position:fixed;z-index:11000;top:12px;left:12px;right:12px;max-width:500px;margin:auto;display:flex;background:#f7eedc;color:#172b33;padding:12px;border:1px solid #748e84;border-radius:22px;box-shadow:0 8px 24px #0003}.incoming-note-link{display:flex;align-items:center;gap:10px;flex:1;text-decoration:none}.incoming-note p{margin:4px 0}.incoming-note-close{align-self:flex-start;min-width:44px;min-height:44px}.incoming-note.is-leaving{opacity:0}.star-live-wallet{font-size:14px;line-height:1.5}.star-live-wallet a{display:inline-flex;align-items:center;min-height:44px}body:has(.arcade-screen[open])>.star-live-links{visibility:hidden}
 .star-live-links{padding-top:max(14px,env(safe-area-inset-top));padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}.star-live-links a{border-radius:14px;padding:8px 12px;text-decoration:none;min-height:44px;box-sizing:border-box;background:#293b4266}.star-live-links a:focus-visible,.star-connection button:focus-visible{outline:3px solid #f5cf65;outline-offset:3px}.star-connection{border:1px solid #748e84;border-radius:22px;line-height:1.5;margin:28px max(16px,calc((100% - 480px)/2))}.star-connection button{border:1px solid #748e84;border-radius:14px;background:#293b42;color:#f7eedc;font:inherit}body{padding-bottom:env(safe-area-inset-bottom)}
+
+/* Keep authored sprites in the same 320 x 250 world as their input targets.
+   Fixed pixel children otherwise sit in the corner of responsive holders. */
+#little-star-demo .arcade-screen[open] :is(.recipe-pot,.recipe-bowl,.cook-center)>.big-pixel{display:block;width:100%;height:100%}
+#little-star-demo .arcade-screen[open] .recipe-bowl:has(>.big-pixel):not(.wrap-ball){width:50%;left:25%;top:28%;height:auto;aspect-ratio:1}
+#little-star-demo .arcade-screen[open] .cook-center{width:36%;aspect-ratio:1}
+#little-star-demo .arcade-screen[open] .recipe-spoon.whisk-tool>.kitchen-pixel{width:100%;height:100%}
+#little-star-demo .arcade-screen[open] .recipe-berry>.kitchen-pixel{width:100%;height:100%}
+#little-star-demo .arcade-screen[open] :is([data-station-kind=pour],[data-station-kind=flip]) .recipe-pot{left:27.5%;top:-1.6%}
+#little-star-demo .arcade-screen[open] .flip-cake{left:37.5%;top:60%;translate:-50% -50%;width:40%;aspect-ratio:1}
+#little-star-demo .arcade-screen[open] .flip-cake>.kitchen-pixel{width:100%;height:100%}
+#little-star-demo .arcade-screen[open] .pour-jug{width:22%;aspect-ratio:1;z-index:3}
+#little-star-demo .arcade-screen[open] :is(.heat-track,.timing-bar){z-index:5}
+#little-star-demo .arcade-screen[open] .pour-jug>.kitchen-pixel{width:100%;height:100%}
+#little-star-demo .arcade-screen[open] .add-tray>button{position:relative;flex:0 0 24%;width:24%;height:auto;aspect-ratio:1;min-width:44px;min-height:44px;display:grid;place-items:center}
+#little-star-demo .arcade-screen[open] .add-tray .kitchen-pixel{width:100%;height:100%}
+#little-star-demo .arcade-screen[open] .add-ticket{width:42%;gap:4%;padding:2%}
+#little-star-demo .arcade-screen[open] .add-ticket>span{flex:1;aspect-ratio:1;min-width:0}
+#little-star-demo .arcade-screen[open] .add-ticket .kitchen-pixel{width:100%;height:100%}
+#little-star-demo .arcade-screen[open] :is(.ladle-pot,.ladle-bowl){width:30%;height:auto;aspect-ratio:1;min-width:44px;min-height:44px}
+#little-star-demo .arcade-screen[open] :is(.ladle-pot,.ladle-bowl)>.kitchen-sprite,#little-star-demo .arcade-screen[open] .ladle-bowl>.big-pixel{width:100%;height:100%}
+#little-star-demo .arcade-screen[open] .ladle-tool{left:18%;top:34%;width:14%;aspect-ratio:1;z-index:3}
+#little-star-demo .arcade-screen[open] .ladle-tool>.kitchen-pixel{width:100%;height:100%}
+#little-star-demo .arcade-screen[open] [data-holding=true] .ladle-tool{translate:410% 0}
+#little-star-demo .arcade-screen[open] .rinse-bowl{width:48%;height:auto;aspect-ratio:1}
+/* The ingredient icon is a rice sack; rinsing needs the bowl frame. */
+#little-star-demo .arcade-screen[open] .rinse-bowl>[data-kicon=rice]{--ki-x:0%;--ki-y:66.666667%}
+#little-star-demo .arcade-screen[open] .rinse-cloud{inset:28% 12% 52%;border-radius:50%;filter:blur(1px);background:#fff9}
+#little-star-demo .arcade-screen[open] .wrap-ball{width:40%;height:auto;aspect-ratio:1;left:50%;top:60%;translate:-50% -50%}
+#little-star-demo .arcade-screen[open] .wrap-target{width:10%;height:auto;aspect-ratio:1;margin:0;translate:-50% -50%;z-index:3}
+#little-star-demo .arcade-screen[open] .wrap-sheet>.kitchen-pixel{width:100%;height:100%}
+#little-star-demo .arcade-screen[open] .arcade-cooking .result-stars{position:absolute;left:0;right:0;top:19%;text-align:center;color:#f5cf65;font-size:22px;line-height:1;z-index:6}
+#little-star-demo .arcade-screen[open] .arcade-cooking .result-stars i{font-style:normal;opacity:.3}
