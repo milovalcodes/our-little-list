@@ -95,6 +95,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   if(comparisonReady(type,mine,partner(),puzzle)&&!partnerRound&&!routeBusy&&!routeError)void loadPartnerRound();
   if(dragStart!==null){if(!finished())return;dragStart=null;tapStart=null;}
   const done=finished(),solved=new Set(mine?.solved||[]),available=Boolean(puzzle&&!closed&&Date.now()<puzzle.closesAt);
+  if(!puzzle||!mine||done)board?.finish();
   host.classList.toggle('timed-playing',Boolean(mine&&!done));
   typing?.update(Boolean(mine&&!done),!navigator.onLine);
   summary.textContent=closed?'set finished':done?`${pointsText(mine)} · ${solved.size} / ${puzzle?.entries.length||mine.total} found`:mine&&type==='crossword'?'checked when it ends':mine?`${solved.size} / ${puzzle?.entries.length||'…'} found`:puzzle?`${puzzle.hard?'hard · double points · ':''}${puzzle.entries.length} words · ${time(timedLimit(type,puzzle))}`:'getting your puzzle…';
@@ -135,8 +136,8 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   const mark=host.querySelector('.puzzle-cell.cursor');revealBoard=false;
   revealFocusedLetter(host);restoreClue();
   // Starting the round hands the keyboard straight to the grid.
-  if(focusGrid&&!done)bringGameIntoView(()=>view.querySelector('.timed-toolbar'));
-  if((hadFocus||focusGrid)&&!done){if(typing.active)typing.focus();else mark?.focus({preventScroll:true});focusGrid=false;}
+  if(focusGrid&&!done&&!view.closest('dialog[open]'))bringGameIntoView(()=>view.querySelector('.timed-toolbar'));
+  if((focusGrid||hadFocus&&!host.contains(document.activeElement))&&!done){if(typing.active)typing.focus();else mark?.focus({preventScroll:true});focusGrid=false;}
  }
  // Side by side once your round is over; the partner column fills in when theirs is.
  function resultsMarkup(){
@@ -228,7 +229,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  host.addEventListener('click',click);host.addEventListener('pointerdown',down);host.addEventListener('pointermove',move);host.addEventListener('pointerup',up);host.addEventListener('pointercancel',cancel);host.addEventListener('keydown',key);
  const tick=()=>{if(disposed)return;if(!mine){const button=view.querySelector('[data-start]'),blocked=conflict();if(button&&blocked)button.textContent=roundWaitMessage(blocked);else if(view.querySelector('[data-continue-round]'))render();}if(partnerFinished!==timedOver(partner())){partnerFinished=timedOver(partner());render();}if(!mine||mine.done||closed||!puzzle)return;const remaining=Math.min(timedLimit(type,mine||puzzle)-(Date.now()-millis(mine.startedAt)),puzzle.closesAt-Date.now());const timer=host.querySelector('[data-timer]');if(timer){timer.textContent=time(remaining);timer.classList.toggle('time-low',remaining<15000);}if(remaining<=0){if(!expiredDrawn){expiredDrawn=true;cancel();}if(!busy&&navigator.onLine&&Date.now()>=expiredRetryAt)void play({index:null});}};
  const interval=setInterval(tick,300);
- const toggle=()=>{if(!disclosure.open){typing?.suspend();board?.cancel();}};disclosure.addEventListener('toggle',toggle);
+ const toggle=()=>{if(!disclosure.open){typing?.suspend();board?.cancel();}else if(mine&&!finished())board?.open();};disclosure.addEventListener('toggle',toggle);
  const resume=()=>{if(activityClock().day!==openedDay){location.reload();return;}if(!document.hidden){listen();tick();creditWords();}};
  addEventListener('online',resume);addEventListener('offline',render);document.addEventListener('visibilitychange',resume);listen();
  return ()=>{disposed=true;together.dispose();board?.dispose();typing?.dispose();host.classList.remove('timed-playing');disclosure.removeEventListener('toggle',toggle);action++;unsubs.forEach(fn=>fn());clearInterval(interval);clearTimeout(flashTimer);celebration.dispose();removeEventListener('online',resume);removeEventListener('offline',render);document.removeEventListener('visibilitychange',resume);for(const [name,handler]of Object.entries({click,pointerdown:down,pointermove:move,pointerup:up,pointercancel:cancel,keydown:key}))host.removeEventListener(name,handler);};

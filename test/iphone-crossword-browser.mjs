@@ -14,6 +14,7 @@ try{
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`${base}/practice.html?as=${side}#crossword-${level}`);
   const host=page.locator('#practice-game'),dock=page.locator('.app-dock');await host.locator('.cursor').waitFor();
+  await host.locator('.crossword-expand').click(); // Preserve coverage of the optional inline view.
   const label=`${engine.name()} ${width} ${side} ${level}`;
   check(!await dock.isVisible(),label+': dock hidden during unfinished practice crossword');
   const arrow=await host.locator('[data-step="1"]').boundingBox();check(arrow.width>=44&&arrow.height>=44,label+': clue arrows have full touch targets');

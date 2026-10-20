@@ -92,7 +92,7 @@ try{
   await p.context().close();
  });
  await check('practice restart resets the selected clue too',async()=>{
-  const p=await open('practice.html?as=him#crossword');await p.click('[data-entry="3"]');
+  const p=await open('practice.html?as=him#crossword');await p.locator('.crossword-expand').click();await p.click('[data-entry="3"]');
   assert.equal(await p.locator('.app-dock').isVisible(),false,'navigation stays hidden while practicing a crossword');
   p.once('dialog',d=>d.accept());await p.click('#practice-restart');
   assert.equal(await p.locator('[data-entry="0"]').getAttribute('aria-pressed'),'true');

@@ -35,6 +35,7 @@ try{
  assert.match(await page.locator('[data-feedback]').textContent(),/all found/);
  await page.reload();await page.waitForSelector('.search-grid');assert.match(await page.locator('[data-feedback]').textContent(),/all found/);
  await page.click('[data-practice-tab=crossword]');await page.waitForSelector('.crossword-grid');
+ await page.locator('.crossword-expand').click();
  await page.clock.install();await page.clock.fastForward(180000);
  const crossword=practicePuzzle('crossword',0);
  for(let i=0;i<crossword.entries.length;i++){
@@ -55,6 +56,7 @@ try{
  assert.equal(await page.locator('.puzzle-cell').count(),hard.grid.replaceAll('#','').length);
  await page.locator('[data-entry="0"]').click();await page.keyboard.type(hard.entries[0].word.toLowerCase());
  await page.reload();await page.waitForSelector('.crossword-grid');
+ await page.locator('.crossword-expand').click();
  assert.ok((await page.locator('.puzzle-cell span').allTextContents()).filter(Boolean).length>=5,'crossing letters persist');
  await page.selectOption('#practice-picker','99');await page.click('#practice-next');assert.equal(await page.locator('#practice-picker').inputValue(),'50');
  await page.click('[data-practice-tab=search]');assert.match(page.url(),/#search-hard$/);

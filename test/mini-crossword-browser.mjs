@@ -21,6 +21,7 @@ try{
   await page.locator('#wordle').evaluate(d=>d.open=true); // Another open board must not steal crossword keystrokes.
   await page.locator('#crossword [data-start]:not([disabled])').click();
   await page.locator('#crossword .puzzle-cell.cursor').waitFor();
+  await page.locator('#crossword .crossword-expand').click();
   assert.equal(await page.locator('#crossword .puzzle-cell').count(),mini.grid.replaceAll('#','').length);
   assert.ok(mini.size>5);
   // Only the playable window is drawn: edge rows and columns of walls are trimmed.

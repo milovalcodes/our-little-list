@@ -24,6 +24,7 @@ try{
    const started=await page.evaluate(()=>Date.now());
    await page.locator('#'+type+' [data-start]:not([disabled])').click();
    await page.locator('#'+type+' .puzzle-cell').first().waitFor();
+   if(type==='crossword')await page.locator('#crossword .crossword-expand').click();
    for(let n=0;n<p.entries.length;n++){
     // Hard boards exercise the new time beyond 2:00, not just their labels.
     // This is an input/deadline test, not a human difficulty benchmark.

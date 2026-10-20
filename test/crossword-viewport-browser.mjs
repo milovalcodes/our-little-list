@@ -13,6 +13,8 @@ try{
   await page.goto(base+(mode==='practice'?'/practice.html?as=him#crossword-hard':'/activities.html?as=her#crossword'));
   const host=page.locator(mode==='practice'?'#practice-game':'#crossword-game');
   if(mode==='daily')await host.locator('[data-start]:not([disabled])').click();
+  // This suite exercises the optional inline board; crossword-play covers the floating view.
+  await host.locator('.crossword-expand').click();
   const pane=host.locator('.crossword-viewport'),tools=host.locator('.crossword-board-tools');await pane.waitFor();
   const state=()=>pane.evaluate(p=>({x:p.scrollLeft,y:p.scrollTop,w:p.scrollWidth,h:p.scrollHeight,cw:p.clientWidth,ch:p.clientHeight,cursor:p.querySelector('.cursor')?.getAttribute('aria-label'),clue:p.closest('.game-board-content').querySelector('.crossword-clues [aria-pressed="true"]')?.textContent,zoom:p.parentNode.querySelector('output').value}));
   const button=action=>tools.locator(`[data-board-view="${action}"]`);

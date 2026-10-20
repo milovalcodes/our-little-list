@@ -190,6 +190,7 @@ jobs:
           pnpm run test:browser
           STAR_BROWSER=webkit node test/star-kitchen-layout-browser.mjs
           GAME_BROWSER=webkit node test/crossword-viewport-browser.mjs
+          GAME_BROWSER=webkit node test/crossword-play-browser.mjs
           pnpm run test:lifecycle
           node test/touch-polish-browser.mjs
           pnpm run test:visual

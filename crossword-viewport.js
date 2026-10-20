@@ -1,6 +1,52 @@
 // A persistent viewport: typing and live updates may repaint the surrounding
 // clues, but must not replace the surface holding a finger or reset its zoom.
+let expandedPreferred=true;
 export function createCrosswordViewport({keepTyping=()=>{}}={}){
+ // Keep controls connected through saves and keystrokes. Replacing a pressed
+ // key between pointerdown and pointerup loses fast taps on phones.
+ function patch(node,next){
+  if(node.nodeType!==next.nodeType||node.nodeName!==next.nodeName){node.replaceWith(next);return;}
+  if(node.nodeType!==1){if(node.textContent!==next.textContent)node.textContent=next.textContent;return;}
+  for(const attr of [...node.attributes])if(!next.hasAttribute(attr.name))node.removeAttribute(attr.name);
+  for(const attr of next.attributes)if(node.getAttribute(attr.name)!==attr.value)node.setAttribute(attr.name,attr.value);
+  const old=[...node.childNodes],fresh=[...next.childNodes];
+  fresh.forEach((child,i)=>old[i]?patch(old[i],child):node.append(child));
+  old.slice(fresh.length).forEach(child=>child.remove());
+ }
+ const dialog=document.createElement('dialog');dialog.className='crossword-play-dialog';dialog.setAttribute('aria-label','Crossword');
+ const expand=document.createElement('button');expand.type='button';expand.className='crossword-expand';expand.textContent='Expand';
+ const cluesToggle=document.createElement('button');cluesToggle.type='button';cluesToggle.className='crossword-clues-toggle';cluesToggle.textContent='Clues';cluesToggle.setAttribute('aria-expanded','false');
+ const actions=document.createElement('div');actions.className='crossword-play-actions';actions.append(expand,cluesToggle);
+ let host,viewRoot,inputControls,playing=false,cluesOpen=false;
+ function showClues(show){cluesOpen=show;dialog.classList.toggle('show-clues',show);cluesToggle.setAttribute('aria-expanded',String(show));cluesToggle.textContent=show?'Grid':'Clues';}
+ function viewportSize(){
+  const viewport=window.visualViewport;
+  dialog.style.setProperty('--crossword-screen-height',(viewport?.height||innerHeight)+'px');
+  dialog.style.setProperty('--crossword-screen-top',(viewport?.offsetTop||0)+'px');
+ }
+ function restorePage(){
+  if(dialog.open)return;
+  document.documentElement.classList.toggle('crossword-play-open',Boolean(document.querySelector('.crossword-play-dialog[open]')));
+  if(viewRoot?.parentNode===dialog){host.insertBefore(inputControls,dialog);host.insertBefore(viewRoot,dialog);}
+  expand.textContent='Expand';cluesToggle.hidden=true;showClues(false);
+ }
+ function openPlay(){
+  if(!playing||dialog.open||host.closest('[hidden]')||host.closest('details')?.open===false)return;
+  viewportSize();dialog.append(inputControls,viewRoot);dialog.showModal();
+  document.documentElement.classList.add('crossword-play-open');
+  expand.textContent='Back';cluesToggle.hidden=false;
+  viewRoot.querySelector('.cursor')?.focus({preventScroll:true});keepTyping();
+ }
+ function closePlay(){if(dialog.open)dialog.close();restorePage();viewRoot?.querySelector('.cursor')?.focus({preventScroll:true});}
+ expand.addEventListener('click',()=>{expandedPreferred=!dialog.open;if(dialog.open)closePlay();else openPlay();});
+ dialog.addEventListener('cancel',e=>{e.preventDefault();expandedPreferred=false;closePlay();});
+ cluesToggle.addEventListener('pointerdown',e=>e.preventDefault());
+ cluesToggle.addEventListener('click',()=>{showClues(!cluesOpen);keepTyping();});
+ dialog.addEventListener('close',restorePage);
+ dialog.addEventListener('click',e=>{if(e.target.closest('[data-clue],[data-entry]')){showClues(false);keepTyping();}});
+ window.visualViewport?.addEventListener('resize',viewportSize);
+ window.visualViewport?.addEventListener('scroll',viewportSize);
+ window.addEventListener('resize',viewportSize);
  const shell=document.createElement('section');shell.className='crossword-board';
  shell.innerHTML=`<div class="crossword-board-tools" role="group" aria-label="Board view"><button type="button" data-board-view="out" aria-label="Zoom out">−</button><output aria-label="Board zoom" aria-live="off">100%</output><button type="button" data-board-view="in" aria-label="Zoom in">+</button><button type="button" data-board-view="fit" aria-label="Fit whole board">Fit</button><button type="button" data-board-view="current" aria-label="Show current square" title="Current square">◎</button></div><div class="puzzle-scroll crossword-viewport" tabindex="0" role="region" aria-label="Crossword board. Drag to move, pinch to zoom. Use plus and minus to zoom, arrow keys to move."><div class="crossword-canvas"></div></div><p class="crossword-view-hint">Pinch to zoom · drag to move · tap a square to type</p>`;
  const pane=shell.querySelector('.crossword-viewport'),canvas=shell.querySelector('.crossword-canvas'),tools=shell.querySelector('.crossword-board-tools');
@@ -124,6 +170,9 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
  return {
   render(view,html,{puzzleKey,currentCell,revealCurrent=false}){
    const template=document.createElement('template');template.innerHTML=html;
+   if(!host){host=view.parentNode;viewRoot=view;inputControls=host.querySelector('.game-input-controls');inputControls.prepend(actions);cluesToggle.hidden=true;host.append(dialog);}
+   const active=Boolean(template.content.querySelector('.crossword-current')),starting=active&&!playing;playing=active;
+   if(!active&&dialog.open){dialog.close();restorePage();}
    const freshPane=template.content.querySelector('.puzzle-scroll'),freshGrid=freshPane.querySelector('.crossword-grid');
    const changed=key!==puzzleKey;
    if(changed||!grid){cancel();key=puzzleKey;initialized=false;grid=freshGrid;canvas.replaceChildren(grid);}
@@ -137,13 +186,16 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
      if(old.innerHTML!==next.innerHTML)old.innerHTML=next.innerHTML;
     }
    }
-   const children=[...template.content.childNodes],at=children.indexOf(freshPane);
-   if(shell.parentNode!==view){freshPane.replaceWith(shell);view.replaceChildren(template.content);}
-   else {
-    for(const child of [...view.childNodes])if(child!==shell)child.remove();
-    for(const child of children.slice(0,at))view.insertBefore(child,shell);
-    for(const child of children.slice(at+1))view.append(child);
+   const old=[...view.childNodes],used=new Set();
+   for(const fresh of [...template.content.childNodes]){
+    let node=fresh===freshPane?shell:old.find(n=>!used.has(n)&&n!==shell&&n.nodeName===fresh.nodeName&&n.className===fresh.className);
+    if(!node)node=fresh;else if(node!==shell)patch(node,fresh);
+    used.add(node);
+    // Do not detach an already correctly placed button (or its ancestors).
+    const at=view.childNodes[used.size-1];if(at!==node)view.insertBefore(node,at||null);
    }
+   old.filter(n=>!used.has(n)).forEach(n=>n.remove());
+   if(starting&&expandedPreferred)openPlay();
    resize();controls();
    const nextWord=[...grid.querySelectorAll('.chosen')].map(n=>n.dataset.cell??n.dataset.square).join(',');
    if(!points.size){if(changed||word!==nextWord)frameWord();else if(cell!==currentCell||revealCurrent)reveal();}
@@ -151,6 +203,8 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
    cell=currentCell;
   },
   cancel,
-  dispose(){disposed=true;cancel();observer.disconnect();document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',cancel);shell.remove();}
+  open(){if(expandedPreferred)openPlay();},
+  finish(){playing=false;if(dialog.open){dialog.close();restorePage();}},
+  dispose(){disposed=true;cancel();observer.disconnect();if(dialog.open)dialog.close();restorePage();dialog.remove();actions.remove();window.visualViewport?.removeEventListener('resize',viewportSize);window.visualViewport?.removeEventListener('scroll',viewportSize);window.removeEventListener('resize',viewportSize);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',cancel);shell.remove();}
  };
 }

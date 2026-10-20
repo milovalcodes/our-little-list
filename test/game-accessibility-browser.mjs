@@ -26,6 +26,7 @@ try{
   const mini=weeklyRounds(day)[day].crossword;
   await page.evaluate(async p=>{const d=await(await import('./data-hub.js')).sharedLayer();await d.setTo('timedPuzzles',p.day+'-crossword',p);},mini);
   await page.locator('#crossword [data-start]:not([disabled])').click();await page.locator('#crossword .cursor').waitFor();await dock.waitFor({state:'hidden'});
+  await page.locator('#crossword .crossword-expand').click();
   const activeClue=Number(await page.locator('#crossword .crossword-clues [aria-pressed="true"]').getAttribute('data-clue'));
   const clueSnapshot=await page.locator('#crossword [data-flip]').ariaSnapshot();
   assert.ok(clueSnapshot.includes(mini.entries[activeClue].clue),'the current clue is included in its screen-reader name: '+clueSnapshot);
@@ -50,6 +51,7 @@ try{
   await page.locator('#practice-game .game-input-controls>button:not(.game-native-submit)').click();await page.keyboard.insertText('abc');
   assert.equal(await page.locator('[data-draft-row]').textContent(),'abc');assert.ok(await page.locator('#practice-game input').evaluate(n=>n===document.activeElement));
   await page.goto(base+'/practice.html?as=her#crossword');
+  await page.locator('#practice-game .crossword-expand').click();
   await page.locator('#practice-game .game-input-controls>button:not(.game-native-submit)').click();await page.keyboard.insertText('ab');
   assert.ok(await page.locator('#practice-game input').evaluate(n=>n===document.activeElement));
   await page.locator('#practice-game [data-entry="1"]').click();assert.ok(await page.locator('#practice-game input').evaluate(n=>n===document.activeElement));
