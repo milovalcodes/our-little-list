@@ -165,7 +165,10 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
  for(const name of ['pointerup','pointercancel','lostpointercapture'])pane.addEventListener(name,end);
  pane.addEventListener('click',click,true);pane.addEventListener('wheel',wheel,{passive:false});pane.addEventListener('keydown',keyboard);
  tools.addEventListener('pointerdown',preserveTyping);tools.addEventListener('click',toolClick);
- const observer=new ResizeObserver(resize);observer.observe(pane);
+ // Resizing the canvas can affect the observed pane (especially in WebKit).
+ // Apply those writes in the next frame, outside ResizeObserver delivery.
+ let resizeFrame=0;
+ const observer=new ResizeObserver(()=>{if(!resizeFrame)resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;resize();});});observer.observe(pane);
  const visibility=()=>{if(document.hidden)cancel();};document.addEventListener('visibilitychange',visibility);window.addEventListener('blur',cancel);
  return {
   render(view,html,{puzzleKey,currentCell,revealCurrent=false}){
@@ -205,6 +208,6 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
   cancel,
   open(){if(expandedPreferred)openPlay();},
   finish(){playing=false;if(dialog.open){dialog.close();restorePage();}},
-  dispose(){disposed=true;cancel();observer.disconnect();if(dialog.open)dialog.close();restorePage();dialog.remove();actions.remove();window.visualViewport?.removeEventListener('resize',viewportSize);window.visualViewport?.removeEventListener('scroll',viewportSize);window.removeEventListener('resize',viewportSize);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',cancel);shell.remove();}
+  dispose(){disposed=true;cancel();observer.disconnect();cancelAnimationFrame(resizeFrame);if(dialog.open)dialog.close();restorePage();dialog.remove();actions.remove();window.visualViewport?.removeEventListener('resize',viewportSize);window.visualViewport?.removeEventListener('scroll',viewportSize);window.removeEventListener('resize',viewportSize);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',cancel);shell.remove();}
  };
 }
