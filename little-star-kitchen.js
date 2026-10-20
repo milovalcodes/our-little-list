@@ -193,7 +193,7 @@ export function mountKitchen(host,ctx,legacy){
   if(e.code==='Space'&&!e.repeat){e.preventDefault();keyDown=!keyDown;if(keyDown){down({...cursor,t:performance.now()},'key');keyDown=!!drag;}else up({...cursor,t:performance.now()});}
   if(e.key==='Enter'&&!e.repeat){e.preventDefault();action('timing');}
  });
- on(window,'keyup',e=>keys.delete(e.key));on(window,'blur',pause);on(window,'orientationchange',pause);on(window,'star-play-view-change',()=>{if(run.mode==='playing')pause();});on(document,'visibilitychange',()=>{if(document.hidden)pause();});
+ on(window,'keyup',e=>keys.delete(e.key));on(window,'blur',pause);on(window,'orientationchange',pause);on(window,'resize',()=>{if(run.mode==='playing')pause();});on(window,'star-play-view-change',()=>{if(run.mode==='playing')pause();});on(document,'visibilitychange',()=>{if(document.hidden)pause();});
  function frame(now){
   if(destroyed)return;const dt=Math.max(0,(now-last)/1000);last=now;
   if(!paused&&run.mode==='playing'){
