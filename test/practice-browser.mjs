@@ -68,7 +68,8 @@ try{
  assert.ok(competitive.every(rows=>rows.length===0));
  await page.goto(base+'/practice.html?as=her#word');await page.waitForSelector('[data-key]');assert.match(await page.locator('#practice-progress').textContent(),/0 finished/);
  for(const type of ['word','search','crossword']){
-  await page.goto(base+'/practice.html?as=him#'+type);await page.waitForSelector('#practice-game[aria-busy=false]');
+  await page.goto(base+'/practice.html?as=him#'+type);await page.waitForSelector('#practice-game[aria-busy=false]',{state:'attached'});
+  await page.waitForSelector(type==='crossword'?'#practice-game .crossword-grid':'#practice-game');
   await page.setViewportSize({width:320,height:700});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  }
  assert.deepEqual(errors,[]);console.log('Practice UI: clues, invalid/repeated-safe guesses, stable tiles, saves, win/loss/retry, both boards, no timer, no score writes, side separation and 320px pass');

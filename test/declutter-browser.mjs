@@ -41,7 +41,8 @@ try{
  await page.click('.app-dock a[href="notes.html"]');await page.waitForSelector('.note-thread-row');await page.waitForFunction(()=>!document.querySelector('.app-dock a[href="notes.html"] .attention-badge'));
  await page.goto(base+'/him.html');await page.waitForSelector('.app-dock');await page.locator('.thinking-screen').waitFor({state:'hidden'});await page.screenshot({path:join(tmpdir(),'little-home-declutter.png'),fullPage:true});
  for(const type of ['word','search','crossword']){
-  await page.goto(base+'/practice.html#'+type);await page.waitForSelector('#practice-game[aria-busy=false]');
+  await page.goto(base+'/practice.html#'+type);await page.waitForSelector('#practice-game[aria-busy=false]',{state:'attached'});
+  await page.waitForSelector(type==='crossword'?'#practice-game dialog[open]':'#practice-game');
   await page.locator('.thinking-screen').waitFor({state:'hidden'});
   await page.screenshot({path:join(tmpdir(),'little-practice-'+type+'.png'),fullPage:true});
  }
