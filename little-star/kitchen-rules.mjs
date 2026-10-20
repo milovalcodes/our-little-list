@@ -11,7 +11,7 @@ export const STATIONS={
  crack:{name:'crack',seconds:9,title:'Crack, then open',help:'Tap CRACK as the needle crosses the gold center. Then swipe from left to right along the shell guide to open the egg cleanly.'},
  pour:{name:'pour',seconds:14,title:'Pour three even pancakes',help:'Drag the jug onto each numbered pan spot. Release when the moving amount needle is in gold. Aim and timing both count.'},
  flip:{name:'flip',seconds:10,title:'Flip and catch',help:'Wait until the cooking needle reaches gold, then swipe up along the arrow. Tap CATCH when the falling ring meets the gold line.'},
- add:{name:'add',seconds:13,title:'Remember the recipe',help:'Memorize the three ingredients on the ticket. After it folds away, drag them into the pot in that order. The wrong ingredient costs points.'},
+ add:{name:'add',seconds:13,title:'Follow the recipe',help:'Read the numbered ingredient ticket. After the three-second countdown, drag each ingredient into the pot in that order. The ticket stays visible. The wrong ingredient costs points.'},
  ladle:{name:'serve',seconds:15,title:'Carry without spilling',help:'Start in the pot and trace the curved route to the bowl. Follow every glow at a steady speed. Carry two scoops; cutting corners spills them.'},
  rinse:{name:'rinse',seconds:13,title:'Wash, then drain',help:'Trace the swishing route through the water. Then tap DRAIN as the needle crosses gold. Sloppy swishes lose rice.'},
  shape:{name:'shape',seconds:12,title:'Shape a neat triangle',help:'Trace the rice ball outline through every glow. Then tap PRESS when the shrinking ring reaches gold. A steady hand keeps it together.'},
@@ -71,19 +71,19 @@ export function tapStage(s,action){
  else if((s.kind==='rinse'||s.kind==='shape')&&s.sub===1){s.points.push(grade);complete(s);}
  return s;
 }
-function segmentGrade(path,a,b,minSpeed=80,maxSpeed=800){
+function segmentGrade(path,a,b,minSpeed=80,maxSpeed=800,endGrace=13,lineGrace=9){
  if(path.length<2)return 0;
  const first=path[0],last=path.at(-1),length=dist(a,b),dx=b.x-a.x,dy=b.y-a.y;
  const duration=Math.max(.02,(last.t-first.t)/1000),speed=length/duration;
  const deviations=path.map(p=>Math.abs(dy*(p.x-a.x)-dx*(p.y-a.y))/Math.max(1,length));
  const lateral=deviations.reduce((a,b)=>a+b,0)/deviations.length;
- return Math.round(clamp(100-Math.max(0,dist(first,a)-13)*2-Math.max(0,dist(last,b)-13)*2-Math.max(0,lateral-9)*3-(speed<minSpeed?(minSpeed-speed)*.3:speed>maxSpeed?(speed-maxSpeed)*.12:0)));
+ return Math.round(clamp(100-Math.max(0,dist(first,a)-endGrace)*2-Math.max(0,dist(last,b)-endGrace)*2-Math.max(0,lateral-lineGrace)*3-(speed<minSpeed?(minSpeed-speed)*.3:speed>maxSpeed?(speed-maxSpeed)*.12:0)));
 }
 export function strokeStage(s,path,source){
  if(s.done||path.length<2)return s;
  const a=path[0],b=path.at(-1),duration=(b.t-a.t)/1000;
  if(s.kind==='chop'){
-  const [from,to]=s.cuts[s.index],g=segmentGrade(path,from,to,100,1000);
+  const [from,to]=s.cuts[s.index],g=segmentGrade(path,from,to,35,1200,18,13);
   if(g<35){mistake(s,'Missed the guide. Start at the round end.');return s;}
   s.points.push(g);s.index++;s.feedback=g===100?'Clean cut!':'Uneven cut · '+g+'%';if(s.index===s.cuts.length)complete(s);
  }else if(s.kind==='crack'&&s.sub===1){

@@ -17,8 +17,8 @@ const browser=await(process.env.STAR_BROWSER==='webkit'?webkit:chromium).launch(
 const output=new URL('../node_modules/.cache/skill-kitchen/',import.meta.url);await mkdir(output,{recursive:true});
 
 try{
- for(const width of [320,390,1280]){
-  const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+ for(const [width,height] of [[320,844],[390,844],[844,390],[1280,800]]){
+  const context=await browser.newContext({viewport:{width,height},serviceWorkers:'block'}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   await page.clock.install({time:new Date('2026-10-20T17:00:00Z')});await page.clock.pauseAt(new Date('2026-10-20T17:00:01Z'));
   for(const [recipe,def] of Object.entries(RECIPES)){
    await page.goto(base+'/__skill?recipe='+recipe);await page.locator('[data-skill-begin]').waitFor();
@@ -34,6 +34,18 @@ try{
   // Frozen instructions, real deadline, pause and motion-safe presentation.
   await page.goto(base+'/__skill?recipe=pancakes&station=flip');await page.locator('[data-skill-begin]').waitFor();await page.clock.fastForward(30000);assert.equal(await page.locator('[data-skill-time]').innerText(),STATIONS.flip.seconds+'s');
   await page.locator('[data-skill-begin]').click();await page.clock.runFor(1000);await page.locator('#pause').click();const left=await page.locator('[data-skill-time]').innerText();await page.clock.fastForward(30000);assert.equal(await page.locator('[data-skill-time]').innerText(),left);await page.locator('[data-skill-resume]').click();await page.clock.fastForward(15000);assert.match(await page.locator('.skill-report').innerText(),/RUINED/);assert.equal(await page.locator('body').getAttribute('data-score'),'0');
+  // Order remains visible, the actual ingredient follows a drag, and a
+  // cancelled gesture returns it without consuming a step or a mistake.
+  await page.goto(base+'/__skill?recipe=stew&station=add');await page.locator('[data-skill-begin]').click();await page.clock.runFor(3200);
+  const ticket=await page.locator('.skill-order').innerText();assert.match(ticket,/carrot/);assert.match(ticket,/potato/);assert.match(ticket,/herb/);
+  const world=await page.locator('.skill-world').boundingBox(),source=await page.locator('[data-order="0"] .kitchen-icon').getAttribute('data-kicon'),x={herb:65,'carrot-cut':160,potato:255}[source];
+  await page.mouse.move(world.x+x*world.width/320,world.y+62*world.height/250);await page.mouse.down();await page.mouse.move(world.x+160*world.width/320,world.y+120*world.height/250,{steps:8});
+  assert.equal(await page.locator('.skill-hand .kitchen-icon').getAttribute('data-kicon'),source);assert.equal(await page.locator('[data-skill-ingredient="'+source+'"] .skill-object').isVisible(),false);
+  await page.keyboard.press('Escape');await page.mouse.up();await page.locator('[data-skill-resume]').click();assert.equal(await page.locator('[data-skill-ingredient="'+source+'"] .skill-object').isVisible(),true);assert.equal(await page.locator('[data-skill-progress]').innerText(),'0 / 3');
+  // Layout switching pauses the clock, and keyboard movement remains inside
+  // the visible, zoomed cutting area.
+  await page.goto(base+'/__skill?recipe=stew&station=chop');await page.locator('[data-skill-begin]').click();await page.clock.runFor(500);await page.locator('[data-play-view]').click();const pausedLeft=await page.locator('[data-skill-time]').innerText();await page.clock.runFor(20000);assert.equal(await page.locator('[data-skill-time]').innerText(),pausedLeft);await page.locator('[data-play-view]').click();await page.locator('[data-skill-resume]').click();await page.keyboard.down('ArrowLeft');await page.clock.runFor(1400);await page.keyboard.up('ArrowLeft');
+  assert.equal(await page.locator('.skill-worktop').evaluate(el=>{const r=el.getBoundingClientRect(),c=el.querySelector('.skill-key-cursor').getBoundingClientRect();return c.left>=r.left&&c.right<=r.right;}),true);
   await context.close();
  }
  assert.deepEqual(errors,[]);console.log('SKILL KITCHEN BROWSER: every full recipe at phone/desktop widths, real gestures, precise timing, layout, pause and zero-reward timeout pass');

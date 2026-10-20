@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v130';
+const CACHE = 'our-little-list-v131';
 // v114: authenticated shared Little Star alpha, competition earnings and care pings.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
@@ -35,7 +35,7 @@ const ASSETS = [
   './audio/interface/off.wav',
   './audio/interface/navigate.wav',
 
-  './little-star-live.js', './little-star-live.css', './little-star-kitchen.js', './little-star-kitchen.css', './little-star/kitchen-rules.mjs', './little-star/engine.mjs',
+  './little-star-live.js', './little-star-live.css', './little-star-kitchen.js', './little-star-kitchen.css', './little-star-play-view.js', './little-star/kitchen-rules.mjs', './little-star/engine.mjs',
   './connected-crossword.js', './daily-habit.js', './practice-crossword.js', './game-progress.js', './personal-progress.js', './game-comfort.js', './game-typing.js', './weekly-recap.js', './app-life.js', './app-life.css',
   './puzzle-edition.js', './puzzle-edition-bank.js', './puzzle-edition-seasonal.js', './practice-edition-bank.js',
   './round-engine.js', './round-revision.js', './round-library.js', './game-reset.js',
