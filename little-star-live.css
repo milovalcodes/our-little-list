@@ -33,3 +33,10 @@ html{background:#172b33!important;color-scheme:dark}body{margin:0;color:#f7eedc;
 #little-star-demo .arcade-screen[open] .wrap-sheet>.kitchen-pixel{width:100%;height:100%}
 #little-star-demo .arcade-screen[open] .arcade-cooking .result-stars{position:absolute;left:0;right:0;top:19%;text-align:center;color:#f5cf65;font-size:22px;line-height:1;z-index:6}
 #little-star-demo .arcade-screen[open] .arcade-cooking .result-stars i{font-style:normal;opacity:.3}
+
+/* Newer meals use the kitchen atlas in every item holder, including the
+   feeding tool, which is populated independently of the food tray renderer. */
+#little-star-demo .item-sprite:is([data-item=pancakes],[data-item=stew],[data-item=onigiri]){--item-atlas:var(--kitchen-icons);--item-size:600% 400%;--item-y:100%}
+#little-star-demo .item-sprite[data-item=pancakes]{--item-x:0%}
+#little-star-demo .item-sprite[data-item=stew]{--item-x:20%}
+#little-star-demo .item-sprite[data-item=onigiri]{--item-x:40%}

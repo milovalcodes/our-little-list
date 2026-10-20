@@ -51,4 +51,15 @@ try{
  const resumed=await read('her','legacy');assert.equal(resumed.cookSessions.her.id,before.cookSessions.her.id);assert.deepEqual(resumed.larder,before.larder);assert.deepEqual(resumed.wallets,before.wallets,'resuming never buys ingredients again');
  await page.locator('[data-skill-discard]').click();await page.locator('[data-serve-cook]').click();const failed=await settledRead('her',s=>s.cookSessions.her.failed,'legacy');assert.deepEqual(failed.pantry,before.pantry);assert.deepEqual(failed.wallets,before.wallets);assert.deepEqual(failed.larder,before.larder);
  await context.close();console.log('LIVE UI: reload resumes same paid batch, pause restores, discard settles zero rewards without ingredient refunds');
+ for(const actor of ['him','her']){
+  const c=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'}),p=await c.newPage();lastPage=p;
+  await p.goto(base+'/little-star.html?scene=meals&as='+actor);await p.locator('#little-star-demo:not([hidden])').waitFor();
+  for(const [food,x] of [['pancakes','0%'],['stew','20%'],['onigiri','40%']]){
+   await p.getByRole('button',{name:'feed',exact:true}).click();await p.locator('[data-food="'+food+'"]').click();
+   const art=await p.locator('.care-tool .item-sprite').evaluate(el=>{const c=getComputedStyle(el);return {atlas:c.getPropertyValue('--item-atlas'),kitchen:c.getPropertyValue('--kitchen-icons'),x:c.getPropertyValue('--item-x').trim(),y:c.getPropertyValue('--item-y').trim(),size:c.getPropertyValue('--item-size').trim()};});
+   assert.equal(art.atlas,art.kitchen,food+' feeding uses its authored kitchen atlas');assert.equal(art.x,x);assert.equal(art.y,'100%');assert.equal(art.size,'600% 400%');await p.locator('[data-care-exit]').click();
+  }
+  await c.close();
+ }
+ console.log('FEEDING ART: pancakes, stew and rice balls resolve to their food atlas on both player views');
 }catch(error){if(lastPage&&!lastPage.isClosed()){console.error(await lastPage.locator('body').innerText());await lastPage.screenshot({path:'node_modules/.cache/skill-kitchen/live-failure.png',fullPage:true});}console.error(logs);throw error;}finally{await browser.close();server.kill();}

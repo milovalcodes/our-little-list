@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 export async function play(page,kind){
- const work=page.locator('.skill-worktop');let r=await work.boundingBox();const to=p=>({x:r.x+p.x*r.width/320,y:r.y+p.y*r.height/250});
+ const work=page.locator('.skill-world');let r=await work.boundingBox();const to=p=>({x:r.x+p.x*r.width/320,y:r.y+p.y*r.height/250});
  const at=async p=>{const q=to(p);await page.mouse.move(q.x,q.y);};
  const stroke=async(a,b,seconds=.36)=>{r=await work.boundingBox();await at(a);await page.mouse.down();for(let j=1;j<=18;j++){await page.clock.runFor(seconds*1000/18);await at({x:a.x+(b.x-a.x)*j/18,y:a.y+(b.y-a.y)*j/18});}await page.mouse.up();};
  const route=async()=>{const points=await page.locator('.skill-guides polyline').getAttribute('points');const ps=points.split(' ').map(p=>{const [x,y]=p.split(',').map(Number);return {x,y};});await at(ps[0]);await page.mouse.down();for(let i=1;i<ps.length;i++){const a=ps[i-1],b=ps[i],steps=Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/5);for(let j=1;j<=steps;j++){await page.clock.runFor(30);await at({x:a.x+(b.x-a.x)*j/steps,y:a.y+(b.y-a.y)*j/steps});}}await page.mouse.up();};
@@ -31,7 +31,7 @@ export async function play(page,kind){
    else{await at({x:62,y:65});await page.mouse.down();for(let j=1;j<=18;j++){await page.clock.runFor(20);await at({x:62+(targets[i].x-62)*j/18,y:65+(targets[i].y-65)*j/18});}await gold();await page.mouse.up();}
   }
  }else if(kind==='add'){
-  const order=(await page.locator('.skill-cue').innerText()).replace('REMEMBER: ','').split(' → ');await page.clock.runFor(3100);
+  const order=await page.locator('.skill-order li>span:last-child').allTextContents();await page.clock.runFor(3100);
   for(const name of order)await stroke({x:{herb:65,carrot:160,potato:255}[name],y:62},{x:160,y:139});
  }else if(kind==='wrap'){
   await stroke({x:65,y:57},{x:160,y:148});for(let i=0;i<2;i++){const [x,y,xx,yy]=(await arrows())[0];await stroke({x,y},{x:xx,y:yy});}

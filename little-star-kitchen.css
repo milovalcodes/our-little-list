@@ -1,5 +1,12 @@
 /* Scoped authored skill kitchen. Keep sprite bounds in logical stage units. */
 #little-star-demo .skill-kitchen .skill-worktop{position:relative;aspect-ratio:320/250;overflow:hidden;touch-action:none;isolation:isolate;outline-offset:3px}
+#little-star-demo .skill-kitchen .skill-world{position:absolute;inset:0;pointer-events:none}
+#little-star-demo .skill-kitchen .skill-order{display:flex;gap:6px;list-style:none;margin:0;padding:0;grid-column:1;grid-row:4}
+#little-star-demo .skill-kitchen .skill-order li{display:flex;align-items:center;justify-content:center;gap:4px;flex:1;min-width:0;padding:5px 2px;background:#203e3b;border:2px solid #8ba58c;font-size:14px}
+#little-star-demo .skill-kitchen .skill-order .kitchen-icon{width:24px;height:24px;flex:none}
+#little-star-demo .skill-kitchen .skill-order b{font-weight:400;color:#ffe4a4}
+#little-star-demo .skill-kitchen .skill-order [data-state=next]{border-color:#ffdc6f;background:#45634d}
+#little-star-demo .skill-kitchen .skill-order [data-state=done]{opacity:.5;text-decoration:line-through}
 #little-star-demo .skill-kitchen .skill-art,#little-star-demo .skill-kitchen .skill-guides,#little-star-demo .skill-kitchen .skill-plated{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #little-star-demo .skill-kitchen .skill-object{position:absolute;display:block;pointer-events:none}
 #little-star-demo .skill-kitchen .skill-object>.kitchen-icon,#little-star-demo .skill-kitchen .skill-object>.kitchen-sprite,#little-star-demo .skill-kitchen .skill-object>.item-sprite,#little-star-demo .skill-kitchen .skill-hand>.kitchen-icon,#little-star-demo .skill-kitchen .skill-hand>.kitchen-sprite{display:block;width:100%;height:100%;max-width:none;max-height:none;image-rendering:pixelated}
@@ -11,7 +18,7 @@
 #little-star-demo .skill-kitchen .skill-guides .skill-future{fill:none;stroke:#fff3ce90;stroke-width:2;stroke-dasharray:4 5}
 #little-star-demo .skill-kitchen .skill-guides .skill-route{fill:none;stroke:#fff2bd;stroke-width:3;stroke-dasharray:6 3}
 #little-star-demo .skill-kitchen .skill-direction{font-size:28px!important}
-#little-star-demo .skill-kitchen .skill-overlay{position:absolute;inset:7% 4%;z-index:9;background:#fff3d9f5;color:#344f49;border:3px solid #846a60;box-shadow:3px 4px 0 #40344999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;text-align:center;gap:8px}
+#little-star-demo .skill-kitchen .skill-overlay{position:absolute;inset:7% 4%;z-index:9;background:#fff3d9f5;color:#344f49;border:3px solid #846a60;box-shadow:3px 4px 0 #40344999;display:flex;flex-direction:column;align-items:center;justify-content:safe center;padding:12px;text-align:center;gap:8px;overflow:auto}
 #little-star-demo .skill-kitchen .skill-overlay strong{font-size:clamp(17px,4vw,24px);line-height:1.2}
 #little-star-demo .skill-kitchen .skill-overlay p{font-size:clamp(12px,2.9vw,16px);line-height:1.45;margin:0;max-width:34ch}
 #little-star-demo .skill-kitchen .skill-overlay button{position:static;inset:auto;translate:none;transform:none;margin:0;font-size:clamp(12px,3vw,16px);padding:10px;min-height:44px;width:auto;height:auto;max-width:100%;flex:none}
@@ -21,6 +28,7 @@
 #little-star-demo .skill-kitchen .skill-hand[data-tool=chop],#little-star-demo .skill-kitchen .skill-hand[data-tool=spread]{transform:translate(-26%,-31%)}
 #little-star-demo .skill-kitchen .skill-hand[data-tool=stir]{transform:translate(-26%,-72%)}
 #little-star-demo .skill-kitchen .skill-hand[data-tool=ladle]{transform:translate(-36%,-71%)}
+#little-star-demo .skill-kitchen .skill-hand[data-tool=add]{transform:translate(-50%,-50%)}
 #little-star-demo .skill-kitchen .skill-hand[data-tool=pour]{transform:translate(-22%,-45%)}
 #little-star-demo .skill-kitchen .skill-key-cursor{position:absolute;z-index:6;font:24px monospace;color:#fff;translate:-50% -50%;text-shadow:1px 1px #1c3140;pointer-events:none}
 #little-star-demo .skill-kitchen [hidden]{display:none!important}
@@ -58,3 +66,45 @@
 @keyframes skill-simmer{to{translate:0 -1px}}
 #little-star-demo[data-calm=true] .skill-kitchen *{animation:none!important;transition:none!important}
 @media(prefers-reduced-motion:reduce){#little-star-demo .skill-kitchen *{animation:none!important;transition:none!important}}
+
+/* Expanded play fills the available screen; the logical 320 × 250 world
+   remains shared by artwork, guides, keyboard and pointer input. */
+#little-star-demo .arcade-screen[data-expanded-play=true]{padding:6px max(6px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));gap:8px}
+#little-star-demo .arcade-screen[data-expanded-play=true] .arcade-topbar{max-width:1180px;gap:6px;padding-bottom:6px;grid-template-columns:auto 1fr}
+#little-star-demo .arcade-screen[data-expanded-play=true] .arcade-topbar>div:not(.arcade-tools){display:none}
+#little-star-demo .arcade-screen[data-expanded-play=true] .arcade-tools{justify-content:flex-end;flex-wrap:wrap;gap:5px}
+#little-star-demo .arcade-screen[data-expanded-play=true] .arcade-topbar button{min-height:44px;padding:5px 8px;font-size:13px}
+#little-star-demo .arcade-screen[data-expanded-play=true] [data-arcade-buzz]{display:none}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen{max-width:1180px;margin:0 auto;gap:6px}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .recipe-heading{font-size:12px}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .recipe-heading b{font-size:16px;margin:0}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .recipe-ticket{padding:5px}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .recipe-stations li{min-height:26px;font-size:11px;gap:4px}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .recipe-title{font-size:18px;margin:3px 0}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .skill-worktop{max-width:none}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .skill-clock{margin-top:6px}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .skill-cue{margin-top:4px;min-height:1.4em}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .recipe-feedback{margin:3px 0;min-height:1.4em}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .skill-help{margin:0}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen[data-station-kind=chop]:not([data-skill-mode=result]) .skill-world{inset:auto;width:136.170213%;height:136.170213%;left:-19.148936%;top:-35.404255%}
+#little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen[data-station-kind=chop] .skill-route{stroke-width:4}
+#little-star-demo .arcade-screen[data-expanded-play=true] .room-play{max-width:1100px;margin:0 auto}
+#little-star-demo .arcade-screen[data-expanded-play=true] .catch-stage,#little-star-demo .arcade-screen[data-expanded-play=true] .echo-stage{height:clamp(230px,calc(100dvh - 240px),680px);min-height:0;max-height:none}
+#little-star-demo .arcade-screen[data-expanded-play=true] .room-play[data-pair-count] .pairs-grid{height:clamp(220px,calc(100dvh - 240px),680px);padding:12px;grid-auto-rows:1fr}
+#little-star-demo .arcade-screen[data-expanded-play=true] .room-play[data-pair-count] [data-pair]{height:auto;min-height:44px}
+#little-star-demo .arcade-screen[data-expanded-play=true] .pair-front .arcade-glyph{width:clamp(28px,6dvh,48px);height:clamp(28px,6dvh,48px)}
+@media(max-width:699px) and (min-height:650px){
+ #little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen[data-station-kind=chop] .skill-worktop{aspect-ratio:1}
+ #little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen[data-station-kind=chop] .skill-world{width:152.380952%;height:119.047619%;left:-28.571429%;top:-16.666667%}
+}
+@media(min-width:700px){
+ #little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen{display:grid;grid-template-columns:180px minmax(0,1fr);gap:8px 14px;align-items:center;max-width:min(1180px,calc(194px + (100dvh - 88px)*1.28))}
+ #little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen>:not(.skill-worktop){grid-column:1;grid-row:auto}
+ #little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .skill-worktop{grid-column:2;grid-row:1/12;width:100%}
+ #little-star-demo .arcade-screen[data-expanded-play=true] .skill-kitchen .skill-order{flex-direction:column}
+}
+@media(max-width:360px){
+ #little-star-demo .skill-kitchen .skill-order li{gap:3px;font-size:12px}
+ #little-star-demo .skill-kitchen .skill-order .kitchen-icon{width:20px;height:20px}
+ #little-star-demo .arcade-screen[data-expanded-play=true] .arcade-topbar button{padding-inline:5px;font-size:12px}
+}

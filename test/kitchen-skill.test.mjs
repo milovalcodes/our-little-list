@@ -14,6 +14,12 @@ for(const kind of ['chop','stir','whisk','rinse','shape','ladle','spread','top',
  const s=createStage(kind,'no-shortcuts');for(let i=0;i<100;i++){advance(s,.05);tapStage(s,'timing');traceStage(s,{x:160,y:140,t:i*50});}assert.equal(s.done,false,kind+' cannot be beaten by holding or repeatedly tapping');
 }
 const bad=createStage('chop','bad');for(let i=0;i<4;i++)stroke(bad,{x:10,y:10},{x:20,y:20});assert.equal(bad.failed,true);
+// A finger can wobble and start near an endpoint without losing a perfect
+// cut. Reversing the stroke or cutting far from the line still cannot pass.
+const touchCuts=createStage('chop','touch');
+for(const [a,b] of touchCuts.cuts)stroke(touchCuts,{x:a.x-10,y:a.y},{x:b.x-10,y:b.y},null,2,10);
+assert.equal(touchCuts.score,100,'nearby touch starts and a small wobble earn perfect cuts');
+const reversed=createStage('chop','reverse'),[cutStart,cutEnd]=reversed.cuts[0];stroke(reversed,cutEnd,cutStart);assert.equal(reversed.index,0);
 const burn=createStage('heat','burn');tapStage(burn,'high');advance(burn,8);assert.equal(burn.failed,true);
 const raw=createStage('flip','raw');stroke(raw,{x:160,y:182},{x:160,y:85});assert.equal(raw.failed,true);
 const miss=createStage('top','miss');for(let i=0;i<4;i++)stroke(miss,{x:65,y:54},{x:1,y:240},0);assert.equal(miss.failed,true);
