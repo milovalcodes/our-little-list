@@ -1,7 +1,7 @@
 import {PRACTICE_EDITION_WORDS,PRACTICE_EDITION_EXTRAS} from './practice-edition-bank.js';
 import {random,searchGrid} from './daily-puzzles.js';
 import {THEMED_PRACTICE} from './themed-practice-bank.js';
-import {reviewedEntry} from './word-book.js';
+import {reviewedEntry} from './practice-word-details.js';
 
 // Changed answers need a separate save namespace; keep old progress intact.
 export const PRACTICE_VERSION=3;

@@ -153,5 +153,6 @@ Building|ARCHWAY|A passage beneath a curved structural opening
 `;
 export const ROUND_EXPANSION=rows.trim().split('\n').map((row,index)=>{
  const [theme,word,clue]=row.split('|');
- return {word,clue,theme,season:'',difficulty:'both',id:'everyday-expansion-'+index};
+ const subjects={Home:'Home & household',Tools:'Tools & repairs',Food:'Food & cooking',Transport:'Transport & travel',Nature:'Nature & landscapes',Animals:'Animals & wildlife',Music:'Music & performance',Crafts:'Crafts & materials',Building:'Building & design'};
+ return {word,clue,theme:subjects[theme],season:'',difficulty:'both',id:'everyday-expansion-'+index};
 });

@@ -30,6 +30,21 @@ export function auditDailyCalendar(calendar){
      check(cells.every((pos,i)=>Math.floor(pos/p.size)===Math.floor(e.start/p.size)+i*dr&&pos%p.size===e.start%p.size+i*dc),day+' answer wraps around an edge');
      if(modern){check(typeof e.clue==='string'&&e.clue.length>=12,day+' has a missing or empty clue');check(!new RegExp('\\b'+e.word+'\\b','i').test(e.clue),day+' clue reveals '+e.word);}
     }
+    if(modern&&type==='crossword'){
+     const cells=p.entries.map(e=>[...e.word].map((_,i)=>e.start+i*e.step));
+     check(p.entries.every(e=>e.step===1||e.step===p.size),day+' crossword has a diagonal answer');
+     const covered=new Set(cells.flat());
+     check([...p.grid].every((letter,i)=>letter==='#'||covered.has(i)),day+' has an unclued square');
+     const visited=new Set([0]);
+     for(let n=0;n<p.entries.length;n++)for(let i=0;i<cells.length;i++)if([...visited].some(j=>cells[j].some(c=>cells[i].includes(c))))visited.add(i);
+     check(visited.size===p.entries.length,day+' has a disconnected crossword');
+     for(let start=0;start<p.grid.length;start++)for(const step of [1,p.size]){
+      if(p.grid[start]==='#')continue;
+      if(step===1?start%p.size>0&&p.grid[start-1]!=='#':start>=p.size&&p.grid[start-p.size]!=='#')continue;
+      const run=[];for(let i=start;i<p.grid.length&&p.grid[i]!=='#'&&(step!==1||Math.floor(i/p.size)===Math.floor(start/p.size));i+=step)run.push(i);
+      if(run.length>1)check(p.entries.filter(e=>e.start===start&&e.step===step&&e.word.length===run.length).length===1,day+' has an accidental unclued run');
+     }
+    }
     if(modern){const signature=type+':'+p.grid+':'+p.entries.map(e=>e.word).join(',');check(!signatures.has(signature),day+' repeats a whole board');signatures.add(signature);}
    }
    for(const word of roundWords(p)){
