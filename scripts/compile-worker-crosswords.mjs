@@ -1,3 +1,4 @@
+import {auditDailyCalendar} from './audit-daily-calendar.mjs';
 // Build-time work, not request-time work. Rebuild only generated puzzle data;
 // never contact a backend or read credentials.
 import {createHash} from 'node:crypto';
@@ -6,9 +7,9 @@ import {timedPuzzle,random} from '../daily-puzzles.js';
 import {connectedCrossword} from '../connected-crossword.js';
 import {PUZZLE_THEMES,catalogPool} from '../puzzle-catalog.js';
 import {DIFFICULTY_VERSION} from '../puzzle-edition.js';
-import {weeklyRounds,ROUND_ENGINE_START} from '../round-engine.js';
+import {weeklyRounds,ROUND_ENGINE_START,NO_REPEAT_START} from '../round-engine.js';
 import {themedCrossword} from '../themed-crossword.js';
-export const compiledSources=['daily-puzzles.js','connected-crossword.js','mini-crossword.js','themed-crossword.js','crossword-themes.js','word-book.js','word-topics.js','word-definitions.js','puzzle-catalog.js','puzzle-edition.js','puzzle-edition-bank.js','puzzle-edition-seasonal.js','seasonal-puzzles.js','round-engine.js','round-library.js','practice-edition-bank.js','daily-words.js'];
+export const compiledSources=['daily-puzzles.js','connected-crossword.js','mini-crossword.js','themed-crossword.js','crossword-themes.js','word-book.js','word-topics.js','word-definitions.js','puzzle-catalog.js','puzzle-edition.js','puzzle-edition-bank.js','puzzle-edition-seasonal.js','seasonal-puzzles.js','round-engine.js','round-library.js','round-expansion.js','round-history.js','practice-edition-bank.js','daily-words.js'];
 export const fingerprint=()=>createHash('sha256').update(compiledSources.map(name=>readFileSync(new URL('../'+name,import.meta.url),'utf8').replace(/\r\n/g,'\n')).join('\n')).digest('hex');
 export function compile(){
  const days={},ties={},rounds={},start='2026-10-12',end='2028-10-15';
@@ -18,7 +19,7 @@ export function compile(){
  for(let at=Date.parse(start+'T12:00Z');at<=Date.parse(end+'T12:00Z');at+=86400000){
   const day=new Date(at).toISOString().slice(0,10),p=reuse&&previous.days[day]||timedPuzzle(day,'crossword',at);
   days[day]={size:p.size,grid:p.grid,entries:p.entries};
-  rounds[day]=weeklyRounds(day)[day];
+  rounds[day]=day<NO_REPEAT_START&&previous?.rounds?.[day]?previous.rounds[day]:weeklyRounds(day)[day];
  }
  for(const theme of PUZZLE_THEMES.filter(t=>t.difficulty==='hard'&&t.edition===DIFFICULTY_VERSION)){
   const bank=catalogPool('hard',theme.id).map(({word,clue,id})=>({word,clue,id}));
@@ -29,6 +30,7 @@ export function compile(){
 }
 if(process.argv[1]&&new URL(import.meta.url).pathname.endsWith(process.argv[1].replaceAll('\\','/').split('/').at(-1))){
  const result=compile();
+ auditDailyCalendar(result);
  if(process.argv.includes('--write')){
   // Generated data, mechanically rebuilt from the reviewed source banks.
   writeFileSync(new URL('../worker/src/compiled-crosswords.json',import.meta.url),JSON.stringify(result));

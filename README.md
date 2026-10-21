@@ -46,9 +46,11 @@ Do not run `pnpm test` by habit for a small edit. Inspect the selected plan firs
 `pnpm run test:daily` and `pnpm run test:browser:daily` are for daily-game code;
 `pnpm run test:star` is for pet code. `pnpm run test:all` explicitly requests both.
 
-`round-engine.js` builds all three games using `round-library.js`. From Oct 13,
-the compiled calendar reserves every answer across all seven daily trios in a
-week, not just within one game. `gamePlans/{week}` freezes these reservations
+`round-engine.js` builds all three games using `round-library.js`. From Oct 21,
+the compiled calendar prevents answers repeating across any of the three daily
+games for at least 30 days. October and December favor seasonal subjects without
+excluding everyday vocabulary. The 150-entry expansion supplies concrete clues,
+and the compiler rejects incomplete boards, placement errors and answer leaks. `gamePlans/{week}` freezes these reservations
 once the week opens, so later catalog releases cannot reshuffle it. The first week's spoiled technical-difficulty
 rounds are retired explicitly. Seasonal-only vocabulary stays in its month;
 practice vocabulary may appear in scored games. The accepted-guess dictionary

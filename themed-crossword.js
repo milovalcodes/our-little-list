@@ -1,6 +1,7 @@
 import {CROSSWORD_THEMES,themeEntry} from './crossword-themes.js';
 import {WORD_BOOK,reviewedEntry} from './word-book.js';
-import {cluePool} from './round-library.js';
+import {connectedCrossword} from './connected-crossword.js';
+import {cluePool,variedCluePool} from './round-library.js';
 
 const book=new Map(WORD_BOOK.map(e=>[e.word,e]));
 const shuffle=(items,rng)=>items.map(e=>({e,n:rng()})).sort((a,b)=>a.n-b.n).map(v=>v.e);
@@ -12,11 +13,13 @@ export const themedEntryCount=hard=>hard?20:10;
 // newspaper grid, this short timed format permits unchecked letters. Every
 // answer crosses another; loops, compactness and multiple anchor crossings are
 // preferred over a long tree of single-letter branches. No accidental strings.
-export function themedCrossword({hard=false,season='',excluded=new Set(),rng}) {
+export function themedCrossword({hard=false,season='',excluded=new Set(),rng,rolling=false}) {
  const target=themedEntryCount(hard),size=hard?19:15;
  const fresh=e=>!excluded.has(e.word);
- const filler=shuffle(cluePool(hard,season).filter(fresh).map(reviewedEntry),rng);
- const themes=[...shuffle(CROSSWORD_THEMES.filter(t=>t.season===season),rng),...(season?shuffle(CROSSWORD_THEMES.filter(t=>!t.season),rng):[])];
+ const bank=rolling?variedCluePool(hard,season):cluePool(hard,season);
+ const filler=shuffle(bank.filter(fresh).map(reviewedEntry),rng);
+ const seasonal=shuffle(CROSSWORD_THEMES.filter(t=>t.season===season),rng),everyday=season?shuffle(CROSSWORD_THEMES.filter(t=>!t.season),rng):[];
+ const themes=rolling&&season&&rng()>=0.45?[...everyday,...seasonal]:[...seasonal,...everyday];
  for(const theme of themes){
   const anchors=shuffle(theme.anchors.filter(w=>w.length>=7&&!excluded.has(w)),rng);
   const related=[...theme.words].map(w=>book.get(w)).filter(Boolean).filter(fresh);
@@ -27,6 +30,11 @@ export function themedCrossword({hard=false,season='',excluded=new Set(),rng}) {
    if(!layout)continue;
    return {...layout,theme:theme.title,themeDescription:theme.description,themeId:'crossword-v8-'+theme.id,anchor:word,catalogVersion:8};
   }
+ }
+ if(rolling){
+  const layout=connectedCrossword(filler.slice(0,160),hard?21:15,rng,target);
+  if(layout.entries.length!==target)throw Error('Not enough fresh crossword answers. Saved boards have not changed.');
+  return {...layout,theme:'A little of everything',themeDescription:'Clues from several familiar subjects.',themeId:'crossword-v9-mixed',catalogVersion:9};
  }
  throw Error('Could not build a fresh themed crossword. Saved boards have not changed.');
 }

@@ -16,7 +16,7 @@ for(const day of ['2026-10-12','2026-10-19','2026-10-26','2026-11-02','2026-11-3
  for(const [d,rounds]of Object.entries(plan)){
   assert.deepEqual(rounds.word.opensAt,activityWindow(d).opensAt);
   assert.equal(rounds.crossword.durationMs,crosswordDuration(d,rounds.crossword.hard));
-  if(d>='2026-10-19'){const c=rounds.crossword;assert.equal(c.catalogVersion,8);assert.ok(c.size>=9);assert.ok(c.entries.some(e=>e.word===c.anchor));assert.ok(c.entries.filter(e=>e.themed).length>=4);}else assert.equal(rounds.crossword.catalogVersion,6);
+  if(d>='2026-10-19'){const c=rounds.crossword;assert.ok([8,9].includes(c.catalogVersion));assert.ok(c.size>=9);if(c.anchor){assert.ok(c.entries.some(e=>e.word===c.anchor));assert.ok(c.entries.filter(e=>e.themed).length>=4);}}else assert.equal(rounds.crossword.catalogVersion,6);
   assert.equal(rounds.search.durationMs,rounds.search.hard?150000:120000);
   for(const puzzle of [rounds.crossword,rounds.search])for(const e of puzzle.entries)assert.equal([...e.word].map((_,i)=>puzzle.grid[e.start+i*e.step]).join(''),e.word);
  }

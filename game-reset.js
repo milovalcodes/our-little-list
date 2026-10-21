@@ -1,5 +1,5 @@
 import {activityClock} from './activity-clock.js';
-import {freshRounds,weeklyRounds,weekDays,roundWords,ROUND_TYPES} from './round-engine.js';
+import {freshRounds,weeklyRounds,weekDays,roundWords,ROUND_TYPES,scheduledCooldownWords} from './round-engine.js';
 import {revisionOf} from './round-revision.js';
 
 export function prepareReset({day,scope,puzzles,history=[],planned,requestId,now=Date.now()}){
@@ -7,7 +7,7 @@ export function prepareReset({day,scope,puzzles,history=[],planned,requestId,now
  const types=scope==='all'?ROUND_TYPES:[scope];
  if(types.some(t=>!ROUND_TYPES.includes(t))||!requestId)throw Error('Choose a game to reset.');
  const reserved=Object.values(planned||weeklyRounds(day)).flatMap(Object.values);
- const used=[...puzzles,...reserved].flatMap(roundWords).concat(history);
+ const used=[...puzzles,...reserved].flatMap(roundWords).concat(history,scheduledCooldownWords(day));
  const rounds=freshRounds({day,types,used,seed:day+':reset:'+requestId,now});
  for(const type of types){
   const old=puzzles.find(p=>p.day===day&&(type==='word'?Boolean(p.word):p.type===type));

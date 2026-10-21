@@ -1381,6 +1381,17 @@ ZESTY|Flavor
 ZIPPY|Speed
 ZONAL|Geography
 ZONED|Geography
+MITER|Building
+OXBOW|Geography
+SCREE|Geography
+SEPAL|Plants
+SHALE|Geography
+TAPIR|Animals
+OKAPI|Animals
+EGRET|Animals
+HERON|Animals
+EASEL|Art
+SPOOL|Tools
 `;
 
 export const WORD_HINTS = Object.freeze(Object.fromEntries(rows.trim().split('\n').map(row=>row.split('|'))));

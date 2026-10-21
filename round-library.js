@@ -1,3 +1,4 @@
+import {ROUND_EXPANSION} from './round-expansion.js';
 // Reviewed answers with original clues. Practice and scored games may share
 // vocabulary; an entire scored week shares one exclusion set instead.
 import {PUZZLE_CATALOG} from './puzzle-catalog.js';
@@ -469,3 +470,12 @@ export function answerPool(hard=false,season=''){
  return [...new Map(list.filter(e=>/^[a-z]{5}$/.test(e.word)).map(e=>[e.word,{...e,theme:season==='october'?'Halloween & autumn':season==='december'?'Christmas & winter':'Everyday words & ideas',id:e.id||'library-word-'+e.word}])).values()];
 }
 export const LIBRARY_STATS={acceptedMinimum:20148,answers:unique([false,true].flatMap(h=>['','october','december'].flatMap(s=>answerPool(h,s)))).length,clues:unique([false,true].flatMap(h=>['','october','december'].flatMap(s=>cluePool(h,s)))).length};
+
+// New daily editions mix a broad everyday bank with the month's vocabulary.
+// Keep legacy pools untouched so earlier published boards retain their words.
+export function variedCluePool(hard=false,season=''){
+ return unique([...cluePool(hard,''),...(season?cluePool(hard,season):[]),...ROUND_EXPANSION]);
+}
+export function variedAnswerPool(hard=false,season=''){
+ return [...new Map([...answerPool(hard,''),...(season?answerPool(hard,season):[]),...ROUND_EXPANSION.filter(e=>e.word.length===5).map(e=>({...e,word:e.word.toLowerCase()}))].map(e=>[e.word,e])).values()];
+}

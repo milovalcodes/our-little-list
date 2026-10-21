@@ -23,6 +23,11 @@ assert.equal(checkScope(['word-hints.js','daily-word.js','guide.html','service-w
 assert.equal(checkScope(['crossword-view.js','test/crossword-play-browser.mjs']).dailyOnly,true);
 const mixed=checkScope(['daily-word.js','notification-policy.js']);
 assert.equal(mixed.dailyOnly,true);assert.equal(mixed.focused,true);assert.equal(mixed.full,false);
+const overlapping=checkScope(['daily-word.js','test/round-engine.test.mjs','test/worker-puzzles.test.mjs','test/daily-calendar.test.mjs','guide.html','service-worker.js']);
+assert.equal(overlapping.dailyOnly,true);
+assert.ok(!overlapping.plan.unit.includes('worker-puzzles'));
+assert.ok(!overlapping.plan.unit.includes('daily-calendar'));
+assert.ok(!overlapping.plan.browser.includes('update-freshness'),'daily and focused jobs must not rerun the same tests');
 const pet=checkScope(['little-star-kitchen.js','guide.html','service-worker.js']);
 assert.equal(pet.star,true);assert.equal(pet.full,false);assert.equal(pet.dailyOnly,false);
 assert.equal(checkScope(['word-hints.js','little-star/engine.mjs']).full,false);

@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v133';
+const CACHE = 'our-little-list-v134';
 // v114: authenticated shared Little Star alpha, competition earnings and care pings.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
@@ -38,7 +38,7 @@ const ASSETS = [
   './little-star-live.js', './little-star-live.css', './little-star-kitchen.js', './little-star-kitchen.css', './little-star/kitchen-rules.mjs', './little-star/engine.mjs',
   './connected-crossword.js', './daily-habit.js', './practice-crossword.js', './game-progress.js', './personal-progress.js', './game-comfort.js', './game-typing.js', './weekly-recap.js', './app-life.js', './app-life.css',
   './puzzle-edition.js', './puzzle-edition-bank.js', './puzzle-edition-seasonal.js', './practice-edition-bank.js',
-  './round-engine.js', './round-revision.js', './round-library.js', './game-reset.js',
+  './round-engine.js', './round-revision.js', './round-library.js', './round-expansion.js', './round-history.js', './game-reset.js',
   './navigation-attention.js', './home-extras.js',
   './practice.html', './practice.js', './practice.css', './practice-catalog.js', './practice-links.js', './practice-store.js', './word-lexicon-extra.js',
   ...PAGES,

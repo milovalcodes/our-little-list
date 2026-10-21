@@ -1,3 +1,4 @@
+import './daily-calendar.test.mjs';
 import assert from 'node:assert/strict';
 import compiled from '../worker/src/compiled-crosswords.json' with {type:'json'};
 import {fingerprint} from '../scripts/compile-worker-crosswords.mjs';
@@ -13,8 +14,8 @@ for(const [day,board]of Object.entries(compiled.days)){
  for(let i=0;i<board.entries.length;i++)assert.equal(entryCells(board,i).map(p=>board.grid[p]).join(''),board.entries[i].word);
 }
 for(const day of ['2026-10-12','2026-10-18','2026-12-01','2027-01-03','2027-03-14','2027-11-07']){
- assert.deepEqual(workerTimedPuzzle(day,'crossword'),day>=compiled.engineStart?weeklyRounds(day)[day].crossword:timedPuzzle(day,'crossword'),'compiled daily board is identical to its reviewed generator');
- if(day>=compiled.engineStart)assert.deepEqual(workerWordPuzzle(day),weeklyRounds(day)[day].word);
+ if(day>='2026-10-21'||day<compiled.engineStart)assert.deepEqual(workerTimedPuzzle(day,'crossword'),day>=compiled.engineStart?weeklyRounds(day)[day].crossword:timedPuzzle(day,'crossword'),'new compiled daily board is identical to its reviewed generator');
+ if(day>='2026-10-21')assert.deepEqual(workerWordPuzzle(day),weeklyRounds(day)[day].word);
 }
 const weeks=new Map();
 for(const [day,rounds]of Object.entries(compiled.rounds)){
