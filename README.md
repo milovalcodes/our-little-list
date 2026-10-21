@@ -28,6 +28,13 @@ Activities has no unrelated add controls.
 
 ## Daily round engine and admin resets
 
+Daily-game changes use `pnpm run test:daily` and `pnpm run test:browser:daily`.
+CI selects this path when only daily-game files and release notes/configuration
+change, skipping unrelated app, Little Star and cooking playthroughs. Other app
+changes keep the app checks; Little Star checks run when pet/cooking code or
+shared account/backend dependencies change. `pnpm test` runs the app suite,
+`pnpm run test:star` runs pet tests, and `pnpm run test:all` explicitly runs both.
+
 `round-engine.js` builds all three games using `round-library.js`. From Oct 13,
 the compiled calendar reserves every answer across all seven daily trios in a
 week, not just within one game. `gamePlans/{week}` freezes these reservations

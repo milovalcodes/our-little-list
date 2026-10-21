@@ -464,7 +464,7 @@ FIERY|Fire
 FIGHT|Conflict
 FILMY|Texture
 FINCH|Animals
-FIRES|Fire
+FIRES|Heat
 FIRNS|Ice
 FIRST|Position
 FIZZY|Flavor
@@ -600,7 +600,7 @@ HOARY|Weather
 HOBBY|Hobbies
 HOIST|Movement
 HOLLY|Holidays
-HOMES|Home
+HOMES|Buildings
 HONEY|Food
 HONOR|Character
 HORSE|Animals

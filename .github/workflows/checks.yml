@@ -7,7 +7,60 @@ on:
   workflow_dispatch:
 
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      daily_only: ${{ steps.scope.outputs.daily_only }}
+      star: ${{ steps.scope.outputs.star }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Choose checks for the changed area
+        id: scope
+        env:
+          CHECK_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
+        run: node test/check-scope.test.mjs && node scripts/check-scope.mjs
+
+  daily-games:
+    needs: scope
+    if: needs.scope.outputs.daily_only == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - run: pnpm install --frozen-lockfile
+      - name: Daily games, word database and release checks
+        run: pnpm run test:daily
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firestore-emulator-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Daily game account permissions
+        run: pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/word-rules.test.mjs && node test/timed-rules.test.mjs && node test/game-reset-rules.test.mjs && node test/round-reactions-rules.test.mjs"
+      - name: Daily games on phone and desktop
+        run: |
+          pnpm exec playwright install --with-deps chromium webkit
+          node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
+          python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
+          pnpm run test:browser:daily
+          GAME_BROWSER=webkit node test/crossword-play-browser.mjs
+
   checks:
+    needs: scope
+    if: needs.scope.outputs.daily_only != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,9 +93,7 @@ jobs:
 
       - name: Profiles, competitive game logic and notification taps
         run: |
-          pnpm run test:star
           node test/timed-round-guard.test.mjs
-          node test/star-art-cache.test.mjs
           node test/practice.test.mjs
           node test/daily-habit.test.mjs
           node test/round-engine.test.mjs
@@ -166,16 +217,18 @@ jobs:
           '
 
       - name: Skill cooking playthroughs and calibration before release
+        if: needs.scope.outputs.star == 'true'
         run: |
           pnpm exec playwright install --with-deps chromium webkit
-          node test/kitchen-skill.test.mjs
-          node test/kitchen-skill-live.test.mjs
+          pnpm run test:star
+          pnpm run test:browser:star
+          STAR_BROWSER=webkit node test/star-kitchen-layout-browser.mjs
           node test/kitchen-live-browser.mjs
           node test/kitchen-skill-browser.mjs
           STAR_BROWSER=webkit node test/kitchen-skill-browser.mjs
 
       - name: Save cooking visual review evidence
-        if: always()
+        if: always() && needs.scope.outputs.star == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: kitchen-visual-review
@@ -189,7 +242,6 @@ jobs:
           python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
           node test/update-freshness-browser.mjs
           pnpm run test:browser
-          STAR_BROWSER=webkit node test/star-kitchen-layout-browser.mjs
           GAME_BROWSER=webkit node test/crossword-viewport-browser.mjs
           GAME_BROWSER=webkit node test/crossword-play-browser.mjs
           pnpm run test:lifecycle

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {checkScope} from '../scripts/check-scope.mjs';
+assert.deepEqual(checkScope(['word-hints.js','daily-word.js','test/word-hints.test.mjs','guide.html','service-worker.js','package.json','.github/workflows/checks.yml']),{dailyOnly:true,star:false});
+assert.deepEqual(checkScope(['crossword-view.js','test/crossword-play-browser.mjs','guide.html','service-worker.js']),{dailyOnly:true,star:false});
+assert.deepEqual(checkScope(['little-star-kitchen.js','guide.html','service-worker.js']),{dailyOnly:false,star:true});
+assert.deepEqual(checkScope(['worker/src/star-store.js']),{dailyOnly:false,star:true});
+assert.deepEqual(checkScope(['word-hints.js','little-star/engine.mjs']),{dailyOnly:false,star:true});
+assert.deepEqual(checkScope(['tasks.js','service-worker.js']),{dailyOnly:false,star:false});
+assert.deepEqual(checkScope(['word-hints.js','household.js']),{dailyOnly:false,star:true});
+assert.deepEqual(checkScope(['.github/workflows/checks.yml']),{dailyOnly:false,star:false});
+assert.deepEqual(checkScope([]),{dailyOnly:false,star:false});
+console.log('CHECK SCOPE: daily games skip app/pet suites; pet and shared account changes retain their checks');
