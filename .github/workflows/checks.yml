@@ -12,6 +12,9 @@ jobs:
     outputs:
       daily_only: ${{ steps.scope.outputs.daily_only }}
       star: ${{ steps.scope.outputs.star }}
+      full: ${{ steps.scope.outputs.full }}
+      focused: ${{ steps.scope.outputs.focused }}
+      plan: ${{ steps.scope.outputs.plan }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,6 +27,35 @@ jobs:
         env:
           CHECK_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
         run: node test/check-scope.test.mjs && node scripts/check-scope.mjs
+
+
+  focused:
+    needs: scope
+    if: needs.scope.outputs.focused == 'true'
+    runs-on: ubuntu-latest
+    env:
+      CHECK_PLAN: ${{ needs.scope.outputs.plan }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        if: fromJSON(needs.scope.outputs.plan).syntax || toJSON(fromJSON(needs.scope.outputs.plan).unit) != '[]' || toJSON(fromJSON(needs.scope.outputs.plan).browser) != '[]' || toJSON(fromJSON(needs.scope.outputs.plan).pages) != '[]'
+        with:
+          version: 10
+      - name: Install tools only when selected checks need them
+        if: fromJSON(needs.scope.outputs.plan).syntax || toJSON(fromJSON(needs.scope.outputs.plan).unit) != '[]' || toJSON(fromJSON(needs.scope.outputs.plan).browser) != '[]' || toJSON(fromJSON(needs.scope.outputs.plan).pages) != '[]'
+        run: pnpm install --frozen-lockfile
+      - name: Selected unit and release checks
+        run: node scripts/run-focused-checks.mjs unit
+      - name: Selected pages and browser flows
+        if: toJSON(fromJSON(needs.scope.outputs.plan).browser) != '[]' || toJSON(fromJSON(needs.scope.outputs.plan).pages) != '[]'
+        run: |
+          pnpm exec playwright install --with-deps chromium webkit
+          node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
+          python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
+          node scripts/run-focused-checks.mjs browser
 
   daily-games:
     needs: scope
@@ -58,9 +90,39 @@ jobs:
           pnpm run test:browser:daily
           GAME_BROWSER=webkit node test/crossword-play-browser.mjs
 
+  little-star:
+    needs: scope
+    if: needs.scope.outputs.star == 'true' && needs.scope.outputs.full != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - run: pnpm install --frozen-lockfile
+      - name: Pet and cooking checks
+        run: |
+          pnpm exec playwright install --with-deps chromium webkit
+          pnpm run test:star
+          pnpm run test:browser:star
+          STAR_BROWSER=webkit node test/star-kitchen-layout-browser.mjs
+          node test/kitchen-live-browser.mjs
+          node test/kitchen-skill-browser.mjs
+          STAR_BROWSER=webkit node test/kitchen-skill-browser.mjs
+      - name: Save cooking visual review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kitchen-visual-review
+          path: node_modules/.cache/skill-kitchen/*.png
+          include-hidden-files: true
+
   checks:
     needs: scope
-    if: needs.scope.outputs.daily_only != 'true'
+    if: needs.scope.outputs.full == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

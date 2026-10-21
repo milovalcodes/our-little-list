@@ -1,12 +1,64 @@
 import assert from 'node:assert/strict';
+import {readFileSync,existsSync,mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {checkScope} from '../scripts/check-scope.mjs';
-assert.deepEqual(checkScope(['word-hints.js','daily-word.js','test/word-hints.test.mjs','guide.html','service-worker.js','package.json','.github/workflows/checks.yml']),{dailyOnly:true,star:false});
-assert.deepEqual(checkScope(['crossword-view.js','test/crossword-play-browser.mjs','guide.html','service-worker.js']),{dailyOnly:true,star:false});
-assert.deepEqual(checkScope(['little-star-kitchen.js','guide.html','service-worker.js']),{dailyOnly:false,star:true});
-assert.deepEqual(checkScope(['worker/src/star-store.js']),{dailyOnly:false,star:true});
-assert.deepEqual(checkScope(['word-hints.js','little-star/engine.mjs']),{dailyOnly:false,star:true});
-assert.deepEqual(checkScope(['tasks.js','service-worker.js']),{dailyOnly:false,star:false});
-assert.deepEqual(checkScope(['word-hints.js','household.js']),{dailyOnly:false,star:true});
-assert.deepEqual(checkScope(['.github/workflows/checks.yml']),{dailyOnly:false,star:false});
-assert.deepEqual(checkScope([]),{dailyOnly:false,star:false});
-console.log('CHECK SCOPE: daily games skip app/pet suites; pet and shared account changes retain their checks');
+const hide=['activities.html','game-comfort.js','guide.html','notification-policy.js','pings-settings.js','service-worker.js'];
+const small=checkScope(hide,{versionOnly:true});
+assert.equal(small.full,false);assert.equal(small.dailyOnly,false);assert.equal(small.star,false);assert.equal(small.focused,true);
+assert.deepEqual(small.plan.pages,['activities','guide','phone-check']);
+assert.deepEqual(small.plan.browser,['games-navigation']);
+for(const test of ['delivery-worker','notification-paths','precache','offline','guide-contract'])assert.ok(small.plan.unit.includes(test));
+for(const test of ['daily-word','places','routines','star-kitchen','round-engine'])assert.ok(!small.plan.unit.includes(test));
+assert.ok(!small.plan.browser.includes('update-freshness'),'version bumps skip cache implementation browser tests');
+assert.ok(checkScope(['service-worker.js']).plan.browser.includes('update-freshness'),'real service-worker edits retain upgrade coverage');
+const automation=['.github/workflows/checks.yml','scripts/check-scope.mjs','scripts/focused-checks.mjs','scripts/run-focused-checks.mjs','test/check-scope.test.mjs','README.md','CLAUDE.md'];
+const config=checkScope(automation);
+assert.equal(config.full,false);assert.equal(config.dailyOnly,false);assert.equal(config.star,false);
+assert.deepEqual(config.plan,{syntax:false,unit:[],browser:[],pages:[]},'automation-only changes run selector checks only');
+for(const files of [[],['new-unknown.js'],['package.json'],['pnpm-lock.yaml'],['data-hub.js'],['household.js'],['firestore.rules'],['worker/src/index.js'],['styles.css']])assert.equal(checkScope(files).full,true,files.join(','));
+assert.equal(checkScope(['word-hints.js','daily-word.js','guide.html','service-worker.js']).dailyOnly,true);
+assert.equal(checkScope(['crossword-view.js','test/crossword-play-browser.mjs']).dailyOnly,true);
+const mixed=checkScope(['daily-word.js','notification-policy.js']);
+assert.equal(mixed.dailyOnly,true);assert.equal(mixed.focused,true);assert.equal(mixed.full,false);
+const pet=checkScope(['little-star-kitchen.js','guide.html','service-worker.js']);
+assert.equal(pet.star,true);assert.equal(pet.full,false);assert.equal(pet.dailyOnly,false);
+assert.equal(checkScope(['word-hints.js','little-star/engine.mjs']).full,false);
+assert.equal(checkScope(['word-hints.js','household.js']).full,true);
+const tasks=checkScope(['tasks.js','service-worker.js'],{versionOnly:true});
+assert.equal(tasks.full,false);assert.ok(tasks.plan.unit.includes('routines'));assert.ok(!tasks.plan.unit.includes('daily-word'));
+assert.deepEqual(checkScope(['test/word-hints.test.mjs']).plan.unit,['word-hints']);
+assert.equal(checkScope(['test/word-rules.test.mjs']).dailyOnly,true,'daily rules keep their emulator suite');
+for(const files of [hide,automation,['tasks.js'],['notes.js'],['memories.js'],['service-worker.js']]){
+ const plan=checkScope(files).plan;
+ for(const test of plan.unit)assert.ok(existsSync(new URL(`./${test}.test.mjs`,import.meta.url)),test);
+ for(const test of plan.browser)assert.ok(existsSync(new URL(`./${test}-browser.mjs`,import.meta.url)),test);
+}
+const workflow=readFileSync(new URL('../.github/workflows/checks.yml',import.meta.url),'utf8');
+for(const output of ['daily_only','focused','plan','star','full'])assert.match(workflow,new RegExp(`steps.scope.outputs.${output}`));
+assert.match(workflow,/checks:\s+needs: scope\s+if: needs.scope.outputs.full == 'true'/);
+assert.match(workflow,/daily-games:\s+needs: scope\s+if: needs.scope.outputs.daily_only == 'true'/);
+assert.match(workflow,/little-star:\s+needs: scope\s+if: needs.scope.outputs.star == 'true' && needs.scope.outputs.full != 'true'/);
+assert.match(workflow,/focused:\s+needs: scope\s+if: needs.scope.outputs.focused == 'true'/);
+assert.match(workflow,/node test\/check-scope.test.mjs && node scripts\/check-scope.mjs/);
+assert.match(workflow,/node scripts\/run-focused-checks.mjs unit/);
+assert.match(workflow,/node scripts\/run-focused-checks.mjs browser/);
+console.log('CHECK SCOPE: small UI/notification changes, mixed areas, pet isolation, automation-only edits and shared/unknown fallback pass');
+
+// Exercise the runner with disposable probes, not unrelated application tests.
+const temp=mkdtempSync(join(tmpdir(),'little-list-scope-'));
+try{
+ mkdirSync(join(temp,'test'));
+ writeFileSync(join(temp,'test/probe.test.mjs'),"console.log('selected probe');process.exit(Number(process.env.PROBE_EXIT||0));");
+ const runner=fileURLToPath(new URL('../scripts/run-focused-checks.mjs',import.meta.url));
+ const run=(plan,extra={})=>spawnSync(process.execPath,[runner,'unit'],{cwd:temp,encoding:'utf8',env:{...process.env,CHECK_PLAN:JSON.stringify(plan),...extra}});
+ const plan={syntax:false,unit:['probe'],browser:[],pages:[]};
+ assert.equal(run(plan).status,0);
+ assert.match(run(plan).stdout,/selected probe/);
+ assert.equal(run(plan,{PROBE_EXIT:'7'}).status,7,'selected test failures must fail CI');
+ assert.equal(run({...plan,unit:[]}).stdout,'','automation-only plan runs no application tests');
+ assert.notEqual(run({...plan,unit:['../outside']}).status,0,'plans cannot escape the test directory');
+}finally{rmSync(temp,{recursive:true,force:true});}
+console.log('FOCUSED RUNNER: selected tests run, failures propagate, empty plans do no work and invalid paths are rejected');

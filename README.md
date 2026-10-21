@@ -28,12 +28,23 @@ Activities has no unrelated add controls.
 
 ## Daily round engine and admin resets
 
-Daily-game changes use `pnpm run test:daily` and `pnpm run test:browser:daily`.
-CI selects this path when only daily-game files and release notes/configuration
-change, skipping unrelated app, Little Star and cooking playthroughs. Other app
-changes keep the app checks; Little Star checks run when pet/cooking code or
-shared account/backend dependencies change. `pnpm test` runs the app suite,
-`pnpm run test:star` runs pet tests, and `pnpm run test:all` explicitly runs both.
+CI selects checks from changed files with `scripts/check-scope.mjs`.
+Small page, notification/settings, task, notes, memory, guide and offline changes
+run their corresponding tests and page checks. Mixed changes combine their areas.
+Daily-game code retains daily-game unit, browser and permission checks; pet code
+retains pet/cooking checks without unrelated app tests. Shared account, backend,
+dependency, global-style and unrecognized changes retain broad coverage.
+A service-worker version bump keeps lightweight offline/release checks; changes
+to its behavior also exercise cache upgrades and lifecycle handling.
+
+Workflow/selector edits run the scope regression checks without app, puzzle,
+pet, browser or emulator suites. Regression cases include the v133 hide-Star
+change and assert that it selects only Activities, Settings, guide, notifications
+and lightweight offline checks. An empty change list falls back to broad checks.
+
+Do not run `pnpm test` by habit for a small edit. Inspect the selected plan first.
+`pnpm run test:daily` and `pnpm run test:browser:daily` are for daily-game code;
+`pnpm run test:star` is for pet code. `pnpm run test:all` explicitly requests both.
 
 `round-engine.js` builds all three games using `round-library.js`. From Oct 13,
 the compiled calendar reserves every answer across all seven daily trios in a
