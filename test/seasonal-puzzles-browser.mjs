@@ -1,6 +1,7 @@
 import {chromium,webkit} from 'playwright';
 import assert from 'node:assert/strict';
 import {wordForDay} from '../daily-words.js';
+import {wordHint} from '../word-hints.js';
 import {timedPuzzle} from '../daily-puzzles.js';
 import {wordPoints} from '../word-scores.js';
 import {timedMax} from '../timed-game.js';
@@ -15,7 +16,7 @@ try{
   await page.goto(base+'/activities.html?as='+side+'#wordle');
   await page.locator('#word-game [data-key]:not([disabled])').first().waitFor();
   const word=wordForDay(day),solved=wordPoints({day,done:true,won:true,attempts:1});
-  assert.match(await page.locator('#word-game .word-heading').textContent(),new RegExp(word.theme));
+  assert.equal(await page.locator('#word-game .word-heading span').first().textContent(),wordHint(word.word),'show the answer category rather than the stored seasonal batch label');
   for(const letter of word.word)await page.click('#word-game [data-key="'+letter+'"]');
   await page.click('#word-game [data-key="↵"]');
   await page.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),solved);
