@@ -92,9 +92,12 @@ for(let i=0;i<20;i++){
  twenty=await commit('her',next);
 }
 assert.ok(twenty.complete);assert.equal(twenty.solved.length,20);
-// 5x5 minis (catalog 7): exactly 5x5, six answers, 2:00 normal / 3:00 hard, only from 2026-10-19.
+// Current crosswords retain ten answers and three minutes, including mixed
+// subjects (catalog 9) used to honor the rolling answer cooldown.
 const current={...weeklyRounds('2026-11-10')['2026-11-10'].crossword,opensAt:Date.now()-1000,closesAt:Date.now()+86400000};
-assert.equal(current.catalogVersion,8);assert.equal(current.durationMs,180000);
+assert.equal(current.catalogVersion,9);assert.equal(current.durationMs,180000);
+assert.equal(current.entries.length,10);
+assert.equal(current.themeId,'crossword-v9-mixed');
 for(const change of [{durationMs:120000},{entries:current.entries.slice(0,6)},{size:5,grid:'A'.repeat(25)},{anchor:7},{themeDescription:'x'.repeat(241)}])await write('him','timedPuzzles/'+current.day+'-crossword',{...current,...change},false);
 await write('him','timedPuzzles/'+current.day+'-crossword',current);
 let ten=await commit('him',newTimedGame(current,'him'),{start:true});
