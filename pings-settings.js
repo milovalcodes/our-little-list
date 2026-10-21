@@ -23,7 +23,7 @@ function renderForm() {
   $('quiet-enabled').checked = preferences.quietHours.enabled;
   $('quiet-from').value = preferences.quietHours.from;
   $('quiet-to').value = preferences.quietHours.to;
-  $('notification-categories').innerHTML = NOTIFICATION_GROUPS.map(group => `
+  $('notification-categories').innerHTML = NOTIFICATION_GROUPS.filter(group => !group.hidden).map(group => `
     <label class="notification-toggle-row">
       <span>${group.label}</span>
       <input type="checkbox" data-category="${group.id}" ${preferences.categories[group.id] ? 'checked' : ''}>
@@ -44,7 +44,7 @@ function valuesFromForm() {
     vibration: document.querySelector('input[name="vibration"]:checked')?.value,
     inAppSound: $('in-app-sound').value,
     quietHours: { enabled: $('quiet-enabled').checked, from: $('quiet-from').value, to: $('quiet-to').value },
-    categories: Object.fromEntries([...document.querySelectorAll('[data-category]')].map(input => [input.dataset.category, input.checked]))
+    categories: { ...preferences.categories, ...Object.fromEntries([...document.querySelectorAll('[data-category]')].map(input => [input.dataset.category, input.checked])) }
   });
 }
 

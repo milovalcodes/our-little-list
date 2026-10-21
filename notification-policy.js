@@ -2,7 +2,7 @@
 // Keep this file free of browser globals so Wrangler can bundle it too.
 
 export const NOTIFICATION_GROUPS = [
-  { id: 'pets', label: 'Little Star', kinds: ['star-care', 'star-growth', 'star-ready'] },
+  { id: 'pets', hidden: true, label: 'Little Star', kinds: ['star-care', 'star-growth', 'star-ready'] },
   { id: 'notes', label: 'notes & reactions', kinds: ['note', 'reaction'] },
   { id: 'listsAdded', label: 'added to the list', kinds: ['item'] },
   { id: 'listsFinished', label: 'finished on the list', kinds: ['item-finished'] },
@@ -114,6 +114,7 @@ export function quietHoursEndUtc(now, quietHours, utcOffsetMinutes, timeZone) {
 }
 
 export function notificationKindEnabled(kind, preferences = DEFAULT_NOTIFICATION_PREFERENCES) {
+  if(String(kind || '').startsWith('star-'))return false; // Little Star is paused; keep saved preferences for its return.
   if(kind==='push-test')return true; // Explicitly requested in Settings, not chatter.
   if(kind==='game')return false; // Retired arcade invites must never ring again.
   const group = GROUP_FOR_KIND[String(kind || 'note')] || 'notes';
