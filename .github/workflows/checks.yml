@@ -54,6 +54,7 @@ jobs:
           node test/navigation-attention.test.mjs
           node test/word-celebration.test.mjs
           node test/daily-word.test.mjs
+          node test/word-hints.test.mjs
           node test/daily-puzzles.test.mjs
           node test/seasonal-puzzles.test.mjs
           node test/weekly-report.test.mjs

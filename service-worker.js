@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v131';
+const CACHE = 'our-little-list-v132';
 // v114: authenticated shared Little Star alpha, competition earnings and care pings.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
@@ -21,7 +21,7 @@ const PAGES = [
 
 const ASSETS = [
   './themed-crossword.js', './crossword-themes.js', './crossword-view.js', './crossword-viewport.js', './themed-practice-bank.js',
-  './word-book.js', './word-definitions.js', './word-topics.js', './interface-audio.js',
+  './word-book.js', './word-definitions.js', './word-topics.js', './word-hints.js', './interface-audio.js',
   './audio/interface/tap-1.wav',
   './audio/interface/tap-2.wav',
   './audio/interface/open.wav',

@@ -11,7 +11,7 @@ import { shareResult } from './share-result.js';
 import { escapeHtml } from './ui-helpers.js';
 import { personName } from './profile-store.js';
 import { createWordCelebration, wordFinish } from './word-celebration.js';
-import {wordTheme} from './puzzle-catalog.js';
+import {wordHint} from './word-hints.js';
 import {SEASONAL_WORDS} from './seasonal-puzzles.js';
 import {EDITION_WORDS} from './puzzle-edition.js';
 import {revisionOf} from './round-revision.js';
@@ -83,7 +83,7 @@ export function startDailyWord({data,viewer,other},options={}){
     const disabled=busy||!ready()||done||!navigator.onLine;
     host.classList.toggle('game-active',Boolean(ready()&&!done));typing.update(Boolean(ready()&&!done),disabled);
     view.innerHTML=`
-      <div class="word-heading"><span>${puzzle?escapeHtml(puzzle.theme||wordTheme(puzzle.word,sunday)):'your guesses'}</span><span>${sunday?'hard · 2× points':`${guesses.length} / ${wordAttempts(day)}`}</span></div>
+      <div class="word-heading"><span>${puzzle?escapeHtml(wordHint(puzzle.word)):'your guesses'}</span><span>${sunday?'hard · 2× points':`${guesses.length} / ${wordAttempts(day)}`}</span></div>
       <div class="word-grid" role="group" aria-label="${wordAttempts(day)} guesses">${Array.from({length:wordAttempts(day)},(_,row)=>{
         const text=guesses[row]||(!done&&row===guesses.length?draft:'');
         return `<div role="group" class="word-row" aria-label="Guess ${row+1}">${Array.from({length:5},(_,i)=>`<span role="img" class="word-tile ${marks[row]?.[i]||''}" aria-label="${text[i]?escapeHtml(text[i].toUpperCase())+', '+(marks[row]?.[i]||'not submitted'):'empty'}">${escapeHtml(text[i]||'')}</span>`).join('')}</div>`;
