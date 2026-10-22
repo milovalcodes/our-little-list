@@ -10,6 +10,12 @@ export function focusedPlan(files,{versionOnly=false}={}){
  let syntax=false;
  for(const file of files){
   if(automation.test(file)||docs.test(file))continue;
+  if(['app-chrome.js','app-life.css','dock-viewport.js','test/dock-scroll-browser.mjs'].includes(file)){
+   syntax=true;
+   ['navigation-attention','home-parity','guide-contract','seasonal','precache'].forEach(test=>unit.add(test));
+   ['dock-scroll','app-life','appearance','games-navigation'].forEach(test=>browser.add(test));
+   continue;
+  }
   if(file==='service-worker.js'){
    for(const test of ['precache','offline','cache-lifetime'])unit.add(test);
    if(!versionOnly){unit.add('notification-click');unit.add('notification-paths');browser.add('update-freshness');browser.add('lifecycle');}
