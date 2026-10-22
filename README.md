@@ -520,3 +520,14 @@ physical iPhone speaker/keyboard testing remains a device check.
 Daily games hide the bottom dock while an unfinished board is open. Current crossword clues and search words stay above the board as you scroll. Little Word and daily/practice crosswords offer a real phone keyboard; its input survives board redraws, supports mobile input/deletion, and keeps the game keyboard available as an alternative. Practice Little Word supports the same input.
 
 `test/clarity-browser.mjs` checks WCAG A/AA findings across both profiles, all three seasonal palettes, expanded panels, and 200% text at 320px. `test/game-accessibility-browser.mjs` checks native input, focus persistence, dock visibility, sticky game context, and a shortened keyboard viewport in Chromium or WebKit. Desktop WebKit checks do not emulate the physical iOS keyboard or Safari toolbar animations; actual-device confirmation is still useful for those OS behaviors.
+
+### Crossword locks and extra time (v138)
+
+Correct daily/practice crossword entries turn green and lock every covered square.
+Input and backspace skip locked crossings; saved server credit restores letters
+on another screen. From October 22, new starts snapshot an extra 30 seconds for
+Word Search (2:30 normal / 3:00 hard) and 60 seconds for Crossword (4:00 / 6:00).
+This applies to frozen weekly boards and hard ties without replacing puzzles.
+Existing starts and finished results retain their saved duration and score.
+Old clients may still start with the original duration; rules accept either exact
+start duration and forbid changing it after starting.

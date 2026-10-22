@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {entryAt,clueOrder,clueNumbers,emptyLetters,cleanLetters,firstCursor,activeEntry,selectCell,selectClue,toggleDirection,nextClue,typeLetter,eraseLetter,moveCursor,correctEntries,filledCount} from '../crossword-entry.js';
+import {entryAt,clueOrder,clueNumbers,emptyLetters,cleanLetters,firstCursor,activeEntry,selectCell,selectClue,toggleDirection,nextClue,typeLetter,eraseLetter,moveCursor,correctEntries,lockedCells,filledCount} from '../crossword-entry.js';
 // A 5x5 lattice: rows 0/2/4 across, columns 0/2/4 down.
 const grid='CRANE'+'A#P#X'+'BLAST'+'L#R#R'+'EERIE';
 const word=(start,step)=>[0,1,2,3,4].map(i=>grid[start+i*step]).join('');
@@ -23,7 +23,7 @@ cursor=selectClue(puzzle,letters,3);assert.deepEqual(cursor,{cell:5,across:false
 // Erase clears the square, then steps back.
 ({letters,cursor}=eraseLetter(puzzle,letters,cursor));assert.equal(cursor.cell,10,'a filled square is cleared in place');assert.equal(letters[10],'');
 ({letters,cursor}=eraseLetter(puzzle,letters,cursor));assert.equal(cursor.cell,5,'an empty square steps back and clears');assert.equal(letters[5],'');
-({letters,cursor}=eraseLetter(puzzle,letters,{cell:0,across:true}));assert.equal(letters[0],'');
+({letters,cursor}=eraseLetter(puzzle,letters,{cell:0,across:true}));assert.equal(letters[0],'C','a correct word cannot be erased');assert.deepEqual([...lockedCells(puzzle,letters)],[0,1,2,3,4]);assert.equal(typeLetter(puzzle,letters,{cell:0,across:true},'Z').letters[0],'C');
 ({letters}=typeLetter(puzzle,letters,{cell:0,across:true},'C'));
 // Tapping the same square flips direction only where a crossing word exists.
 assert.deepEqual(selectCell(puzzle,{cell:0,across:true},0),{cell:0,across:false});
@@ -59,4 +59,16 @@ const last=[...full];last[24]='';assert.deepEqual(typeLetter(puzzle,last,{cell:2
 assert.deepEqual(cleanLetters(puzzle,['A','b','#',...Array(22).fill('Z')]).slice(0,4),['A','','','Z']);
 assert.equal(cleanLetters(puzzle,['A']).length,25);assert.equal(cleanLetters(puzzle,null).join(''),'');
 assert.equal(cleanLetters(puzzle,Array(25).fill('Q'))[6],'','blocks never hold letters');
+// Entering a crossing skips locked squares; backspace steps over them too.
+{
+ let l=emptyLetters(puzzle),c={cell:10,across:true};
+ for(const ch of 'BLAST')({letters:l,cursor:c}=typeLetter(puzzle,l,c,ch));
+ c=selectClue(puzzle,l,3);
+ for(const ch of 'CA')({letters:l,cursor:c}=typeLetter(puzzle,l,c,ch));
+ assert.equal(c.cell,15,'typing skips the locked B in CABLE');
+ ({letters:l,cursor:c}=eraseLetter(puzzle,l,c));
+ assert.equal(c.cell,5);assert.equal(l[10],'B','backspace skips the locked crossing');
+ for(const ch of 'ALE')({letters:l,cursor:c}=typeLetter(puzzle,l,c,ch));
+ assert.deepEqual(correctEntries(puzzle,l),[1,3]);
+}
 console.log('CROSSWORD ENTRY: auto-advance, shared crossings, direction toggle, arrows, clue order, erase, exact-word credit and saved-letter cleanup pass');

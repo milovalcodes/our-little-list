@@ -28,8 +28,7 @@ try{
  // Letter-by-letter entry: wrong squares are never flagged while competing.
  const typeWord=async i=>{
   await page.locator(`#crossword [data-clue="${i}"]`).click();
-  if(await page.locator('#crossword .puzzle-cell.cursor').getAttribute('data-cell')!==String(cross.entries[i].start))await page.locator(`#crossword [data-cell="${cross.entries[i].start}"]`).click();
-  for(const ch of cross.entries[i].word)await page.keyboard.press(ch.toLowerCase());
+  for(let j=0;j<cross.entries[i].word.length;j++){const cell=cross.entries[i].start+j*cross.entries[i].step;if(await page.locator(`#crossword [data-cell="${cell}"]`).evaluate(n=>n.classList.contains('found')))continue;await page.locator(`#crossword [data-cell="${cell}"]`).click();await page.keyboard.press(cross.entries[i].word[j].toLowerCase());}
  };
  const savedWords=()=>page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();return (await d.readDoc('timedGames','2026-10-09-crossword-him'))?.solved.length||0;});
  await page.locator('#crossword [data-clue="0"]').click();await page.keyboard.press('z');await page.keyboard.press('z');
@@ -38,7 +37,7 @@ try{
  assert.match(await page.locator('#crossword .timed-toolbar').textContent(),/2 \/ \d+ squares/);
  for(let i=0;i<2;i++)await typeWord(i);
  for(let tries=0;await savedWords()<2;tries++){assert.ok(tries<50,'correct words are saved silently');await page.waitForTimeout(100);}
- assert.equal(await page.locator('#crossword .found').count(),0,'saved words stay unmarked until the round ends');
+ assert.equal(await page.locator('#crossword .crossword-clues .found').count(),2,'correct words turn green immediately');
  // Reload preserves the server-style start time, typed squares and saved words.
  const squares=await page.locator('#crossword .timed-toolbar span').textContent();
  await page.reload();if(!await page.locator('#crossword').evaluate(d=>d.open))await page.locator('#crossword>summary').click();

@@ -1,7 +1,6 @@
 // Letter-by-letter mini crossword entry. Pure helpers: the cursor is
 // {cell, across}; letters is an array the length of the grid ('' = empty).
-// Nothing here judges answers for the player; correctEntries is only used to
-// save credit silently and to mark the board once the round is over.
+// Correct entries lock their squares, including shared crossing letters.
 import {entryCells} from './daily-puzzles.js';
 export const isAcross=entry=>entry.step===1;
 export function entryAt(puzzle,cell,across){return puzzle.entries.findIndex((e,i)=>isAcross(e)===across&&entryCells(puzzle,i).includes(cell));}
@@ -36,13 +35,13 @@ export function nextClue(puzzle,letters,cursor,delta=1,skipFull=false){
  return cursor;
 }
 export function typeLetter(puzzle,letters,cursor,letter){
- const next=[...letters],index=activeEntry(puzzle,cursor);
- if(index<0||!/^[A-Z]$/.test(letter))return {letters,cursor};
+ const next=[...letters],index=activeEntry(puzzle,cursor),locked=lockedCells(puzzle,letters);
+ if(index<0||!/^[A-Z]$/.test(letter)||locked.has(cursor.cell))return {letters,cursor};
  next[cursor.cell]=letter;
  const cells=entryCells(puzzle,index),pos=cells.indexOf(cursor.cell),across=isAcross(puzzle.entries[index]);
- // Step square by square, even over crossing letters, so typing a whole word
- // from its start always lands each letter where the player expects.
- if(pos<cells.length-1)return {letters:next,cursor:{cell:cells[pos+1],across}};
+ // Leave confirmed crossing letters in place while entering the missing ones.
+ const following=cells.slice(pos+1).find(c=>!locked.has(c));
+ if(following!==undefined)return {letters:next,cursor:{cell:following,across}};
  const gap=cells.find(c=>!next[c]);
  if(gap!==undefined)return {letters:next,cursor:{cell:gap,across}};
  const moved=nextClue(puzzle,next,{cell:cursor.cell,across},1,true);
@@ -50,13 +49,14 @@ export function typeLetter(puzzle,letters,cursor,letter){
  return {letters:next,cursor:moved.cell===cursor.cell&&moved.across===across?{cell:cursor.cell,across}:moved};
 }
 export function eraseLetter(puzzle,letters,cursor){
- const next=[...letters],index=activeEntry(puzzle,cursor);
+ const next=[...letters],index=activeEntry(puzzle,cursor),locked=lockedCells(puzzle,letters);
  if(index<0)return {letters,cursor};
- if(next[cursor.cell]){next[cursor.cell]='';return {letters:next,cursor};}
+ if(next[cursor.cell]&&!locked.has(cursor.cell)){next[cursor.cell]='';return {letters:next,cursor};}
  const cells=entryCells(puzzle,index),pos=cells.indexOf(cursor.cell);
- if(pos<=0)return {letters,cursor};
- next[cells[pos-1]]='';
- return {letters:next,cursor:{cell:cells[pos-1],across:isAcross(puzzle.entries[index])}};
+ const previous=cells.slice(0,pos).findLast(c=>!locked.has(c));
+ if(previous===undefined)return {letters,cursor};
+ next[previous]='';
+ return {letters:next,cursor:{cell:previous,across:isAcross(puzzle.entries[index])}};
 }
 // Arrow keys: the first press across a word's direction turns the cursor;
 // further presses move to the next open square in that row or column.
@@ -73,4 +73,5 @@ export function moveCursor(puzzle,cursor,key){
  }
 }
 export function correctEntries(puzzle,letters){return puzzle.entries.flatMap((e,i)=>entryCells(puzzle,i).every(c=>letters[c]===puzzle.grid[c])?[i]:[]);}
+export function lockedCells(puzzle,letters){return new Set(correctEntries(puzzle,letters).flatMap(i=>entryCells(puzzle,i)));}
 export function filledCount(puzzle,letters){return [...puzzle.grid].filter((c,i)=>c!=='#'&&letters[i]).length;}

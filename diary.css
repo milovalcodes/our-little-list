@@ -1002,3 +1002,11 @@ html.crossword-play-open { overflow:hidden; }
  .crossword-play-dialog .timed-feedback { grid-area:1/1; }
  .crossword-play-dialog:has(.timed-feedback:not(:empty)) .puzzle-theme { visibility:hidden; }
 }
+
+/* Confirmed crossword answers keep the same green on both player themes. */
+.profile-page .puzzle-grid.crossword-grid .puzzle-cell.found,
+.profile-page .crossword-focus button.found,
+.profile-page .crossword-focus button.found.current,
+.profile-page .crossword-clues button.found,
+.profile-page .crossword-clues button.found:disabled { background:#d8efdf; color:#164b2e; border-color:#49845c; opacity:1; }
+.crossword-focus button.found.current { border-color:#164b2e; }

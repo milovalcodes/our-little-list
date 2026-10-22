@@ -48,8 +48,12 @@ try{
    for(let i=0;i<puzzle.entries.length;i++){
     if(!await host.locator('.crossword-keys').count())break;
     const entry=puzzle.entries[i];await host.locator(`[data-entry="${i}"]`).tap();
-    if(await host.locator('.cursor').getAttribute('data-square')!==String(entry.start))await host.locator(`[data-square="${entry.start}"]`).tap();
-    for(const letter of entry.word){if(!await host.locator('.crossword-keys').count())break;await page.keyboard.press(letter.toLowerCase());}
+    for(let j=0;j<entry.word.length;j++){
+     if(!await host.locator('.crossword-keys').count())break;
+     const cell=entry.start+j*entry.step,target=host.locator(`[data-square="${cell}"]`);
+     if(await target.evaluate(n=>n.classList.contains('found')))continue;
+     await target.evaluate(n=>n.click());await page.keyboard.press(entry.word[j].toLowerCase());
+    }
    }
    await host.locator('[data-feedback]').filter({hasText:'all found'}).waitFor();
    check(await dock.isVisible(),label+': completing the crossword restores navigation');

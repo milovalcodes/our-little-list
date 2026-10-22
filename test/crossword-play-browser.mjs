@@ -64,8 +64,19 @@ try{
     if(!await dialog.count())break;
     await host.locator('.crossword-clues-toggle').click();await host.locator(mode==='daily'?`[data-clue="${i}"]`:`[data-entry="${i}"]`).click();
     const attr=mode==='daily'?'data-cell':'data-square';
-    if(await host.locator('.cursor').getAttribute(attr)!==String(entry.start))await host.locator('[data-focus-cell]').first().click();
-    for(const letter of entry.word){if(!await dialog.count())break;await page.keyboard.press(letter.toLowerCase());}
+    for(let j=0;j<entry.word.length;j++){
+     if(!await dialog.count())break;
+     const cell=entry.start+j*entry.step,target=host.locator(`[${attr}="${cell}"]`);
+     if(await target.evaluate(n=>n.classList.contains('found')))continue;
+     await target.evaluate(n=>n.click());await page.keyboard.press(entry.word[j].toLowerCase());
+    }
+    if(i===0&&await dialog.count()){
+     const target=host.locator(`[${attr}="${entry.start}"]`);
+     assert.ok(await target.evaluate(n=>n.classList.contains('found')),mode+' answer turns green');
+     await target.evaluate(n=>n.click());const saved=await target.textContent();
+     await page.keyboard.press('z');await page.keyboard.press('Backspace');
+     assert.equal(await target.textContent(),saved,mode+' locked answer survives typing/deletion');
+    }
    }
    await host.locator(mode==='daily'?'.daily-results':'[data-feedback]').filter(mode==='daily'?{}:{hasText:'all found'}).waitFor();
    await dialog.waitFor({state:'hidden'});

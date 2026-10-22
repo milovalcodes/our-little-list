@@ -481,8 +481,11 @@ service cloud.firestore {
       }
       function start(g) {
         let p = get(/databases/$(database)/documents/households/$(householdId)/timedPuzzles/$(g.day + '-' + g.type)).data;
+        // New clients snapshot v138's extra time; older clients retain the board clock.
+        // move() keeps either duration immutable after the server-stamped start.
         return allowed(g) && g.get('revision',0) == p.get('revision',0) && g.startedAt == request.time && g.finishedAt == null
-          && g.solved.size() == 0 && !g.done && !g.complete && g.total == p.entries.size() && g.closesAt == p.closesAt && timedDuration(g) == timedDuration(p)
+          && g.solved.size() == 0 && !g.done && !g.complete && g.total == p.entries.size() && g.closesAt == p.closesAt
+          && (timedDuration(g) == timedDuration(p) || (request.time.toMillis() >= 1792674000000 && timedDuration(g) == timedDuration(p) + (g.type == 'search' ? 30000 : 60000)))
           && request.time.toMillis() >= p.opensAt && request.time.toMillis() < p.closesAt;
       }
       function move(a,b) {

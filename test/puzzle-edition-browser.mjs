@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {timedPuzzle} from '../daily-puzzles.js';
 import {wordForDay} from '../daily-words.js';
 import {wordPoints} from '../word-scores.js';
-import {timedPoints} from '../timed-game.js';
+import {timedPoints,timedStartLimit} from '../timed-game.js';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 const browser=await(process.env.GAME_BROWSER==='webkit'?webkit:chromium).launch();
@@ -19,7 +19,7 @@ try{
   for(const type of ['search','crossword']){
    const p=timedPuzzle(day,type);
    if(type==='crossword')await page.goto(base+'/activities.html?as='+side+'#crossword');
-   const seconds=(p.durationMs||120000)/1000,limit=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+   const duration=timedStartLimit(type,p,Date.parse(day+'T18:00Z')),seconds=duration/1000,limit=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
    await page.waitForFunction(({type,limit})=>document.querySelector('#'+type).textContent.includes(limit),{type,limit});
    const started=await page.evaluate(()=>Date.now());
    await page.locator('#'+type+' [data-start]:not([disabled])').click();
@@ -28,7 +28,7 @@ try{
    for(let n=0;n<p.entries.length;n++){
     // Hard boards exercise the new time beyond 2:00, not just their labels.
     // This is an input/deadline test, not a human difficulty benchmark.
-    const step=p.durationMs>120000?(p.durationMs-10000)/p.entries.length:10000;
+    const step=duration>120000?(duration-10000)/p.entries.length:10000;
     await page.clock.setFixedTime(started+(n+1)*step);
     const e=p.entries[n];
     if(type==='search'){
@@ -36,15 +36,14 @@ try{
      await page.locator('#search [data-cell="'+(e.start+(e.word.length-1)*e.step)+'"]').click();
     }else{
      await page.locator('#crossword [data-clue="'+n+'"]').click();
-     if(await page.locator('#crossword .puzzle-cell.cursor').getAttribute('data-cell')!==String(e.start))await page.locator('#crossword [data-cell="'+e.start+'"]').click();
-     for(const ch of e.word)await page.keyboard.press(ch.toLowerCase());
+     for(let j=0;j<e.word.length;j++){const cell=e.start+j*e.step,target=page.locator(`#crossword [data-cell="${cell}"]`);if(await target.evaluate(n=>n.classList.contains('found')))continue;await target.click();await page.keyboard.press(e.word[j].toLowerCase());}
     }
-    // Crossword credit is saved silently, so wait on the saved game itself.
+    // Crossword credit is saved asynchronously, so wait on the saved game itself.
     if(type==='search')await page.waitForFunction(n=>document.querySelectorAll('#search .search-words .found').length===n,n+1);
     else for(let tries=0;await page.evaluate(async({day,side})=>(await(await(await import('./data-hub.js')).sharedLayer()).readDoc('timedGames',day+'-crossword-'+side))?.solved.length||0,{day,side})<n+1;tries++){assert.ok(tries<80,'crossword word '+n+' saved');await page.waitForTimeout(100);}
    }
-   const step=p.durationMs>120000?(p.durationMs-10000)/p.entries.length:10000;
-   const expected=timedPoints({day,type,total:p.entries.length,count:p.entries.length,startedAt:started,finishedAt:started+p.entries.length*step,done:true,complete:true,durationMs:p.durationMs});
+   const step=duration>120000?(duration-10000)/p.entries.length:10000;
+   const expected=timedPoints({day,type,total:p.entries.length,count:p.entries.length,startedAt:started,finishedAt:started+p.entries.length*step,done:true,complete:true,durationMs:duration});
    assert.match(await page.locator('#'+type+'-summary').textContent(),new RegExp('^'+expected+' points'));
    await page.setViewportSize({width:320,height:700});
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));

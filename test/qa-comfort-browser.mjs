@@ -40,7 +40,7 @@ try{
   assert.ok(await settled(),'starting brings the crossword toolbar to the top');
   const board=await onScreen('#crossword .crossword-viewport');
   assert.ok(board.top<board.height,'crossword board brought into view');
-  assert.equal(await page.locator('#crossword-summary').textContent(),'checked when it ends');
+  assert.match(await page.locator('#crossword-summary').textContent(),/^0 \/ \d+ found$/);
 
   // Home: games live in the strip only; milestones live on the profile.
   await page.goto(base+'/her.html?as=her');await page.locator('.daily-strip a').first().waitFor();

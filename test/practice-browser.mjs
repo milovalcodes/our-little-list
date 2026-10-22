@@ -41,12 +41,13 @@ try{
  for(let i=0;i<crossword.entries.length;i++){
   if(await page.locator('.practice-done').count())break;
   await page.locator('[data-entry="'+i+'"]').click();
-  await page.locator('[data-square="'+crossword.entries[i].start+'"]').click();
-  // Selecting the clue may advance to its first empty crossing. Select the
-  // starting square and restore direction explicitly for whole-word typing.
-  const across=crossword.entries[i].step===1;
-  if(!await page.locator('.crossword-current [data-flip] b').textContent().then(t=>t.includes(across?'across':'down')))await page.locator('[data-flip]').click();
-  await page.keyboard.type(crossword.entries[i].word.toLowerCase());
+  const entry=crossword.entries[i];
+  for(let j=0;j<entry.word.length;j++){
+   if(await page.locator('.practice-done').count())break;
+   const cell=entry.start+j*entry.step,target=page.locator(`[data-square="${cell}"]`);
+   if(await target.evaluate(n=>n.classList.contains('found')))continue;
+   await target.click();await page.keyboard.press(entry.word[j].toLowerCase());
+  }
  }
  assert.match(await page.locator('[data-feedback]').textContent(),/all found/);
  await page.selectOption('#practice-picker','49');await page.click('#practice-next');assert.equal(await page.locator('#practice-picker').inputValue(),'0');
