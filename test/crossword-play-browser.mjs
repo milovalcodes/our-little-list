@@ -94,3 +94,5 @@ try{
  }
  assert.deepEqual(errors,[]);
 }finally{await browser.close();}
+// Keep real touch activation and resume coverage in the existing daily CI entry.
+await import('./crossword-navigation-browser.mjs');

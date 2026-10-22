@@ -76,4 +76,16 @@ assert.equal(cleanLetters(puzzle,Array(25).fill('Q'))[6],'','blocks never hold l
  for(const ch of 'ALE')({letters:l,cursor:c}=typeLetter(puzzle,l,c,ch));
  assert.deepEqual(correctEntries(puzzle,l),[1,3]);
 }
+// A full but wrong word is still unfinished, even if its first letter is locked.
+{
+ const l=[...grid].map(c=>c==='#'?'':c);l[5]='Z';
+ assert.deepEqual(selectClue(puzzle,l,3),{cell:5,across:false},'revisiting a wrong full answer selects an editable letter');
+ assert.deepEqual(nextClue(puzzle,l,{cell:20,across:true},1,true),{cell:5,across:false},'automatic advance includes filled incorrect answers');
+ assert.deepEqual(firstCursor(puzzle,l),{cell:5,across:false},'resume starts on unfinished work');
+ const next=typeLetter(puzzle,l,{cell:0,across:false},'A');
+ assert.equal(next.letters[5],'A','typing from a locked crossing reaches the editable part of this word');
+ assert.equal(next.letters[0],'C','the locked crossing stays intact');
+ assert.equal(correctEntries(puzzle,next.letters).length,6);
+}
+assert.deepEqual(selectCell(puzzle,{cell:0,across:true},0,{toggle:false}),{cell:0,across:true},'answer-strip taps never change the selected word');
 console.log('CROSSWORD ENTRY: auto-advance, shared crossings, direction toggle, arrows, clue order, erase, exact-word credit and saved-letter cleanup pass');

@@ -9,34 +9,43 @@ export function clueOrder(puzzle){return puzzle.entries.map((_,i)=>i).sort((a,b)
 export function clueNumbers(puzzle){return new Map([...new Set(puzzle.entries.map(e=>e.start))].sort((a,b)=>a-b).map((p,i)=>[p,i+1]));}
 export function emptyLetters(puzzle){return Array(puzzle.grid.length).fill('');}
 export function cleanLetters(puzzle,raw){return Array.isArray(raw)&&raw.length===puzzle.grid.length?raw.map((c,i)=>puzzle.grid[i]!=='#'&&typeof c==='string'&&/^[A-Z]$/.test(c)?c:''):emptyLetters(puzzle);}
-export function firstCursor(puzzle){const i=clueOrder(puzzle)[0];return {cell:puzzle.entries[i].start,across:isAcross(puzzle.entries[i])};}
+export function firstCursor(puzzle,letters=emptyLetters(puzzle)){
+ const solved=new Set(correctEntries(puzzle,letters)),order=clueOrder(puzzle);
+ return focusEntry(puzzle,letters,order.find(i=>!solved.has(i))??order[0]);
+}
 export function activeEntry(puzzle,cursor){const i=entryAt(puzzle,cursor.cell,cursor.across);return i>=0?i:entryAt(puzzle,cursor.cell,!cursor.across);}
 export function focusEntry(puzzle,letters,index){
- const cells=entryCells(puzzle,index);
- return {cell:cells.find(c=>!letters[c])??cells[0],across:isAcross(puzzle.entries[index])};
+ const cells=entryCells(puzzle,index),locked=lockedCells(puzzle,letters);
+ return {cell:cells.find(c=>!letters[c])??cells.find(c=>!locked.has(c))??cells[0],across:isAcross(puzzle.entries[index])};
 }
 // Tapping the cursor cell again flips direction; a new cell keeps the current
-// direction when it has a word that way.
-export function selectCell(puzzle,cursor,cell){
+// direction when it has a word that way. The answer strip opts out of toggling.
+export function selectCell(puzzle,cursor,cell,{toggle=true}={}){
  if(puzzle.grid[cell]==='#'||cell<0||cell>=puzzle.grid.length)return cursor;
- if(cell===cursor.cell)return entryAt(puzzle,cell,!cursor.across)>=0?{cell,across:!cursor.across}:cursor;
+ if(cell===cursor.cell)return toggle&&entryAt(puzzle,cell,!cursor.across)>=0?{cell,across:!cursor.across}:cursor;
  return {cell,across:entryAt(puzzle,cell,cursor.across)>=0?cursor.across:!cursor.across};
 }
 export function selectClue(puzzle,letters,index){return focusEntry(puzzle,letters,index);}
 export function toggleDirection(puzzle,cursor){return entryAt(puzzle,cursor.cell,!cursor.across)>=0?{...cursor,across:!cursor.across}:cursor;}
 // Explicit clue navigation (Tab / arrows on the clue bar) visits every clue;
-// automatic advance skips clues that are already full.
-export function nextClue(puzzle,letters,cursor,delta=1,skipFull=false){
- const order=clueOrder(puzzle),at=order.indexOf(activeEntry(puzzle,cursor));
+// automatic advance skips only solved clues, including full mistakes for correction.
+export function nextClue(puzzle,letters,cursor,delta=1,skipSolved=false){
+ const order=clueOrder(puzzle),at=order.indexOf(activeEntry(puzzle,cursor)),solved=new Set(correctEntries(puzzle,letters));
  for(let k=1;k<=order.length;k++){
   const i=order[((at+delta*k)%order.length+order.length)%order.length];
-  if(!skipFull||entryCells(puzzle,i).some(c=>!letters[c]))return focusEntry(puzzle,letters,i);
+  if(!skipSolved||!solved.has(i))return focusEntry(puzzle,letters,i);
  }
  return cursor;
 }
 export function typeLetter(puzzle,letters,cursor,letter){
  const next=[...letters],index=activeEntry(puzzle,cursor),locked=lockedCells(puzzle,letters);
- if(index<0||!/^[A-Z]$/.test(letter)||locked.has(cursor.cell))return {letters,cursor};
+ if(index<0||!/^[A-Z]$/.test(letter))return {letters,cursor};
+ if(locked.has(cursor.cell)){
+  const cells=entryCells(puzzle,index),pos=cells.indexOf(cursor.cell);
+  const editable=[...cells.slice(pos+1),...cells.slice(0,pos)].find(c=>!locked.has(c));
+  if(editable===undefined)return {letters,cursor};
+  cursor={...cursor,cell:editable};
+ }
  next[cursor.cell]=letter;
  const cells=entryCells(puzzle,index),pos=cells.indexOf(cursor.cell),across=isAcross(puzzle.entries[index]);
  // Leave confirmed crossing letters in place while entering the missing ones.
@@ -45,7 +54,7 @@ export function typeLetter(puzzle,letters,cursor,letter){
  const gap=cells.find(c=>!next[c]);
  if(gap!==undefined)return {letters:next,cursor:{cell:gap,across}};
  const moved=nextClue(puzzle,next,{cell:cursor.cell,across},1,true);
- // A completely full grid keeps the cursor where it is.
+ // A completely solved grid keeps the cursor on its final square.
  return {letters:next,cursor:moved.cell===cursor.cell&&moved.across===across?{cell:cursor.cell,across}:moved};
 }
 export function eraseLetter(puzzle,letters,cursor){

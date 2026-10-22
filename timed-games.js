@@ -77,7 +77,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
   const key='our-little-list:crossword:'+day+':'+viewer+':'+revisionOf(puzzle);
   if(key===lettersKey){restoreSolved();return;}
   let raw=null;try{raw=JSON.parse(localStorage.getItem(key)||'null');}catch(_){}
-  lettersKey=key;letters=cleanLetters(puzzle,raw);cursor=firstCursor(puzzle);restoreSolved();
+  lettersKey=key;letters=cleanLetters(puzzle,raw);restoreSolved();cursor=firstCursor(puzzle,letters);
  }
  function restoreSolved(){
   for(const i of mine?.solved||[])for(const c of entryCells(puzzle,i))letters[c]=puzzle.grid[c];
@@ -208,7 +208,7 @@ export function startTimedGame(context,{type,day=activityClock().day,host,summar
  const click=event=>{const resume=event.target.closest('[data-continue-round]');if(resume){const target=disclosure.closest('[data-trio]')?.parentElement?.querySelector('[data-trio="'+resume.dataset.continueRound+'"]')||document.getElementById(resume.dataset.continueRound);if(target){target.open=true;bringGameIntoView(target);}else{const query=new URLSearchParams(location.search);query.set('game',resume.dataset.continueRound);location.href='activities.html?'+query;}return;}if(event.target.closest('[data-start]')){focusGrid=type==='crossword';void play({start:true});}if(event.target.closest('[data-retry]')){message='';listen();render();}if(event.target.closest('[data-route-retry]')){void loadPartnerRound();render();}if(event.target.closest('[data-share]')&&mine&&finished())void shareResult(timedShare(timedSummary(mine),PUZZLE_NAMES[type])).then(note=>{shareNote=note;render();});if(type!=='crossword'||!mine||!puzzle||finished())return;
   const clue=event.target.closest('[data-clue]'),cell=event.target.closest('[data-cell],[data-focus-cell]'),key=event.target.closest('[data-ckey]'),step=event.target.closest('[data-clue-step]');
   if(clue)moveTo(selectClue(puzzle,letters,Number(clue.dataset.clue)));
-  else if(cell)moveTo(selectCell(puzzle,cursor,Number(cell.dataset.cell??cell.dataset.focusCell)));
+  else if(cell)moveTo(selectCell(puzzle,cursor,Number(cell.dataset.cell??cell.dataset.focusCell),{toggle:!cell.hasAttribute('data-focus-cell')}));
   else if(step)moveTo(nextClue(puzzle,letters,cursor,Number(step.dataset.clueStep)));
   else if(event.target.closest('[data-flip]'))moveTo(toggleDirection(puzzle,cursor));
   else if(key)key.dataset.ckey==='⌫'?edit(eraseLetter(puzzle,letters,cursor)):key.dataset.ckey==='⇄'?moveTo(toggleDirection(puzzle,cursor)):edit(typeLetter(puzzle,letters,cursor,key.dataset.ckey));

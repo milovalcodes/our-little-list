@@ -40,7 +40,6 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
  function closePlay(){if(dialog.open)dialog.close();restorePage();viewRoot?.querySelector('.cursor')?.focus({preventScroll:true});}
  expand.addEventListener('click',()=>{expandedPreferred=!dialog.open;if(dialog.open)closePlay();else openPlay();});
  dialog.addEventListener('cancel',e=>{e.preventDefault();expandedPreferred=false;closePlay();});
- cluesToggle.addEventListener('pointerdown',e=>e.preventDefault());
  cluesToggle.addEventListener('click',()=>{showClues(!cluesOpen);keepTyping();});
  dialog.addEventListener('close',restorePage);
  dialog.addEventListener('click',e=>{if(e.target.closest('[data-clue],[data-entry]')){showClues(false);keepTyping();}});
@@ -160,11 +159,10 @@ export function createCrosswordViewport({keepTyping=()=>{}}={}){
   else if(e.key.startsWith('Arrow')){pane.scrollLeft+=({ArrowLeft:-40,ArrowRight:40}[e.key]||0);pane.scrollTop+=({ArrowUp:-40,ArrowDown:40}[e.key]||0);}
   else return;e.preventDefault();e.stopPropagation();
  };
- const preserveTyping=e=>{if(e.target.closest('[data-board-view]'))e.preventDefault();};
  pane.addEventListener('pointerdown',down);pane.addEventListener('pointermove',move);
  for(const name of ['pointerup','pointercancel','lostpointercapture'])pane.addEventListener(name,end);
  pane.addEventListener('click',click,true);pane.addEventListener('wheel',wheel,{passive:false});pane.addEventListener('keydown',keyboard);
- tools.addEventListener('pointerdown',preserveTyping);tools.addEventListener('click',toolClick);
+ tools.addEventListener('click',toolClick);
  // Resizing the canvas can affect the observed pane (especially in WebKit).
  // Apply those writes in the next frame, outside ResizeObserver delivery.
  let resizeFrame=0;
