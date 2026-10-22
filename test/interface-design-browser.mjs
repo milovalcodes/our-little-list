@@ -25,8 +25,9 @@ try{
    if(file==='activities'){
     await page.locator('#weekly-score svg[data-ui-icon=sun]').waitFor();
     assert.equal(await page.locator('.daily-stamp svg[data-ui-icon=pair]').count(),1);
-    await page.locator('[data-key="a"]').click();await page.getByRole('button',{name:'Delete letter',exact:true}).click();
+    await page.locator('#wordle.activity-game-link').click();await page.locator('[data-key="a"]').click();await page.getByRole('button',{name:'Delete letter',exact:true}).click();
     assert.equal(await page.locator('[data-key="⌫"] svg').count(),1,'rerendered keyboard preserves drawn delete');
+    await page.locator('.activity-back').click();await page.locator('.crown-map').waitFor();
    }
    if(file==='tasks'){
     await page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();await d.setTo('items','design-task',{type:'task',title:'Keep ☀️ in my title',done:false,createdAt:Date.now()});});

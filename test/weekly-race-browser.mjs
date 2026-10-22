@@ -1,0 +1,31 @@
+import {mkdir} from 'node:fs/promises';
+import {join} from 'node:path';
+const screenshots=process.env.QA_SCREENSHOTS||'node_modules/.cache/activities';await mkdir(screenshots,{recursive:true});
+import {chromium,webkit} from 'playwright';
+import assert from 'node:assert/strict';
+const browser=await(process.env.GAME_BROWSER==='webkit'?webkit:chromium).launch();
+try{
+ const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block',reducedMotion:'reduce'});
+ await context.route('**/firebase-config.js',r=>r.fulfill({contentType:'text/javascript',body:'export const firebaseConfig={};'}));
+ await context.route('**/*',r=>new URL(r.request().url()).origin==='http://127.0.0.1:8777'?r.fallback():r.abort());
+ const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.clock.setFixedTime(new Date('2026-10-22T18:00Z'));
+ await page.goto('http://127.0.0.1:8777/activities.html?as=her');
+ await page.locator('.crown-map').waitFor();await page.locator('.thinking-screen').waitFor({state:'hidden'});
+ assert.ok(await page.evaluate(()=>document.querySelector('#daily-question').compareDocumentPosition(document.querySelector('#scoreboard'))&Node.DOCUMENT_POSITION_FOLLOWING));
+ assert.equal(await page.locator('.race-details').evaluate(n=>n.open),false);
+ assert.equal(await page.locator('.score-number:visible,.score-sources:visible,#weekly-score:visible').count(),0);
+ await page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();for(const day of ['2026-10-19','2026-10-20','2026-10-21'])for(const [person,attempts]of [['her',1],['him',4]])await d.setTo('wordResults',day+'-'+person,{day,person,attempts,done:true,won:true,updatedAt:Date.now()});});
+ await page.waitForFunction(()=>document.querySelector('.crown-map-caption h3').textContent.includes('out in front'));
+ await page.screenshot({path:join(screenshots,'race-to-the-crown.png'),fullPage:true});
+ await page.locator('.race-details>summary').click();await page.locator('#score-week').waitFor();
+ await page.clock.setFixedTime(new Date('2026-10-25T18:00Z'));
+ await page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();for(const day of ['2026-10-19','2026-10-20','2026-10-21','2026-10-22','2026-10-23','2026-10-24']){await d.setTo('wordResults',day+'-her',{day,person:'her',attempts:1,done:true,won:true,updatedAt:Date.now()});for(const type of ['search','crossword'])await d.setTo('timedResults',day+'-'+type+'-her',{day,type,person:'her',done:true,complete:true,count:10,total:10,startedAt:Date.now()-120000,finishedAt:Date.now(),closesAt:Date.now()+3600000,updatedAt:Date.now()});}});
+ await page.waitForFunction(()=>document.querySelector('.crown-map-caption h3').textContent.includes('secured'));
+ assert.ok(await page.locator('.race-details').evaluate(n=>n.open),'live updates preserve advanced info');
+ assert.match(await page.locator('.crown-map-caption').textContent(),/waiting for the coronation/);
+ await page.locator('.race-details>summary').click();
+ await page.locator('#scoreboard').screenshot({path:join(screenshots,'crown-secured.png')});
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert.deepEqual(errors,[]);
+ console.log('CROWN MAP: question first, hidden numbers, real lead, mathematically secured crown, coronation copy and advanced-info state pass');
+}finally{await browser.close();}

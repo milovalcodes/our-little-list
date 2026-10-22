@@ -9,12 +9,13 @@ try{
   await context.route('**/firebase-config.js',r=>r.fulfill({contentType:'text/javascript',body:'export const firebaseConfig={};'}));
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);
   await page.clock.setFixedTime(Date.parse(day+'T18:00Z'));
-  await page.goto(base+'/activities.html?as=her#wordle');await page.locator('#word-game [data-key]:not([disabled])').first().waitFor();
+  await page.goto(base+'/activities.html?as=her');
   await page.waitForFunction(()=>document.querySelector('#wordle .daily-state')?.textContent==='not played');
+  await page.locator('#wordle').click();await page.locator('#word-game [data-key]:not([disabled])').first().waitFor();
   assert.match(await page.locator('.word-partner').textContent(),/Emilio hasn’t tried/);
   await page.locator('.app-dock').waitFor({state:'hidden'}); // Navigation never covers an open daily board.
-  await page.locator('#wordle>summary').click();await page.keyboard.type('abc');
-  await page.locator('#wordle>summary').click();assert.equal(await page.locator('#word-game .word-row').first().textContent(),'');
+  await page.locator('.activity-back').click();await page.locator('.crown-map').waitFor();await page.keyboard.type('abc');
+  await page.locator('#wordle').click();await page.locator('#word-game [data-key]').first().waitFor();assert.equal(await page.locator('#word-game .word-row').first().textContent(),'');
   await page.keyboard.press('Control+a');assert.equal(await page.locator('#word-game .word-row').first().textContent(),'');
   await page.keyboard.type(wordForDay(day).word);
   if(width===375){
@@ -24,7 +25,8 @@ try{
   await page.keyboard.press('Enter');
   await page.locator('#word-game .daily-results').waitFor();
   assert.match(await page.locator('#word-game .next-puzzle').textContent(),/19:00:00/);
-  await page.waitForFunction(()=>document.querySelector('#wordle .daily-state')?.textContent.includes('played'));
+  await page.locator('.activity-back').click();await page.waitForFunction(()=>document.querySelector('#wordle .daily-state')?.textContent.includes('played'));
+  await page.locator('#wordle').click();await page.locator('#word-game .daily-results').waitFor();
   assert.equal(await page.locator('[data-game-reaction],.daily-crown').count(),0);
   await page.locator('.game-comfort summary').click();await page.locator('[data-comfort=colours]').check();assert.equal(await page.locator('html').evaluate(n=>n.classList.contains('game-colour-friendly')),true);
   if(width===375)await page.evaluate(async()=>{

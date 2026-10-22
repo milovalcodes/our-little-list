@@ -22,7 +22,7 @@ try{
   await wordInput.evaluate(n=>n.dispatchEvent(new InputEvent('beforeinput',{inputType:'deleteContentBackward',bubbles:true,cancelable:true})));assert.equal(await page.locator('#word-game .word-row').first().textContent(),'');
   await page.keyboard.insertText(wordForDay(day).word);assert.ok(await wordInput.evaluate(n=>n===window.originalWordInput&&n===document.activeElement),'input remains focused and connected across redraws');
   await audit(page,'#word-game');await page.keyboard.press('Enter');await page.locator('#word-game .daily-results').waitFor();await dock.waitFor();
-  await page.locator('#wordle>summary').click();await page.locator('#crossword>summary').click();
+  await page.goto(base+'/activities.html?as=her#crossword');
   const mini=weeklyRounds(day)[day].crossword;
   await page.evaluate(async p=>{const d=await(await import('./data-hub.js')).sharedLayer();await d.setTo('timedPuzzles',p.day+'-crossword',p);},mini);
   await page.locator('#crossword [data-start]:not([disabled])').click();await page.locator('#crossword .cursor').waitFor();await dock.waitFor({state:'hidden'});
@@ -41,13 +41,13 @@ try{
   const clue=await page.locator('#crossword .crossword-current').boundingBox();assert.ok(clue.y>=0&&clue.y<60,'current clue stays at the top while board scrolls');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   if(process.env.QA_SCREENSHOTS){await mkdir('node_modules/.cache/clarity-visual',{recursive:true});await page.screenshot({path:`node_modules/.cache/clarity-visual/crossword-${width}.png`});}
-  await page.locator('#crossword>summary').click();await dock.waitFor();assert.ok(await input.evaluate(n=>n!==document.activeElement));
+  await page.locator('.activity-back').click();await dock.waitFor();assert.equal(await page.locator('#crossword input').count(),0);
   // Closing a card does not pause its clock. Let this round expire before
   // starting the next timed accessibility fixture.
   await page.clock.setFixedTime(Date.parse(day+'T18:06Z'));
-  await page.setViewportSize({width,height:844});await page.locator('#search>summary').click();await page.locator('#search [data-start]:not([disabled])').click();await page.locator('#search .search-grid').waitFor();await dock.waitFor({state:'hidden'});
-  await page.locator('#search .search-grid').evaluate(n=>window.scrollTo(0,n.getBoundingClientRect().top+scrollY));const words=await page.locator('#search .search-words').boundingBox();assert.ok(words.y>=0&&words.y<60,'search words remain above the board');
-  await audit(page,'#search-game');await page.locator('#search>summary').click();await dock.waitFor();await page.goto(base+'/practice.html?as=her#word');
+  await page.setViewportSize({width,height:844});await page.goto(base+'/activities.html?as=her#search');await page.locator('#search [data-start]:not([disabled])').click();await page.locator('#search .search-grid').waitFor();await dock.waitFor({state:'hidden'});
+  await page.locator('#search .search-grid').evaluate(n=>window.scrollTo(0,n.getBoundingClientRect().top+scrollY));const words=await page.locator('#search .search-words').boundingBox();const searchBoard=await page.locator('#search .search-grid').boundingBox();assert.ok(words.y>=0&&words.y<=searchBoard.y,'search words remain visible above the board');
+  await audit(page,'#search-game');await page.locator('.activity-back').click();await dock.waitFor();await page.goto(base+'/practice.html?as=her#word');
   await page.locator('#practice-game .game-input-controls>button:not(.game-native-submit)').click();await page.keyboard.insertText('abc');
   assert.equal(await page.locator('[data-draft-row]').textContent(),'abc');assert.ok(await page.locator('#practice-game input').evaluate(n=>n===document.activeElement));
   await page.goto(base+'/practice.html?as=her#crossword');

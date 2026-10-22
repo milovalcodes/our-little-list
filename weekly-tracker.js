@@ -1,3 +1,4 @@
+import {crownRace,crownMap} from './weekly-race.js';
 import {activityClock} from './activity-clock.js';
 import {weekForDay} from './word-scores.js';
 import {weeklyReport,SCORE_GAMES} from './weekly-report.js';
@@ -9,6 +10,7 @@ import {timedOver} from './timed-game.js';
 export function startWeeklyTracker({data,viewer}){
  const host=document.getElementById('weekly-board'),headline=document.getElementById('weekly-score'),current=weekForDay(activityClock().day).start;
  const hashWeek=()=>{const value=/^#scoreboard-(\d{4}-\d{2}-\d{2})$/.exec(location.hash)?.[1];return value&&Number.isFinite(Date.parse(value+'T12:00Z'))&&value<=current&&weekForDay(value).start===value?value:null;};
+ let expanded=[];
  let selected=hashWeek()||current,weeks=[],duels=[],words=[],timed=[],loaded=new Set(),failures=new Set(),stops=[],revision=0,failed=false,timedOut=false,signature='',disposed=false,loadTimer;
  const name=p=>esc(personName(p)===p?(p==='her'?'Sun':'Moon'):personName(p)),names=games=>games.map(g=>g.name).join(' & ');
  const label=day=>new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(day+'T12:00Z'));
@@ -31,12 +33,15 @@ export function startWeeklyTracker({data,viewer}){
   const shown=rows=>viewer?hidePartnerUntilPlayed(rows,viewer,openDay,rows===words?wordEnded:r=>timedOver(r)):rows;
   const report=weeklyReport(selected,shown(words),shown(timed),record);
   const choices=[...new Set([current,selected,...[...weeks,...duels].map(w=>w.week).filter(w=>/^\d{4}-\d{2}-\d{2}$/.test(w)&&w<=current)])].sort().reverse();
-  const next=JSON.stringify({report,choices,failed,loaded:[...loaded],names:['her','him'].map(p=>personName(p))});
+  const race=crownRace(report,today);
+  const next=JSON.stringify({report,race,choices,failed,loaded:[...loaded],season:globalThis.LittleSeason?.current,names:['her','him'].map(p=>personName(p))});
   if(next===signature)return;signature=next;
   const ready=loaded.size===4&&!failed,previousTotals=host.dataset.totals;
   if(ready)clearTimeout(loadTimer);
-  const open=[...host.querySelectorAll('details[open][data-score-detail]')].map(d=>d.dataset.scoreDetail);
+  if(host.querySelector('.race-details'))expanded=[...host.querySelectorAll('details[open][data-score-detail]')].map(d=>d.dataset.scoreDetail);
+  const open=expanded;
   const focus=host.querySelector(':focus')?.id;
+  const previousMarkers=new Map([...host.querySelectorAll('[data-racer]')].map(el=>[el.dataset.racer,`translate(${el.style.getPropertyValue('--marker-x')},${el.style.getPropertyValue('--marker-y')})`]));
   headline.textContent=ready?`☀ ${report.totals.her} · ☾ ${report.totals.him}`:'…';
   const dateRow=`<div class="score-week-picker"><label for="score-week">${record?'Weekly recap':'The weekly race'}</label><select id="score-week" aria-label="Score week">${choices.map(w=>`<option value="${w}" ${w===selected?'selected':''}>${w===current?'This week':'Week of '+label(w)}</option>`).join('')}</select></div>`;
   if(!ready){host.innerHTML=dateRow+`<p role="status">${failed?'Couldn’t load the points. Check your connection and try again.':'adding up the week…'}</p>${failed?'<button type="button" data-score-retry>retry</button>':''}`;return;}
@@ -44,7 +49,7 @@ export function startWeeklyTracker({data,viewer}){
   const margin=Math.abs(report.totals.her-report.totals.him);
   const onTime=record?.decidedBy==='time'&&Number.isFinite(record.saved?.her)&&Number.isFinite(record.saved?.him)?Math.round(Math.abs(record.saved.her-record.saved.him)/1000):null;
   const outcome=record?(report.winner?(onTime!==null?`${name(report.winner)} takes the crown · tied on points, ${onTime} s faster`:`${name(report.winner)} takes the crown · ${margin} point lead`):'A quiet week · the crown rests'):leading?`${name(leading)} leads by ${margin}`:report.totals.her?'neck and neck':'a fresh scoreboard';
-  const hero=`<div class="score-podium">${['her','him'].map(p=>`<div class="score-person ${report.winner===p?'is-winner':''}"><span class="score-avatar"><img src="${p==='her'?'sun':'moon'}-profile.png" alt="">${report.winner===p?'<span aria-label="Weekly winner">♛</span>':''}</span><strong>${name(p)}</strong><b class="score-number">${report.totals[p]}<small>points</small></b></div>`).join('')}</div><p class="score-outcome" role="status">${outcome}</p>`;
+  const hero=crownMap(report,race,name);
   const sources=`<section class="score-sources"><h3>Where the points came from</h3><p class="score-column-head"><span>${name('her')}</span><span>${name('him')}</span></p>${SCORE_GAMES.map(g=>{
    const a=report.stats.her[g.id].points,b=report.stats.him[g.id].points,max=Math.max(a,b,1);
    return `<div class="score-source score-source-${g.id}"><h4><span aria-hidden="true">${g.icon}</span> ${g.name}</h4><div class="score-source-pair">${[['her',a],['him',b]].map(([p,n])=>`<div><b aria-label="${name(p)}, ${g.name}: ${n} points">${n}<small> pts</small></b><span class="score-bar" aria-hidden="true"><i style="--fill:${n/max*100}%"></i></span></div>`).join('')}</div></div>`;
@@ -56,9 +61,11 @@ export function startWeeklyTracker({data,viewer}){
    const a=entry.games.reduce((n,g)=>n+g.people.her.points,0),b=entry.games.reduce((n,g)=>n+g.people.him.points,0);
    return `<details class="score-day" data-score-detail="${esc(entry.day)}"><summary><strong>${entry.tie?'Tie-break '+entry.tie:label(entry.day)}${entry.hard?' <small>2×</small>':''}</strong><span>☀ ${a} <i>·</i> ☾ ${b}</span></summary><div class="score-day-rows">${entry.games.map(row=>`<div><b>${SCORE_GAMES.find(g=>g.id===row.type).name}</b>${['her','him'].map(p=>`<span><strong>${name(p)} · ${row.people[p].points} pts</strong><small>${esc(row.people[p].detail)}</small></span>`).join('')}</div>`).join('')}</div></details>`;
   }).join('')}</section>`;
-  host.innerHTML=dateRow+hero+sources+recap+days+`<details class="score-help" data-score-detail="help"><summary>how points work</summary><p>Little Word: 60 / 50 / 40 / 30 / 20 / 10 for 1–6 guesses. Miss it: 0. Days before Oct 19 keep their old 100 / 40 / 30 / 20 / 10 for 1–5.</p><p>Word Search and Crossword: words found ÷ total × 50, rounded. Find every word and each 5 seconds left on the clock adds 1, up to +10 (from Oct 19). A points tie goes to whoever had more time left over on fully solved boards; only an exact tie opens the hard rounds. Word Search: 2:00 normal / 2:30 hard. Crossword (from Oct 19): a themed board of 10 answers in 3:00, or 20 in 5:00 on Sunday and in tie-breaks. No words: 0. Sunday and tie-breaks double the points. Tie-break points are included above.</p></details>`;
+  host.innerHTML=hero+`<details class="race-details" data-score-detail="race"><summary>Advanced info</summary>`+dateRow+`<p class="score-outcome">${outcome}</p>`+sources+recap+days+`<details class="score-help" data-score-detail="help"><summary>how points work</summary><p>Little Word: 60 / 50 / 40 / 30 / 20 / 10 for 1–6 guesses. Miss it: 0. Days before Oct 19 keep their old 100 / 40 / 30 / 20 / 10 for 1–5.</p><p>Word Search and Crossword: words found ÷ total × 50, rounded. Find every word and each 5 seconds left on the clock adds 1, up to +10 (from Oct 19). A points tie goes to whoever had more time left over on fully solved boards; only an exact tie opens the hard rounds. Word Search: 2:00 normal / 2:30 hard. Crossword (from Oct 19): a themed board of 10 answers in 3:00, or 20 in 5:00 on Sunday and in tie-breaks. No words: 0. Sunday and tie-breaks double the points. Tie-break points are included above.</p></details></details>`;
+  host.querySelector('.race-details').insertBefore(headline,host.querySelector('.score-week-picker'));
   for(const d of host.querySelectorAll('[data-score-detail]'))d.open=open.includes(d.dataset.scoreDetail);
   if(focus)document.getElementById(focus)?.focus({preventScroll:true});
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!document.documentElement.hasAttribute('data-quiet-motion'))for(const el of host.querySelectorAll('[data-racer]')){const from=previousMarkers.get(el.dataset.racer),to=`translate(${el.style.getPropertyValue('--marker-x')},${el.style.getPropertyValue('--marker-y')})`;if(from&&from!==to)el.animate([{transform:from},{transform:to}],{duration:1100,easing:'cubic-bezier(.2,.7,.2,1)'});}
   const totals=JSON.stringify(report.totals);host.dataset.totals=totals;
   if(previousTotals&&previousTotals!==totals&&!matchMedia('(prefers-reduced-motion: reduce)').matches)host.querySelectorAll('.score-number').forEach(el=>el.animate([{transform:'scale(.93)',opacity:.65},{transform:'scale(1)',opacity:1}],{duration:380,easing:'ease-out'}));
  }

@@ -83,9 +83,11 @@ async function phone(side) {
 
 try {
  const {page:moon}=await phone('him'),{page:sun}=await phone('her'),{page:secondMoon}=await phone('him');
+ const {page:moonRace}=await phone('him'),{page:sunRace}=await phone('her'),{page:moonSearch}=await phone('him');
  const deadline=setTimeout(()=>{console.error('word real-time test exceeded 180 seconds');process.exit(1);},180000);deadline.unref();
  const puzzle=wordForDay(activityClock().day);await seedPuzzle('wordPuzzles',puzzle.day,puzzle);
  await moon.goto(base+'/activities.html#wordle');
+ await moonRace.goto(base+'/activities.html');await sunRace.goto(base+'/activities.html');
  await sun.goto(base+'/activities.html#wordle');await secondMoon.goto(base+'/activities.html#wordle');
  try{await Promise.all([moon,sun,secondMoon].map(p=>p.waitForSelector('.word-keyboard button:not([disabled])')));}
  catch(error){console.error('Emulator board startup',errors,await Promise.all([moon,sun,secondMoon].map(p=>p.locator('.word-message,.global-failure,#word-summary').allTextContents())));throw error;}
@@ -121,7 +123,7 @@ try {
  assert.equal(herWin.won,true);
  await sun.waitForFunction(points=>document.querySelector('.result-compare')?.textContent.includes(points+' points'),solvedIn(3));
  assert.match(await sun.locator('.result-compare').textContent(),new RegExp('1 / '+tries));
- await moon.waitForFunction(points=>document.querySelector('#weekly-score [data-ui-icon=sun]')?.nextSibling?.textContent.trim()===String(points),solvedIn(1));
+ await moonRace.waitForFunction(points=>document.querySelector('#weekly-score')?.textContent.match(/\d+/g)?.[0]===String(points),solvedIn(1));
  for(const page of [moon,sun]){
   for(let retry=0;retry<3;retry++){
    await page.waitForFunction(()=>document.querySelector('.shared-grid:last-child .shared-word-row')||document.querySelector('[data-round-grid-retry]'));
@@ -156,15 +158,15 @@ try {
  // The saved server times decide any time bonus, so score from the saved result.
  const searchPoints=await moon.evaluate(async day=>{const d=await(await import('./data-hub.js')).sharedLayer(),{timedPoints}=await import('./timed-game.js');return timedPoints(await d.readDoc('timedResults',day+'-search-him'));},timedPuzzle.day);
  // His search stays out of her live total until her own search is over.
- await sun.waitForFunction(points=>document.querySelector('#weekly-score [data-ui-icon=moon]')?.nextSibling?.textContent.trim()===String(points),solvedIn(3));
+ await sunRace.waitForFunction(points=>document.querySelector('#weekly-score')?.textContent.match(/\d+/g)?.[1]===String(points),solvedIn(3));
  assert.equal(await sun.evaluate(async day=>{try{await(await(await import('./data-hub.js')).sharedLayer()).readDoc('timedGames',day+'-search-him');return false;}catch(e){return e.code==='permission-denied';}},timedPuzzle.day),true);
  assert.ok((await play(sun,'her',{start:true})).ok);
  for(let i=0;i<timedPuzzle.entries.length;i++)assert.ok((await play(sun,'her',{index:i,answer:timedPuzzle.entries[i].word,expectedCount:i})).ok);
- await sun.waitForFunction(points=>document.querySelector('#weekly-score [data-ui-icon=moon]')?.nextSibling?.textContent.trim()===String(points),solvedIn(3)+searchPoints);
- await moon.locator('#search>summary').click();await moon.waitForSelector('#search .timed-route:last-child li');
- assert.equal(await moon.locator('#search .timed-route:last-child li').count(),10);
- assert.match(await moon.locator('#search-summary').textContent(),new RegExp('^'+searchPoints+' points'));
- await moon.reload();await moon.waitForFunction(points=>document.querySelector('#search-summary').textContent.startsWith(points+' points'),searchPoints);
+ await sunRace.waitForFunction(points=>document.querySelector('#weekly-score')?.textContent.match(/\d+/g)?.[1]===String(points),solvedIn(3)+searchPoints);
+ await moonSearch.goto(base+'/activities.html#search');await moonSearch.waitForSelector('#search .timed-route:last-child li');
+ assert.equal(await moonSearch.locator('#search .timed-route:last-child li').count(),10);
+ assert.match(await moonSearch.locator('#search-summary').textContent(),new RegExp('^'+searchPoints+' points'));
+ await moonSearch.reload();await moonSearch.waitForFunction(points=>document.querySelector('#search-summary').textContent.startsWith(points+' points'),searchPoints);
  assert.deepEqual(errors,[]);
  console.log('REAL FIREBASE TIMED: server timestamps, independent attempts, simultaneous-tab protection, live total scores, private routes, live reveal and saved reload verified');
  // An explicitly authorized server reset must clear the old finished UI,
@@ -174,8 +176,8 @@ try {
  const reset=await fetch(`http://${host}/v1/${docs}:commit`,{method:'POST',headers:{authorization:'Bearer owner','content-type':'application/json'},body:JSON.stringify({writes:resetPaths.map(path=>({delete:docs+'/households/oLSxADOwjqS04hSS2aHGOcvozmz2/'+path}))})});
  assert.ok(reset.ok,await reset.text());
  await Promise.all([moon,sun,secondMoon].map(p=>p.waitForFunction(()=>document.querySelectorAll('#word-game .word-row.played').length===0&&document.querySelector('#word-game .word-keyboard'))));
- await moon.locator('#search').evaluate(el=>{el.open=true;});
- await moon.waitForSelector('#search [data-start]:not([disabled])');
+ await moonSearch.locator('#search').evaluate(el=>{el.open=true;});
+ await moonSearch.waitForSelector('#search [data-start]:not([disabled])');
  assert.deepEqual(errors,[]);
  console.log('REAL RESET: server-confirmed reset clears both phones and reopens rounds without refreshing');
  assert.equal(await moon.locator('#admin-games').isVisible(),true);
@@ -197,7 +199,7 @@ try {
  const id='browser-reset-all-1234567890',all=await resetGame(moon,'all',id);assert.ok(all.ok,JSON.stringify(all));
  const repeat=await resetGame(moon,'all',id);assert.ok(repeat.ok);assert.deepEqual(repeat.result,all.result,'retry receipt is idempotent');
  await Promise.all([moon,sun,secondMoon].map(p=>p.waitForFunction(()=>document.querySelectorAll('#word-game .word-row .correct,#word-game .word-row .present,#word-game .word-row .absent').length===0&&document.querySelector('#word-game .word-keyboard'))));
- await moon.waitForSelector('#search [data-start]:not([disabled])');
+ await moonSearch.waitForSelector('#search [data-start]:not([disabled])');
  const before=await moon.evaluate(async day=>{const d=await(await import('./data-hub.js')).sharedLayer();return Promise.all([d.readDoc('wordPuzzles',day),d.readDoc('timedPuzzles',day+'-crossword')]);},puzzle.day);
  const individual=await resetGame(moon,'search','browser-reset-search-123456789');assert.ok(individual.ok,JSON.stringify(individual));
  const after=await moon.evaluate(async day=>{const d=await(await import('./data-hub.js')).sharedLayer();return Promise.all([d.readDoc('wordPuzzles',day),d.readDoc('timedPuzzles',day+'-crossword')]);},puzzle.day);

@@ -10,15 +10,16 @@ try{
   await context.route('**/firebase-config.js',r=>r.fulfill({contentType:'text/javascript',body:'export const firebaseConfig={};'}));
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.clock.setFixedTime(now);
   await page.goto(base+'/activities.html?as=her#search');await page.locator('#search [data-start]').click();await page.locator('#search .puzzle-grid').waitFor();
-  await page.locator('#crossword>summary').click();await page.waitForFunction(()=>document.querySelector('#crossword [data-start]').disabled);
+  await page.goto(base+'/activities.html?as=her#crossword');await page.waitForFunction(()=>document.querySelector('#crossword [data-start]')?.disabled);
   assert.match(await page.locator('#crossword [data-start]').textContent(),/Finish Word Search first/);
   const conflict=await page.evaluate(async day=>{const data=await(await import('./data-hub.js')).sharedLayer();try{await data.playTimedPuzzle({day,type:'crossword',person:'her',start:true});return 'started';}catch(e){return e.message;}},day);
   assert.match(conflict,/Finish Word Search first/,'data layer rejects bypassing the disabled button');
   const otherTab=await context.newPage();await otherTab.clock.setFixedTime(now);await otherTab.goto(base+'/activities.html?as=her#crossword');await otherTab.locator('#crossword [data-continue-round]').waitFor();
   assert.equal(await otherTab.locator('#crossword [data-start]').isDisabled(),true,'another tab sees the same guard');
   await otherTab.close();
-  await page.locator('#crossword [data-continue-round]').click();assert.equal(await page.locator('#search').evaluate(n=>n.open),true);
-  await page.clock.setFixedTime(now+300001);await page.waitForFunction(()=>!document.querySelector('#crossword [data-start]').disabled);
+  await page.locator('#crossword [data-continue-round]').click();await page.waitForSelector('#search .puzzle-grid');
+  await page.goto(base+'/activities.html?as=her#crossword');
+  await page.clock.setFixedTime(now+300001);await page.waitForFunction(()=>document.querySelector('#crossword [data-start]')?.disabled===false);
   await page.locator('#crossword [data-start]').click();await page.locator('#crossword .crossword-viewport').waitFor();
   // The selected word, not the blank top-left corner, is framed on start.
   const framing=await page.locator('#crossword .crossword-viewport').evaluate(p=>{const r=p.getBoundingClientRect(),cells=[...p.querySelectorAll('.chosen')].map(n=>n.getBoundingClientRect());return {width:r.width,wordWidth:Math.max(...cells.map(c=>c.right))-Math.min(...cells.map(c=>c.left)),visible:cells.every(c=>c.left>=r.left&&c.right<=r.right+1&&c.top>=r.top&&c.bottom<=r.bottom+1)};});
@@ -50,11 +51,10 @@ try{
   await a.locator('.thinking-screen').waitFor({state:'hidden'});
   await a.locator('[data-shared-round]').scrollIntoViewIfNeeded();await a.screenshot({path:`node_modules/.cache/shared-round/results-${width}.png`});
   await a.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer(),save=d.saveGameReaction.bind(d);d.saveGameReaction=async item=>{await new Promise(resolve=>window.releaseReaction=resolve);return save(item);};});
-  await a.locator('[data-round-react="👑"]').click();await a.locator('#wordle>summary').click();
+  await a.locator('[data-round-react="👑"]').click();await a.locator('.activity-back').focus();
   await a.evaluate(()=>window.releaseReaction());
   await a.waitForFunction(()=>document.querySelector('[data-round-react="👑"]')?.getAttribute('aria-pressed')==='true');
-  assert.ok(await a.locator('#wordle>summary').evaluate(n=>n===document.activeElement),'a delayed save must not steal focus from a closed card');
-  await a.locator('#wordle>summary').click();
+  assert.ok(await a.locator('.activity-back').evaluate(n=>n===document.activeElement),'a delayed save must not steal focus from navigation');
   await a.evaluate(async day=>{const d=await(await import('./data-hub.js')).sharedLayer(),p=(await import('./daily-words.js')).wordForDay(day);await d.setTo('wordPuzzles',day,{...p,revision:1});},day);
   await a.waitForFunction(()=>!document.querySelector('[data-shared-round]'));
   await b.waitForFunction(()=>!document.querySelector('[data-shared-round]'));

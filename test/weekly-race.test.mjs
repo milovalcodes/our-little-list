@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {weeklyReport} from '../weekly-report.js';
+import {crownRace,racePoint} from '../weekly-race.js';
+const day='2026-10-25',now=Date.parse(day+'T18:00Z');
+function report(her,him){const r=weeklyReport('2026-10-19',[],[],null,now);r.totals={her,him};return r;}
+assert.equal(crownRace(report(360,0),day,now).secured,null,'a possible points tie must never secure a crown');
+assert.equal(crownRace(report(361,0),day,now).secured,'her','Sunday retains 120 for each of the three games');
+assert.equal(crownRace(report(0,361),day,now).secured,'him');
+assert.equal(crownRace(report(500,0),'2026-10-22',Date.parse('2026-10-22T18:00Z')).secured,null,'future days still count');
+const hidden=report(300,0);hidden.entries.at(-1).games[0].people.him={points:0,hidden:true,ended:false};
+assert.equal(crownRace(hidden,day,now).secured,null,'hidden result retains full capacity');
+const ended=report(241,0);ended.entries.at(-1).games[0].people.him={points:0,ended:true};
+assert.equal(crownRace(ended,day,now).secured,'her','finished game cannot earn more');
+const a=crownRace(report(100,0),'2026-10-22',Date.parse('2026-10-22T18:00Z'));
+const b=crownRace(report(300,0),'2026-10-22',Date.parse('2026-10-22T18:00Z'));
+assert.ok(b.positions.her>a.positions.her&&b.positions.him<a.positions.him,'a bigger lead creates more distance');
+assert.ok(crownRace(report(100,100),day,now).positions.her>a.positions.her,'the day advances the shared trail');
+const secured=report(0,0);secured.winner='him';assert.equal(crownRace(secured,day,now).positions.him,1);
+assert.deepEqual(racePoint(1),{x:281,y:48});
+console.log('CROWN RACE: strict clinch, double Sunday, hidden results, remaining games, week progress and map positions pass');

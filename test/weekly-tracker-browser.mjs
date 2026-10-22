@@ -12,7 +12,7 @@ try{
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   await page.clock.setFixedTime(new Date('2026-10-12T18:00Z'));
   await page.goto(base+'/activities.html?as='+side+'#scoreboard');
-  await page.waitForSelector('#score-week');
+  await page.waitForSelector('.crown-map');
   await page.evaluate(async()=>{
    const d=await(await import('./data-hub.js')).sharedLayer(),day='2026-10-09',at=Date.parse(day+'T18:00Z');
    for(const [person,attempts]of [['her',1],['him',2]])await d.setTo('wordResults',day+'-'+person,{day,person,attempts,done:true,won:true,updatedAt:at});
@@ -20,7 +20,7 @@ try{
    await d.setTo('wordWeeks','2026-10-05',{week:'2026-10-05',end:'2026-10-11',format:'trio',scoreVersion:2,round:0,scores:{her:175,him:120},winners:['her'],settledAt:at});
   });
   if(await page.locator('.coronation-close').count())await page.locator('.coronation-close').click();
-  await page.selectOption('#score-week','2026-10-05');
+  await page.locator('.race-details>summary').click();await page.selectOption('#score-week','2026-10-05');
   await page.waitForFunction(()=>document.querySelector('#weekly-score').textContent.replace(/\s+/g,' ').trim().includes('175 · 120'));
   assert.match(await page.locator('.score-winning-edge').textContent(),/Little Word.*60 more points/);
   assert.match(await page.locator('.score-source-search').textContent(),/50.*30/s);
@@ -36,7 +36,7 @@ try{
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
    await page.locator('#weekly-board').screenshot({path:join(tmpdir(),`little-weekly-${side}-${theme}.png`)});
   }
-  await page.selectOption('#score-week','2026-10-12');
+  await page.locator('.race-details>summary').click();await page.selectOption('#score-week','2026-10-12');
   await page.waitForFunction(()=>document.querySelector('#weekly-score').textContent.replace(/\s+/g,' ').trim().includes('0 · 0'));
   await page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();await d.setTo('wordResults','2026-10-12-him',{day:'2026-10-12',person:'him',attempts:2,done:true,won:true,updatedAt:Date.now()});});
   // Today's partner word stays hidden from her until she has finished her own.

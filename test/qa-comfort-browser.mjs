@@ -12,21 +12,19 @@ try{
   await page.clock.setFixedTime(Date.parse(day+'T18:00Z'));
   const onScreen=selector=>page.locator(selector).first().evaluate(n=>{const r=n.getBoundingClientRect();return {top:Math.round(r.top),bottom:Math.round(r.bottom),height:innerHeight};});
 
-  await page.goto(base+'/activities.html?as=her');await page.locator('#wordle>summary').waitFor();
-  // One drawn chevron replaces the old glyphs.
-  const cue=await page.locator('#wordle .daily-chevron').evaluate(n=>({size:getComputedStyle(n).fontSize,mark:getComputedStyle(n,'::before').borderRightWidth}));
-  assert.deepEqual(cue,{size:'0px',mark:'2px'});
+  await page.goto(base+'/activities.html?as=her');await page.locator('#wordle.activity-game-link').waitFor();
+  assert.equal(await page.locator('#wordle svg[data-ui-icon=chevron]').count(),1);
 
   // Opening Little Word shows its first row and its keys together.
-  await page.locator('#wordle>summary').click();await page.locator('#word-game [data-key]:not([disabled])').first().waitFor();
+  await page.locator('#wordle').click();await page.locator('#word-game [data-key]:not([disabled])').first().waitFor();
   await page.waitForTimeout(150);
   const row=await onScreen('#word-game .word-row'),keys=await onScreen('#word-game .word-keyboard');
   assert.ok(row.top>=0&&row.bottom<=keys.top,`first guess row visible above the keys at ${width}px: ${JSON.stringify({row,keys})}`);
   assert.ok(keys.bottom<=keys.height+1,'Little Word keys on screen');
-  await page.locator('#wordle>summary').click();
+  await page.locator('.activity-back').click();
 
   // Crossword: a square window around its squares, board in view, one status line.
-  await page.locator('#crossword>summary').click();await page.locator('#crossword [data-start]:not([disabled])').click();
+  await page.locator('#crossword.activity-game-link').click();await page.locator('#crossword [data-start]:not([disabled])').click();
   await page.locator('#crossword .crossword-keys').waitFor();await page.waitForTimeout(150);
   const edges=await page.locator('#crossword .crossword-grid').evaluate(grid=>{
    const n=Number(getComputedStyle(grid).getPropertyValue('--grid-size')),cells=[...grid.children],rows=[];

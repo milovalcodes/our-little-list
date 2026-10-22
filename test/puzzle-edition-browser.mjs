@@ -18,7 +18,7 @@ try{
   await page.goto(base+'/activities.html?as='+side+'#search');
   for(const type of ['search','crossword']){
    const p=timedPuzzle(day,type);
-   if(type==='crossword')await page.locator('#crossword>summary').click();
+   if(type==='crossword')await page.goto(base+'/activities.html?as='+side+'#crossword');
    const seconds=(p.durationMs||120000)/1000,limit=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
    await page.waitForFunction(({type,limit})=>document.querySelector('#'+type).textContent.includes(limit),{type,limit});
    const started=await page.evaluate(()=>Date.now());

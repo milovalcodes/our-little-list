@@ -22,7 +22,7 @@ try{
  }
  assert.match(await page.locator('#search-summary').textContent(),/50 points/);
  await page.reload();await page.waitForFunction(()=>document.querySelector('#search-summary').textContent.includes('50 points'));
- await page.locator('#crossword>summary').click();await page.click('#crossword [data-start]');
+ await page.goto(base+'/activities.html?as=him#crossword');await page.click('#crossword [data-start]');
  const cross=await page.evaluate(async()=>{const{timedPuzzle}=await import('./daily-puzzles.js');return timedPuzzle('2026-10-09','crossword');});
  await page.locator('#crossword .crossword-expand').click();
  // Letter-by-letter entry: wrong squares are never flagged while competing.

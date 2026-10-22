@@ -21,14 +21,14 @@ try{
   await page.click('#word-game [data-key="↵"]');
   await page.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),solved);
   for(const type of ['search','crossword']){
-   await page.locator('#'+type+'>summary').click();
+   await page.goto(base+'/activities.html?as='+side+'#'+type);
    const p=timedPuzzle(day,type);
    assert.match(await page.locator('#'+type+' .puzzle-theme').textContent(),new RegExp(p.theme));
    assert.match(await page.locator('#'+type+' .timed-ready').textContent(),new RegExp(timedMax(day)+' points'));
   }
-  assert.match(await page.locator('#search>summary').textContent(),/Word Search/);
+  assert.match(await page.locator('#crossword>summary').textContent(),/Crossword/);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
-  await page.reload();await page.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),solved);
+  await page.goto(base+'/activities.html?as='+side+'#wordle');await page.waitForFunction(points=>document.querySelector('#word-summary').textContent.includes(points+' points'),solved);
   await context.close();
  }
  assert.deepEqual(errors,[]);
