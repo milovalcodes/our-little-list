@@ -11,7 +11,8 @@ export function focusedPlan(files,{versionOnly=false}={}){
  for(const file of files){
   if(automation.test(file)||docs.test(file))continue;
   // This self-contained UI fixture uses the standard local browser harness.
-  if(file==='test/declutter-browser.mjs'){browser.add('declutter');continue;}
+  const fixture={'test/declutter-browser.mjs':'declutter','test/mini-crossword-browser.mjs':'mini-crossword'}[file];
+  if(fixture){browser.add(fixture);continue;}
   if(['app-chrome.js','app-life.css','dock-viewport.js','test/dock-scroll-browser.mjs'].includes(file)){
    syntax=true;
    ['navigation-attention','home-parity','guide-contract','seasonal','precache'].forEach(test=>unit.add(test));

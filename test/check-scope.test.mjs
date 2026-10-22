@@ -8,6 +8,8 @@ import {checkScope} from '../scripts/check-scope.mjs';
 const declutter=checkScope(['test/declutter-browser.mjs','scripts/focused-checks.mjs','test/check-scope.test.mjs']);
 assert.equal(declutter.full,false);assert.equal(declutter.star,false);assert.equal(declutter.dailyOnly,false);
 assert.deepEqual(declutter.plan,{syntax:false,unit:[],browser:['declutter'],pages:[]},'a declutter fixture correction runs its owning browser test');
+assert.deepEqual(checkScope(['test/mini-crossword-browser.mjs']).plan.browser,['mini-crossword'],'the standalone crossword fixture runs its owning UI check');
+assert.deepEqual(checkScope(['test/declutter-browser.mjs','test/mini-crossword-browser.mjs']).plan.browser,['declutter','mini-crossword']);
 assert.equal(checkScope(['test/unknown-browser.mjs']).full,true,'unknown browser harnesses retain broad coverage');
 const hide=['activities.html','game-comfort.js','guide.html','notification-policy.js','pings-settings.js','service-worker.js'];
 const dock=checkScope(['app-chrome.js','app-life.css','dock-viewport.js','test/dock-scroll-browser.mjs','guide.html','service-worker.js']);
