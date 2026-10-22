@@ -16,6 +16,17 @@ export function focusedPlan(files,{versionOnly=false}={}){
    ['dock-scroll','app-life','appearance','games-navigation'].forEach(test=>browser.add(test));
    continue;
   }
+  // Main-app presentation is shared across destinations, but does not load the
+  // separate Little Star document or change account/backend behavior.
+  if(['styles.css','app-life.js','interface-icons.js','test/interface-design-browser.mjs'].includes(file)||file.startsWith('fonts/')){
+   syntax=true;
+   ['branding','home-parity','guide-contract','precache','offline','cache-lifetime'].forEach(test=>unit.add(test));
+   ['interface-design','app-life','appearance','clarity','game-accessibility','activities','weekly-tracker','daily-results','search-touch','routines','memories','delete-recovery','games-navigation','dock-scroll'].forEach(test=>browser.add(test));
+   continue;
+  }
+  if(['status.js','status-presets.js'].includes(file)){
+   syntax=true;unit.add('merged');browser.add('alter-ego');browser.add('interface-design');page.add('status');continue;
+  }
   if(file==='service-worker.js'){
    for(const test of ['precache','offline','cache-lifetime'])unit.add(test);
    if(!versionOnly){unit.add('notification-click');unit.add('notification-paths');browser.add('update-freshness');browser.add('lifecycle');}

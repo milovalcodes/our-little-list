@@ -44,7 +44,7 @@ $('note-quick-form').addEventListener('submit', async event => {
   event.preventDefault();
   const body=quickInput.value.trim();if(!body)return;const mood=quickMood;
   const button=$('note-quick-send');setButtonBusy(button,true,'…');
-  try{await settleQuickly(sendNote(data,{viewer:sender,other:recipient,body,mood}),`the note “${body.slice(0,40)}” did not send.`);quickInput.value='';setQuickMood('heart');syncStarters();toast(mood==='heart'?'sent 💌':`sent with a ${moods[mood]}`);}
+  try{await settleQuickly(sendNote(data,{viewer:sender,other:recipient,body,mood}),`the note “${body.slice(0,40)}” did not send.`);quickInput.value='';setQuickMood('heart');syncStarters();toast(mood==='heart'?'sent':`sent with a ${moods[mood]}`);}
   catch(_){showFailure('the note did not send.','check the internet and try again. Your words are still here.');}
   finally{setButtonBusy(button,false);}
 });

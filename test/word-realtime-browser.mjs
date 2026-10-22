@@ -121,7 +121,7 @@ try {
  assert.equal(herWin.won,true);
  await sun.waitForFunction(points=>document.querySelector('.result-compare')?.textContent.includes(points+' points'),solvedIn(3));
  assert.match(await sun.locator('.result-compare').textContent(),new RegExp('1 / '+tries));
- await moon.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☀ '+points),solvedIn(1));
+ await moon.waitForFunction(points=>document.querySelector('#weekly-score [data-ui-icon=sun]')?.nextSibling?.textContent.trim()===String(points),solvedIn(1));
  for(const page of [moon,sun]){
   for(let retry=0;retry<3;retry++){
    await page.waitForFunction(()=>document.querySelector('.shared-grid:last-child .shared-word-row')||document.querySelector('[data-round-grid-retry]'));
@@ -156,11 +156,11 @@ try {
  // The saved server times decide any time bonus, so score from the saved result.
  const searchPoints=await moon.evaluate(async day=>{const d=await(await import('./data-hub.js')).sharedLayer(),{timedPoints}=await import('./timed-game.js');return timedPoints(await d.readDoc('timedResults',day+'-search-him'));},timedPuzzle.day);
  // His search stays out of her live total until her own search is over.
- await sun.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☾ '+points),solvedIn(3));
+ await sun.waitForFunction(points=>document.querySelector('#weekly-score [data-ui-icon=moon]')?.nextSibling?.textContent.trim()===String(points),solvedIn(3));
  assert.equal(await sun.evaluate(async day=>{try{await(await(await import('./data-hub.js')).sharedLayer()).readDoc('timedGames',day+'-search-him');return false;}catch(e){return e.code==='permission-denied';}},timedPuzzle.day),true);
  assert.ok((await play(sun,'her',{start:true})).ok);
  for(let i=0;i<timedPuzzle.entries.length;i++)assert.ok((await play(sun,'her',{index:i,answer:timedPuzzle.entries[i].word,expectedCount:i})).ok);
- await sun.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☾ '+points),solvedIn(3)+searchPoints);
+ await sun.waitForFunction(points=>document.querySelector('#weekly-score [data-ui-icon=moon]')?.nextSibling?.textContent.trim()===String(points),solvedIn(3)+searchPoints);
  await moon.locator('#search>summary').click();await moon.waitForSelector('#search .timed-route:last-child li');
  assert.equal(await moon.locator('#search .timed-route:last-child li').count(),10);
  assert.match(await moon.locator('#search-summary').textContent(),new RegExp('^'+searchPoints+' points'));

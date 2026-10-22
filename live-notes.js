@@ -60,7 +60,7 @@ async function boot(viewer) {
       const incoming = firstFresh('notes', notes, note => note.recipient === viewer && !note.read);
       if (!incoming) return;
       announce({
-        icon: NOTE_MOODS[incoming.mood] || '💌',
+        keepEmoji: true, icon: NOTE_MOODS[incoming.mood] || '💌',
         label: 'a note for you',
         body: incoming.body,
         url: `notes.html#note-${incoming.id}`,
@@ -83,7 +83,7 @@ async function boot(viewer) {
     data.listenToQuery('help', recent, items => {
       const fresh = firstFresh('help', items, item => item.to === viewer && item.from !== viewer && item.state === 'open');
       const timed = Number(fresh?.dueAt) > 0;
-      if (fresh) announce({ icon: fresh.emoji || (timed ? '⏰' : '🙋'), label: timed ? `${personName(other)} set you a reminder` : `${personName(other)} needs a hand`, body: timed ? `${fresh.title} · ${friendlyWhen(Number(fresh.dueAt))}` : fresh.title, url: `tasks.html#ask-${fresh.id}`, kind: 'help', urgent:fresh.urgent===true });
+      if (fresh) announce({ keepEmoji: Boolean(fresh.emoji), icon: fresh.emoji || (timed ? '⏰' : '🙋'), label: timed ? `${personName(other)} set you a reminder` : `${personName(other)} needs a hand`, body: timed ? `${fresh.title} · ${friendlyWhen(Number(fresh.dueAt))}` : fresh.title, url: `tasks.html#ask-${fresh.id}`, kind: 'help', urgent:fresh.urgent===true });
     });
 
   }
@@ -130,7 +130,7 @@ async function boot(viewer) {
       // activity feed does, and stay quiet about someone merely leaving one —
       // "updated their status · online" said nothing true about either.
       if (item.locationText) announce({
-        icon: item.locationEmoji || '📍',
+        keepEmoji: Boolean(item.locationEmoji), icon: item.locationEmoji || '📍',
         label: `${personName(other)} changed locations`,
         body: item.locationText,
         url: `status.html#profile-${other}-map`,
@@ -142,7 +142,7 @@ async function boot(viewer) {
       // generic “updated status” popup.
     } else if (updatedAt > knownStatusAt) {
       announce({
-        icon: item.emoji || '●',
+        keepEmoji: Boolean(item.emoji), icon: item.emoji || '●',
         label: `${personName(other)} updated their status`,
         body: item.text ? `${item.category || 'currently'} ${item.text}` : (item.state || 'updated'),
         url: `status.html#profile-${other}`,
@@ -183,6 +183,7 @@ function announce(message) {
       navigator.serviceWorker.dispatchEvent(new MessageEvent('message',{data:{type:'OPEN_NOTIFICATION',url:target.href}}));
     }
   });
+  link.querySelector('span').toggleAttribute('data-keep-emoji',Boolean(message.keepEmoji));
   link.querySelector('span').textContent = message.icon||({note:'💌',reaction:'♡',item:'✓','item-finished':'✓','list-nudge':'↗','list-reminder':'⏰',memory:'◒',date:'✦',arrival:'📍',status:'●',focus:'⏱'}[message.kind]||'✦');
   link.querySelector('small').textContent = message.label;
   link.querySelector('p').textContent = message.body || '';

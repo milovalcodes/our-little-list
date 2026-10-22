@@ -13,7 +13,7 @@ export const QUICK_STATUSES = [
 ];
 
 export function quickStatusButtons() {
-  return QUICK_STATUSES.map(item => `<button type="button" data-quick-status="${escapeHtml(item.id)}">${escapeHtml(item.label)}</button>`).join('');
+  return QUICK_STATUSES.map(item => `<button type="button" data-quick-status="${escapeHtml(item.id)}" data-status-label="${escapeHtml(item.label.replace(/^\S+\s/,''))}" ${item.status ? 'data-keep-emoji' : 'data-ui-symbols'}>${escapeHtml(item.label)}</button>`).join('');
 }
 
 // `exists` says whether this person already has a status document: the rules

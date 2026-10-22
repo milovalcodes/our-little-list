@@ -15,7 +15,10 @@ if(phase==='unit'){
  if(plan.syntax)run('test/check-syntax.mjs');
  for(const test of plan.unit)run(`test/${test}.test.mjs`);
 }else if(phase==='browser'){
- for(const test of plan.browser)run(`test/${test}-browser.mjs`);
+ for(const test of plan.browser){
+  run(`test/${test}-browser.mjs`);
+  if(test==='interface-design')run(`test/${test}-browser.mjs`,{GAME_BROWSER:'webkit'});
+ }
  for(const page of plan.pages){
   if(!/^[\w-]+$/.test(page))throw Error('Invalid page');
   run('test/clarity-browser.mjs',{CLARITY_PAGE:page});

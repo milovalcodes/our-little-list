@@ -1,3 +1,4 @@
+import {uiIcon} from './interface-icons.js';
 import {activityClock} from './activity-clock.js';
 import {weekForDay,shiftDay,normalizeWeekRecord} from './word-scores.js';
 import {timedTaken,clock} from './daily-results.js';
@@ -12,7 +13,7 @@ export function startWeeklyRecap({data,viewer},host){
   host.hidden=false;
   const mine=timed.filter(r=>r.person===viewer&&timedTaken(r)!==null).sort((a,b)=>timedTaken(a)-timedTaken(b))[0];
   const played=words.filter(r=>r.done).length+timed.filter(r=>r.done).length;
-  host.innerHTML=`<h2>Our week together ✦</h2><p>${record.winners.length===1?`♛ ${esc(personName(record.winners[0]))} has this week’s crown`:'A quiet week together'}</p><small>${played} rounds played between us${mine?` · your fastest ${mine.type==='crossword'?'crossword':'search'}: ${clock(timedTaken(mine))}`:''}${record.decidedBy==='time'?' · total solve time settled the week':''}</small><a href="activities.html#scoreboard-${record.week}">Open the weekly recap →</a>`;
+  host.innerHTML=`<h2>Our week together ✦</h2><p>${record.winners.length===1?`${uiIcon('crown')} ${esc(personName(record.winners[0]))} has this week’s crown`:'A quiet week together'}</p><small>${played} rounds played between us${mine?` · your fastest ${mine.type==='crossword'?'crossword':'search'}: ${clock(timedTaken(mine))}`:''}${record.decidedBy==='time'?' · total solve time settled the week':''}</small><a href="activities.html#scoreboard-${record.week}">Open the weekly recap →</a>`;
  }
  const refresh=()=>{
   const current=weekForDay(activityClock().day).start,next=weeks.find(w=>w.week===shiftDay(current,-7));

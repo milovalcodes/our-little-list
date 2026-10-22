@@ -1,3 +1,5 @@
+import {startInterfaceIcons} from './interface-icons.js';
+startInterfaceIcons();
 import {gameFeedback,comfortSettings,startGameComfort} from './game-comfort.js';
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const moving=()=>!reduced.matches&&comfortSettings().motion&&!document.hidden;

@@ -1,4 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap');
+/* Nunito is shipped with the offline app, not fetched from a third-party CDN. */
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:400; font-display:swap; src:url('./fonts/nunito-latin-ext-400.woff2') format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:500; font-display:swap; src:url('./fonts/nunito-latin-ext-500.woff2') format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:600; font-display:swap; src:url('./fonts/nunito-latin-ext-600.woff2') format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:700; font-display:swap; src:url('./fonts/nunito-latin-ext-700.woff2') format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:800; font-display:swap; src:url('./fonts/nunito-latin-ext-800.woff2') format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:900; font-display:swap; src:url('./fonts/nunito-latin-ext-900.woff2') format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:400; font-display:swap; src:url('./fonts/nunito-latin-400.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:500; font-display:swap; src:url('./fonts/nunito-latin-500.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:600; font-display:swap; src:url('./fonts/nunito-latin-600.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:700; font-display:swap; src:url('./fonts/nunito-latin-700.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:800; font-display:swap; src:url('./fonts/nunito-latin-800.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:'Nunito'; font-style:normal; font-weight:900; font-display:swap; src:url('./fonts/nunito-latin-900.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 
 :root {
   --cream: #fffaf5;
@@ -14,8 +26,8 @@
   --accent-soft:#f0cd7d;
   --page-text:#5f4134;
   --page-muted:#907064;
-  --font-body: "Nunito", ui-rounded, "SF Pro Rounded", sans-serif;
-  --font-display: "Fredoka", "Nunito", ui-rounded, sans-serif;
+  --font-body: "Nunito", sans-serif;
+  --font-display: var(--font-body);
   font-family: var(--font-body);
 }
 
@@ -205,7 +217,7 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 4px colo
 .reaction-count { display:block; margin-top:6px; color:var(--page-muted); font-size:.74rem; }
 .reaction-controls { display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin-top:9px; }
 .reaction-trigger { min-height:34px; padding:7px 14px; border:1px solid color-mix(in srgb,var(--accent) 30%,transparent); border-radius:999px; color:var(--accent-deep); background:color-mix(in srgb,var(--accent-pale) 50%,white); font-size:.72rem; font-weight:900; cursor:pointer; transition:transform .16s ease,box-shadow .16s ease; }
-.reaction-trigger::before { content:'☺'; margin-right:5px; font-size:.9rem; }
+.reaction-trigger>.ui-icon { margin-right:5px; font-size:.9rem; }
 .reaction-trigger.note-tool::before { content:none; margin:0; }
 @media (hover:hover) { .reaction-trigger:hover { transform:translateY(-1px); box-shadow:0 5px 14px color-mix(in srgb,var(--accent) 18%,transparent); } }
 .reaction-display { width:max-content; max-width:100%; display:flex; align-items:center; gap:7px; margin:0; padding:6px 9px; border:1px solid color-mix(in srgb,var(--accent) 26%,transparent); border-radius:12px; color:var(--accent-deep); background:color-mix(in srgb,var(--accent-pale) 62%,white); font:inherit; cursor:pointer; }
@@ -1350,3 +1362,10 @@ body.memory-open { overflow:hidden; }
 .him-theme .random-date-card.date-roulette .roulette-chip-group>span { color:#c2cbe3; }
 .him-theme .random-date-card.date-roulette .roulette-chip-group button:not(.active) { color:#e5dafc; background:#31416c; border-color:rgba(219,205,255,.35); }
 .random-date-card.date-roulette .roulette-chip-group button { min-height:44px; }
+
+/* Shared interface drawings inherit theme ink, never an OS emoji font. */
+.ui-icon { display:inline-block; flex:none; width:1em; height:1em; vertical-align:-.14em; overflow:visible; pointer-events:none; }
+.ui-icon[data-ui-icon="pair"] { width:1.35em; }
+.dock-item>.ui-icon { width:22px; height:22px; }
+.daily-stamp>.ui-icon,.score-crown>.ui-icon { width:1.15em; height:1.15em; }
+.daily-stamp>.ui-icon[data-ui-icon="pair"] { width:1.6em; }

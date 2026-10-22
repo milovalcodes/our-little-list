@@ -1,4 +1,4 @@
-const CACHE = 'our-little-list-v135';
+const CACHE = 'our-little-list-v136';
 // v114: authenticated shared Little Star alpha, competition earnings and care pings.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
@@ -20,6 +20,7 @@ const PAGES = [
 ];
 
 const ASSETS = [
+  './interface-icons.js', './fonts/nunito-latin-400.woff2', './fonts/nunito-latin-500.woff2', './fonts/nunito-latin-600.woff2', './fonts/nunito-latin-700.woff2', './fonts/nunito-latin-800.woff2', './fonts/nunito-latin-900.woff2', './fonts/nunito-latin-ext-400.woff2', './fonts/nunito-latin-ext-500.woff2', './fonts/nunito-latin-ext-600.woff2', './fonts/nunito-latin-ext-700.woff2', './fonts/nunito-latin-ext-800.woff2', './fonts/nunito-latin-ext-900.woff2',
   './themed-crossword.js', './crossword-themes.js', './crossword-view.js', './crossword-viewport.js', './themed-practice-bank.js',
   './word-book.js', './practice-word-details.js', './word-definitions.js', './word-topics.js', './word-hints.js', './interface-audio.js',
   './audio/interface/tap-1.wav',

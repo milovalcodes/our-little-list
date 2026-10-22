@@ -62,7 +62,7 @@ try{
  const tieWord=await page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer(),{wordForTie}=await import('./daily-words.js'),{timedPuzzle}=await import('./daily-puzzles.js');const word=wordForTie('2026-10-05',1,Date.now());await d.setTo('wordPuzzles',word.day,word);for(const type of ['search','crossword'])await d.setTo('timedPuzzles',word.day+'-'+type,timedPuzzle(word.day,type,Date.now()));await d.setTo('wordDuels',word.day,{week:'2026-10-05',round:1,puzzleId:word.day,format:'trio',scoreVersion:2,scores:{her:400,him:400}});return word;});
  await page.evaluate(()=>location.hash='tiebreaker');await page.locator('[data-trio="wordle"]>summary').click();
  for(const letter of tieWord.word)await page.click(`[data-trio="wordle"] [data-key="${letter}"]`);await page.click('[data-trio="wordle"] [data-key="↵"]');
- await page.waitForFunction(()=>document.querySelector('.trio-score').textContent.includes('☾ 600'));
+ await page.waitForFunction(()=>document.querySelector('.trio-score [data-ui-icon=moon]')?.nextSibling?.textContent.trim()==='600');
  assert.equal(await page.locator('#tiebreaker [data-trio]').count(),3);
  await page.locator('[data-trio="search"]>summary').click();assert.match(await page.locator('[data-trio="search"] .timed-ready').textContent(),/100 points/);
  assert.match(await page.locator('[data-trio="search"] .puzzle-theme').textContent(),/hard/);

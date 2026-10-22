@@ -131,3 +131,7 @@ html[data-quiet-motion] :is(.word-finale,.word-confetti,.life-tap,.life-spark) {
 .profile-page .history-group summary::after { content:""; flex:none; width:.5rem; height:.5rem; margin-inline:.55rem .25rem; border:solid currentColor; border-width:0 2px 2px 0; opacity:.65; rotate:45deg; translate:0 -.12rem; transition:rotate .16s ease,translate .16s ease; }
 .profile-page .history-group[open] summary::after { rotate:225deg; translate:0 .12rem; }
 @media (prefers-reduced-motion:reduce) { .profile-page details>summary::after,.profile-page details>summary :is(.daily-chevron,i,span[aria-hidden])::before { transition:none; } }
+
+/* Notes share the same reaction drawing as Profiles. */
+.profile-page .note-thread-row .reaction-trigger:not(.note-tool)::before { content:none; }
+.profile-page .note-thread-row .reaction-trigger:not(.note-tool)>.ui-icon { font-size:1.4rem; margin:0; }

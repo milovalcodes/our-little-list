@@ -1,3 +1,4 @@
+import {uiIcon} from './interface-icons.js';
 import './old-links.js';
 import {anchorDock} from './dock-viewport.js';
 import {startNavigationAttention} from './navigation-attention.js';
@@ -113,13 +114,12 @@ function movePageComposers() {
 
 function addDock(viewer) {
   const active = name => page === name ? ' is-active' : '';
-  const icon=paths=>`<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
   document.body.insertAdjacentHTML('beforeend', `<nav class="app-dock" aria-label="Main navigation">
-    <a class="dock-item${active('home')}" href="${viewer}.html">${icon('<path d="m4 10 8-7 8 7v11h-6v-7h-4v7H4Z"/>')}<span>home</span></a>
-    <a class="dock-item${active('tasks')}" href="tasks.html">${icon('<path d="m5 12 5 5L20 6"/>')}<span>list</span></a>
-    <a class="dock-item${active('activities')}" href="activities.html">${icon('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 8h.01M16 8h.01M12 12h.01M8 16h.01M16 16h.01" stroke-width="3"/>')}<span>activities</span></a>
-    <a class="dock-item${active('notes')}" href="notes.html">${icon('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/>')}<span>notes</span></a>
-    <button class="dock-item" type="button" data-open-sheet="more">${icon('<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>')}<span>more</span></button>
+    <a class="dock-item${active('home')}" href="${viewer}.html">${uiIcon('home')}<span>home</span></a>
+    <a class="dock-item${active('tasks')}" href="tasks.html">${uiIcon('check')}<span>list</span></a>
+    <a class="dock-item${active('activities')}" href="activities.html">${uiIcon('dice')}<span>activities</span></a>
+    <a class="dock-item${active('notes')}" href="notes.html">${uiIcon('notes')}<span>notes</span></a>
+    <button class="dock-item" type="button" data-open-sheet="more">${uiIcon('more')}<span>more</span></button>
   </nav>`);
   document.body.classList.add('has-app-dock');
   // Text zoom can make the dock taller. Reserve its actual height, and keep
@@ -262,7 +262,7 @@ function setupQuickAdd(data, viewer, other) {
       else if (kind === 'date') await settleQuickly(addDateIdea(data, { viewer, other, title: text }), lost);
       form.reset();
       closeSheets();
-      toast(kind === 'note' ? 'sent 💌' : 'added');
+      toast(kind === 'note' ? 'sent' : 'added');
       window.littleHaptic?.('success');
     } catch (_) {
       showFailure('that did not get added.', 'check the internet and try again. Your text is still here.');
@@ -286,7 +286,7 @@ function setupSearch(data, viewer, openQuick) {
     if (!cache.size) { results.innerHTML = '<div class="search-skeleton"><i></i><i></i><i></i></div>'; return; }
     const matches = [...cache].flatMap(([collection, items]) => items.map(item => searchable(collection, item, viewer)))
       .filter(item => item.haystack.includes(query)).slice(0, 30);
-    results.innerHTML = matches.length ? matches.map(item => `<a class="search-hit" href="${item.url}"><span>${item.icon}</span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.meta)}</small></div><i>›</i></a>`).join('') : `<div class="search-start"><span>🕵️</span><p>nothing. suspicious.</p><button type="button" data-open-quick-from-search>add it instead</button></div>`;
+    results.innerHTML = matches.length ? matches.map(item => `<a class="search-hit" href="${item.url}"><span ${item.keepEmoji ? 'data-keep-emoji' : ''}>${escapeHtml(item.icon)}</span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.meta)}</small></div><i>›</i></a>`).join('') : `<div class="search-start"><span>🕵️</span><p>nothing. suspicious.</p><button type="button" data-open-quick-from-search>add it instead</button></div>`;
   };
   const start = () => {
     // Opened before sign-in finished: try again next time instead of marking
@@ -328,7 +328,7 @@ function searchable(collection, item, viewer) {
   const map = {
     items: { icon: item.type === 'grocery' ? '🛒' : '✓', title: item.title, meta: item.done ? 'finished list thing' : 'on the list', url: `tasks.html#${item.done ? 'done' : 'item'}-${item.id}` },
     notes: { icon: '💌', title: item.body || item.message, meta: item.sender === viewer ? 'note you sent' : `note from ${personName(item.sender || item.from)}`, url: `notes.html#note-${item.id}` },
-    help: { icon: item.emoji || (item.dueAt ? '⏰' : '🙋'), title: item.title, meta: 'on the list', url: `tasks.html#ask-${item.id}` },
+    help: { keepEmoji: Boolean(item.emoji), icon: item.emoji || (item.dueAt ? '⏰' : '🙋'), title: item.title, meta: 'on the list', url: `tasks.html#ask-${item.id}` },
     dates: { icon: '✦', title: item.title, meta: item.done ? 'date we did' : 'date idea', url: `dates.html#date-${item.id}` },
     memories: { icon: '◒', title: item.text, meta: 'memory', url: `memories.html#memory-${item.id}` }
   };

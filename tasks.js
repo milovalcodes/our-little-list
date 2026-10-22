@@ -310,7 +310,7 @@ function taskMarkup(item) {
   const due = item.due ? `<span>${escapeHtml(prettyDue(item.due))}</span>` : '';
   const addedBy = item.addedBy===other ? `<span>from ${escapeHtml(personName(other))}</span>` : '';
   const finished = item.doneBy===other ? `<span>done by ${escapeHtml(personName(other))}</span>` : '';
-  const repeat=routine?`<span>${scheduled?'today · ':''}${dayLabel(item.routineDays)}</span>`:item.recurrence&&item.recurrence!=='once'?`<span>↻ ${escapeHtml(item.recurrence)}</span>`:'';
+  const repeat=routine?`<span>${scheduled?'today · ':''}${dayLabel(item.routineDays)}</span>`:item.recurrence&&item.recurrence!=='once'?`<span data-ui-symbols>↻ ${escapeHtml(item.recurrence)}</span>`:'';
   const rolledBack=item.recurrence&&item.recurrence!=='once'&&item.lastDoneAt&&Date.now()-Number(item.lastDoneAt)<10*60000
     ?'<button class="readd-task" data-action="undo-roll" type="button">undo</button>':'';
   const aisle=item.type==='grocery'&&item.aisle&&tab!=='grocery'?`<span>${escapeHtml(item.aisle)}</span>`:'';

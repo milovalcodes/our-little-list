@@ -39,7 +39,8 @@ try{
  await page.reload();await page.waitForFunction(()=>document.querySelector('#word-summary').textContent.includes('40 points'));
  assert.equal(await page.locator('.word-keyboard').count(),0);
  await page.locator('#scoreboard>summary').click();
- assert.match(await page.locator('#weekly-score').textContent(),/☾ 40/);
+ assert.equal(await page.locator('#weekly-score [data-ui-icon=moon][aria-label=Moon]').count(),1);
+ assert.match(await page.locator('#weekly-score').textContent(),/·\s+40/);
  for(const [season,date] of [['spooky','2026-10-08T18:00Z'],['normal','2026-11-08T18:00Z'],['christmas','2026-12-08T18:00Z']]){
   await page.evaluate(d=>LittleSeason.refresh(new Date(d)),date);
   await page.setViewportSize({width:320,height:700});

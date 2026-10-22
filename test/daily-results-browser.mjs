@@ -22,7 +22,7 @@ try{
  assert.doesNotMatch(await page.locator('#word-game .word-partner').textContent(),/points|\d \/ \d/);
  await page.locator('#scoreboard>summary').click();
  await page.waitForFunction(()=>document.querySelector('#weekly-board')?.textContent.includes('hidden until you finish yours'));
- assert.match(await page.locator('#weekly-score').textContent(),/☾ 0/);
+ assert.equal(await page.locator('#weekly-score [data-ui-icon=moon]').evaluate(n=>n.nextSibling.textContent.trim()),'0');
  await page.locator('#scoreboard>summary').click();
  const word=wordForDay(day).word,guess=word==='crane'?'slate':'crane';
  for(const g of [guess,word]){for(const ch of g)await page.click(`#word-game [data-key="${ch}"]`);await page.click('#word-game [data-key="↵"]');await page.waitForFunction(n=>document.querySelectorAll('#word-game .word-row .word-tile.correct,#word-game .word-row .word-tile.present,#word-game .word-row .word-tile.absent').length>=n,g===word?10:5);}
@@ -38,7 +38,7 @@ try{
  assert.match(await page.locator('#word-game .share-note').textContent(),/copied/);
  // Once she has played, the weekly race shows his word again.
  await page.locator('#scoreboard>summary').click();
- await page.waitForFunction(points=>document.querySelector('#weekly-score').textContent.includes('☾ '+points),wordPoints(partnerWin));
+ await page.waitForFunction(points=>document.querySelector('#weekly-score [data-ui-icon=moon]')?.nextSibling?.textContent.trim()===String(points),wordPoints(partnerWin));
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  assert.deepEqual(errors,[]);
  console.log('DAILY RESULTS UI: partner hidden until you finish (game and weekly race), side-by-side results, streak, guess distribution, share grid and 320px layout pass');

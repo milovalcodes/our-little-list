@@ -9,6 +9,9 @@ const hide=['activities.html','game-comfort.js','guide.html','notification-polic
 const dock=checkScope(['app-chrome.js','app-life.css','dock-viewport.js','test/dock-scroll-browser.mjs','guide.html','service-worker.js']);
 assert.equal(dock.full,false);assert.equal(dock.star,false);assert.equal(dock.dailyOnly,false);
 for(const name of ['dock-scroll','app-life','appearance','games-navigation','update-freshness'])assert.ok(dock.plan.browser.includes(name));
+const design=checkScope(['styles.css','app-life.js','interface-icons.js','fonts/nunito-latin.woff2','test/interface-design-browser.mjs']);
+assert.equal(design.full,false);assert.equal(design.star,false);
+for(const name of ['interface-design','clarity','activities','weekly-tracker','memories','routines'])assert.ok(design.plan.browser.includes(name));
 const small=checkScope(hide,{versionOnly:true});
 assert.equal(small.full,false);assert.equal(small.dailyOnly,false);assert.equal(small.star,false);assert.equal(small.focused,true);
 assert.deepEqual(small.plan.pages,['activities','guide','phone-check']);
@@ -21,7 +24,7 @@ const automation=['.github/workflows/checks.yml','scripts/check-scope.mjs','scri
 const config=checkScope(automation);
 assert.equal(config.full,false);assert.equal(config.dailyOnly,false);assert.equal(config.star,false);
 assert.deepEqual(config.plan,{syntax:false,unit:[],browser:[],pages:[]},'automation-only changes run selector checks only');
-for(const files of [[],['new-unknown.js'],['package.json'],['pnpm-lock.yaml'],['data-hub.js'],['household.js'],['firestore.rules'],['worker/src/index.js'],['styles.css']])assert.equal(checkScope(files).full,true,files.join(','));
+for(const files of [[],['new-unknown.js'],['package.json'],['pnpm-lock.yaml'],['data-hub.js'],['household.js'],['firestore.rules'],['worker/src/index.js']])assert.equal(checkScope(files).full,true,files.join(','));
 assert.equal(checkScope(['word-hints.js','daily-word.js','guide.html','service-worker.js']).dailyOnly,true);
 assert.equal(checkScope(['crossword-view.js','test/crossword-play-browser.mjs']).dailyOnly,true);
 const mixed=checkScope(['daily-word.js','notification-policy.js']);

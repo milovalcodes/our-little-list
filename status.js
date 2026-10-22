@@ -97,7 +97,7 @@ $('arrival-presets').addEventListener('click',async event=>{const button=event.t
   // "leaving now" means a trip: keep the screen awake so the pings can follow.
   if(button.dataset.quickStatus==='leaving now'&&!tripActive())void startTrip({quiet:true});
   if(!await ready()){setButtonBusy(button,false);return;}
-  try{await settleQuickly(saveQuickStatus({data,viewer,other,exists:Boolean(mine())},button.dataset.quickStatus),'that update did not send.');toast(button.textContent.replace(/^\S+\s/,''));}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
+  try{await settleQuickly(saveQuickStatus({data,viewer,other,exists:Boolean(mine())},button.dataset.quickStatus),'that update did not send.');toast(button.dataset.statusLabel);}catch(_){showFailure('that update did not send.','check the internet and try again.');}finally{setButtonBusy(button,false);}});
 $('status-pair').addEventListener('click',event=>{const picker=event.target.closest('[data-status-picker]');if(picker){const targetId=picker.dataset.statusPicker;const current=findStatusReaction(targetId);openEmojiPicker({current:current?.emoji,onSelect:value=>saveStatusReaction(targetId,value,picker),onRemove:()=>saveStatusReaction(targetId,'',picker)});return;}const button=event.target.closest('[data-react-status]');if(button)void saveStatusReaction(button.dataset.reactStatus,button.dataset.emoji,button);});
 
 function findStatusReaction(targetId){return reactions.find(item=>item.id===`status-${targetId}-${viewer}`||(item.targetType==='status'&&item.targetId===targetId&&item.by===viewer));}
