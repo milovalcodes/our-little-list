@@ -7,8 +7,8 @@ import {fileURLToPath} from 'node:url';
 import {checkScope} from '../scripts/check-scope.mjs';
 const declutter=checkScope(['test/declutter-browser.mjs','scripts/focused-checks.mjs','test/check-scope.test.mjs']);
 assert.equal(declutter.full,false);assert.equal(declutter.star,false);assert.equal(declutter.dailyOnly,false);
-assert.deepEqual(declutter.plan,{syntax:false,unit:[],browser:['declutter'],pages:[]},'a declutter fixture correction runs its owning browser test');
-assert.deepEqual(checkScope(['test/mini-crossword-browser.mjs']).plan.browser,['mini-crossword'],'the standalone crossword fixture runs its owning UI check');
+assert.deepEqual(declutter.plan,{syntax:false,unit:[],browser:['declutter','mini-crossword'],pages:[]},'a fixture correction checks both revised navigation expectations');
+assert.deepEqual(checkScope(['test/mini-crossword-browser.mjs']).plan.browser,['declutter','mini-crossword'],'the standalone crossword fixture retains both UI regressions');
 assert.deepEqual(checkScope(['test/declutter-browser.mjs','test/mini-crossword-browser.mjs']).plan.browser,['declutter','mini-crossword']);
 assert.equal(checkScope(['test/unknown-browser.mjs']).full,true,'unknown browser harnesses retain broad coverage');
 const hide=['activities.html','game-comfort.js','guide.html','notification-policy.js','pings-settings.js','service-worker.js'];
@@ -54,6 +54,13 @@ for(const files of [hide,automation,['tasks.js'],['notes.js'],['memories.js'],['
  for(const test of plan.browser)assert.ok(existsSync(new URL(`./${test}-browser.mjs`,import.meta.url)),test);
 }
 const workflow=readFileSync(new URL('../.github/workflows/checks.yml',import.meta.url),'utf8');
+const browserSelection=workflow.match(/browsers=\$\(node -e '([^']+)'\)/)?.[1];
+assert.ok(browserSelection,'focused checks select their required browser engines');
+for(const [browser,pages,expected] of [[['declutter','mini-crossword'],[],'chromium'],[['interface-design'],[],'chromium webkit'],[[],['activities'],'chromium webkit']]){
+ const selection=spawnSync(process.execPath,['-e',browserSelection],{encoding:'utf8',env:{...process.env,CHECK_PLAN:JSON.stringify({browser,pages})}});
+ assert.equal(selection.status,0);assert.equal(selection.stdout.trim(),expected);
+}
+
 for(const output of ['daily_only','focused','plan','star','full'])assert.match(workflow,new RegExp(`steps.scope.outputs.${output}`));
 assert.match(workflow,/checks:\s+needs: scope\s+if: needs.scope.outputs.full == 'true'/);
 assert.match(workflow,/daily-games:\s+needs: scope\s+if: needs.scope.outputs.daily_only == 'true'/);

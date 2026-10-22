@@ -52,7 +52,8 @@ jobs:
       - name: Selected pages and browser flows
         if: toJSON(fromJSON(needs.scope.outputs.plan).browser) != '[]' || toJSON(fromJSON(needs.scope.outputs.plan).pages) != '[]'
         run: |
-          pnpm exec playwright install --with-deps chromium webkit
+          browsers=$(node -e 'const p=JSON.parse(process.env.CHECK_PLAN); console.log(p.pages.length===0&&p.browser.every(t=>["declutter","mini-crossword"].includes(t))?"chromium":"chromium webkit")')
+          pnpm exec playwright install --with-deps $browsers
           node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
           python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
           node scripts/run-focused-checks.mjs browser

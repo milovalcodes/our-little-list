@@ -13,7 +13,7 @@ try{
  assert.equal(await page.locator('.app-dock a[href="today.html"]').count(),0);
  assert.equal(await page.locator('.more-grid a[href="notes.html"]').count(),0);
  assert.equal(await page.locator('.app-dock a[href="notes.html"] .attention-badge').count(),0);
- assert.equal(await page.locator('.dock-item > svg.ui-icon').first().evaluate(el=>getComputedStyle(el,'::after').content),'none');
+ assert.deepEqual(await page.locator('.dock-item > svg.ui-icon').evaluateAll(nodes=>nodes.map(el=>getComputedStyle(el,'::after').content)),Array(5).fill('none'));
  await page.evaluate(async()=>{
   const d=await(await import('./data-hub.js')).sharedLayer(),now=Date.now();
   await d.setTo('notes','new-note',{sender:'her',recipient:'him',body:'only in notes please',createdAt:now,read:false});
