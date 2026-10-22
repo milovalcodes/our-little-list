@@ -279,6 +279,16 @@ jobs:
             console.log("every id in household.js appears in firestore.rules");
           '
 
+      - name: Start the isolated preview before browser checks
+        run: |
+          python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent http://127.0.0.1:8777/activities.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/our-little-list-http.log
+          exit 1
+
       - name: Skill cooking playthroughs and calibration before release
         if: needs.scope.outputs.star == 'true'
         run: |
@@ -302,7 +312,6 @@ jobs:
         run: |
           pnpm exec playwright install --with-deps chromium webkit
           node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
-          python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
           node test/update-freshness-browser.mjs
           pnpm run test:browser
           GAME_BROWSER=webkit node test/crossword-viewport-browser.mjs

@@ -5,6 +5,14 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {checkScope} from '../scripts/check-scope.mjs';
+// Broad checks need a ready preview before the optional pet browser phase.
+{
+ const workflow=readFileSync(new URL('../.github/workflows/checks.yml',import.meta.url),'utf8');
+ const preview=workflow.indexOf('- name: Start the isolated preview before browser checks');
+ assert.ok(preview>=0&&preview<workflow.indexOf('- name: Skill cooking playthroughs and calibration before release'));
+ const app=workflow.slice(workflow.indexOf('- name: Browser flows fit a phone and stay script-error free'));
+ assert.doesNotMatch(app,/python3 -c/,'the broad browser phase reuses the preview server');
+}
 const declutter=checkScope(['test/declutter-browser.mjs','scripts/focused-checks.mjs','test/check-scope.test.mjs']);
 assert.equal(declutter.full,false);assert.equal(declutter.star,false);assert.equal(declutter.dailyOnly,false);
 assert.deepEqual(declutter.plan,{syntax:false,unit:[],browser:['declutter','mini-crossword'],pages:[]},'a fixture correction checks both revised navigation expectations');
