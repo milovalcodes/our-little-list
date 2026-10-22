@@ -49,6 +49,11 @@ assert.equal(activeEntry(puzzle,nextClue(puzzle,letters,{cell:0,across:true},-1)
  for(const ch of 'BLAST')({letters:l,cursor:c}=typeLetter(puzzle,l,c,ch));
  assert.equal(l.slice(10,15).join(''),'BLAST');
 }
+{
+ const l=emptyLetters(puzzle);[...'CRZNE'].forEach((ch,i)=>l[i]=ch);
+ const next=typeLetter(puzzle,l,{cell:2,across:true},'A');
+ assert.deepEqual(next.cursor,{cell:10,across:true},'correcting a full word advances beyond its new locks');
+}
 // Credit is only for exactly-matching words; a full grid keeps the cursor still.
 assert.deepEqual(correctEntries(puzzle,letters),[0]);
 const full=[...grid].map(c=>c==='#'?'':c);

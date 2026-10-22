@@ -40,7 +40,7 @@ export function typeLetter(puzzle,letters,cursor,letter){
  next[cursor.cell]=letter;
  const cells=entryCells(puzzle,index),pos=cells.indexOf(cursor.cell),across=isAcross(puzzle.entries[index]);
  // Leave confirmed crossing letters in place while entering the missing ones.
- const following=cells.slice(pos+1).find(c=>!locked.has(c));
+ const confirmed=lockedCells(puzzle,next),following=cells.slice(pos+1).find(c=>!confirmed.has(c));
  if(following!==undefined)return {letters:next,cursor:{cell:following,across}};
  const gap=cells.find(c=>!next[c]);
  if(gap!==undefined)return {letters:next,cursor:{cell:gap,across}};
