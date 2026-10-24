@@ -1,4 +1,3 @@
-import { startWordCrowns } from './word-crowns.js';
 import { startAlterEgos } from './alter-ego.js';
 import { sharedLayer, whenReady } from './data-hub.js';
 import { applyProfileNames, cachedProfile, saveCachedProfile } from './profile-store.js';
@@ -19,7 +18,6 @@ if (data.mode === 'local') {
 
 function listenForNames() {
   startAlterEgos(data,viewerSide());
-  startWordCrowns(data,viewerSide());
   data.listenTo('profiles', items => {
     const profile = items.find(item => item.id === 'couple');
     if (profile) saveCachedProfile(profile);

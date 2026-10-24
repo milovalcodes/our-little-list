@@ -4,7 +4,7 @@
 
 The existing delivery worker owns a SQLite-backed `StarNursery` Durable Object, one per household. Only Firebase-verified household members can use `/star`; the browser submits commands, never balances or clocks. Durable transactions serialize concurrent care and spending. Actor-scoped receipts bind a request ID to its command indefinitely. The per-member active pet is independent of the other member's selection.
 
-Opening the live game initializes a fresh egg with normal 40-stardust starter wallets. It never imports the local demo. Verified daily Word/Search/Crossword results from launch week onward award 1 stardust per competition point. A per-day/game/member high-water ledger prevents reset/replay farming. A reset can change the current weekly display, but cannot revoke spent rewards or repay an old score. Source results are read-only; pet games and purchases never modify them. Practice puzzles retain the main app's no-points rule. Earnings catch up when the nursery opens; while visible, saves poll every five seconds and scores at most every 30 seconds.
+Opening the live game initializes a fresh egg with normal 40-stardust starter wallets. It never imports the local demo. Competition earnings are retired in v141. Existing wallets and high-water payment ledgers remain untouched; daily results are no longer queried or credited. Pet-only play and care behavior retain their existing contracts.
 
 Cooking and arcade results require a server-created session, valid scored result, plausible elapsed time and exactly-once collection. This is not a competitive anti-cheat system: gameplay remains client-rendered and these rewards only affect the shared pet economy.
 

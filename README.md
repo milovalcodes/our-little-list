@@ -6,6 +6,10 @@ GitHub Pages, with Firebase for syncing between the two phones.
 
 Live: https://milovalcodes.github.io/our-little-list/
 
+## v141 maintenance note
+
+Daily games are retired. Use `pnpm run test:daily`, `pnpm run test:browser:daily`, `pnpm run test:rules`, and the selected shared notification/offline checks.
+
 ## What it does
 
 Each thing lives in one place:
@@ -14,7 +18,7 @@ Each thing lives in one place:
 - **The list** — tasks, groceries and weekday routines with independent daily completion and optional reminder offsets. Legacy requests still render as checklist rows.
 - **Notes** — short notes, reactions and the option to pin one on both home screens.
 - **Profiles** — Home name labels open profiles. A portrait with an optional alter-ego photo flips on one tap, opens the profile on a double tap, then flips back; without a photo, the Home portrait opens the profile. Your own profile owns status editing, location controls and a camera badge for photo upload/removal (pick, preview, then save; tap the camera again to change or remove); your partner's shows their status and shared location; notes stay in Notes. Photos are square, compressed JPEGs in the household-only `profilePhotos` collection, writable only by their owner. Reduced motion skips the spin. Saved spots stay in Settings.
-- **Activities** — daily question first, then an illustrated Race to the Crown map. Weekday progress and the lead separate Sun and Moon on the trail; a mathematically unbeatable lead secures the crown while awaiting coronation. Scores, past weeks and scoring rules live in Advanced info. Little Word, Word Search and Crossword links each open a dedicated screen with saved progress. The weekly tracker shows source-by-source points, daily details, historical recaps and the largest per-game winning margin. Crown pings deep-link to the correct week. The retired arcade is no longer loaded, linked or notified; its stored records and compatibility data methods remain intact.
+- **Activities** — one daily question at 9 a.m. Eastern and read-only recorded weekly wins. Answers remain private until both people answer. Daily/practice games, new settlements, game notifications and competition-to-pet rewards are retired. See [backup and restoration](docs/daily-games-restore.md).
 - **Date ideas** — ideas with optional details, filters and a random picker; completed dates can become memories.
 - **Memories** — photos and small things worth keeping.
 - **Settings** — setup checks, names, notification categories, quiet hours, sound, vibration and sign-out.
@@ -25,129 +29,6 @@ The dock is Home / List / Activities / Notes / More.
 A small **add** button beside the heading opens the full composer on List,
 Date ideas and Memories. Home has quick add; Notes has its own writing bar.
 Activities has no unrelated add controls.
-
-## Daily round engine and admin resets
-
-CI selects checks from changed files with `scripts/check-scope.mjs`.
-Small page, notification/settings, task, notes, memory, guide and offline changes
-run their corresponding tests and page checks. Mixed changes combine their areas.
-Daily-game code retains daily-game unit, browser and permission checks; pet code
-retains pet/cooking checks without unrelated app tests. Shared account, backend,
-dependency, global-style and unrecognized changes retain broad coverage.
-A service-worker version bump keeps lightweight offline/release checks; changes
-to its behavior also exercise cache upgrades and lifecycle handling.
-
-Workflow/selector edits run the scope regression checks without app, puzzle,
-pet, browser or emulator suites. Regression cases include the v133 hide-Star
-change and assert that it selects only Activities, Settings, guide, notifications
-and lightweight offline checks. An empty change list falls back to broad checks.
-
-Do not run `pnpm test` by habit for a small edit. Inspect the selected plan first.
-`pnpm run test:daily` and `pnpm run test:browser:daily` are for daily-game code;
-`pnpm run test:star` is for pet code. `pnpm run test:all` explicitly requests both.
-
-`round-engine.js` builds all three games using `round-library.js`. From Oct 21,
-the compiled calendar prevents answers repeating across any of the three daily
-games for at least 30 days. October and December favor seasonal subjects without
-excluding everyday vocabulary. The 150-entry expansion supplies concrete clues,
-and the compiler rejects incomplete boards, placement errors and answer leaks. `gamePlans/{week}` freezes these reservations
-once the week opens, so later catalog releases cannot reshuffle it. The first week's spoiled technical-difficulty
-rounds are retired explicitly. Seasonal-only vocabulary stays in its month;
-practice vocabulary may appear in scored games. The accepted-guess dictionary
-already contains over 20,000 five-letter forms; the curated answer and clue
-libraries are deliberately smaller and use original clues, not copied NYT data.
-
-Only `ADMIN_UID` can reset today's games from Activities. The Firebase
-transaction increments puzzle revisions, deletes both users' selected games
-and result summaries, saves an immutable request receipt and weekly exclusion
-ledger, and queues one partner notification. Rules require the new revision and
-atomic removal of both users' old progress; selecting the moon UI does not grant
-admin rights. Reset receipts make a lost-response retry idempotent. Unfinished
-submissions and queued completion notifications carry the round revision, so a
-reset cannot be undone by another open phone. Other days, question answers,
-practice progress and settled crowns are not reset. Weekly totals derive from
-the remaining result records and do not need a separate points mutation.
-
-Rebuild generated Worker data with `node scripts/compile-worker-crosswords.mjs
---write` after library/engine changes. Never run connected crossword generation
-inside the free delivery Worker. `test/round-engine.test.mjs`,
-`test/worker-puzzles.test.mjs`, the emulator reset-rules checks and the two-phone
-Chromium/WebKit real-time checks cover this contract.
-
-All signed-in pages load the same foreground notification module. In Firebase
-mode it listens to the recipient's outbox, rather than duplicating an incomplete
-set of per-feature listeners. Future reminders wait for worker validation. A
-service-worker push offers its message to the visible page; only a positive
-display acknowledgement quiets and closes the system copy. Category, quiet-hour
-and focus preferences apply before display. Exact same-page taps reuse the
-notification router without reloading drafts. Local preview keeps mock feed
-listeners; never use that mode to prove phone delivery.
-
-Confirmed outbox saves wake `POST /dispatch` with the member's short-lived
-Firebase ID token; completed puzzle/answer saves wake `/dispatch/activities`.
-The Worker authorizes a bounded Firestore profile LIST under the existing
-household rules (including when no profile exists), never by trusting a client
-UID or a decoded token. Only the configured site origin is accepted, and the
-request cannot supply a recipient, message, endpoint or send time. CORS is not
-the auth boundary: Firebase rules are. No admin/send secret ships to the client.
-
-App-shell upgrades must bypass the HTTP cache: install uses `Request` with
-`cache: 'reload'`, and registration uses `updateViaCache: 'none'`. Otherwise a
-new shell can precache old JavaScript despite reporting the new cache version.
-`node test/update-freshness-browser.mjs` checks a real installed-app upgrade
-with a warm one-hour HTTP cache; set `GAME_BROWSER=webkit` for WebKit too.
-Do not replace this with a clean-context test or clear users' storage to update.
-
-Immediate delivery skips scheduled housekeeping for ordinary actions. It and
-the minute backstop share a CAS-protected lease, bounded busy retries, and the
-same validation/filtering/send code. A tiny `deliveryLocks/sent-{outboxId}`
-acceptance receipt prevents resending after failed queue cleanup. These receipts
-contain only timestamps; retain them while a corresponding outbox row may exist.
-Provider acceptance followed by a crash before saving a receipt is an ambiguous
-network failure, so this is not a claim of distributed exactly-once delivery.
-Stable notification tags and event IDs also prevent ordinary duplicate UI alerts.
-Housekeeping runs before acquiring the sender lease, and phones use independent
-send lanes. A failed row stays queued for recovery without blocking the other
-recipient. Expired endpoint cleanup uses a version-checked delete so it cannot
-erase a concurrent registration. ABORTED writes retry with bounded backoff.
-Offline writes wake only after server acknowledgement; a failed wake leaves the
-queue intact for the backstop. Scheduled reminders and daily openings still use
-the minute checker. Normal action delivery targets seconds, not guaranteed time.
-
-Delivery work now runs in a private SQLite Durable Object
-(`DeliveryRunner`, migration `delivery-v1`): scheduled Workers on the Free plan
-have only 10ms of CPU, which was repeatedly stopping the combined scheduler and
-sender. The existing queue, authentication, per-message receipts and leases are
-unchanged; `STAR_NURSERY` and its saved egg remain in their separate namespace.
-Do not remove either migration on rollback. Settings verifies the server copy
-of the current subscription and its test uses the real outbox, not a local
-popup. Automatic registration never replaces another device; moving delivery
-requires the explicit “use this phone” button. There is one delivery device per
-member, with per-device preferences.
-
-Every opted-in visible ping requests high Web Push
-transport priority on Apple and Android; this does not bypass focus, quiet hours
-or category choices. Logs separate queue wait from push-provider acceptance time,
-alongside scheduling and total duration, without message bodies or endpoints.
-Provider acceptance is not proof of phone display; locked-phone delivery must
-also be checked on real devices. Missing subscriptions rotate out of the due queue; stale notes,
-reactions, memories and routine nudges are checked before sending. Sign-out
-removes only the current browser endpoint, with a Firestore transaction to
-preserve a concurrent registration. Keep observability explicitly enabled in
-Wrangler ([Cloudflare logging configuration](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)).
-
-The Worker uses precompiled connected-crossword layouts through October 2028
-instead of running the dense generator inside its request CPU allowance. Daily
-layouts match the normal generator exactly; new hard tie sets use a bank of 512
-compiled boards. Existing saved sets remain immutable. After changing puzzle
-banks/generation, rebuild with `node scripts/compile-worker-crosswords.mjs --write`
-and run `node test/worker-puzzles.test.mjs`; it checks the source fingerprint and
-fails when the deployment horizon is below six months. Compile dates must be
-extended before then. Timezone formatters are reused without changing DST rules.
-`node scripts/delivery-health.mjs` reads registration, queue and current-round
-metadata without sending a test notification or printing private content.
-
-Deletes have a short undo window. The site can be installed on iPhone or Android and read offline. Websites cannot track location while closed.
 
 ## Isolated manual QA
 
@@ -201,46 +82,13 @@ Things to know:
   That is an Apple rule, not something the site can route around. The phone
   checker says so and walks through it.
 
-## Daily activities
+## Daily questions and win history
 
-The delivery Worker opens one question at **9 a.m. America/New_York time**
-each day alongside a five-letter word and queues one combined opening ping per person. After the first answer, it
-pings the person who has not answered; after both answer, it pings the first person to answer to
-compare. Those event markers are written atomically with their outbox records,
-so a retry cannot duplicate the pings. Quiet hours and each phone's question
-notification switch still apply. A push needs an active subscription on that
-phone; without one it waits in the outbox until the phone registers again.
+Activities contains only the daily question and read-only saved wins. Questions open at 9 a.m. America/New_York; answers remain separate protected documents until both participants answer, then remain accessible through Memories. One deduplicated morning notification uses `question-open`; answer and reveal events retain their existing recipient logic and settings.
 
-Each answer is stored in its own Firestore document. The shared question has
-only answered-at markers. Security rules let either person read their own words,
-but the other person's words become readable only after **both** markers exist.
-Edits are available during the current day. Past answered questions appear as virtual memories backed by the original protected answer documents; there is no shared plaintext archive. The 150 prompts are selected in a fixed,
-non-repeating order; after all 150 days the app asks for a new batch rather than
-silently repeating an old question. This batch begins October 2, 2026.
+`win-history.js` reads final `wordWeeks` records, normalizes older score units through `win-records.js`, and keeps historical crown-memory deep links working. No new winner is inferred for an unfinished week. All gameplay mutations, content catalogs, practice boards, resets, new weekly settlement, reward imports and game reminders are retired. The service-worker update discards old game assets. Old game bookmarks and notifications lead to the question.
 
-The prompts are original wording inspired by [Gottman's Love Maps](https://www.gottman.com/product/love-map-cards-for-couples/)
-and [relationship-building questions](https://info.gottman.com/blog/20-relationship-building-questions-for-couples?hs_amp=true),
-with intimate prompts framed around [consent](https://www.plannedparenthood.org/learn/relationships/sexual-consent/how-do-i-talk-about-consent)
-and [talking about sex](https://www.plannedparenthood.org/learn/sex-pleasure-and-sexual-dysfunction/sex-and-pleasure/how-do-i-talk-my-partner-about-sex).
-
-### Little Word
-Five guesses, server-confirmed transactions, private per-person guess rows and shared count/result summaries. Daily words run 9 a.m. to 9 a.m. Eastern, including DST. The larger accepted-guess dictionary is [dwyl/english-words](https://github.com/dwyl/english-words), pinned in word-lexicon.js under the Unlicense (WORD-DICTIONARY-LICENSE.txt). The two answer banks are hand-picked separately.
-
-Weekly points: 100/40/30/20/10 for winning on guesses 1–5; otherwise 0. Sunday hard words count double. Once both finish all three Sunday rounds, or Monday at 9 latest, the Worker settles the week. A tie opens a hard trio (one of each game), carrying cumulative points into each repeated set. Close only when secured points strictly exceed the opponent’s maximum final total. The word has no timeout; timed games have 120 seconds. New trio finals use format=trio and scoreVersion=2. Legacy word-only ties retain their original settlement path; old final scores display at 10× without rewriting history. Immutable wordWeeks records drive crown overlays and consecutive weekly streaks. New daily puzzles continue during a tie-break.
-
-The game is friendly, not anti-cheat software: puzzle answers exist in the client-readable puzzle documents. Private guess rows are restricted by side. Like existing question scheduling, the Worker uses a household member credential rather than an admin key; this is not a public competitive ranking service.
-
-### Word Search, crossword and the puzzle catalog
-
-`weekly-report.js` reconciles game/day breakdowns with authoritative weekly finals. Tie timers are evaluated at `settledAt` so a timer expiring after an early clinch cannot invent more points. The first launch week’s tie IDs sort before the timed-game start date; they must still be included. Missing historic detail is disclosed instead of inventing a reason for the win. `weekly-tracker.js` loads only the selected week’s public summaries, never private guesses, and keeps expanded rows while scores update.
-
-Both new boards have a 120-second server-stamped timer. Scores are `round(found / total * 50)`; hard Sunday/tie boards double that rounded score. An untouched or zero-word board earns zero. Confirmed partial results still count when the timer expires with the browser closed. A refresh cannot reset a start timestamp. Timed private routes can only be read by a partner after both rounds have ended. New games count from October 9, 2026; past days are not fabricated.
-
-`puzzle-edition.js` activates catalog v4 for activity days starting October 10, 2026 (9 a.m. Eastern). It contains 446 curated five-letter entries and 510 original themed clue entries across 17 pools. Answers should feel recognizable after the reveal: normal uses clear but thoughtful clues; hard uses fair double meanings, indirect clues, and familiar Little Words with repeated/silent letters or trickier arrangements. Do not substitute specialist terminology, trivia or academic grade labels for puzzle difficulty. Review every clue for an unambiguous intended answer with its crossings. Automated known-answer runs verify mechanics, not human solve time; adjust editorial difficulty from actual play feedback. Word Search stays at 10 words on 11×11 normal / 12×12 hard grids, with all eight directions. Crosswords target 6 normal / 8 hard answers on the same compact sizes. Timers remain 120 seconds and scoring is unchanged. October selects Halloween/horror/fall, December Christmas/winter, other months regular pools. Legacy catalogs and seeds remain for pre-cutover regeneration; saved Firestore puzzles always win over generators. Never overwrite an existing puzzle. Individual timed clue words can recur in different boards. The accepted-guess dictionary remains broader than the answer bank. All clues are original, not extracted APK or commercial crossword data.
-
-Run `test/puzzle-edition.test.mjs`, seasonal and daily puzzle tests before changing the catalog. Review clues and answer familiarity separately from mechanical validity: a perfectly connected board can still be a frustrating puzzle. Deployment must update the Cloudflare scheduler as well as Pages; the database schema is unchanged.
-
-`timedGames` contains owner-private word order/times; `timedResults` contains only shared counts and timestamps. Transactions write both. `activityEvents` deduplicates completion/reveal notifications. Daily activities share one 9 a.m. opening ping. All daily-game pings use the daily-activities preference and stale waiting pings are dropped. The weekly trio maximum is 1,600, plus at most 400 per hard tie set. Closed sets reject further moves. Run `test/timed-rules.test.mjs` only under the demo Firestore emulator, and `test/timed-browser.mjs` on the local test server; real-time two-account coverage lives in `test/word-realtime-browser.mjs`.
+Existing database documents, question event markers, pet wallets, reward ledgers and notification registrations are preserved. [Restoration instructions](docs/daily-games-restore.md) identify the source ZIP, Git bundle, baseline tag and deployment order.
 
 ### Memory categories and dates
 
@@ -336,61 +184,13 @@ whether permission was granted.
 
 ## Checking your work
 
-The retired arcade's `games/sun-moon`, `games/connect-four` and `games/dots-boxes`
-records are retained. The compatibility data methods and rules remain tested,
-but the old UI module is removed and the Worker drops all old arcade pings.
-Their old links lead to daily Activities. No private game history is deleted.
+Choose the scope with `scripts/check-scope.mjs`; shared backend changes need broader regression coverage. `pnpm test` checks the common application and delivery logic. `pnpm run test:daily` checks daily questions, history, retirement and offline contracts. `pnpm run test:browser:daily` checks cache upgrades and both themes in Chromium/WebKit at phone and desktop widths. `pnpm run test:rules` runs the local emulator tests for immutable archives, old-client rejection and question privacy; it requires Java 21. Never run fixtures against production.
 
-The app-wide regression pass also covers edited daily answers, delayed daily-game
-acknowledgements, read receipts in background tabs, location pause/consent races,
-photo-selection races, and completing one date from both phones. Date completion
-and its memory use one online transaction; no partially saved pair or duplicate
-memory. Monthly repeats keep `recurrenceDay` through short months using the same
-helper on List, Home and Today. Changing the due day resets that anchor.
-
-```
-pnpm test                             # syntax, data, push, dedupe and delivery
-pnpm exec firebase emulators:exec --project demo-little-list --only firestore --config firebase.test.json "node test/game-rules.test.mjs"  # Java 21, no live data
-```
-
-And the browser pass, which loads every page at phone size, clicks through the
-real flows and fails on any script error or sideways scroll:
-
-```
-pnpm exec playwright install chromium
-python3 -m http.server 8777     # browser tests intercept Firebase; leave the production config alone
-pnpm run test:browser
-pnpm run test:visual     # screenshots both sides in your temp folder, checks 390px and 320px
-```
-
-`.github/workflows/checks.yml` runs the unit and browser passes, plus static
-checks: every precached file exists, local assets do not use cache-breaking
-query strings, and `household.js` and `firestore.rules` list the same accounts.
+Browser suites use an isolated local preview at port 8777 with Firebase config replaced by an empty test config. `pnpm run test:browser` exercises shared flows. `pnpm run test:star` covers pet logic when account/backend or nursery code changes. The standalone shared-interface and dock tests remain `test/interface-design-browser.mjs` and `test/dock-scroll-browser.mjs`.
 
 ## Notes
 
-### Home, attention badges and practice
-
-Home owns today's tasks, focus and the folded updates feed. `today.html` is a
-compatibility redirect that preserves anchors; do not build another dashboard
-there. Notes live in Notes, not profiles or the Home feed. A transient incoming
-note banner is not a read receipt.
-
-`navigation-attention.js` owns destination badges and the installed app badge.
-Seasonal shapes are only styling for real unread or unfinished work, never
-permanent decoration on every navigation icon.
-
-Practice has 200 Little Words, 100 Word Searches and 100 crosswords. Progress is
-local to the browser, household and side; it never writes competitive records,
-points or notifications. The v3 practice edition replaces all boards, with normal
-and hard halves and answers separate from the active daily bank. v1 and v2 saves are left
-intact in their old namespace, not carried onto different answers. Keep v3 order and seeds stable so saved
-boards remain valid. A layout-changing catalog needs a new storage version.
-Practice clues are original. The MIT-attributed extra dictionary expands
-accepted guesses only, not daily answers (`WORD-LIST-LICENSE.txt`).
-
-Run `test/practice.test.mjs`, `test/practice-browser.mjs` and
-`test/declutter-browser.mjs` alongside the full regression suite.
+Home no longer subscribes to game results or prompts play. Navigation attention counts the unanswered question only. Settings offers daily questions and no game-turn/streak toggles. Shared App feel settings retain sound, volume, haptics and motion; puzzle-only typing and tile-color controls are removed. The Activities dock uses a heart.
 
 ### Shared routines and reminders
 
@@ -410,124 +210,3 @@ The worker queries only items with a reminder time. It atomically creates an eve
   updates while the page is open; a native app would be needed for Life360-style
   tracking. The Android build is paused — the website is the shared source of
   truth on both phones.
-
-### Daily-word regression checks
-
-`test/word-colors-browser.mjs` covers both profiles and all three seasonal palettes, including dark absent letters, repeated-letter precedence and no animation replay when typing. `test/activities-browser.mjs` covers late confirmations and partial historic score records. `test/word-rules.test.mjs` validates private guesses, atomic results and immutable bounded weekly scores against the demo emulator.
-
-The optional `GAME_BROWSER=webkit` word real-time test forwards unary demo-emulator HTTP calls through Playwright's transport because Windows WebKit can fail to rewind a POST after a localhost connection reset. It retains the real Firebase SDK, responses, permissions and live Listen channels; no production traffic or app settings are changed. This is not a physical iPhone push test.
-
-`test/word-celebration-browser.mjs` checks all finish tiers, one-time coronations, deferred prompts while typing, 320px animation frames, seasonal portraits and reduced motion. Effects live outside the board: do not put repeating reveal animations on guessed tiles.
-
-The shared Little Word comparison automatically reads one partner board only after both players finish that puzzle (winning or using all available guesses), then shows both sets of letters and colours in order. Firestore independently checks both private game documents; `wordGames` collection queries remain owner-only. Keep these checks when changing the UI. `test/word-peek-browser.mjs` covers loading/error retry and the reveal UI; `test/word-rules.test.mjs` and `test/word-realtime-browser.mjs` cover the actual permissions and two-phone unlock. Deploy rules before the frontend for changes to this boundary.
-
-### Friendly daily games and app feel (v120)
-
-The crown remains weekly. This refresh adds no daily crowns, game reactions, head-to-head records, paid hints, fourth game, or scoring changes. Home shows today's three game states and unfinished games in Today. Finished panels count down to the next 9 a.m. Eastern reset and offer more practice to either player. Practice crossword edition 5 contains 100 distinct 5×5 boards with shared letter entry; earlier practice saves and all daily puzzle plans stay intact.
-
-Personal milestones are cosmetic. From October 19, finishing all three games on five days within one Monday–Sunday week earns one freeze for the **all-three-games streak**. A freeze preserves the run through one missed day; it does not add a played day, score, or win. The balance is derived from saved results, so two devices cannot spend or earn it twice. Existing per-game win/clear streaks keep their original meanings.
-
-Settings → App feel controls interaction sounds, haptics, motion and accessible blue/orange game tiles. Sound and taps start off. Reduced motion disables sensory effects; cards remain fully visible even if animation never runs. Pings has separate switches for partner-finished messages and opt-in evening streak reminders. The Worker deduplicates turn messages across same-day resets, sends no scores or guesses, and drops reminders after completion or reset. These backend changes require a separately approved Worker deployment; no Firestore rules change is needed.
-
-The shared app layer covers both themes and seasonal palettes: tactile controls, subtle tap effects, brief card arrivals, improved empty-state actions, readable form focus, and modal keyboard focus/return. Little Star keeps its own visual style, with saved sound and calm-motion controls, visible keyboard focus, safe audio startup, and readable connection recovery. Its generated bundle is rebuilt from the companion source; gameplay, art and rewards are unchanged by this polish.
-
-Push setup reports a retryable failure if service-worker readiness stalls. Quiet hours prefer the registered IANA time zone over a stale UTC offset, including skipped and repeated hours at daylight saving transitions. Old subscriptions retain offset-based behavior until their next registration.
-
-Regression checklist:
-
-- `pnpm test`: reset/DST boundaries, historical puzzles, score preservation, freeze accounting, reminder deduplication, preferences, offline assets and delivery.
-- `test/daily-habit-browser.mjs`: physical keyboard, closed-card guards, offline/reconnect, hidden partner results, Home status, countdowns, Tokyo/New York/London clocks and widths 320/375/430.
-- `test/practice-browser.mjs`: both keyboards, crossing letters, saved progress, restart, both difficulties, and no competitive writes.
-- `test/app-life-browser.mjs`: both themes across nine destinations, phone widths, empty actions, sheet focus, sound opt-in, saved controls and reduced motion. SFX envelopes use a fake audio device in tests.
-- `test/star-polish-browser.mjs`: the shipped Little Star page and live adapter against a disposable nursery, both people, three phone widths, sound/calm persistence, dialog focus, deep links and reconnect. The companion source's `qa.mjs` also validates the renderer and gameplay suites before rebuilding.
-- Notification sender checks include category mutes, stale game reminders, endpoint replacement, retry/deduplication, quiet hours, focus, and independent phone delivery. `scripts/delivery-health.mjs` is a separate read-only production check and needs a Firebase CLI account with project access; passing mocks is not proof of actual phone delivery.
-- Existing recovery, realtime, lifecycle, peek, weekly and touch checks remain required for their respective paths. Two-account Firestore permissions are exercised only against the demo emulator.
-- Before release, check actual iPhone/Android audio, vibration and home-indicator clearance. After an approved backend release, verify opt-in push delivery on the two phones.
-
-If the local sandbox blocks loopback sockets, `node --import ./test/local-preview.mjs test/app-life-browser.mjs` uses an isolated disk-backed preview at the test origin. It stubs Firebase and blocks external requests. Normal CI browser runs still use the HTTP server. This fallback does not replace service-worker network or real-emulator checks.
-
-### iPhone crossword QA (v123)
-
-Practice crosswords hide the dock while unfinished with either keyboard, restore
-navigation on completion or exit, and retain horizontal scroll while keeping the
-selected square visible. Both crossword modes use 44px clue-arrow targets. Long
-clues scroll within a bounded height, including at 200% text in a short viewport.
-`test/iphone-crossword-browser.mjs` checks touch interactions in WebKit at
-320/390/430px, both profiles, normal/hard practice, landscape rotation, a shortened
-keyboard viewport, stable input focus, sticky clues and completing a hard board.
-Set `GAME_BROWSER=chromium` for the same comparison checks. This emulates browser
-behavior; it does not reproduce the physical iOS keyboard, Safari toolbar or audio
-hardware. The existing daily-game and sound suites remain part of the QA pass.
-
-### Themed crosswords and interface sounds (v122)
-
-New daily plans from **2026-10-19** use catalog 8. The crossword returns to
-10 answers / 3 minutes, or 20 answers / 5 minutes on Sunday. Practice crossword
-edition 6 contains 100 distinct prebuilt boards. Practice Word/Search answers
-and save namespaces remain unchanged; their clue/subject metadata is refreshed.
-Published daily records, frozen weekly reservations, score rules and old
-crossword editions are preserved. The old mini constructor remains readable.
-
-`crossword-themes.js` defines 36 original subjects and anchor sets. Construction
-places a longest answer of at least seven letters first, requires at least four
-theme-related entries and three crossings through the anchor, then scores
-compactness, crossing loops and fewer single-crossing branches. Every board is
-one component, every contiguous word run has a clue, and word lengths vary.
-Seasonal subjects get first choice in October/December; depleted weekly pools
-can use a year-round subject, never the other holiday's vocabulary. Weekly
-exclusions cover all three games. Build-time compilation keeps generation out
-of the notification Worker's request path. Admin resets construct locally.
-
-Construction references reviewed:
-
-- [William Johnston's construction workshop](https://www.fleetingimage.com/wij/puzzles/art-of-construction.pdf), including grids by Rich Norris, Bob Klahn, Paula Gamache and Patrick Jordan: related long entries establish a theme, crossing fill gives multiple routes into it, and each clue must identify the intended sense. We author our own themes, clues and layouts.
-- [Crossword Compiler's theme-placement guide](https://ftp.crossword-compiler.com/en/help/html/themeplace.htm): place theme entries before filling around them and evaluate alternative placements.
-- [Deb Amlen's construction discussion](https://withasideofpod.nd.edu/episodes/4-2-on-crosswords-and-wordplay-deb-amlen-the-new-york-times/): begin with the theme and build the grid around its entries.
-
-These are short blocked crosswords with unchecked letters, not full newspaper
-American grids with every letter checked and rotational symmetry. We favor
-recognizable fill and a manageable timed round over forcing symmetry or obscure
-words. `test/themed-crossword.test.mjs` audits every compiled daily, tie and
-practice board. `word-book.js` provides explicit subjects and original clues
-for all 2,120 current playable and new theme answers, including 847 previously unclued answers; the large
-accepted-guess spelling whitelist is separate and is not used as a clue bank.
-
-The current-word strip gives 44px selection targets alongside the larger board.
-Native phone typing, sticky clues, silent competitive checking, and dock hiding
-remain in place. Selecting a strip letter never reveals whether it is correct.
-
-Interface samples are by **Nathan Gibson**, from
-[Universal UI/Menu Soundpack](https://cyrex-studios.itch.io/universal-ui-soundpack),
-rated **4.9/5 from 65 ratings** when reviewed on 2026-10-17. The author specifies
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); attribution appears
-in App feel and `audio/interface/LICENSE.txt`. Twelve chosen clips were trimmed,
-converted to mono 22.05 kHz PCM WAV, level-adjusted and edge-faded: 194,404 bytes
-total, each under a second. `manifest.json` records originals, hashes and lengths;
-`scripts/prepare-interface-audio.py` reproduces them from the official archive.
-[Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds) was also
-reviewed (CC0), but is not included in this release.
-
-Sounds stay opt-in, honor saved mute/volume, stop when hidden, and have per-event
-cooldowns and priority so rapid taps do not stack. Typing clicks are a separate
-opt-in. Motion and sound have independent controls. Notification sounds and
-Little Star's existing musical gameplay cues retain their own settings.
-Chromium tests decode the real clips. Windows WebKit lacks Web Audio in this
-test environment, so it verifies graceful absence and mocked playback controls;
-physical iPhone speaker/keyboard testing remains a device check.
-
-### Clarity and phone controls (v121)
-
-Daily games hide the bottom dock while an unfinished board is open. Current crossword clues and search words stay above the board as you scroll. Little Word and daily/practice crosswords offer a real phone keyboard; its input survives board redraws, supports mobile input/deletion, and keeps the game keyboard available as an alternative. Practice Little Word supports the same input.
-
-`test/clarity-browser.mjs` checks WCAG A/AA findings across both profiles, all three seasonal palettes, expanded panels, and 200% text at 320px. `test/game-accessibility-browser.mjs` checks native input, focus persistence, dock visibility, sticky game context, and a shortened keyboard viewport in Chromium or WebKit. Desktop WebKit checks do not emulate the physical iOS keyboard or Safari toolbar animations; actual-device confirmation is still useful for those OS behaviors.
-
-### Crossword locks and extra time (v138)
-
-Correct daily/practice crossword entries turn green and lock every covered square.
-Input and backspace skip locked crossings; saved server credit restores letters
-on another screen. From October 22, new starts snapshot an extra 30 seconds for
-Word Search (2:30 normal / 3:00 hard) and 60 seconds for Crossword (4:00 / 6:00).
-This applies to frozen weekly boards and hard ties without replacing puzzles.
-Existing starts and finished results retain their saved duration and score.
-Old clients may still start with the original duration; rules accept either exact
-start duration and forbid changing it after starting.

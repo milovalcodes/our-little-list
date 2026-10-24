@@ -20,10 +20,10 @@
   scope.oldPageTarget = function (href) {
     const url = new URL(href, scope.location.href);
     const name = url.pathname.split('/').pop();
-    if(name==='activities.html'&&(url.hash==='#shelf'||/^#game(?:-|$)/.test(url.hash))){url.hash='#daily';return url.href;}
-    if (name === 'games.html' || (name === 'today.html' && /^(?:#game(?:-[A-Za-z0-9_-]+)?|#question)$/.test(url.hash))) {
+    if(name==='activities.html'&&(url.searchParams.has('game')||/^#(?:shelf|wordle|search|crossword|tiebreaker|game)(?:-|$)/.test(url.hash))){url.searchParams.delete('game');url.hash='#question';return url.href;}
+    if (['games.html','practice.html'].includes(name) || (name === 'today.html' && /^(?:#game(?:-[A-Za-z0-9_-]+)?|#question)$/.test(url.hash))) {
       const next = new URL('activities.html', url);
-      next.search = url.search; next.hash = url.hash==='#question'?'#question':'#daily';
+      next.search = url.search; next.searchParams.delete('game'); next.hash = '#question';
       return next.href;
     }
     const target = OLD_PAGES[name];

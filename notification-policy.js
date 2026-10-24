@@ -1,3 +1,6 @@
+export const RETIRED_GAME_KINDS = ['game','game-turn','game-streak','word-week','activity-result','activity-reset','activities-open'];
+export const retiredGameNotification = kind => RETIRED_GAME_KINDS.includes(kind);
+
 // Notification preferences shared by the website and the delivery worker.
 // Keep this file free of browser globals so Wrangler can bundle it too.
 
@@ -11,9 +14,7 @@ export const NOTIFICATION_GROUPS = [
   { id: 'arrivals', label: 'arrivals & on my way', kinds: ['arrival'] },
   { id: 'status', label: 'status & focus', kinds: ['status', 'focus'] },
   { id: 'keepsakes', label: 'date ideas & memories', kinds: ['date', 'memory'] },
-  { id: 'gameTurns', label: 'your turn to play', kinds: ['game-turn'] },
-  { id: 'gameStreaks', label: 'gentle evening game reminder', kinds: ['game-streak'] },
-  { id: 'questions', label: 'daily activities', kinds: ['word-week', 'activity-result', 'activity-reset', 'activities-open', 'question-open', 'question-answered', 'question-reveal'] }
+  { id: 'questions', label: 'daily questions', kinds: [ 'question-open', 'question-answered', 'question-reveal'] }
 ];
 
 // Switches saved before groups were merged or split keep meaning what they
@@ -21,8 +22,6 @@ export const NOTIFICATION_GROUPS = [
 // the old status switch they used to be part of.
 function legacyCategory(categories, id) {
   if (categories[id] !== undefined) return categories[id] !== false;
-  if (id === 'gameTurns') return categories.questions !== false;
-  if (id === 'gameStreaks') return false; // New reminders are opt-in.
   if (id === 'listsAdded' || id === 'listsFinished') return categories.lists !== false;
   if (id === 'asks') return !(categories.help === false && categories.reminders === false);
   if (id === 'arrivals') return categories.status !== false;
@@ -38,7 +37,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES = Object.freeze({
   vibration: 'gentle',
   inAppSound: 'twinkle',
   quietHours: Object.freeze({ enabled: false, from: '22:00', to: '08:00' }),
-  categories: Object.freeze(Object.fromEntries(NOTIFICATION_GROUPS.map(group => [group.id, group.id !== 'gameStreaks'])))
+  categories: Object.freeze(Object.fromEntries(NOTIFICATION_GROUPS.map(group => [group.id, true])))
 });
 
 export function normalizeNotificationPreferences(value = {}) {
@@ -114,6 +113,7 @@ export function quietHoursEndUtc(now, quietHours, utcOffsetMinutes, timeZone) {
 }
 
 export function notificationKindEnabled(kind, preferences = DEFAULT_NOTIFICATION_PREFERENCES) {
+  if (retiredGameNotification(kind)) return false;
   if(String(kind || '').startsWith('star-'))return false; // Little Star is paused; keep saved preferences for its return.
   if(kind==='push-test')return true; // Explicitly requested in Settings, not chatter.
   if(kind==='game')return false; // Retired arcade invites must never ring again.

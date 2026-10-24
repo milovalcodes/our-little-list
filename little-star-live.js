@@ -27,7 +27,7 @@ async function request(body){
   try{value=await response.json();}catch{throw Error('The nursery could not reply. Reconnect and try again.');}
   if(!response.ok){const error=Error(value?.error||'Cannot save right now.');error.uncertain=response.status>=500;error.offline=response.status===401||response.status>=500;throw error;}
   if(!value?.star||!Number.isFinite(value.star.revision))throw Error('The nursery could not reply. Reconnect and try again.');
-  live.offline=false;live.weekly=value.weekly;live.scoresPending=value.scoresPending;return value;
+  live.offline=false;return value;
  }catch(error){live.offline=error.offline??true;if(error.uncertain===undefined)error.uncertain=true;throw error;}
 }
 live.action=async command=>{

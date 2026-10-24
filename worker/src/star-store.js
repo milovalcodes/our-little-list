@@ -1,7 +1,5 @@
 // Server-owned nursery. No client snapshot, balance, clock or actor is accepted.
 import {freshStar,projectStar,petSnapshot,applyAction,settleGrowth,servicePings,eggProgress,gameDay,clock,longRest} from '../../little-star/engine.mjs';
-import {wordPoints} from '../../word-scores.js';
-import {timedPoints} from '../../timed-game.js';
 import {applyKitchenAction} from './star-kitchen.js';
 
 export const STAR_ACTIONS=new Set(['wish','incubate','hatch','visit','rename','feed','wash','cuddle','nap','wake','vacation','buy-food','buy-ingredients','coffee','start-cook','cook','cancel-cook','start-play','play','buy','equip','magic','transfer','goal','adopt-second','switch-pet','prefs']);
@@ -9,23 +7,9 @@ const clone=value=>structuredClone(value);
 export function weekStart(day){const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);return d.toISOString().slice(0,10);}
 function orient(state,petId){if(state.petId===petId||!state.otherPet)return state;if(state.otherPet.petId!==petId)throw Error('That star is not in this nursery.');const old=petSnapshot(state);return {...state,...state.otherPet,otherPet:old};}
 function settle(state,now){let s=settleGrowth(state,now);if(s.otherPet){const other=settleGrowth({...s,...s.otherPet,otherPet:null},now);s.revision=Math.max(s.revision,other.revision);s.otherPet=petSnapshot(other);}return s;}
-function view(record,actor,now){return {star:projectStar(orient(clone(record.state),record.selected[actor]),now),person:actor,now,weekly:record.weekly||{him:0,her:0},lastScoresAt:record.lastScoresAt||0};}
+function view(record,actor,now){return {star:projectStar(orient(clone(record.state),record.selected[actor]),now),person:actor,now};}
 export function freshRecord(now){return {state:freshStar(now),selected:{him:'star-1',her:'star-1'},createdAt:now,firstDay:weekStart(gameDay(now)),lastScoresAt:0,weekly:{him:0,her:0},paid:{},pending:[],readySent:{}};}
 
-export function creditResults(record,{words=[],timed=[]},now){
- const today=gameDay(now),monday=weekStart(today),weekly={him:0,her:0};let changed=false;
- for(const result of [...words.map(r=>({...r,game:'word'})),...timed.map(r=>({...r,game:r.type}))]){
-  if(!['him','her'].includes(result.person)||!['word','crossword','search'].includes(result.game)||!/^\d{4}-\d{2}-\d{2}$/.test(result.day)||result.day<record.firstDay||result.day>today)continue;
-  const points=result.game==='word'?wordPoints(result):timedPoints(result,now);
-  if(!Number.isInteger(points)||points<0||points>200)continue;
-  if(result.day>=monday)weekly[result.person]+=points;
-  const key=`${result.day}:${result.game}:${result.person}`,paid=record.paid[key]||0;
-  if(points>paid){const cash=Math.min(points-paid,999999-record.state.wallets[result.person]);record.paid[key]=points;record.state.wallets[result.person]+=cash;record.state.earnings.push({actor:result.person,kind:'daily',game:result.game,cash,points,at:now});changed=true;}
- }
- record.state.earnings=record.state.earnings.slice(-16);
- if(JSON.stringify(record.weekly)!==JSON.stringify(weekly))changed=true;
- record.weekly=weekly;record.lastScoresAt=now;if(changed)record.state.revision++;
-}
 export function collectStarPings(record,now){
  record.state=settle(record.state,now);
  const checked=servicePings(record.state,now);record.state=checked.state;
@@ -58,6 +42,7 @@ export class StarNursery {
  async fetch(request){
   try{
    const input=await request.json(),now=Date.now();
+   if(input.op==='sync')throw Error('Competition rewards are retired.');
    const result=await this.ctx.storage.transaction(async tx=>{
     let record=await tx.get('nursery');
     if(input.op==='remember'){await tx.put('event:'+input.ref,input.ping);return {ok:true};}
@@ -70,7 +55,6 @@ export class StarNursery {
     // storage boundary so reads, purchases, arcade rewards and retries agree.
     record.state.larder??={};
     if(input.op==='ack'){record.pending=record.pending.filter(p=>!input.ids.includes(p.id));await tx.put('nursery',record);return {ok:true};}
-    if(input.op==='sync'){creditResults(record,input.results,now);await tx.put('nursery',record);return {ok:true};}
     if(input.op==='tick'){collectStarPings(record,now);await tx.put('nursery',record);return {pending:record.pending};}
     if(!['him','her'].includes(input.actor))throw Error('Sign in to visit.');
     let reply={};

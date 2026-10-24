@@ -109,7 +109,7 @@ const data=readFileSync(new URL('../firebase-data.js',import.meta.url),'utf8');
  assert.ok(await acquireDeliveryLock({create:async()=>++creates===2,getVersioned:async()=>null},'released',1000),'lease released between create and read can be acquired without waiting a minute');
 }
 assert.match(data,/work\.then\(\(\)=>\{if\(Number\(item.sendAt\)<=Date.now\(\)\)wakeDelivery\(\);\}/,'wake follows Firestore confirmation');
-assert.match(data,/if\(saved.done\)wakeDelivery\(\{activities:true\}\)/);
+assert.doesNotMatch(data,/submitWordGuess|playTimedPuzzle/);
 assert.match(data,/work\.then\(\(\)=>wakeDelivery\(\{activities:true\}\),\(\)=>\{\}\)/);
 console.log('IMMEDIATE DELIVERY: authenticated/CORS-only wake, no arbitrary payload, bounded retries, 40 lease races, old-owner fencing, batching and confirmed-save hooks pass');
 

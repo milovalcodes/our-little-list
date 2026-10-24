@@ -1,7 +1,6 @@
 import {activityClock} from './activity-clock.js';
 import {isRoutine,routineDue,checkedToday,listDay} from './list-schedule.js';
 import {watchRoutineChecks} from './routine-checks.js';
-import {timedOver} from './timed-game.js';
 import {profileRoute} from './profile-route.js';
 
 export function attentionCounts(b,viewer,seen={},now=Date.now()){
@@ -18,8 +17,6 @@ export function attentionCounts(b,viewer,seen={},now=Date.now()){
  const activityDay=activityClock(now).day,question=rows('questions').find(q=>q.day===activityDay);
  if(b.dailyReady){
   if(question&&!question.answers?.[viewer]?.at)activities++;
-  if((b.localPreview||rows('wordPuzzles').some(p=>p.day===activityDay))&&!rows('wordResults').some(r=>r.day===activityDay&&r.person===viewer&&r.done))activities++;
-  for(const type of ['search','crossword'])if((b.localPreview||rows('timedPuzzles').some(p=>p.day===activityDay&&p.type===type))&&!rows('timedResults').some(r=>r.day===activityDay&&r.type===type&&r.person===viewer&&timedOver(r,now)))activities++;
  }
  return {tasks,notes,activities,dates,memories,status,more:dates+memories+status};
 }
@@ -73,10 +70,10 @@ export function startNavigationAttention({data,viewer,page}){
   day=current;dailyFailed=false;b.dailyReady=false;dailyStops.forEach(stop=>stop());dailyStops=[];
   const generation=dailyStops;
   const ready=new Set();
-  for(const name of ['questions','wordResults','timedResults','wordPuzzles','timedPuzzles']){
+  for(const name of ['questions']){
    b[name]=[];
    dailyStops.push(data.listenToQuery(name,{where:{field:'day',value:day}},rows=>{
-    if(dailyStops!==generation)return;b[name]=rows;ready.add(name);b.dailyReady=ready.size===5;schedule();
+    if(dailyStops!==generation)return;b[name]=rows;ready.add(name);b.dailyReady=ready.size===1;schedule();
    },{onError:()=>{if(dailyStops!==generation)return;ready.delete(name);dailyFailed=true;b.dailyReady=false;schedule();}}));
   }
  }

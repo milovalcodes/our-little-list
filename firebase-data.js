@@ -1,16 +1,7 @@
-import { nextWordAttempt, wordSummary } from './word-game.js';
-import { wordForDay } from './daily-words.js';
-import {timedPuzzle} from './daily-puzzles.js';
-import {newTimedGame,advanceTimedGame,timedSummary,millis} from './timed-game.js';
 import { firebaseConfig } from './firebase-config.js';
 import { OUTBOX } from './push-config.js';
 import { createDeliveryWake } from './delivery-wake.js';
-import { HOUSEHOLD_ID, ADMIN_UID, configured as householdConfigured } from './household.js';
-import {activityClock} from './activity-clock.js';
-import {revisionOf,assertRevision} from './round-revision.js';
-import {competingRound,roundWaitMessage} from './timed-round-guard.js';
-import {reactionId,comparisonReady,ROUND_REACTIONS} from './shared-round.js';
-import { GAME_ID, nextGame, gameMessage, selectedGameId, gameNeedsPing } from './couple-game.js';
+import { HOUSEHOLD_ID, configured as householdConfigured } from './household.js';
 
 const configured = firebaseConfig?.apiKey && !firebaseConfig.apiKey.startsWith('REPLACE_');
 
@@ -84,7 +75,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
         live = { callbacks: new Set(), failures: new Map(), latest: null, metadata: null, unsubscribe: null };
         live.unsubscribe = onSnapshot(
           named(name),
-          { includeMetadataChanges: name === 'games' },
+          { includeMetadataChanges: false },
           snapshot => {
             live.latest = snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
             live.metadata = { fromCache: snapshot.metadata.fromCache };
@@ -126,11 +117,7 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
           ...(spec.limit ? [limitQuery(spec.limit)] : [])
         ];
         live = { callbacks: new Set(), failures:new Map(), latest: null, unsubscribe: null };
-        const confirmedPuzzle=['timedGames','timedResults'].includes(name);
-        live.unsubscribe = onSnapshot(query(named(name), ...constraints), {includeMetadataChanges:confirmedPuzzle||name==='wordGames'}, snapshot => {
-          // Never turn an optimistic cache write into timed-game credit. The
-          // metadata-only acknowledgement must still deliver the saved row.
-          if(confirmedPuzzle&&snapshot.metadata.hasPendingWrites)return;
+        live.unsubscribe = onSnapshot(query(named(name), ...constraints), {includeMetadataChanges:false}, snapshot => {
           live.latest = snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() }));
           live.metadata = {fromCache:snapshot.metadata.fromCache};
           live.callbacks.forEach(handler => safelyCall(handler, [...live.latest],live.metadata));
@@ -178,15 +165,6 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
       return { id: entry.id };
     },
     setTo: (name, id, item) => applied(setDoc(doc(named(name), id), item, { merge: true }), name),
-    async saveGameReaction(item) {
-      if(!signedIn()||navigator.onLine===false)throw Error('Reconnect to react.');
-      // Transactions fail offline and resolve only after server acknowledgement.
-      return runTransaction(db,async transaction=>{
-        const ref=doc(named('gameReactions'),reactionId(item));
-        await transaction.get(ref);
-        transaction.set(ref,item);
-      });
-    },
     async setDateDone(id, done, viewer) {
       if (!signedIn() || navigator.onLine === false) throw new Error('Connect to finish this date.');
       // The date and its memory are one action. Transactions also prevent two
@@ -207,126 +185,6 @@ export async function createDataLayer({ onAuth = () => {}, onReady = () => {} } 
           if (idea.memoryId) transaction.delete(doc(named('memories'), idea.memoryId));
         }
       });
-    },
-    async playGame(options, displayName) {
-      if (!signedIn()) throw new Error('Sign in to play.');
-      // Moves must be confirmed online. A queued move against an old board
-      // could otherwise overwrite a partner's move after reconnecting.
-      return runTransaction(db, async transaction => {
-        const id = selectedGameId(options.gameId || GAME_ID);
-        const ref = doc(named('games'), id);
-        const snapshot = await transaction.get(ref);
-        const next = nextGame(snapshot.exists() ? snapshot.data() : null, options);
-        const message = gameMessage(next, displayName);
-        transaction.set(ref, next);
-        // Capturing a box grants another turn. Don't ping "your turn" until it
-        // really changes sides; the shared board still updates immediately.
-        if(gameNeedsPing(next))transaction.set(doc(named(OUTBOX), `game-${id}-${next.round}-${next.ply}-${next.closed?'closed':'open'}`), message);
-        return next;
-      });
-    },
-    async submitWordGuess(options) {
-      if (!signedIn() || navigator.onLine === false) throw new Error('Reconnect to save a guess. Your letters are still here.');
-      const ref = doc(named('wordGames'), `${options.day}-${options.person}`);
-      try { const saved = await runTransaction(db, async transaction => {
-        const puzzle = await transaction.get(doc(named('wordPuzzles'), options.day));
-        const current = await transaction.get(ref);
-        const next = nextWordAttempt(current.exists() ? current.data() : null, puzzle.exists() ? puzzle.data() : null, options);
-        transaction.set(ref, next);
-        transaction.set(doc(named('wordResults'), `${options.day}-${options.person}`), wordSummary(next));
-        return next;
-      }); if(saved.done)wakeDelivery({activities:true});return saved; } catch(problem) {
-        // Rules can reject a stale concurrent write before the transaction
-        // runner retries it. Distinguish that from a connection failure.
-        if(problem?.code==='permission-denied'){
-          let fresh;try{fresh=await getDocFromCache(ref);}catch(_){}
-          if(!fresh?.exists()||fresh.data().guesses.length===options.expectedCount){
-            let timer;try{fresh=await Promise.race([getDocFromServer(ref),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('read timeout')),4000);})]);}catch(_){}finally{clearTimeout(timer);}
-          }
-          if(fresh?.exists()&&fresh.data().guesses.length!==options.expectedCount)throw new Error('Your other screen made a guess. The board is catching up.');
-          // A concurrent commit can be rejected before this client's read or
-          // listener catches up. Do not leak the rules diagnostic into the UI,
-          // or claim that a guess saved when we could not confirm it.
-          throw new Error('Could not confirm this guess. If you played on another screen, wait for the board to catch up, then try again.');
-        }
-        throw problem;
-      }
-    },
-    async playTimedPuzzle(options) {
-      if(!signedIn()||navigator.onLine===false)throw Error('Reconnect to save this round.');
-      const id=`${options.day}-${options.type}-${options.person}`,ref=doc(named('timedGames'),id);
-      await runTransaction(db,async transaction=>{
-        const p=await transaction.get(doc(named('timedPuzzles'),`${options.day}-${options.type}`));
-        const current=await transaction.get(ref);
-        if(options.day.includes('-tie-')){
-          const end=await transaction.get(doc(named('wordDuelEnds'),options.day));
-          if(end.exists())throw Error('This sudden-death set has finished.');
-        }
-        const puzzle=p.exists()?p.data():null;
-        let game=current.exists()?current.data():null;
-        assertRevision(puzzle,options.expectedRevision||0,game);
-        if(options.start&&!game){
-          const otherType=options.type==='search'?'crossword':'search';
-          const otherGame=await transaction.get(doc(named('timedGames'),`${options.day}-${otherType}-${options.person}`));
-          const otherPuzzle=await transaction.get(doc(named('timedPuzzles'),`${options.day}-${otherType}`));
-          const conflict=competingRound(otherGame.exists()?[otherGame.data()]:[],options,otherPuzzle.exists()?[otherPuzzle.data()]:[]);
-          if(conflict)throw Error(roundWaitMessage(conflict));
-        }
-        if(options.start){if(game)return;game={...newTimedGame(puzzle,options.person),startedAt:serverTimestamp()};}
-        else {
-          if(!game||game.person!==options.person)throw Error('Start your round first.');
-          if(game.done)return;
-          if(Number.isInteger(options.index)&&options.answer!==puzzle?.entries[options.index]?.word)throw Error('That answer does not fit.');
-          game=advanceTimedGame(game,puzzle,options);
-          if(game.done)game.finishedAt=serverTimestamp();
-        }
-        transaction.set(ref,game);
-        transaction.set(doc(named('timedResults'),id),timedSummary(game));
-      });
-      // The committed snapshot often already arrived through our listener.
-      // Reuse it only with resolved timestamps and no pending writes; otherwise
-      // ask the server. This avoids a second network trip on every quick find.
-      let saved;
-      try{const cached=await getDocFromCache(ref),g=cached.exists()?cached.data():null;
-        if(g&&revisionOf(g)===(options.expectedRevision||0)&&!cached.metadata.hasPendingWrites&&millis(g.startedAt)&&(!g.done||millis(g.finishedAt))&&(options.start||(Number.isInteger(options.index)?g.solved.includes(options.index):g.done)))saved=cached;
-      }catch(_){}
-      if(!saved)saved=await getDocFromServer(ref);
-      if(saved.exists()&&saved.data().done)wakeDelivery({activities:true});
-      return saved.exists()?{id:saved.id,...saved.data()}:null;
-    },
-    isGameAdmin:()=>auth.currentUser?.uid===ADMIN_UID,
-    async resetDailyGames({day,scope,requestId}){
-      if(auth.currentUser?.uid!==ADMIN_UID)throw Error('Only the admin can reset rounds.');
-      if(navigator.onLine===false)throw Error('Reconnect before resetting games.');
-      if(day!==activityClock().day)throw Error('The day changed. Reopen Activities.');
-      const {prepareReset}=await import('./game-reset.js');
-      const {weekDays,weeklyRounds}=await import('./round-engine.js');
-      const week=weekDays(day)[0],ledger=doc(named('gameResetWeeks'),week),receipt=doc(named('gameResets'),requestId),planRef=doc(named('gamePlans'),week);
-      const saved=await runTransaction(db,async transaction=>{
-        const prior=await transaction.get(receipt);
-        if(prior.exists())return prior.data(); // lost-response retry is not another reset
-        const settled=await transaction.get(doc(named('wordWeeks'),week));
-        if(settled.exists())throw Error('This week has already been crowned. A reset cannot rewrite a finished week.');
-        const history=await transaction.get(ledger);
-        const plan=await transaction.get(planRef),planned=plan.exists()?plan.data().days:weeklyRounds(day);
-        const refs=weekDays(day).flatMap(d=>[doc(named('wordPuzzles'),d),...['search','crossword'].map(t=>doc(named('timedPuzzles'),d+'-'+t))]);
-        const snapshots=await Promise.all(refs.map(ref=>transaction.get(ref)));
-        const puzzles=snapshots.filter(s=>s.exists()).map(s=>s.data());
-        const reset=prepareReset({day,scope,puzzles,planned,history:history.exists()?history.data().used:[],requestId});
-        const before=puzzles.filter(p=>p.day===day&&reset.types.includes(p.word?'word':p.type));
-        for(const type of reset.types){
-          const word=type==='word',id=day+(word?'':'-'+type);
-          transaction.set(doc(named(word?'wordPuzzles':'timedPuzzles'),id),reset.rounds[type]);
-          for(const person of ['her','him'])for(const collection of word?['wordGames','wordResults']:['timedGames','timedResults'])transaction.delete(doc(named(collection),id+'-'+person));
-        }
-        transaction.set(ledger,{week,used:reset.used,updatedAt:Date.now()});
-        if(!plan.exists())transaction.set(planRef,{week,days:planned,createdAt:Date.now()});
-        const record={day,scope,requestId,by:ADMIN_UID,before,createdAt:Date.now()};
-        transaction.set(receipt,record);
-        transaction.set(doc(named(OUTBOX),'reset-'+requestId),{to:'her',kind:'activity-reset',title:'Fresh rounds ♡',body:(scope==='all'?'The three games':scope==='word'?'Little Word':scope==='search'?'Word Search':'Crossword')+' got a fresh start. New answers, fresh attempts.',ref:'gameResets/'+requestId,url:'activities.html#'+(scope==='all'?'daily':scope==='word'?'wordle':scope),createdAt:record.createdAt,sendAt:record.createdAt});
-        return record;
-      });
-      wakeDelivery();return saved;
     },
     answerQuestion(day, person, text, at) {
       const batch = writeBatch(db);
@@ -490,43 +348,6 @@ function createLocalLayer(onAuth, onReady) {
       else items.push({ id, ...item });
       write(name, items);
     },
-    async saveGameReaction(item) {
-      const {day,type,person,revision,emoji}=item,other=person==='her'?'him':'her';
-      if(!['her','him'].includes(person)||!['word','search','crossword'].includes(type)||!Number.isInteger(revision)||revision<0||!ROUND_REACTIONS.some(([value])=>value===emoji))throw Error('Invalid reaction.');
-      const collection=type==='word'?'wordResults':'timedResults';
-      const results=read(collection).filter(r=>r.day===day&&(type==='word'||r.type===type));
-      const puzzle=read(type==='word'?'wordPuzzles':'timedPuzzles').find(p=>p.day===day&&(type==='word'||p.type===type))||(type==='word'?wordForDay(day):timedPuzzle(day,type));
-      if(revision!==revisionOf(puzzle)||!comparisonReady(type,results.find(r=>r.person===person),results.find(r=>r.person===other),puzzle))throw Error('Finish both rounds first.');
-      return this.setTo('gameReactions',reactionId(item),item);
-    },
-    async submitWordGuess(options) {
-      const play = () => {
-        const id = `${options.day}-${options.person}`;
-        const games = read('wordGames');
-        const next = nextWordAttempt(games.find(item => item.id === id), read('wordPuzzles').find(p=>p.day===options.day)||wordForDay(options.day), options);
-        write('wordGames', [...games.filter(item => item.id !== id), {id,...next}]);
-        write('wordResults', [...read('wordResults').filter(item => item.id !== id), {id,...wordSummary(next)}]);
-        return next;
-      };
-      return navigator.locks ? navigator.locks.request('little-list-daily-word', play) : play();
-    },
-    async playTimedPuzzle(options) {
-      const play=()=>{
-        const id=`${options.day}-${options.type}-${options.person}`,games=read('timedGames');
-        const puzzle=read('timedPuzzles').find(p=>p.day===options.day&&p.type===options.type)||timedPuzzle(options.day,options.type);
-        if(options.day.includes('-tie-')&&read('wordDuelEnds').some(e=>e.id===options.day))throw Error('This sudden-death set has finished.');
-        const before=games.find(g=>g.id===id);
-        if(options.start&&before)return before;
-        const conflict=options.start&&competingRound(games,options,read('timedPuzzles'));
-        if(conflict)throw Error(roundWaitMessage(conflict));
-        if(!options.start&&Number.isInteger(options.index)&&options.answer!==puzzle.entries[options.index]?.word)throw Error('That answer does not fit.');
-        const next=options.start?newTimedGame(puzzle,options.person):advanceTimedGame(before,puzzle,options);
-        write('timedGames',[...games.filter(g=>g.id!==id),{id,...next}]);
-        write('timedResults',[...read('timedResults').filter(g=>g.id!==id),{id,...timedSummary(next)}]);
-        return next;
-      };
-      return navigator.locks?navigator.locks.request('little-list-timed-'+options.day+'-'+options.person,play):play();
-    },
     async answerQuestion(day, person, text, at) {
       const key = `${day}-${person}`;
       const answers = read('questionAnswers');
@@ -537,17 +358,6 @@ function createLocalLayer(onAuth, onReady) {
       const questions = read('questions');
       const question = questions.find(entry => entry.id === day);
       if (question) { question.answers = { ...(question.answers || {}), [person]:{ at } }; write('questions', questions); }
-    },
-    async playGame(options) {
-      const play = () => {
-        const id = selectedGameId(options.gameId || GAME_ID);
-        const games = read('games');
-        const current = games.find(item => item.id === id);
-        const next = nextGame(current ? Object.fromEntries(Object.entries(current).filter(([key]) => key !== 'id')) : null, options);
-        write('games', [...games.filter(item => item.id !== id), {id,...next}]);
-        return next;
-      };
-      return navigator.locks ? navigator.locks.request('little-list-game', play) : play();
     },
     async setDateDone(id, done, viewer) {
       const change = () => {

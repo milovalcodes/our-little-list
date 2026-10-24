@@ -17,18 +17,12 @@ try{
    assert.ok(await page.evaluate(()=>[...document.fonts].filter(f=>f.family==='Nunito').every(f=>/^\d+$/.test(f.weight))),'fixed font weights avoid WebKit variable-font fallback');
    assert.equal(await page.evaluate(()=>[...document.fonts].some(f=>f.family==='Nunito'&&f.status==='loaded')),true,`${side}/${file}: bundled font loads without external access`);
    assert.equal(await page.locator('.app-dock>.dock-item>.ui-icon').count(),5);
-   assert.deepEqual(await page.locator('.app-dock>.dock-item>.ui-icon').evaluateAll(nodes=>nodes.map(n=>n.dataset.uiIcon)),['home','check','dice','notes','more']);
+   assert.deepEqual(await page.locator('.app-dock>.dock-item>.ui-icon').evaluateAll(nodes=>nodes.map(n=>n.dataset.uiIcon)),['home','check','heart','notes','more']);
    await page.locator('.dock-item[data-open-sheet=more]').click();await page.locator('#sheet-more.is-open').waitFor();
    assert.equal(await page.locator('.more-grid i svg').count(),5);
    await page.keyboard.press('Escape');await page.locator('#sheet-more').waitFor({state:'hidden'});
    await page.evaluate(()=>document.querySelectorAll('details').forEach(n=>{if(!n.hidden)n.open=true}));
-   if(file==='activities'){
-    await page.locator('#weekly-score svg[data-ui-icon=sun]').waitFor();
-    assert.equal(await page.locator('.daily-stamp svg[data-ui-icon=pair]').count(),1);
-    await page.locator('#wordle.activity-game-link').click();await page.locator('[data-key="a"]').click();await page.getByRole('button',{name:'Delete letter',exact:true}).click();
-    assert.equal(await page.locator('[data-key="⌫"] svg').count(),1,'rerendered keyboard preserves drawn delete');
-    await page.locator('.activity-back').click();await page.locator('.crown-map').waitFor();
-   }
+   if(file==='activities'){await page.locator('#wins-title').waitFor();assert.equal(await page.locator('.daily-stamp svg[data-ui-icon=pair]').count(),1);}
    if(file==='tasks'){
     await page.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer();await d.setTo('items','design-task',{type:'task',title:'Keep ☀️ in my title',done:false,createdAt:Date.now()});});
     await page.locator('[data-id="design-task"] .delete-task svg').waitFor({state:'attached'});

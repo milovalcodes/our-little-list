@@ -1,5 +1,3 @@
-import {startWeeklyRecap} from './weekly-recap.js';
-import {watchDailyStates,startCountdowns,nextPuzzleTime} from './daily-habit.js';
 import {escapeHtml} from './ui-helpers.js';
 import { sharedLayer, onAuthChange } from './data-hub.js';
 import { awaitViewer, partnerOf, showNotAMember } from './viewer.js';
@@ -12,10 +10,7 @@ import { inlineActionMarkup, handleInlineAction } from './inline-actions.js';
 import { dueRows, fairShare } from './needs-you.js';
 import {watchRoutineChecks} from './routine-checks.js';
 import { profileUrl } from './profile-route.js';
-// Today's game states, kept for Home's empty line before the first render.
-let gameStates=[];
-
-const buckets = { items: [], statuses: [], help: [], reactions: [], locations: [], presence: [], wordDuels: [], wordDuelEnds: [], wordWeeks: [] };
+const buckets = { items: [], statuses: [], help: [], reactions: [], locations: [], presence: [] };
 let dashboardFrame = 0;
 let routinesReady = false;
 
@@ -48,10 +43,6 @@ for (const name of Object.keys(buckets).filter(name => !['items','routineChecks'
   else data.listenTo(name, receive);
 }
 startPresence(data, viewer, 'home');
-const gameStrip=document.createElement('section');gameStrip.className='daily-strip';gameStrip.setAttribute('aria-label','Today’s games');document.querySelector('.our-sky').after(gameStrip);
-watchDailyStates(data,viewer,(states,rows)=>{gameStates=states;Object.assign(buckets,rows);gameStrip.innerHTML=states.every(g=>g.done)?`<p>all done today ✦ · next in <time data-next-puzzle>${nextPuzzleTime()}</time></p>`:states.map(g=>`<a href="${g.href}"><b>${g.name}</b><small>${escapeHtml(g.label)}</small></a>`).join('');scheduleDashboardRender();});
-startCountdowns();
-const recap=document.createElement('section');recap.className='weekly-home-recap';recap.hidden=true;gameStrip.after(recap);startWeeklyRecap({data,viewer},recap);
 // Keeps this phone's push subscription current. Does nothing until
 // notifications have actually been allowed.
 void ensurePushSubscription(data, viewer);
@@ -74,13 +65,11 @@ function renderNextUp() {
   const target = document.getElementById('home-next-up');
   if (!target) return;
   const due = dueRows({...buckets,routinesReady}, viewer);
-  const tie=buckets.wordDuels.some(d=>!buckets.wordDuelEnds.some(e=>e.id===d.puzzleId)&&!buckets.wordWeeks.some(w=>w.week===d.week));
   const rows = [
     ...fairShare(due, 12),
     due.length > 12 && { icon:'✓', title:`${due.length - 12} more on the list`, href:'tasks.html' },
-    tie && {icon:'♛',title:'the crown is still up for grabs',href:'activities.html#tiebreaker'},
   ].filter(Boolean);
-  target.innerHTML = rows.length ? rows.map(row=>inlineActionMarkup(row,'home-next-row')).join('') : `<p>${gameStates.some(g=>!g.done)?'just today’s games above ✦':'nothing needs you right now ✦'}</p>`;
+  target.innerHTML = rows.length ? rows.map(row=>inlineActionMarkup(row,'home-next-row')).join('') : `<p>nothing needs you right now ✦</p>`;
 }
 
 function scheduleDashboardRender() {

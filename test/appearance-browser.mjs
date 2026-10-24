@@ -35,6 +35,7 @@ try {
       await page.evaluate(side=>window.LittleAppearance.setSide(side==='him'?'her':'him'),side);
       assert.ok(await page.evaluate(side=>document.body.classList.contains((side==='him'?'her':'him')+'-theme'),side));
       release?.();
+      await page.locator('.thinking-screen').waitFor({state:'hidden'});
     }
     await context.close();
   }

@@ -61,7 +61,7 @@ try{
   await page.locator('[data-close-sheet]').press('Shift+Tab');assert.ok(await page.evaluate(()=>document.activeElement.checkVisibility()&&!!document.activeElement.closest('.nursery-sheet')),'dialog wraps past closed pantry controls');
   await page.keyboard.press('Escape');await page.locator('.nursery-sheet').waitFor({state:'hidden'});
   assert.ok(await page.locator('[data-kitchen]').evaluate(n=>n===document.activeElement),'kitchen restores focus');
-  await page.locator('[data-wallet]').click();await page.locator('.nursery-sheet[open]').waitFor();await page.keyboard.press('Escape');
+  await page.locator('[data-wallet]').click();await page.locator('.nursery-sheet[open]').waitFor();assert.doesNotMatch(await page.locator('.nursery-sheet[open]').innerText(),/daily games|competition points/i);assert.equal(await page.locator('.nursery-sheet[open] a[href*=activities]').count(),0);await page.keyboard.press('Escape');
   await page.locator('[data-game=pairs]').click();await page.locator('.arcade-screen[open]').waitFor();await page.keyboard.press('Escape');await page.locator('.arcade-screen').waitFor({state:'hidden'});
   broken=true;await page.reload();await page.getByRole('button',{name:'Retry connection'}).waitFor();assert.match(await page.locator('#star-connection').innerText(),/nursery could not reply/);
   broken=false;await page.getByRole('button',{name:'Retry connection'}).click();await page.locator('[data-sound]').waitFor();

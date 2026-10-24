@@ -4,6 +4,11 @@
 import {readFileSync,writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 export function attachSkillKitchen(html){
+ // The companion wallet used to promote daily puzzles. Remove that authored
+ // template fragment on every build; keep all pet assets and saved state intact.
+ const rewards=/<p class="star-live-wallet">[\s\S]*?<\/p>/g;
+ if((html.match(rewards)||[]).length>1)throw Error('Unexpected competition wallet markup. Review the companion.');
+ html=html.replace(rewards,'');
  const hook=/\.controller=([\w$]+)\(([\w$]+)\("\.arcade-cooking"\),\{sprite:/g;
  if(!html.includes('/* skill-kitchen-hook:v1 */')){
   const matches=[...html.matchAll(hook)];if(matches.length!==1)throw Error('Expected exactly one cooking mount. Recheck the companion UI hook.');

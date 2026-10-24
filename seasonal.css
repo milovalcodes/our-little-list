@@ -11,11 +11,7 @@ html[data-season="spooky"] .landing-copy>p:last-child { color:#54354b; }
 html[data-season="christmas"] .landing-copy>p:last-child { color:#315449; }
 html[data-season="spooky"] .install-corner button { background:#43263c; }
 html[data-season="christmas"] .install-corner button { background:#205148; }
-html[data-season="spooky"] .landing-foot,
-html[data-season="spooky"] .install-corner p,
-html[data-season="christmas"] .landing-foot,
-html[data-season="christmas"] .install-corner p { color:#fff8e9; }
-
+html[data-season="spooky"] .landing-foot, html[data-season="spooky"] .install-corner p, html[data-season="christmas"] .landing-foot, html[data-season="christmas"] .install-corner p { color:#fff8e9; }
 html[data-season="spooky"] .her-theme {
   --accent:#db8437; --accent-deep:#824224; --accent-pale:#fff0d7; --accent-soft:#e7b77f;
   --page-text:#4f332c; --page-muted:#76594f; --paper:rgba(255,248,231,.94);
@@ -40,9 +36,8 @@ html[data-season="christmas"] .him-theme {
   --diary-panel:rgba(22,51,52,.97); --diary-raised:#2a5956; --diary-rule:rgba(202,231,212,.25); --diary-pressed-ink:#173b39;
   background:linear-gradient(160deg,#203d3f,#142b32);
 }
-
 /* Theme the shared surfaces, not just the home screen. */
-html[data-season] .profile-page :is(.feature-shell>section,.dashboard-shell>.our-sky,.dashboard-shell>.home-next-up,.settings-group>summary) { border-color:var(--diary-rule); }
+html[data-season] .profile-page :is(.feature-shell>section, .dashboard-shell>.our-sky, .dashboard-shell>.home-next-up, .settings-group>summary) { border-color:var(--diary-rule); }
 html[data-season="spooky"] .her-theme .fridge-paper { color:#55372e; border-color:#ecc6a4; background:linear-gradient(145deg,#fff0c5,#f8d19d); }
 html[data-season="christmas"] .her-theme .fridge-paper { color:#493737; border-color:#d7b7a4; background:linear-gradient(145deg,#fff5dc,#f5dfc9); }
 html[data-season="spooky"] .him-theme .fridge-paper { color:#fff4e2; border-color:#9b7592; background:linear-gradient(145deg,#4b355e,#3c315a); }
@@ -53,23 +48,20 @@ html[data-season="spooky"] .her-theme .auth-gate { background:rgba(91,50,66,.37)
 html[data-season="christmas"] .her-theme .auth-gate { background:rgba(41,86,75,.34); }
 html[data-season="spooky"] .him-theme .auth-gate { background:rgba(31,22,47,.73); }
 html[data-season="christmas"] .him-theme .auth-gate { background:rgba(13,43,45,.74); }
-html[data-season="spooky"] .her-theme .auth-card,
-html[data-season="christmas"] .her-theme .auth-card { background:var(--diary-panel); border:1px solid var(--diary-rule); }
-html[data-season="spooky"] .him-theme :is(.app-sheet,.auth-card,.emoji-picker-card) { background:#28203f; border-color:var(--diary-rule); }
-html[data-season="christmas"] .him-theme :is(.app-sheet,.auth-card,.emoji-picker-card) { background:#1a4143; border-color:var(--diary-rule); }
+html[data-season="spooky"] .her-theme .auth-card, html[data-season="christmas"] .her-theme .auth-card { background:var(--diary-panel); border:1px solid var(--diary-rule); }
+html[data-season="spooky"] .him-theme :is(.app-sheet, .auth-card, .emoji-picker-card) { background:#28203f; border-color:var(--diary-rule); }
+html[data-season="christmas"] .him-theme :is(.app-sheet, .auth-card, .emoji-picker-card) { background:#1a4143; border-color:var(--diary-rule); }
 html[data-season="spooky"] .him-theme .setup-nudge { color:#fff3df; background:#493458; border-color:var(--diary-rule); }
 html[data-season="christmas"] .him-theme .setup-nudge { color:#f4fae9; background:#2b5a55; border-color:var(--diary-rule); }
-html[data-season="spooky"] .him-theme .setup-nudge small,
-html[data-season="christmas"] .him-theme .setup-nudge small { color:var(--page-muted); }
+html[data-season="spooky"] .him-theme .setup-nudge small, html[data-season="christmas"] .him-theme .setup-nudge small { color:var(--page-muted); }
 html[data-season="spooky"] .him-theme .setup-nudge a { color:#2c203f; background:#f0bf81; }
 html[data-season="christmas"] .him-theme .setup-nudge a { color:#173b39; background:#bce3ce; }
-html[data-season="spooky"] .him-theme :is(input,select,textarea) { background:#382c53; border-color:var(--diary-rule); color:var(--page-text); }
-html[data-season="christmas"] .him-theme :is(input,select,textarea) { background:#2c5754; border-color:var(--diary-rule); color:var(--page-text); }
-html[data-season="spooky"] .him-theme :is(input,textarea)::placeholder { color:#d5bbce; }
-html[data-season="christmas"] .him-theme :is(input,textarea)::placeholder { color:#c0d9d3; }
-html[data-season="spooky"] .him-theme :is(.date-roulette,.memory-card.featured) { background:#302746; border-color:var(--diary-rule); }
-html[data-season="christmas"] .him-theme :is(.date-roulette,.memory-card.featured) { background:#214b4b; border-color:var(--diary-rule); }
-
+html[data-season="spooky"] .him-theme :is(input, select, textarea) { background:#382c53; border-color:var(--diary-rule); color:var(--page-text); }
+html[data-season="christmas"] .him-theme :is(input, select, textarea) { background:#2c5754; border-color:var(--diary-rule); color:var(--page-text); }
+html[data-season="spooky"] .him-theme :is(input, textarea)::placeholder { color:#d5bbce; }
+html[data-season="christmas"] .him-theme :is(input, textarea)::placeholder { color:#c0d9d3; }
+html[data-season="spooky"] .him-theme :is(.date-roulette, .memory-card.featured) { background:#302746; border-color:var(--diary-rule); }
+html[data-season="christmas"] .him-theme :is(.date-roulette, .memory-card.featured) { background:#214b4b; border-color:var(--diary-rule); }
 html[data-season="spooky"] .sky-stage[data-phase] { background:radial-gradient(circle at 48% 14%,rgba(255,208,132,.20),transparent 35%),linear-gradient(155deg,#493254,#57365e 50%,#ad684f); }
 html[data-season="christmas"] .sky-stage[data-phase] { background:radial-gradient(circle at 52% 12%,rgba(235,255,228,.22),transparent 35%),linear-gradient(155deg,#254e59,#2d6260 50%,#648574); }
 html[data-season="spooky"] .him-theme .sky-stage[data-phase] { background:radial-gradient(circle at 52% 12%,rgba(255,209,148,.13),transparent 35%),linear-gradient(155deg,#221d3a,#38264c 56%,#774456); }
@@ -77,22 +69,18 @@ html[data-season="christmas"] .him-theme .sky-stage[data-phase] { background:rad
 .seasonal-whisper { width:fit-content; max-width:100%; margin:5px 0 8px; padding:5px 11px; border:1px solid var(--diary-rule); border-radius:999px; color:var(--page-muted); background:var(--diary-panel); font-size:.72rem; font-weight:800; line-height:1.35; }
 html[data-season="spooky"] .redirect-page { background:#302444; color:#fff3df; }
 html[data-season="christmas"] .redirect-page { background:#1d4a4b; color:#f4fae9; }
-
 /* Seasonal artwork stays in the sky; other pages use the shared palette
    and a quiet caption. Decoration never receives taps. */
 html[data-season="spooky"] .profile-page { --season-trim:#e99857; --season-glow:rgba(246,157,86,.22); }
 html[data-season="christmas"] .profile-page { --season-trim:#c85e66; --season-glow:rgba(227,144,121,.22); }
 html[data-season="spooky"] .him-theme { --season-trim:#e4ae78; --season-glow:rgba(239,174,128,.18); }
 html[data-season="christmas"] .him-theme { --season-trim:#a9dcc4; --season-glow:rgba(169,220,196,.17); }
-
-html[data-season="spooky"] .seasonal-whisper,
-html[data-season="christmas"] .seasonal-whisper {
+html[data-season="spooky"] .seasonal-whisper, html[data-season="christmas"] .seasonal-whisper {
   display:block; width:100%; margin:0 0 12px; padding:0;
   border:0; border-radius:0; background:none; box-shadow:none;
   color:var(--page-muted); font-family:var(--font-body); font-size:.8125rem; font-weight:600;
   line-height:1.5;
 }
-
 .seasonal-sky-art { position:absolute; inset:0; z-index:1; width:100%; height:100%; pointer-events:none; object-fit:fill; animation:seasonalBreathe 7s ease-in-out infinite alternate; }
 .landing-copy { position:relative; isolation:isolate; }
 .seasonal-landing-art { position:absolute; z-index:-1; left:50%; top:-33px; translate:-50% 0; width:min(390px,100vw); height:205px; pointer-events:none; }
@@ -104,23 +92,26 @@ html[data-season="christmas"] .sky-stage { box-shadow:inset 0 0 0 2px rgba(228,2
 html[data-season="spooky"] .sky-avatar { border-color:#ffcf9a; }
 html[data-season="christmas"] .sky-avatar { border-color:#e8f7dc; }
 @keyframes seasonalBreathe { to { translate:0 2px; opacity:.86; } }
-@media (prefers-reduced-motion:reduce) { .seasonal-sky-art { animation:none; } }
-@media (max-width:520px) { html[data-season="spooky"] .seasonal-whisper,html[data-season="christmas"] .seasonal-whisper { font-size:.84rem; } }
-
+@media (prefers-reduced-motion:reduce) {
+.seasonal-sky-art { animation:none; }
+}
+@media (max-width:520px) {
+html[data-season="spooky"] .seasonal-whisper, html[data-season="christmas"] .seasonal-whisper { font-size:.84rem; }
+}
 /* One control wardrobe, including sheets mounted after page load. Action
    symbols, personal emoji, and error/success meanings stay unchanged. */
 html[data-season="spooky"] { --season-mark:url("season-mark-spooky.svg"); --season-thread:rgba(91,42,62,.12); }
 html[data-season="christmas"] { --season-mark:url("season-mark-christmas.svg"); --season-thread:rgba(255,244,224,.19); }
-html[data-season]:not([data-season="normal"]) .profile-page :where(button,a[role="button"]) {
+html[data-season]:not([data-season="normal"]) .profile-page :where(button, a[role="button"]) {
   border-color:var(--diary-rule); -webkit-tap-highlight-color:var(--season-glow);
 }
-html[data-season]:not([data-season="normal"]) .profile-page :is(.soft-chip,.status-choice,.energy-choice,.repeat-chip,.reaction-pick,.more-grid a) { border-color:var(--diary-rule); }
-html[data-season]:not([data-season="normal"]) .profile-page :is(button,a,input,select,textarea):focus-visible { outline-color:var(--accent-deep); }
-html[data-season]:not([data-season="normal"]) .profile-page :is(input[type="checkbox"],input[type="radio"]) { accent-color:var(--accent-deep); }
-html[data-season]:not([data-season="normal"]) .profile-page :is(.incoming-note,.sync-tray,.note-composer) {
+html[data-season]:not([data-season="normal"]) .profile-page :is(.soft-chip, .status-choice, .energy-choice, .repeat-chip, .reaction-pick, .more-grid a) { border-color:var(--diary-rule); }
+html[data-season]:not([data-season="normal"]) .profile-page :is(button, a, input, select, textarea):focus-visible { outline-color:var(--accent-deep); }
+html[data-season]:not([data-season="normal"]) .profile-page :is(input[type="checkbox"], input[type="radio"]) { accent-color:var(--accent-deep); }
+html[data-season]:not([data-season="normal"]) .profile-page :is(.incoming-note, .sync-tray, .note-composer) {
   color:var(--page-text); background:var(--diary-panel); border-color:var(--season-trim);
 }
-html[data-season]:not([data-season="normal"]) .incoming-note :is(p,.incoming-note-close) { color:var(--page-text); }
+html[data-season]:not([data-season="normal"]) .incoming-note :is(p, .incoming-note-close) { color:var(--page-text); }
 html[data-season]:not([data-season="normal"]) .incoming-note small { color:var(--page-muted); }
 html[data-season]:not([data-season="normal"]) .profile-page .toast { background:var(--accent-deep); color:var(--diary-pressed-ink); }
 /* Navigation seasonal markers are meaningful unread badges, not permanent decoration. */
@@ -134,33 +125,20 @@ html[data-season]:not([data-season="normal"]) .couple-marker::after {
   transform:rotate(45deg); background:var(--accent-deep); pointer-events:none;
   mask:var(--season-mark) center/contain no-repeat; -webkit-mask:var(--season-mark) center/contain no-repeat;
 }
-html[data-season="spooky"] .profile-page .game-token.her { color:#bd661d; }
-html[data-season="spooky"] .profile-page .game-token.him { color:#77518e; }
-html[data-season="spooky"] .him-theme .game-token.her { color:#ffd293; }
-html[data-season="spooky"] .him-theme .game-token.him { color:#dfbcf5; }
-html[data-season="christmas"] .profile-page .game-token.her { color:#a3414a; }
-html[data-season="christmas"] .profile-page .game-token.him { color:#29776a; }
-html[data-season="christmas"] .him-theme .game-token.her { color:#ffb3a5; }
-html[data-season="christmas"] .him-theme .game-token.him { color:#bcebdc; }
-
 /* Older components used fixed navy/lavender colors. Pull those into the same
    palette too, including disabled/selected states and the tiny menus. */
-html[data-season]:not([data-season="normal"]) .profile-page .feature-shell > .feature-hero :is(.topbar-search,.today-focus-open),
-html[data-season]:not([data-season="normal"]) .profile-page :is(.task-check,.empty-add,.reaction-trigger,.reaction-display,.emoji-picker-input-row,.emoji-picker-close),
-html[data-season]:not([data-season="normal"]) .profile-page .random-date-card.date-roulette .roulette-chip-group button:not(.active),
-html[data-season]:not([data-season="normal"]) .profile-page .emoji-picker-actions .quiet-action {
+html[data-season]:not([data-season="normal"]) .profile-page .feature-shell > .feature-hero :is(.topbar-search, .today-focus-open), html[data-season]:not([data-season="normal"]) .profile-page :is(.task-check, .empty-add, .reaction-trigger, .reaction-display, .emoji-picker-input-row, .emoji-picker-close), html[data-season]:not([data-season="normal"]) .profile-page .random-date-card.date-roulette .roulette-chip-group button:not(.active), html[data-season]:not([data-season="normal"]) .profile-page .emoji-picker-actions .quiet-action {
   background:var(--diary-raised); color:var(--page-text); border-color:var(--diary-rule);
 }
 html[data-season]:not([data-season="normal"]) .profile-page .thinking-ping { color:var(--accent-deep); }
 html[data-season]:not([data-season="normal"]) .profile-page .random-date-card.date-roulette .roulette-chip-group>span { color:var(--page-muted); }
-html[data-season]:not([data-season="normal"]) .profile-page :is(.status-choice.active,.energy-choice.active,.repeat-chip.active,.quick-kind button.active),
-html[data-season]:not([data-season="normal"]) .profile-page .random-date-card.date-roulette .roulette-chip-group button.active {
+html[data-season]:not([data-season="normal"]) .profile-page :is(.status-choice.active, .energy-choice.active, .repeat-chip.active, .quick-kind button.active), html[data-season]:not([data-season="normal"]) .profile-page .random-date-card.date-roulette .roulette-chip-group button.active {
   color:var(--diary-pressed-ink); background:var(--accent-deep); border-color:var(--accent-deep);
 }
 html[data-season]:not([data-season="normal"]) .profile-page .trip-bar.is-on { background:var(--diary-raised); border-color:var(--season-trim); }
-html[data-season]:not([data-season="normal"]) .profile-page .trip-bar.is-on :is(p,button) { color:var(--page-text); }
+html[data-season]:not([data-season="normal"]) .profile-page .trip-bar.is-on :is(p, button) { color:var(--page-text); }
 html[data-season]:not([data-season="normal"]) .profile-page .note-thread-row.mine { background:color-mix(in srgb,var(--accent) 12%,var(--diary-panel)); }
-html[data-season]:not([data-season="normal"]) .profile-page :is(.proximity-orbit,.now-orbit) i::after { background:var(--diary-panel); }
+html[data-season]:not([data-season="normal"]) .profile-page :is(.proximity-orbit, .now-orbit) i::after { background:var(--diary-panel); }
 html[data-season="spooky"] .profile-page { --season-sun-ink:#bd661d; --season-moon-ink:#77518e; }
 html[data-season="spooky"] .him-theme { --season-sun-ink:#ffd293; --season-moon-ink:#dfbcf5; }
 html[data-season="christmas"] .profile-page { --season-sun-ink:#a3414a; --season-moon-ink:#29776a; }

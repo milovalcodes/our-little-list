@@ -5,21 +5,13 @@
 // hours, which made "remind me at 3pm" mean "sometime this afternoon". Workers
 // cron triggers actually run on the minute.
 
-import {scheduleStreakReminders,streakReminderWanted} from './streak-reminders.js';
-import { settleWordWeeks } from './word-week.js';
-import {settleActivityWeeks,notifyActivityResults} from './activity-week.js';
-import {LEAGUE_WEEK} from '../../league-scores.js';
-import {PUZZLE_TYPES,LEAGUE_START_DAY} from '../../daily-puzzles.js';
-import {workerTimedPuzzle as timedPuzzle} from './puzzles.js';
-import {timedOver} from '../../timed-game.js';
 import { signIn, createClient } from './firestore.js';
 import { sendNotification } from './webpush.js';
 import { authorizeWake, wakeDelivery } from './immediate.js';
 import { acquireDeliveryLock, releaseDeliveryLock } from './delivery-lock.js';
-import { normalizeNotificationPreferences, notificationKindEnabled, vibrationPattern, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../../notification-policy.js';
+import { normalizeNotificationPreferences, notificationKindEnabled, retiredGameNotification, vibrationPattern, reminderSourcePath, reminderStillWanted, quietHoursEndUtc } from '../../notification-policy.js';
 import { focusDelivery,contentSourcePath,contentStillWanted } from '../../delivery-policy.js';
 import { questionClock, questionForDay } from '../../question-prompts.js';
-import {workerWordPuzzle as wordForDay,savedDailyRounds} from './puzzles.js';
 import { activityWindow } from '../../activity-clock.js';
 import {scheduleListReminders,listReminderWanted,listNudgeWanted} from './list-reminders.js';
 import {handleStar,scheduleStar,queuedStarWanted} from './star-api.js';
@@ -57,16 +49,13 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
   const lockPath = `${household}/deliveryLocks/active`;
   let now = Date.now();
   // A failed scheduler must not stop ordinary notes going out. Independent
-  // schedulers fetch concurrently; settlement stays before result pings so a
-  // closed tie never queues another turn. Atomic create-only markers let these
+  // schedulers fetch concurrently. Atomic create-only markers let these
   // writers overlap without holding the sender lease during slow checks.
   await Promise.all([
     scheduleStar(env,db,household).catch(()=>console.error('Nursery notification check will retry next minute.')),
     ...(scheduleReminders?[scheduleListReminders(db,household,now).catch(problem=>console.error(`list reminders skipped: ${problem?.message||problem}`))]:[]),
     ...(scheduleQuestions?[
-      scheduleStreakReminders(db,household,now).catch(()=>console.error('Evening game reminder will retry next minute.')),
       ensureQuestionOfDay(db,household,now).catch(problem=>console.error(`daily question skipped: ${problem?.message||problem}`)),
-      (async()=>{await settleWordWeeks(db,household,now,{before:LEAGUE_WEEK});await settleActivityWeeks(db,household,now);await notifyActivityResults(db,household,now);})().catch(problem=>console.error(`weekly word skipped: ${problem?.message||problem}`))
     ]:[])
   ]);
   const schedulingMs=Date.now()-now;
@@ -110,6 +99,7 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
       // lease becomes reclaimable. Never keep sending on an expired lease.
       if(Date.now()>lease.expiresAt-30000){left+=lane.length-position;break;}
       try {
+      if(retiredGameNotification(message.kind)){await db.remove(message.path);dropped++;continue;}
       const receiptPath=`${household}/deliveryLocks/sent-${message.id}`;
       if(await db.get(receiptPath)){
         await db.remove(message.path);dropped+=1;continue;
@@ -155,32 +145,6 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
         }
       }
 
-      if (message.kind === 'word-week' && String(message.ref || '').includes('-tie-')
-        && await db.get(`${household}/wordDuelEnds/${String(message.ref).split('/').pop()}`)) {
-        await db.remove(message.path); dropped += 1; continue;
-      }
-      if (message.kind === 'activities-open' && String(message.ref || '').split('/').pop() !== questionClock(now).day) {
-        await db.remove(message.path); dropped += 1; continue;
-      }
-      if(message.kind==='game-streak'&&!await streakReminderWanted(db,household,message,now)){await db.remove(message.path);dropped++;continue;}
-      if(message.kind==='activity-result'||message.kind==='game-turn'){
-        const match=/^activities\/(\d{4}-\d{2}-\d{2}(?:-tie-\d+)?)-(word|search|crossword)(?:-r(\d+))?-(waiting|reveal)$/.exec(message.ref||'');
-        const day=match?.[1],type=match?.[2],revision=Number(match?.[3]||0),event=match?.[4];
-        const puzzle=match?await db.get(`${household}/${type==='word'?'wordPuzzles':'timedPuzzles'}/${day}${type==='word'?'':'-'+type}`):null;
-        const stale=!match||revision!==(puzzle?.revision||0)||(day.includes('-tie-')?Boolean(await db.get(`${household}/wordDuelEnds/${day}`)):day!==questionClock(now).day);
-        const result=!stale&&event==='waiting'?await db.get(`${household}/${type==='word'?'wordResults':'timedResults'}/${day}-${type==='word'?'':type+'-'}${message.to}`):null;
-        if(stale||(event==='waiting'&&(type==='word'?result?.done:timedOver(result,now)))){await db.remove(message.path);dropped+=1;continue;}
-      }
-      if(message.kind==='activity-reset'){
-        const id=/^gameResets\/([A-Za-z0-9-]{20,80})$/.exec(message.ref||'')?.[1];
-        const reset=id?await db.get(`${household}/gameResets/${id}`):null;
-        let wanted=reset?.day===questionClock(now).day&&Array.isArray(reset.before);
-        if(wanted)for(const old of reset.before){
-          const p=await db.get(`${household}/${old.word?'wordPuzzles':'timedPuzzles'}/${reset.day}${old.word?'':'-'+old.type}`);
-          if((p?.revision||0)!==(old.revision||0)+1){wanted=false;break;}
-        }
-        if(!wanted){await db.remove(message.path);dropped+=1;continue;}
-      }
       if (String(message.kind || '').startsWith('question-')) {
         const clock = questionClock(now);
         const day = String(message.ref || '').split('/').pop();
@@ -195,12 +159,6 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
           dropped += 1;
           continue;
         }
-      }
-
-      if (message.kind === 'game') {
-        await db.remove(message.path);
-        dropped += 1;
-        continue;
       }
 
       const target = subscriptions[message.to];
@@ -323,18 +281,7 @@ export async function ensureQuestionOfDay(db, household, now) {
   const clock = questionClock(now);
   if (!clock.open) return { open: false };
   const selected = questionForDay(clock.day);
-  const word = wordForDay(clock.day);
-  if (!selected && !word) return { open: false, exhausted: true };
-  let saved,lookedUp=false;
-  const daily=async()=>{if(!lookedUp){saved=await savedDailyRounds(db,household,clock.day);lookedUp=true;}return saved;};
-  if (word) {
-    const wordPath = `${household}/wordPuzzles/${clock.day}`;
-    if (!await db.get(wordPath)) await db.create(wordPath, (await daily())?.word||word);
-  }
-  if(clock.day>=LEAGUE_START_DAY)for(const type of PUZZLE_TYPES){
-    const puzzlePath=`${household}/timedPuzzles/${clock.day}-${type}`;
-    if(!await db.get(puzzlePath))await db.create(puzzlePath,(await daily())?.[type]||timedPuzzle(clock.day,type,now));
-  }
+  if (!selected) return {open:false, exhausted:true};
   const path = `${household}/questions/${clock.day}`;
   let question = await db.get(path);
   if (!question && selected) {
@@ -351,8 +298,8 @@ export async function ensureQuestionOfDay(db, household, now) {
       documents.push({
         path: `${household}/outbox/question-${clock.day}-${event}-${person}`,
         fields: {
-          to: person, title, body, url: event === 'open' ? 'activities.html#daily' : 'activities.html#question',
-          kind: event === 'open' ? 'activities-open' : `question-${event}`, ref: `questions/${clock.day}`,
+          to: person, title, body, url: 'activities.html#question',
+          kind: `question-${event}`, ref: `questions/${clock.day}`,
           sendAt: now, createdAt: now
         }
       });
@@ -361,7 +308,7 @@ export async function ensureQuestionOfDay(db, household, now) {
   };
 
   // Reuse the old opening marker: deploying after the old morning ping must not send a second one.
-  await queueEvent('open', ['her', 'him'], 'Today’s activities are ready', clock.day>=LEAGUE_START_DAY?'Three puzzles + a question for two.':selected && word ? 'A question for two + a five-letter mystery.' : selected ? 'Today’s question is ready.' : 'Your five-letter mystery is ready.');
+  await queueEvent('open', ['her', 'him'].filter(person=>!question.answers?.[person]?.at), 'Today’s question is ready', 'A little moment for the two of you.');
   const her = Boolean(question?.answers?.her?.at);
   const him = Boolean(question?.answers?.him?.at);
   if (her !== him) {

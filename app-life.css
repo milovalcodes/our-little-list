@@ -1,10 +1,9 @@
 /* Shared presentation for every app destination. Feature styles own their
    layouts; this layer owns typography, surfaces, controls and interaction. */
 .profile-page { --font-display:var(--font-body); --life-ease:cubic-bezier(.22,.8,.24,1); --life-edge:var(--diary-rule); --life-glow:color-mix(in srgb,var(--accent-soft) 13%,transparent); color:var(--page-text); line-height:1.5; }
-.profile-page :is(h1,h2,h3) { font-weight:700; }
-.profile-page :is(.feature-shell,.dashboard-shell) { width:min(700px,calc(100% - 32px)); }
+.profile-page :is(h1, h2, h3) { font-weight:700; }
+.profile-page :is(.feature-shell, .dashboard-shell) { width:min(700px,calc(100% - 32px)); }
 .profile-page .app-topbar { max-width:732px; padding-left:16px; padding-right:16px; }
-.profile-page .games-shell { max-width:540px; }
 .profile-page .app-shell { position:relative; padding-bottom:calc(24px + env(safe-area-inset-bottom)); }
 .profile-page .feature-shell>.feature-hero {
  display:grid; grid-template-columns:minmax(0,1fr) auto auto; grid-template-rows:auto auto;
@@ -12,126 +11,123 @@
  position:relative; min-height:104px; margin-bottom:16px; padding:18px 0 16px;
  border-bottom:1px solid var(--diary-rule); text-align:left;
 }
-.profile-page .feature-shell>.feature-hero :is(h1,div:has(>h1)) { grid-column:1; grid-row:1; min-width:0; }
+.profile-page .feature-shell>.feature-hero :is(h1, div:has(>h1)) { grid-column:1; grid-row:1; min-width:0; }
 .profile-page .feature-shell>.feature-hero h1 { font-size:clamp(1.5rem,5.5vw,2rem); line-height:1.15; letter-spacing:-.03em; }
 .profile-page .feature-shell>.feature-hero .topbar-search { position:static; grid-column:3; grid-row:1; translate:none; width:44px; height:44px; background:var(--diary-panel); color:var(--page-text); }
 .profile-page .feature-shell>.feature-hero .life-page-caption { display:block; grid-column:1/-1; grid-row:2; position:static; margin:0; max-width:none; color:var(--page-muted); font-size:.8125rem; line-height:1.45; letter-spacing:0; }
 .profile-page .feature-shell>.feature-hero.now-hero .life-page-caption { left:0; }
-.profile-page :is(.our-sky,.daily-entry,.home-next-up,.practice-card,.practice-shelf,.settings-group>summary,.personal-progress,.weekly-home-recap,.list-card,.random-date-card,.now-location-card,.app-feel-settings) { border-color:var(--diary-rule); border-radius:var(--diary-radius); box-shadow:var(--diary-shadow); }
+.profile-page :is(.our-sky, .daily-entry, .home-next-up, .settings-group>summary, .list-card, .random-date-card, .now-location-card, .app-feel-settings) { border-color:var(--diary-rule); border-radius:var(--diary-radius); box-shadow:var(--diary-shadow); }
 .profile-page .settings-group { box-shadow:none; }
-.profile-page :is(.daily-entry,.settings-group)[open] { border-color:color-mix(in srgb,var(--accent) 45%,var(--diary-rule)); }
+.profile-page :is(.daily-entry, .settings-group)[open] { border-color:color-mix(in srgb,var(--accent) 45%,var(--diary-rule)); }
 .profile-page .daily-entry>summary { min-height:76px; padding:14px 16px; }
 .profile-page .daily-entry>summary>span:nth-child(2) { min-width:0; }
-.profile-page .daily-stamp { flex:0 0 42px; background:var(--diary-raised); border:1px solid var(--diary-rule); box-shadow:none; border-radius:var(--diary-small-radius); }
-.profile-page .weekly-entry>summary { display:grid; grid-template-columns:42px minmax(0,1fr); gap:4px 12px; }
-.profile-page .weekly-entry>summary>span:first-child { grid-row:1/3; display:grid; place-items:center; width:42px; height:42px; border:1px solid var(--diary-rule); border-radius:var(--diary-small-radius); background:var(--diary-raised); color:var(--accent-deep); }
-.profile-page .weekly-entry>summary #weekly-score { grid-column:2; margin:0; font-size:.9rem; letter-spacing:0; }
-.profile-page .daily-strip a { border-radius:var(--diary-small-radius); background:var(--diary-panel); box-shadow:none; }
-.profile-page .sky-heading { padding-bottom:12px; }.profile-page #sky-greeting { letter-spacing:-.025em; }
+.profile-page .sky-heading { padding-bottom:12px; }
+.profile-page #sky-greeting { letter-spacing:-.025em; }
 .profile-page .sky-stage { box-shadow:inset 0 0 28px #ffffff0b,0 8px 20px #00000012; }
 .profile-page .sky-avatar { border-color:color-mix(in srgb,var(--accent-soft) 50%,white); }
 .profile-page .sky-person-label small { max-width:100%; white-space:normal; text-align:center; line-height:1.25; }
 .profile-page a.primary-action { display:inline-flex; align-items:center; justify-content:center; padding:10px 16px; text-decoration:none; }
 .profile-page .fridge-paper { border-radius:var(--diary-small-radius); box-shadow:none; transform:none; }
-.profile-page .home-next-row { min-height:58px; }.profile-page .home-next-row:hover { background:var(--life-glow); }
-.profile-page :is(.task-row,.date-idea-card,.memory-card,.note-thread-row,.focus-person) { border-color:var(--life-edge); }
+.profile-page .home-next-row { min-height:58px; }
+.profile-page .home-next-row:hover { background:var(--life-glow); }
+.profile-page :is(.task-row, .date-idea-card, .memory-card, .note-thread-row, .focus-person) { border-color:var(--life-edge); }
 .profile-page .task-row.done { background:color-mix(in srgb,var(--diary-panel) 80%,var(--accent-pale)); }
 .profile-page .note-thread-row { border-radius:var(--diary-small-radius); }
 .profile-page .memory-card { border-radius:var(--diary-small-radius); box-shadow:none; }
 .profile-page .memory-card img { border-radius:10px; }
 .profile-page .date-idea-card { border:1px solid var(--diary-rule); }
-.profile-page :is(button,a,summary,input,textarea,select) { -webkit-tap-highlight-color:transparent; }
-.profile-page :is(button,a,summary):focus-visible { outline:3px solid var(--accent-deep); outline-offset:4px; }
-.profile-page :is(input,textarea,select):focus-visible { outline:2px solid var(--accent-deep); outline-offset:3px; box-shadow:0 0 0 6px var(--life-glow); }
-.profile-page :is(input,textarea)::placeholder { color:var(--page-muted); opacity:.8; }
-.profile-page :is(.primary-action,.small-action,.tiny-button,.context-add,.thinking-ping) { box-shadow:none; font-weight:800; }
-.profile-page :is(.primary-action,.small-action,.tiny-button,.context-add):disabled { box-shadow:none; }
-.profile-page :is(.app-sheet,.profile-photo-sheet) { border:1px solid var(--life-edge); box-shadow:0 -12px 60px #00000021; border-radius:24px 24px 0 0; }
+.profile-page :is(button, a, summary, input, textarea, select) { -webkit-tap-highlight-color:transparent; }
+.profile-page :is(button, a, summary):focus-visible { outline:3px solid var(--accent-deep); outline-offset:4px; }
+.profile-page :is(input, textarea, select):focus-visible { outline:2px solid var(--accent-deep); outline-offset:3px; box-shadow:0 0 0 6px var(--life-glow); }
+.profile-page :is(input, textarea)::placeholder { color:var(--page-muted); opacity:.8; }
+.profile-page :is(.primary-action, .small-action, .tiny-button, .context-add, .thinking-ping) { box-shadow:none; font-weight:800; }
+.profile-page :is(.primary-action, .small-action, .tiny-button, .context-add):disabled { box-shadow:none; }
+.profile-page :is(.app-sheet, .profile-photo-sheet) { border:1px solid var(--life-edge); box-shadow:0 -12px 60px #00000021; border-radius:24px 24px 0 0; }
 .profile-page .profile-photo-sheet { border-radius:24px; }
-.profile-page .sheet-head { padding-bottom:12px; border-bottom:1px solid var(--diary-rule); margin-bottom:14px; }.profile-page .sheet-head h2 { letter-spacing:-.025em; }
+.profile-page .sheet-head { padding-bottom:12px; border-bottom:1px solid var(--diary-rule); margin-bottom:14px; }
+.profile-page .sheet-head h2 { letter-spacing:-.025em; }
 .profile-page .sheet-head [data-close-sheet] { border-radius:50%; background:var(--diary-raised); width:44px; height:44px; }
 .profile-page { padding-top:env(safe-area-inset-top,0px); -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 .profile-page .app-dock { --dock-bottom-gap:max(8px,env(safe-area-inset-bottom)); bottom:var(--dock-bottom-gap); background:var(--diary-panel); -webkit-backdrop-filter:blur(22px) saturate(1.3); box-shadow:0 -1px 0 var(--life-edge),0 -8px 25px #00000008; }
 .profile-page .app-dock[data-viewport-anchored] { position:absolute; bottom:auto; }
 .dock-item>svg { display:block; width:22px; height:22px; }
 .profile-page .dock-item.is-active { background:var(--life-glow); border-radius:16px; }
-.profile-page .empty-state { padding:28px 16px; text-align:center; }.profile-page .empty-state>span { display:grid; place-items:center; width:48px; height:48px; margin:0 auto 10px; background:var(--accent-pale); border-radius:var(--diary-small-radius); font-size:1.5rem; }
-.profile-page .empty-state :is(button,a) { display:inline-flex; align-items:center; justify-content:center; margin-top:8px; min-height:44px; padding:8px 14px; border:1px solid var(--life-edge); border-radius:14px; background:var(--diary-raised); color:var(--accent-deep); text-decoration:none; font-size:.85rem; font-weight:800; }
+.profile-page .empty-state { padding:28px 16px; text-align:center; }
+.profile-page .empty-state>span { display:grid; place-items:center; width:48px; height:48px; margin:0 auto 10px; background:var(--accent-pale); border-radius:var(--diary-small-radius); font-size:1.5rem; }
+.profile-page .empty-state :is(button, a) { display:inline-flex; align-items:center; justify-content:center; margin-top:8px; min-height:44px; padding:8px 14px; border:1px solid var(--life-edge); border-radius:14px; background:var(--diary-raised); color:var(--accent-deep); text-decoration:none; font-size:.85rem; font-weight:800; }
 .profile-page .toast { border:1px solid var(--life-edge); border-radius:18px; box-shadow:0 8px 30px #00000024; padding:13px 19px; font-weight:800; }
-.profile-page .global-failure { border-radius:20px; }.profile-page .is-busy { cursor:progress; }
-.life-tap,.life-spark { position:fixed; pointer-events:none; z-index:150; color:var(--accent-deep); }.life-tap { width:17px; height:17px; border:1.5px solid currentColor; border-radius:50%; }.life-spark { font-size:17px; line-height:1; }
-.app-feel-settings { padding:14px 18px; background:var(--diary-panel); border:1px solid var(--life-edge); border-radius:var(--diary-radius); }.app-feel-settings summary { font-size:1rem; font-weight:800; }
+.profile-page .global-failure { border-radius:20px; }
+.profile-page .is-busy { cursor:progress; }
+.life-tap, .life-spark { position:fixed; pointer-events:none; z-index:150; color:var(--accent-deep); }
+.life-tap { width:17px; height:17px; border:1.5px solid currentColor; border-radius:50%; }
+.life-spark { font-size:17px; line-height:1; }
+.app-feel-settings { padding:14px 18px; background:var(--diary-panel); border:1px solid var(--life-edge); border-radius:var(--diary-radius); }
+.app-feel-settings summary { font-size:1rem; font-weight:800; }
 @media(prefers-reduced-motion:no-preference) {
- .profile-page :is(.primary-action,.small-action,.tiny-button,.context-add,.daily-strip a,.dock-item,.more-grid a,.practice-tabs a,.daily-stamp) { transition:translate .18s var(--life-ease),scale .18s var(--life-ease),box-shadow .18s,background .18s,rotate .25s; }
- .profile-page :is(.primary-action,.small-action,.tiny-button,.context-add,.daily-strip a,.dock-item,.more-grid a):active { scale:.97; translate:0 1px; }
- .profile-page :is(.tab,.choice,.status-choice,.quick-kind button) { transition:background .18s,color .18s; }
- .profile-page :is(input,textarea,select) { transition:box-shadow .2s,border-color .2s; }
- .profile-page .empty-state>span { animation:life-hello .55s var(--life-ease); }
- .profile-page .task-row.done .task-check { animation:life-hello .3s var(--life-ease); }
- @keyframes life-hello { 0% { scale:.9; rotate:-8deg; } 65% { scale:1.06; rotate:3deg; } 100% { scale:1; rotate:0deg; } }
- @media(hover:hover) { .profile-page :is(.daily-strip a,.more-grid a,.practice-tabs a):hover { translate:0 -2px; box-shadow:0 6px 14px #00000010; } }
+.profile-page :is(.primary-action, .small-action, .tiny-button, .context-add, .dock-item, .more-grid a) { transition:translate .18s var(--life-ease),scale .18s var(--life-ease),box-shadow .18s,background .18s,rotate .25s; }
+.profile-page :is(.primary-action, .small-action, .tiny-button, .context-add, .dock-item, .more-grid a):active { scale:.97; translate:0 1px; }
+.profile-page :is(.tab, .choice, .status-choice, .quick-kind button) { transition:background .18s,color .18s; }
+.profile-page :is(input, textarea, select) { transition:box-shadow .2s,border-color .2s; }
+.profile-page .empty-state>span { animation:life-hello .55s var(--life-ease); }
+.profile-page .task-row.done .task-check { animation:life-hello .3s var(--life-ease); }
+@keyframes life-hello { 0% { scale:.9; rotate:-8deg; } 65% { scale:1.06; rotate:3deg; } 100% { scale:1; rotate:0deg; } }
+@media(hover:hover) {
+.profile-page :is(.more-grid a):hover { translate:0 -2px; box-shadow:0 6px 14px #00000010; }
+}
 }
 .life-paused * { animation-play-state:paused!important; }
-html[data-quiet-motion] *,html[data-quiet-motion] *::before,html[data-quiet-motion] *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
-html[data-quiet-motion] :is(.word-finale,.word-confetti,.life-tap,.life-spark) { display:none!important; }
-@media(max-width:360px) { .profile-page :is(.feature-shell,.dashboard-shell) { width:calc(100% - 24px); }.profile-page .daily-entry>summary { gap:8px; padding:12px; }.profile-page .daily-strip a { padding:10px 7px; } }
-
-/* Readable labels and unmistakable keyboard focus in every seasonal palette. */
-.profile-page :is(button,a,summary,[tabindex]):focus-visible { outline:3px solid var(--page-text); outline-offset:3px; }
-.profile-page :is(input,textarea,select):focus-visible { outline-color:var(--page-text); }
-.profile-page :is(input,textarea)::placeholder { color:var(--page-muted); opacity:1; }
-.profile-page :is(.tiny-kicker,.life-page-caption,.daily-state,.daily-strip small,.status-presence,.status-blank,.practice-caption,.dock-item span,.settings-group small,.personal-badges span) { font-size:.8125rem; line-height:1.45; }
+html[data-quiet-motion] *, html[data-quiet-motion] *::before, html[data-quiet-motion] *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+html[data-quiet-motion] :is(.life-tap, .life-spark) { display:none!important; }
+@media(max-width:360px) {
+.profile-page :is(.feature-shell, .dashboard-shell) { width:calc(100% - 24px); }
+.profile-page .daily-entry>summary { gap:8px; padding:12px; }
+}
+.profile-page :is(button, a, summary, [tabindex]):focus-visible { outline:3px solid var(--page-text); outline-offset:3px; }
+.profile-page :is(input, textarea, select):focus-visible { outline-color:var(--page-text); }
+.profile-page :is(input, textarea)::placeholder { color:var(--page-muted); opacity:1; }
+.profile-page :is(.tiny-kicker, .life-page-caption, .daily-state, .status-presence, .status-blank, .dock-item span, .settings-group small) { font-size:.8125rem; line-height:1.45; }
 .profile-page .app-dock .dock-item span { font-size:.75rem; }
-.profile-page :is(.small-action,.tiny-button,.chip,.soft-chip,.settings-jump a,.practice-tabs a,.practice-levels a,.profile-photo-edit) { min-height:44px; }
+.profile-page :is(.small-action, .tiny-button, .chip, .soft-chip, .settings-jump a, .profile-photo-edit) { min-height:44px; }
 .profile-page .profile-photo-edit { min-width:44px; }
-.profile-page .trip-bar:not(.is-on) #trip-toggle,.profile-page .compact-choice-row input:checked+span,.profile-page .place-presets button.active { color:var(--diary-pressed-ink); }
-.profile-page :is(.compact-choice-row span,.place-presets button,.trip-bar button) { min-height:44px; font-size:.8125rem; }
-.profile-page .compact-choice-row input:focus-visible+span,.profile-page .quiet-hours-switch input:focus-visible+i { outline:3px solid var(--page-text); outline-offset:3px; }
+.profile-page .trip-bar:not(.is-on) #trip-toggle, .profile-page .compact-choice-row input:checked+span, .profile-page .place-presets button.active { color:var(--diary-pressed-ink); }
+.profile-page :is(.compact-choice-row span, .place-presets button, .trip-bar button) { min-height:44px; font-size:.8125rem; }
+.profile-page .compact-choice-row input:focus-visible+span, .profile-page .quiet-hours-switch input:focus-visible+i { outline:3px solid var(--page-text); outline-offset:3px; }
 .profile-page .place-preview { background:var(--diary-raised); }
 .profile-page .place-preview small { color:var(--page-text); font-size:.8125rem; line-height:1.4; }
 .profile-page .status-blank { opacity:1; }
 .profile-page .setup-nudge small { color:var(--page-muted); opacity:1; font-size:.8125rem; }
 @media(prefers-contrast:more) {
- .profile-page { --diary-rule:var(--page-muted); }
- .profile-page :is(.daily-entry,.task-row,.settings-group,.person-status-card,.word-tile,.puzzle-cell) { border-width:2px; }
+.profile-page { --diary-rule:var(--page-muted); }
+.profile-page :is(.daily-entry, .task-row, .settings-group, .person-status-card) { border-width:2px; }
 }
 @media(forced-colors:active) {
- :is(button,a,input,textarea,select,summary):focus-visible { outline:3px solid Highlight; }
- .word-tile,.puzzle-cell { border:1px solid CanvasText; }
- .word-tile.correct { border:3px double CanvasText; }
- .word-tile.present { border:3px dashed CanvasText; }
+:is(button, a, input, textarea, select, summary):focus-visible { outline:3px solid Highlight; }
 }
-
 .profile-page .permission-help.fail { color:var(--page-text)!important; border-left:3px solid var(--accent-deep); }
-.profile-page .feature-shell .status-row :is(p,.small-action) { font-size:.875rem; }
+.profile-page .feature-shell .status-row :is(p, .small-action) { font-size:.875rem; }
 .profile-page .feature-shell .status-row .small-action { min-height:44px; }
 .profile-page .app-dock .dock-item span { white-space:normal; overflow-wrap:anywhere; line-height:1.2; }
 .has-app-dock { padding-bottom:calc(var(--app-dock-height,82px) + 24px + env(safe-area-inset-bottom)); }
-
-.profile-page :is(.practice-tabs,.practice-levels) a[aria-current="page"],.profile-page #practice-next { color:var(--diary-pressed-ink); background:var(--accent-deep); }
-.profile-page .puzzle-grid .puzzle-cell:is(.cursor,.found,.tracing,.pending-find) { color:var(--diary-pressed-ink); background:var(--accent-deep); }
 .sound-volume { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
 .sound-volume input { min-height:44px; max-width:100%; flex:1 1 140px; accent-color:var(--accent-deep); }
 .sound-volume output { min-width:3em; font-variant-numeric:tabular-nums; }
 .sound-previews { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
 .sound-previews button { min-height:44px; padding:8px 14px; color:var(--page-text); background:var(--diary-raised); border:1px solid var(--diary-rule); border-radius:10px; font:inherit; }
-
 /* One disclosure cue across the app: a drawn chevron that turns when opened.
    Old glyph slots (⌄, ＋, ›, ▶) keep their place but draw the same mark. */
 .profile-page details>summary { list-style:none; }
 .profile-page details>summary::-webkit-details-marker { display:none; }
-.profile-page :is(.daily-chevron,.guide-topic summary>i,.status-editor-disclosure summary>i,.saved-places>summary>i,.profile-quick>summary>span[aria-hidden]) { display:inline-grid; place-items:center; font-size:0; transform:none; }
-.profile-page :is(.daily-chevron,.guide-topic summary>i,.status-editor-disclosure summary>i,.saved-places>summary>i,.profile-quick>summary>span[aria-hidden])::before,
-.profile-page :is(.today-new,.personal-progress,.game-comfort details,.date-more-details,.status-suggestions,.admin-games,.score-help,.phone-health,.settings-group)>summary::after { content:""; display:inline-block; flex:none; width:.5rem; height:.5rem; margin-inline:.55rem .25rem; border:solid currentColor; border-width:0 2px 2px 0; opacity:.65; rotate:45deg; translate:0 -.12rem; transition:rotate .16s ease,translate .16s ease; }
-.profile-page details[open]>summary :is(.daily-chevron,i,span[aria-hidden])::before,
-.profile-page details[open]>summary::after { rotate:225deg; translate:0 .12rem; }
-.profile-page :is(.today-new,.personal-progress,.game-comfort details,.date-more-details,.status-suggestions,.admin-games,.score-help,.phone-health,.settings-group)>summary { display:flex; align-items:center; }
-.profile-page :is(.today-new,.personal-progress,.game-comfort details,.date-more-details,.status-suggestions,.admin-games,.score-help,.phone-health)>summary::after { margin-left:auto; }
+.profile-page :is(.daily-chevron, .guide-topic summary>i, .status-editor-disclosure summary>i, .saved-places>summary>i, .profile-quick>summary>span[aria-hidden]) { display:inline-grid; place-items:center; font-size:0; transform:none; }
+.profile-page :is(.daily-chevron, .guide-topic summary>i, .status-editor-disclosure summary>i, .saved-places>summary>i, .profile-quick>summary>span[aria-hidden])::before, .profile-page :is(.today-new, .game-comfort details, .date-more-details, .status-suggestions, .phone-health, .settings-group)>summary::after { content:""; display:inline-block; flex:none; width:.5rem; height:.5rem; margin-inline:.55rem .25rem; border:solid currentColor; border-width:0 2px 2px 0; opacity:.65; rotate:45deg; translate:0 -.12rem; transition:rotate .16s ease,translate .16s ease; }
+.profile-page details[open]>summary :is(.daily-chevron, i, span[aria-hidden])::before, .profile-page details[open]>summary::after { rotate:225deg; translate:0 .12rem; }
+.profile-page :is(.today-new, .game-comfort details, .date-more-details, .status-suggestions, .phone-health, .settings-group)>summary { display:flex; align-items:center; }
+.profile-page :is(.today-new, .game-comfort details, .date-more-details, .status-suggestions, .phone-health)>summary::after { margin-left:auto; }
 .profile-page .history-group summary::before { content:none; }
 .profile-page .history-group summary::after { content:""; flex:none; width:.5rem; height:.5rem; margin-inline:.55rem .25rem; border:solid currentColor; border-width:0 2px 2px 0; opacity:.65; rotate:45deg; translate:0 -.12rem; transition:rotate .16s ease,translate .16s ease; }
 .profile-page .history-group[open] summary::after { rotate:225deg; translate:0 .12rem; }
-@media (prefers-reduced-motion:reduce) { .profile-page details>summary::after,.profile-page details>summary :is(.daily-chevron,i,span[aria-hidden])::before { transition:none; } }
-
+@media (prefers-reduced-motion:reduce) {
+.profile-page details>summary::after, .profile-page details>summary :is(.daily-chevron, i, span[aria-hidden])::before { transition:none; }
+}
 /* Notes share the same reaction drawing as Profiles. */
 .profile-page .note-thread-row .reaction-trigger:not(.note-tool)::before { content:none; }
 .profile-page .note-thread-row .reaction-trigger:not(.note-tool)>.ui-icon { font-size:1.4rem; margin:0; }

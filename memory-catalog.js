@@ -1,5 +1,5 @@
 import {activityClock} from './activity-clock.js';
-import {normalizeWeekRecord} from './word-scores.js';
+import {normalizeWeekRecord} from './win-records.js';
 export function validMemoryDate(value){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value+'T12:00Z'))&&new Date(value+'T12:00Z').toISOString().slice(0,10)===value;}
 export function memoryDate(item){
  if(validMemoryDate(item.memoryDate))return item.memoryDate;

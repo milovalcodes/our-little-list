@@ -91,13 +91,7 @@ try{
   assert.equal(await p.locator('#status-category').inputValue(),'feeling');
   await p.context().close();
  });
- await check('practice restart resets the selected clue too',async()=>{
-  const p=await open('practice.html?as=him#crossword');await p.locator('.crossword-expand').click();await p.click('[data-entry="3"]');
-  assert.equal(await p.locator('.app-dock').isVisible(),false,'navigation stays hidden while practicing a crossword');
-  p.once('dialog',d=>d.accept());await p.click('#practice-restart');
-  assert.equal(await p.locator('[data-entry="0"]').getAttribute('aria-pressed'),'true');
-  await p.context().close();
- });
+
  await check('badges wait for snapshots, ignore hidden tabs and recover after errors',async()=>{
   const p=await open('him.html?as=him');
   await p.route('**/audit-harness.html',r=>r.fulfill({contentType:'text/html',body:'<nav class="app-dock"><a href="tasks.html">list</a><a href="notes.html">notes</a><a href="activities.html">activities</a><button class="dock-item" data-open-sheet="more">more</button></nav>'}));
@@ -123,11 +117,11 @@ try{
   await p.waitForFunction(()=>badgeCalls.at(-1)===1);
   await p.evaluate(()=>{window.oldNote=listeners.notes.at(-1);oldNote.opt.onError(Error('terminal'));dispatchEvent(new Event('online'));listeners.notes.at(-1).cb([{recipient:'him',read:false}]);oldNote.opt.onError(Error('obsolete'));});
   await p.waitForFunction(()=>badgeCalls.at(-1)===2);
-  await p.evaluate(()=>{window.oldDaily=listeners.wordPuzzles.at(-1);window.oldChecks=listeners.routineChecks.at(-1);});
+  await p.evaluate(()=>{window.oldDaily=listeners.questions.at(-1);window.oldChecks=listeners.routineChecks.at(-1);});
   await p.clock.setFixedTime(new Date('2026-10-10T18:00Z'));
   await p.evaluate(()=>{
    dispatchEvent(new Event('online'));
-   for(const name of ['routineChecks','questions','wordResults','timedResults','wordPuzzles','timedPuzzles'])listeners[name].at(-1).cb([]);
+   for(const name of ['routineChecks','questions'])listeners[name].at(-1).cb([]);
    oldDaily.opt.onError(Error('yesterday'));oldChecks.cb([{id:'routine_2026-10-10',done:true}]);
   });
   await p.waitForTimeout(50);

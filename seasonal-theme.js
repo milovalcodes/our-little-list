@@ -7,15 +7,13 @@
       mark: '🎃',
       art: 'seasonal-spooky.svg',
       home: '🎃 our sky · spooky season',
-      gameLine: 'a little spooky rivalry',
       landingKicker: 'our little app · spooky season ☀︎☾',
       landingLine: 'same two weirdos, now with bats ♡',
       pages: {
         tasks: 'spooky little errands',
         notes: 'mail from this plane of existence',
         today: 'the october pile',
-        activities: 'a little spooky rivalry',
-        practice: 'no tricks. take your time.',
+        activities: 'a cozy October check-in',
         status: 'currently haunting',
         dates: 'plans after dark',
         memories: 'evidence we survived october',
@@ -40,15 +38,13 @@
       mark: '🎄',
       art: 'seasonal-christmas.svg',
       home: '🎄 our sky · december edition',
-      gameLine: 'a little snow-day rivalry',
       landingKicker: 'our little app · december edition ☀︎☾',
       landingLine: 'same two weirdos, now with lights ♡',
       pages: {
         tasks: 'winter errands and tiny plans',
         notes: 'warm little notes',
         today: 'the december pile',
-        activities: 'a little snow-day rivalry',
-        practice: 'a little snow-day practice',
+        activities: 'a little winter check-in',
         status: 'snowed in or on the move?',
         dates: 'plans worth leaving the blanket for',
         memories: 'kept warm in here',
@@ -144,7 +140,6 @@
     if (!document.body) return;
     const copy = seasonalCopy[root.dataset.season];
     setCopy(document.querySelector('.sky-heading .tiny-kicker'), copy?.home);
-    setCopy(document.querySelector('.game-room-intro h2'), copy?.gameLine);
     setCopy(document.querySelector('.landing-copy .tiny-kicker'), copy?.landingKicker);
     setCopy(document.querySelector('.landing-copy > p:last-child'), copy?.landingLine);
     for (const id of ['today-empty', 'activity-empty', 'note-inbox-empty', 'date-empty', 'memory-empty']) {
@@ -156,7 +151,7 @@
 
     const hero = document.querySelector('.feature-shell > .feature-hero');
     let whisper = document.querySelector('.seasonal-whisper');
-    const line = copy?.pages[document.body.hasAttribute('data-practice')?'practice':document.body.dataset.app];
+    const line = copy?.pages[document.body.dataset.app];
     if (hero && line) {
       if (!whisper) { whisper = document.createElement('p'); whisper.className = 'seasonal-whisper'; hero.after(whisper); }
       whisper.textContent = `${copy.mark} ${line}`;

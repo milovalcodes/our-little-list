@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {StarNursery,freshRecord,creditResults,collectStarPings,starPingWanted} from '../worker/src/star-store.js';
+import {StarNursery,freshRecord,collectStarPings,starPingWanted} from '../worker/src/star-store.js';
 import {authorizeStar,handleStar,scheduleStar,queuedStarWanted} from '../worker/src/star-api.js';
 import {scenario,DAY,COFFEE,eggProgress} from '../little-star/engine.mjs';
 import * as starEngine from '../little-star/engine.mjs';
@@ -29,14 +29,11 @@ try{
  assert.equal((await action('him','transfer',{amount:1},'coffee-retry')).status,400,'same ID cannot mean a different action');
  const transfers=await Promise.all([action('him','transfer',{amount:8}),action('him','transfer',{amount:8})]);assert.equal(transfers.filter(r=>r.status===200).length,1);
  r=await internal({op:'read',actor:'him'});assert.deepEqual(r.star.wallets,{him:2,her:48},'concurrent spends cannot overdraft');
- const record=values.get('nursery'),results={words:[{day:'2026-10-14',person:'him',done:true,won:true,attempts:1}],timed:[{day:'2026-10-15',person:'her',type:'search',done:true,count:5,total:10}]};
- creditResults(record,results,now);assert.equal(record.state.wallets.him,102);assert.equal(record.state.wallets.her,73);assert.deepEqual(record.weekly,{him:100,her:25});
- creditResults(record,results,now);assert.equal(record.state.wallets.him,102);
- creditResults(record,{words:[],timed:[]},now);assert.deepEqual(record.weekly,{him:0,her:0});assert.equal(record.state.wallets.him,102,'a reset changes competition, not already granted cash');
- creditResults(record,results,now);assert.equal(record.state.wallets.him,102,'replaying a reset does not repay');
- results.timed[0].count=10;creditResults(record,results,now);assert.equal(record.state.wallets.her,98,'only improved score difference pays');
- creditResults(record,{words:[{day:'2026-10-11',person:'him',done:true,won:true,attempts:1},{day:'2099-01-01',person:'him',done:true,won:true,attempts:1}]},now);assert.equal(record.state.wallets.him,102,'no prelaunch-week or future earnings');
- values.set('nursery',record);
+ const beforeRetirement=structuredClone(values.get('nursery'));
+ assert.equal((await internal({op:'sync',results:{words:[{day:'2026-10-14',person:'him',done:true,won:true,attempts:1}]}})).status,400);
+ assert.deepEqual(values.get('nursery'),beforeRetirement,'retired competition sync cannot change wallets or the reward ledger');
+ // Fund the remaining pet-only purchase fixtures, without competition earnings.
+ values.get('nursery').state.wallets={him:102,her:98};
  await action('him','incubate',{form:'dwarf'});now+=DAY;
  const ready=await internal({op:'tick'});assert.equal(ready.pending.filter(p=>p.kind==='star-ready').length,2);assert.equal(eggProgress(values.get('nursery').state,now).ready,true);
  await internal({op:'tick'});assert.equal(values.get('nursery').pending.length,2,'hatch-ready is emitted once per person');
@@ -96,5 +93,5 @@ try{
  const changed=starEngine.projectStar({...seed,revision:seed.revision+1},now+6000);
  ui.restore({star:changed,now:now+6000});assert.equal(draws,1,'real partner actions still refresh the UI');
  ui.cooking={};ui.restore({star:{...changed,revision:changed.revision+1},now:now+7000});assert.equal(draws,1);assert.ok(ui.restoreQueued,'active gameplay defers shared updates');
- console.log('LITTLE STAR LIVE: shared egg, two accounts, purchases, durable retries, competition high-water rewards, per-pet coffee, independent pet selection, cooking, notification queue/staleness and API authorization passed.');
+ console.log('LITTLE STAR LIVE: shared egg, two accounts, purchases, durable retries, retired competition reward rejection and saved wallets, per-pet coffee, independent pet selection, cooking, notification queue/staleness and API authorization passed.');
 }finally{Date.now=realNow;globalThis.fetch=realFetch;}

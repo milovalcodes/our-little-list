@@ -11,12 +11,12 @@ export function focusedPlan(files,{versionOnly=false}={}){
  for(const file of files){
   if(automation.test(file)||docs.test(file))continue;
   // This self-contained UI fixture uses the standard local browser harness.
-  const fixture={'test/declutter-browser.mjs':'declutter','test/mini-crossword-browser.mjs':'mini-crossword'}[file];
-  if(fixture){browser.add('declutter');browser.add('mini-crossword');continue;}
+  const fixture={'test/declutter-browser.mjs':'declutter','test/retirement-browser.mjs':'retirement'}[file];
+  if(fixture){browser.add('declutter');browser.add('retirement');continue;}
   if(['app-chrome.js','app-life.css','dock-viewport.js','test/dock-scroll-browser.mjs'].includes(file)){
    syntax=true;
    ['navigation-attention','home-parity','guide-contract','seasonal','precache'].forEach(test=>unit.add(test));
-   ['dock-scroll','app-life','appearance','games-navigation'].forEach(test=>browser.add(test));
+   ['dock-scroll','app-life','appearance','retirement'].forEach(test=>browser.add(test));
    continue;
   }
   // Main-app presentation is shared across destinations, but does not load the
@@ -24,7 +24,7 @@ export function focusedPlan(files,{versionOnly=false}={}){
   if(['styles.css','app-life.js','interface-icons.js','test/interface-design-browser.mjs'].includes(file)||file.startsWith('fonts/')){
    syntax=true;
    ['branding','home-parity','guide-contract','precache','offline','cache-lifetime'].forEach(test=>unit.add(test));
-   ['interface-design','app-life','appearance','clarity','game-accessibility','activities','weekly-tracker','daily-results','search-touch','routines','memories','delete-recovery','games-navigation','dock-scroll'].forEach(test=>browser.add(test));
+   ['interface-design','app-life','appearance','retirement','retirement','retirement','retirement','retirement','retirement','routines','memories','delete-recovery','retirement','dock-scroll'].forEach(test=>browser.add(test));
    continue;
   }
   if(['status.js','status-presets.js'].includes(file)){
@@ -40,7 +40,7 @@ export function focusedPlan(files,{versionOnly=false}={}){
    page.add(html[1]);unit.add('precache');
    if(['him','her'].includes(html[1]))unit.add('home-parity');
    if(html[1]==='guide')unit.add('guide-contract');
-   if(['activities','games','today'].includes(html[1]))browser.add('games-navigation');
+   if(['activities','games','today'].includes(html[1]))browser.add('retirement');
    continue;
   }
   if(/^(?:notification-policy|notification-preferences|pings-settings|push-client|live-notes)\.js$/.test(file)){

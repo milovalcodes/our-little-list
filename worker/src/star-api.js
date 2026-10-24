@@ -1,6 +1,4 @@
 import {sideForUid} from '../../household.js';
-import {createClient} from './firestore.js';
-import {gameDay} from '../../little-star/engine.mjs';
 
 export async function starCall(env,input){
  const stub=env.STAR_NURSERY.get(env.STAR_NURSERY.idFromName(env.HOUSEHOLD_ID));
@@ -30,23 +28,12 @@ export async function handleStar(request,env){
   const raw=await request.text();if(raw.length>12000)return Response.json({error:'Request too large.'},{status:413,headers:auth.headers});
   let input;try{input=JSON.parse(raw);}catch{return Response.json({error:'Invalid request.'},{status:400,headers:auth.headers});}
   if(!['read','act'].includes(input?.op))return Response.json({error:'Invalid nursery request.'},{status:400,headers:auth.headers});
-  // Initialize only after a real member deliberately opens the game.
-  let meta=await starCall(env,{op:'meta'});
-  if(!meta){await starCall(env,{op:'read',actor:auth.actor});meta=await starCall(env,{op:'meta'});}
-  let scoresPending=false;
-  if(Date.now()-meta.lastScoresAt>=30000){
-   try{
-    const db=createClient({projectId:env.FIREBASE_PROJECT_ID,idToken:auth.token}),household=`households/${env.HOUSEHOLD_ID}`,last=gameDay(Date.now());
-    const [words,timed]=await Promise.all([db.dayRange(`${household}/wordResults`,meta.firstDay,last),db.dayRange(`${household}/timedResults`,meta.firstDay,last)]);
-    await starCall(env,{op:'sync',results:{words,timed}});
-   }catch{scoresPending=true;}
-  }
   // Explicitly construct the internal command: a forged op/actor/results field
   // from the browser can never reach the durable object's trusted operations.
   let result;
   try{result=await starCall(env,{op:input.op,actor:auth.actor,...(input.op==='act'?{command:input.command}:{})});}
   catch(error){return Response.json({error:error.message},{status:400,headers:auth.headers});}
-  return Response.json({...result,scoresPending},{headers:auth.headers});
+  return Response.json({...result,scoresPending:false},{headers:auth.headers});
  }catch{return Response.json({error:'Cannot reach the nursery. Reconnect and retry.'},{status:503,headers:auth?.headers||{'Access-Control-Allow-Origin':env.APP_ORIGIN,'Cache-Control':'no-store'}});}
 }
 async function eventKey(value){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(bytes)].map(n=>n.toString(16).padStart(2,'0')).join('');}

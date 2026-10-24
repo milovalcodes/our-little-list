@@ -1,5 +1,5 @@
-const CACHE = 'our-little-list-v140';
-// v114: authenticated shared Little Star alpha, competition earnings and care pings.
+const CACHE = 'our-little-list-v141';
+// v141: daily questions and saved wins; retired puzzle assets leave the shell cache.
 
 // Deliberately NOT versioned with the shell. These entries are keyed by a
 // version-pinned URL, so they can never go stale — and putting them in CACHE
@@ -20,9 +20,9 @@ const PAGES = [
 ];
 
 const ASSETS = [
-  './weekly-race.js', './activities-layout.css', './interface-icons.js', './fonts/nunito-latin-400.woff2', './fonts/nunito-latin-500.woff2', './fonts/nunito-latin-600.woff2', './fonts/nunito-latin-700.woff2', './fonts/nunito-latin-800.woff2', './fonts/nunito-latin-900.woff2', './fonts/nunito-latin-ext-400.woff2', './fonts/nunito-latin-ext-500.woff2', './fonts/nunito-latin-ext-600.woff2', './fonts/nunito-latin-ext-700.woff2', './fonts/nunito-latin-ext-800.woff2', './fonts/nunito-latin-ext-900.woff2',
-  './themed-crossword.js', './crossword-themes.js', './crossword-view.js', './crossword-viewport.js', './themed-practice-bank.js',
-  './word-book.js', './practice-word-details.js', './word-definitions.js', './word-topics.js', './word-hints.js', './interface-audio.js',
+  './win-records.js', './win-history.js',
+  './activities-layout.css', './interface-icons.js', './fonts/nunito-latin-400.woff2', './fonts/nunito-latin-500.woff2', './fonts/nunito-latin-600.woff2', './fonts/nunito-latin-700.woff2', './fonts/nunito-latin-800.woff2', './fonts/nunito-latin-900.woff2', './fonts/nunito-latin-ext-400.woff2', './fonts/nunito-latin-ext-500.woff2', './fonts/nunito-latin-ext-600.woff2', './fonts/nunito-latin-ext-700.woff2', './fonts/nunito-latin-ext-800.woff2', './fonts/nunito-latin-ext-900.woff2',
+  './interface-audio.js',
   './audio/interface/tap-1.wav',
   './audio/interface/tap-2.wav',
   './audio/interface/open.wav',
@@ -37,18 +37,14 @@ const ASSETS = [
   './audio/interface/navigate.wav',
 
   './little-star-live.js', './little-star-live.css', './little-star-kitchen.js', './little-star-kitchen.css', './little-star/kitchen-rules.mjs', './little-star/engine.mjs',
-  './connected-crossword.js', './daily-habit.js', './practice-crossword.js', './game-progress.js', './personal-progress.js', './game-comfort.js', './game-typing.js', './weekly-recap.js', './app-life.js', './app-life.css',
-  './puzzle-edition.js', './puzzle-edition-bank.js', './puzzle-edition-seasonal.js', './practice-edition-bank.js',
-  './round-engine.js', './round-revision.js', './round-library.js', './round-expansion.js', './round-history.js', './game-reset.js',
+  './game-comfort.js', './app-life.js', './app-life.css',
   './navigation-attention.js', './home-extras.js',
-  './practice.html', './practice.js', './practice.css', './practice-catalog.js', './practice-links.js', './practice-store.js', './word-lexicon-extra.js',
-  ...PAGES,
+  './practice.html', ...PAGES,
   './appearance-boot.js',
   './alter-ego.js',
   './list-schedule.js', './list-fields.js', './routine-checks.js',
-  './shared-round.js', './timed-round-guard.js', './timed-games.js','./timed-game.js','./crossword-entry.js','./mini-crossword.js','./daily-results.js','./share-result.js','./daily-puzzles.js','./memory-catalog.js','./weekly-report.js','./weekly-tracker.js','./puzzle-catalog.js', './seasonal-puzzles.js','./puzzle-bank.js','./league-scores.js',
-  './styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './dock-viewport.js', './guide.js', './profile-store.js', './profile-route.js', './couple-game.js', './arcade-game.js', './profile-names.js',
-  './profiles.js', './status.js', './dates.js', './dashboard.js', './activities.js', './activity-clock.js', './daily-word.js', './daily-words.js', './word-game.js', './word-lexicon.js', './word-scores.js', './word-crowns.js', './word-tiebreaker.js', './word-celebration.js', './word-coronation.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
+  './memory-catalog.js','./styles.css', './diary.css', './seasonal.css', './seasonal-theme.js', './shared.js', './app-chrome.js', './dock-viewport.js', './guide.js', './profile-store.js', './profile-route.js', './profile-names.js',
+  './profiles.js', './status.js', './dates.js', './dashboard.js', './activities.js', './activity-clock.js', './phone-check.js', './tasks.js', './notes.js', './location.js', './live-notes.js',
   './notification-policy.js', './notification-preferences.js',
   './ui-helpers.js', './emoji-picker.js', './firebase-data.js', './firebase-config.js', './time-format.js', './data-hub.js',
   './push-config.js', './push-client.js', './delivery-wake.js', './presence.js', './help-panel.js', './today.js', './memories.js', './auto-location.js',

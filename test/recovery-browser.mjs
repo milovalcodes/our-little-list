@@ -28,25 +28,16 @@ try{
   console.log('RECOVERY: photo subscription failure can be retried without reloading, and stale errors are ignored');
  }
  if(!only||only==='scores'){
-  const p=await page();await p.route('**/audit-harness.html',r=>r.fulfill({contentType:'text/html',body:'<div id="weekly-score"></div><div id="weekly-board"></div>'}));
-  await p.clock.install({time:new Date('2026-10-09T18:00Z')});await p.goto(base+'/audit-harness.html');
-  await p.evaluate(async()=>{window.callbacks={};const data={listenTo:(name,cb)=>{callbacks[name]=cb;return()=>{};},listenToQuery:(name,_,cb)=>{callbacks[name]=cb;return()=>{};}};(await import('./weekly-tracker.js')).startWeeklyTracker({data});});
-  await p.clock.fastForward(13000);assert.match(await p.locator('#weekly-board').textContent(),/Couldn’t load/);
-  await p.evaluate(()=>Object.values(callbacks).forEach(cb=>cb([])));
-  await p.waitForFunction(()=>document.querySelector('#weekly-score').textContent.includes('☀ 0 · ☾ 0'));
-  console.log('RECOVERY: delayed scoreboard snapshots clear the timeout without a reload');
- }
- if(!only||only==='drag'){
-  const p=await page();await p.clock.setFixedTime(new Date('2026-10-09T18:00Z'));await p.goto(base+'/activities.html?as=him#search');await p.click('#search [data-start]');
-  const cell=p.locator('#search [data-cell="0"]');await cell.scrollIntoViewIfNeeded();const box=await cell.boundingBox();await p.mouse.move(box.x+box.width/2,box.y+box.height/2);await p.mouse.down();
-  await p.evaluate(async()=>{const d=await(await import('./data-hub.js')).sharedLayer(),id='2026-10-09-search-him',g=await d.readDoc('timedGames',id);await d.setTo('timedGames',id,{...g,solved:[0],foundAt:[1000]});});
-  await p.locator('#search-game').dispatchEvent('pointercancel',{pointerId:1});
-  await p.waitForFunction(()=>document.querySelectorAll('#search .search-words .found').length===1);
-  await p.mouse.up();assert.equal(await p.locator('#search .tracing').count(),0);
-  await p.evaluate(()=>Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false}));await p.clock.setFixedTime(new Date('2026-10-09T18:02:01Z'));
-  await p.waitForFunction(()=>document.querySelector('#search-summary').textContent.includes('points'));
-  assert.equal(await p.locator('#search .puzzle-cell:not(:disabled)').count(),0);
-  console.log('RECOVERY: cancelled drags repaint saved progress; offline expiry ends the board without accepting extra words');
+  const p=await page();await p.route('**/audit-harness.html',r=>r.fulfill({contentType:'text/html',body:'<div id="wins-history"></div>'}));
+  await p.clock.install({time:new Date('2026-10-24T18:00Z')});await p.goto(base+'/audit-harness.html');
+  await p.evaluate(async()=>{window.callbacks=[];const data={listenTo:(name,cb,opt)=>{callbacks.push({cb,opt});return()=>{};}};(await import('./win-history.js')).startWinHistory({data});});
+  await p.clock.fastForward(13000);assert.match(await p.locator('#wins-history').textContent(),/Couldn’t load/);
+  await p.evaluate(()=>callbacks[0].cb([{week:'2026-10-12',scoreVersion:2,scores:{her:50,him:40},winners:['her']}]));
+  await p.locator('#win-2026-10-12').waitFor();
+  await p.evaluate(()=>callbacks[0].opt.onError(Error('lost connection')));await p.click('[data-retry-wins]');
+  await p.evaluate(()=>{callbacks[1].cb([]);callbacks[0].opt.onError(Error('obsolete'));callbacks[0].cb([{week:'2026-10-12'}]);});
+  assert.equal(await p.locator('[data-retry-wins]').count(),0);assert.equal(await p.locator('#win-2026-10-12').count(),0);
+  console.log('RECOVERY: delayed win history recovers, retry replaces failed subscriptions and obsolete callbacks are ignored');
  }
  assert.deepEqual(errors,[]);
 }finally{await browser.close();}

@@ -117,7 +117,7 @@ function addDock(viewer) {
   document.body.insertAdjacentHTML('beforeend', `<nav class="app-dock" aria-label="Main navigation">
     <a class="dock-item${active('home')}" href="${viewer}.html">${uiIcon('home')}<span>home</span></a>
     <a class="dock-item${active('tasks')}" href="tasks.html">${uiIcon('check')}<span>list</span></a>
-    <a class="dock-item${active('activities')}" href="activities.html">${uiIcon('dice')}<span>activities</span></a>
+    <a class="dock-item${active('activities')}" href="activities.html">${uiIcon('heart')}<span>activities</span></a>
     <a class="dock-item${active('notes')}" href="notes.html">${uiIcon('notes')}<span>notes</span></a>
     <button class="dock-item" type="button" data-open-sheet="more">${uiIcon('more')}<span>more</span></button>
   </nav>`);
@@ -344,7 +344,7 @@ function setupDeepLinkHighlight() {
   const match = /^(item|done|ask|note|date|memory)-([A-Za-z0-9_-]+)$/.exec(fragment);
   if (!match) {
     const id=/^scoreboard-\d{4}-\d{2}-\d{2}$/.test(fragment)?'scoreboard':/^game(?:-[A-Za-z0-9_-]+)?$/.test(fragment)?'daily':fragment;
-    if(['game','question','daily','wordle','search','crossword','scoreboard','tiebreaker','new','fridge-note'].includes(id))requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:'center'}));
+    if(['question','daily','scoreboard','new','fridge-note'].includes(id))requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:'center'}));
     return;
   }
   const [, kind, id] = match;

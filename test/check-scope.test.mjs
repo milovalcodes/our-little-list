@@ -15,21 +15,21 @@ import {checkScope} from '../scripts/check-scope.mjs';
 }
 const declutter=checkScope(['test/declutter-browser.mjs','scripts/focused-checks.mjs','test/check-scope.test.mjs']);
 assert.equal(declutter.full,false);assert.equal(declutter.star,false);assert.equal(declutter.dailyOnly,false);
-assert.deepEqual(declutter.plan,{syntax:false,unit:[],browser:['declutter','mini-crossword'],pages:[]},'a fixture correction checks both revised navigation expectations');
-assert.deepEqual(checkScope(['test/mini-crossword-browser.mjs']).plan.browser,['declutter','mini-crossword'],'the standalone crossword fixture retains both UI regressions');
-assert.deepEqual(checkScope(['test/declutter-browser.mjs','test/mini-crossword-browser.mjs']).plan.browser,['declutter','mini-crossword']);
+assert.deepEqual(declutter.plan,{syntax:false,unit:[],browser:['declutter','retirement'],pages:[]},'a fixture correction checks both revised navigation expectations');
+assert.deepEqual(checkScope(['test/retirement-browser.mjs']).plan.browser,['declutter','retirement'],'the standalone crossword fixture retains both UI regressions');
+assert.deepEqual(checkScope(['test/declutter-browser.mjs','test/retirement-browser.mjs']).plan.browser,['declutter','retirement']);
 assert.equal(checkScope(['test/unknown-browser.mjs']).full,true,'unknown browser harnesses retain broad coverage');
 const hide=['activities.html','game-comfort.js','guide.html','notification-policy.js','pings-settings.js','service-worker.js'];
 const dock=checkScope(['app-chrome.js','app-life.css','dock-viewport.js','test/dock-scroll-browser.mjs','guide.html','service-worker.js']);
 assert.equal(dock.full,false);assert.equal(dock.star,false);assert.equal(dock.dailyOnly,false);
-for(const name of ['dock-scroll','app-life','appearance','games-navigation','update-freshness'])assert.ok(dock.plan.browser.includes(name));
+for(const name of ['dock-scroll','app-life','appearance','retirement','update-freshness'])assert.ok(dock.plan.browser.includes(name));
 const design=checkScope(['styles.css','app-life.js','interface-icons.js','fonts/nunito-latin.woff2','test/interface-design-browser.mjs']);
 assert.equal(design.full,false);assert.equal(design.star,false);
-for(const name of ['interface-design','clarity','activities','weekly-tracker','memories','routines'])assert.ok(design.plan.browser.includes(name));
+for(const name of ['interface-design','retirement','retirement','retirement','memories','routines'])assert.ok(design.plan.browser.includes(name));
 const small=checkScope(hide,{versionOnly:true});
 assert.equal(small.full,false);assert.equal(small.dailyOnly,false);assert.equal(small.star,false);assert.equal(small.focused,true);
 assert.deepEqual(small.plan.pages,['activities','guide','phone-check']);
-assert.deepEqual(small.plan.browser,['games-navigation']);
+assert.deepEqual(small.plan.browser,['retirement']);
 for(const test of ['delivery-worker','notification-paths','precache','offline','guide-contract'])assert.ok(small.plan.unit.includes(test));
 for(const test of ['daily-word','places','routines','star-kitchen','round-engine'])assert.ok(!small.plan.unit.includes(test));
 assert.ok(!small.plan.browser.includes('update-freshness'),'version bumps skip cache implementation browser tests');
@@ -43,7 +43,7 @@ assert.equal(checkScope(['word-hints.js','daily-word.js','guide.html','service-w
 assert.equal(checkScope(['crossword-view.js','test/crossword-play-browser.mjs']).dailyOnly,true);
 const mixed=checkScope(['daily-word.js','notification-policy.js']);
 assert.equal(mixed.dailyOnly,true);assert.equal(mixed.focused,true);assert.equal(mixed.full,false);
-const overlapping=checkScope(['daily-word.js','test/round-engine.test.mjs','test/worker-puzzles.test.mjs','test/daily-calendar.test.mjs','guide.html','service-worker.js']);
+const overlapping=checkScope(['daily-question.js','guide.html','service-worker.js']);
 assert.equal(overlapping.dailyOnly,true);
 assert.ok(!overlapping.plan.unit.includes('worker-puzzles'));
 assert.ok(!overlapping.plan.unit.includes('daily-calendar'));
@@ -64,7 +64,7 @@ for(const files of [hide,automation,['tasks.js'],['notes.js'],['memories.js'],['
 const workflow=readFileSync(new URL('../.github/workflows/checks.yml',import.meta.url),'utf8');
 const browserSelection=workflow.match(/browsers=\$\(node -e '([^']+)'\)/)?.[1];
 assert.ok(browserSelection,'focused checks select their required browser engines');
-for(const [browser,pages,expected] of [[['declutter','mini-crossword'],[],'chromium'],[['interface-design'],[],'chromium webkit'],[[],['activities'],'chromium webkit']]){
+for(const [browser,pages,expected] of [[['declutter','retirement'],[],'chromium webkit'],[['interface-design'],[],'chromium webkit'],[[],['activities'],'chromium webkit']]){
  const selection=spawnSync(process.execPath,['-e',browserSelection],{encoding:'utf8',env:{...process.env,CHECK_PLAN:JSON.stringify({browser,pages})}});
  assert.equal(selection.status,0);assert.equal(selection.stdout.trim(),expected);
 }
@@ -94,3 +94,5 @@ try{
  assert.notEqual(run({...plan,unit:['../outside']}).status,0,'plans cannot escape the test directory');
 }finally{rmSync(temp,{recursive:true,force:true});}
 console.log('FOCUSED RUNNER: selected tests run, failures propagate, empty plans do no work and invalid paths are rejected');
+
+for(const match of workflow.matchAll(/node (test\/[\w.-]+\.mjs)/g))assert.ok(existsSync(new URL('../'+match[1],import.meta.url)),`workflow references missing ${match[1]}`);

@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
 import {focusedPlan} from './focused-checks.mjs';
 
-const daily = /^(?:(?:daily-(?:word|words|puzzles|results|question|habit)|word-(?!lexicon)|word-lexicon|round-|puzzle-|practice|seasonal-puzzles|timed-|connected-crossword|mini-crossword|themed-crossword|crossword-|activity-clock|game-(?:typing|comfort|progress|reset|sync)|shared-round|weekly-|league-scores|couple-game|activities|games|question-prompts|interface-audio)[^/]*\.(?:js|css|html)|audio\/interface\/|scripts\/(?:compile-worker-crosswords|audit-daily-calendar)\.mjs|test\/(?:daily-|word-|round-|puzzle-|practice|seasonal-puzzles|timed-|shared-round|connected-crossword|mini-crossword|themed-crossword|crossword-|hard-rounds|game-(?:accessibility|sync|reset)|weekly-|search-touch|iphone-crossword|activities|games-navigation|profile-game|interface-audio|clock-budget|worker-puzzles)|worker\/src\/(?:compiled-crosswords\.json|(?:word-|round-|daily-|timed-|puzzle-)[^/]*\.js))/;
+const daily = /^(?:(?:daily-(?:word|words|puzzles|results|question|habit)|word-(?!lexicon)|word-lexicon|round-|puzzle-|practice|seasonal-puzzles|timed-|connected-crossword|mini-crossword|themed-crossword|crossword-|activity-clock|game-(?:typing|comfort|progress|reset|sync)|shared-round|win-|weekly-|league-scores|couple-game|activities|games|question-prompts|interface-audio)[^/]*\.(?:js|css|html)|audio\/interface\/|scripts\/(?:compile-worker-crosswords|audit-daily-calendar)\.mjs|test\/(?:daily-|word-|round-|puzzle-|practice|seasonal-puzzles|timed-|shared-round|connected-crossword|mini-crossword|themed-crossword|crossword-|hard-rounds|game-(?:accessibility|sync|reset)|weekly-|search-touch|iphone-crossword|activities|games-navigation|profile-game|interface-audio|clock-budget|worker-puzzles)|worker\/src\/(?:compiled-crosswords\.json|(?:word-|round-|daily-|timed-|puzzle-)[^/]*\.js))/;
 const star = /^(?:little-star(?:\/|-|\.)|worker\/src\/star-|test\/(?:star-|little-star|kitchen-|fixtures\/)|tools\/(?:build-little-star|build-star-kitchen|star-preview)|(?:household|firebase-config|firebase-data|data-hub)\.js|firestore\.rules|worker\/src\/(?:index|firestore)\.js)/;
 
 export function checkScope(files, options={}){
@@ -20,7 +20,6 @@ export function checkScope(files, options={}){
  if(plan&&dailyNeeded){
   const scripts=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')).scripts;
   const unit=new Set([...scripts['test:daily'].matchAll(/node test\/([\w-]+)\.test\.mjs/g)].map(m=>m[1]));
-  unit.add('daily-calendar'); // imported by worker-puzzles.test.mjs
   const browser=new Set([...scripts['test:browser:daily'].matchAll(/node test\/([\w-]+)-browser\.mjs/g)].map(m=>m[1]));
   plan={...plan,unit:plan.unit.filter(t=>!unit.has(t)),browser:plan.browser.filter(t=>!browser.has(t))};
  }

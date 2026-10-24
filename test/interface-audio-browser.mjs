@@ -15,7 +15,7 @@ for(const engine of [chromium,webkit]){
   // Wait for the disclosure before interacting with its native range control.
   await page.waitForFunction(()=>document.querySelector('#feel details')?.open);
   assert.equal(requests.length,0,'muted page does not request audio');
-  assert.equal(await page.locator('[data-comfort=typing]').isChecked(),false);
+  assert.equal(await page.locator('[data-comfort=typing]').count(),0);
   await page.locator('[data-sound-volume]').fill('20');
   assert.equal(await page.locator('.sound-volume output').textContent(),'20%');
   await page.reload();await page.locator('#feel').waitFor();assert.equal(await page.locator('[data-sound-volume]').inputValue(),'20');

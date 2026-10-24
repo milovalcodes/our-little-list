@@ -11,7 +11,7 @@ export async function authorizeWake(request, env) {
   const authorization=request.headers.get('Authorization')||'';
   if (!/^Bearer [A-Za-z0-9_.-]{20,4096}$/.test(authorization)) return {response:new Response('Sign in required',{status:401,headers})};
   // No payload is accepted: /dispatch checks saved outbox entries; the separate
-  // /dispatch/activities path also checks saved answers and game results.
+  // /dispatch/activities path also checks saved question answers.
   // Cloudflare can expose an empty POST as a ReadableStream, not null. Check
   // its bytes, not its existence; read at most one chunk, with a deadline.
   if (Number(request.headers.get('Content-Length'))>0)return {response:new Response('No body allowed',{status:400,headers})};

@@ -172,15 +172,21 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
 
 const now = Date.now();
 {
+ const kinds=['game','game-turn','game-streak','word-week','activity-result','activity-reset','activities-open'];
+ const h=harness({subs:{},outbox:kinds.map(kind=>({id:'retired-'+kind,kind,to:'her',sendAt:now,createdAt:now,url:'activities.html#daily'}))});
+ const result=await deliver(ENV);assert.equal(result.sent,0);assert.equal(result.dropped,kinds.length);assert.equal(result.left,0);assert.equal(h.pushes.length,0);
+ console.log(' ok  every retired game kind drains before subscription, focus or quiet-hours handling');
+}
+{
  const {activityClock}=await import('../activity-clock.js'),day=activityClock().day;
  const messages=[{id:'old-result',ref:`activities/${day}-word-waiting`},{id:'fresh-result',ref:`activities/${day}-word-r1-waiting`}].map(m=>({...m,to:'her',kind:'activity-result',title:'finished',body:'ready',url:'activities.html#wordle',createdAt:now,sendAt:now}));
  const h=harness({outbox:messages,records:{['wordPuzzles/'+day]:{revision:1}}});
- const result=await deliver(ENV);assert.equal(result.sent,1);assert.equal(result.dropped,1);assert.equal(h.pushes.length,1);
- console.log(' ok  reset revisions drop old completion pings but deliver the fresh round once');
+ const result=await deliver(ENV);assert.equal(result.sent,0);assert.equal(result.dropped,2);assert.equal(h.pushes.length,0);
+ console.log(' ok  all completion pings are retired, including newly queued ones');
  const id='delivery-reset-1234567890',reset={day,before:[{day,word:'apple',revision:0}]};
  for(const revision of [1,2]){
   const h=harness({outbox:[{id:'reset-'+id,to:'her',kind:'activity-reset',ref:'gameResets/'+id,title:'Fresh rounds',body:'new boards',url:'activities.html#daily',createdAt:now,sendAt:now}],records:{['gameResets/'+id]:reset,['wordPuzzles/'+day]:{revision}}});
-  const r=await deliver(ENV);assert.equal(r.sent,revision===1?1:0);assert.equal(h.pushes.length,revision===1?1:0);
+  const r=await deliver(ENV);assert.equal(r.sent,0);assert.equal(h.pushes.length,0);
  }
  console.log(' ok  reset pings respect the current round and cannot resurrect superseded resets');
 }
@@ -602,16 +608,16 @@ for(const mode of ['connect-four','dots-boxes']){
  const at=Date.now(),day=activityClock(at).day;
  const base={to:'her',sendAt:at,createdAt:at};
  const turn={...base,id:'TURN',kind:'game-turn',ref:`activities/${day}-word-waiting`};
- for(const [done,enabled,sent,dropped,muted] of [[false,true,1,0,0],[true,true,0,1,0],[false,false,0,0,1]]){
+ for(const [done,enabled,sent,dropped,muted] of [[false,true,0,1,0],[true,true,0,1,0],[false,false,0,1,0]]){
   const h=harness({outbox:[turn],records:{[`wordPuzzles/${day}`]:{revision:0},[`wordResults/${day}-her`]:{day,person:'her',done}},subs:{her:{subscription:SUB,preferences:{categories:{gameTurns:enabled}}}}});
   const result=await deliver(ENV);assert.equal(result.sent,sent);assert.equal(result.dropped,dropped);assert.equal(result.muted,muted);assert.equal(h.pushes.length,sent);
  }
  const streak={...base,id:'STREAK',kind:'game-streak',ref:`streak/${day}/word`};
- for(const [done,enabled,sent,dropped,muted] of [[false,true,1,0,0],[true,true,0,1,0],[false,false,0,0,1]]){
+ for(const [done,enabled,sent,dropped,muted] of [[false,true,0,1,0],[true,true,0,1,0],[false,false,0,1,0]]){
   const h=harness({outbox:[streak],records:{[`wordResults/${day}-her`]:{day,person:'her',done}},subs:{her:{subscription:SUB,preferences:{categories:{gameStreaks:enabled}}}}});
   const result=await deliver(ENV);assert.equal(result.sent,sent);assert.equal(result.dropped,dropped);assert.equal(result.muted,muted);assert.equal(h.pushes.length,sent);
  }
- console.log(' ok  game turn and streak pings respect completion and their separate mute switches');
+ console.log(' ok  game turn and streak pings are discarded regardless of old preferences');
 }
 {
  const savedClock=Date.now,at=Date.parse('2026-11-01T04:30Z');Date.now=()=>at;

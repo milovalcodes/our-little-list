@@ -34,21 +34,13 @@ for(const [engine,device] of [[webkit,'iPhone 13'],[chromium,'Pixel 7']]){
       });
       if(file==='activities'&&side==='her'&&engine===webkit&&size.width===390&&[0,380,100000].includes(y))await page.screenshot({path:new URL('dock-'+(y===0?'question':y===380?'map':'games')+'.png',output).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${device}/${side}/${file}: horizontal overflow`);
-      if(file==='activities'&&y===100000)assert.ok(await page.evaluate(()=>document.querySelector('.activity-practice-link').getBoundingClientRect().bottom<document.querySelector('.app-dock').getBoundingClientRect().top),'last practice link stays above navigation at the bottom');
      }
     }
     if(file==='activities'){
      await page.setViewportSize({width:390,height:844});
-     await page.locator('#practice').scrollIntoViewIfNeeded();
+     await page.locator('#scoreboard').scrollIntoViewIfNeeded();
      await page.waitForFunction(()=>Math.abs(document.querySelector('.app-dock').getBoundingClientRect().bottom+34-visualViewport.height-visualViewport.offsetTop)<2);
      await page.screenshot({path:new URL(`${engine.name()}-${side}.png`,output).pathname.replace(/^\/([A-Za-z]:)/,'$1')});
-     // The game can hide the dock and then restore it after scrolling/resizing.
-     await page.goto(`${base}/activities.html?as=${side}#wordle`);await page.locator('#word-game.game-active').waitFor();
-     assert.equal(await dock.isVisible(),false);
-     await page.setViewportSize({width:390,height:420});
-     await page.locator('.activity-back').click();await page.locator('.crown-map').waitFor();await dock.evaluate(n=>n.style.setProperty('--dock-bottom-gap','34px'));
-     await dock.waitFor();
-     await page.waitForFunction(()=>Math.abs(document.querySelector('.app-dock').getBoundingClientRect().bottom+34-visualViewport.height-visualViewport.offsetTop)<2);
      await page.setViewportSize({width:390,height:844});
      await page.getByRole('button',{name:'more',exact:true}).click();
      await page.locator('#sheet-more.is-open').waitFor();

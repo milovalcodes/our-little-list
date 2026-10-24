@@ -13,8 +13,9 @@ const server=createServer((req,res)=>{
     res.setHeader('Content-Type','text/javascript');res.setHeader('Cache-Control','no-store');
     return res.end(original.replace(/our-little-list-v\d+/,'our-little-list-v'+generation)
       .replace(/importScripts\([^;]+;/g,'')
-      .replace(/const ASSETS = \[[\s\S]*?\n\];/,"const ASSETS = ['./', './app.js'];"));
+      .replace(/const ASSETS = \[[\s\S]*?\n\];/,generation===1?"const ASSETS = ['./', './app.js', './daily-word.js'];":"const ASSETS = ['./', './app.js'];"));
   }
+  if(path==='/daily-word.js'){res.setHeader('Content-Type','text/javascript');return res.end('window.retiredGame=true;');}
   if(path==='/app.js'){
     if(failAsset){res.writeHead(503,{'Cache-Control':'no-store'});return res.end('offline for a moment');}
     res.setHeader('Content-Type','text/javascript');res.setHeader('Cache-Control','public, max-age=3600');
@@ -45,6 +46,7 @@ try{
   for(const deadline=Date.now()+30000;!cached&&Date.now()<deadline;){
     cached=await page.evaluate(async()=>{
       if(!navigator.serviceWorker.controller)return false;
+      (await navigator.serviceWorker.getRegistration())?.waiting?.postMessage('skip-waiting');
       const version=await new Promise(resolve=>{
         const channel=new MessageChannel();
         const finish=value=>{clearTimeout(timer);channel.port1.close();resolve(value);};
@@ -72,6 +74,7 @@ try{
   await page.reload();
   assert.equal(await page.evaluate(()=>window.loadedGeneration),2,'running code must match the activated release');
   assert.equal(await page.evaluate(()=>localStorage.getItem('keep-my-preferences')),'yes');
+  assert.equal(await page.evaluate(async()=>{for(const key of await caches.keys())if(await(await caches.open(key)).match('/daily-word.js'))return true;return false;}),false,'upgrading removes previously cached game code');
   generation=3;failAsset=true;
   await page.evaluate(async()=>{
     const reg=await navigator.serviceWorker.getRegistration();await reg.update();

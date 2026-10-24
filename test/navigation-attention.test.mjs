@@ -7,7 +7,7 @@ const b={dailyReady:true,wordPuzzles:[{day}],timedPuzzles:[{day,type:'search'},{
 ],notes:[{recipient:'him',read:false},{recipient:'her',read:false}],
 statuses:[{person:'her',updateKind:'location',updatedAt:now},{person:'her',updateKind:'manual',updatedAt:now}],
 dates:[{addedBy:'her',createdAt:now}],memories:[{addedBy:'him',createdAt:now}]};
-assert.deepEqual(attentionCounts(b,'him',{},now),{tasks:2,notes:1,activities:4,dates:1,memories:0,status:1,more:2});
+assert.deepEqual(attentionCounts(b,'him',{},now),{tasks:2,notes:1,activities:1,dates:1,memories:0,status:1,more:2});
 b.routineChecks=[{id:'r_'+day,itemId:'r',day,done:true}];
 b.notes[0].read=true;b.questions[0].answers.him={at:now};
 b.wordResults=[{day,person:'him',done:true}];
