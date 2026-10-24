@@ -10,8 +10,6 @@ jobs:
   scope:
     runs-on: ubuntu-latest
     outputs:
-      daily_only: ${{ steps.scope.outputs.daily_only }}
-      star: ${{ steps.scope.outputs.star }}
       full: ${{ steps.scope.outputs.full }}
       focused: ${{ steps.scope.outputs.focused }}
       plan: ${{ steps.scope.outputs.plan }}
@@ -52,73 +50,11 @@ jobs:
       - name: Selected pages and browser flows
         if: toJSON(fromJSON(needs.scope.outputs.plan).browser) != '[]' || toJSON(fromJSON(needs.scope.outputs.plan).pages) != '[]'
         run: |
-          browsers=$(node -e 'const p=JSON.parse(process.env.CHECK_PLAN); console.log(p.pages.length===0&&p.browser.every(t=>["declutter","mini-crossword"].includes(t))?"chromium":"chromium webkit")')
+          browsers=$(node -e 'const p=JSON.parse(process.env.CHECK_PLAN); console.log(p.pages.length===0&&p.browser.every(t=>["declutter"].includes(t))?"chromium":"chromium webkit")')
           pnpm exec playwright install --with-deps $browsers
           node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
           python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
           node scripts/run-focused-checks.mjs browser
-
-  daily-games:
-    needs: scope
-    if: needs.scope.outputs.daily_only == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - run: pnpm install --frozen-lockfile
-      - name: Daily questions, history and release checks
-        run: pnpm run test:daily
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/firebase/emulators
-          key: firestore-emulator-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-      - name: Archived game and question permissions
-        run: pnpm run test:rules
-      - name: Activities on phone and desktop
-        run: |
-          pnpm exec playwright install --with-deps chromium webkit
-          node -e "const fs=require('fs'); const p='firebase-config.js'; fs.writeFileSync(p, fs.readFileSync(p,'utf8').replace(/apiKey:\s*'[^']+'/, \"apiKey: 'REPLACE_ME'\"));"
-          python3 -c "import http.server; http.server.ThreadingHTTPServer.request_queue_size=128; http.server.test(HandlerClass=http.server.SimpleHTTPRequestHandler,ServerClass=http.server.ThreadingHTTPServer,port=8777,bind='127.0.0.1')" >/tmp/our-little-list-http.log 2>&1 &
-          pnpm run test:browser:daily
-
-  little-star:
-    needs: scope
-    if: needs.scope.outputs.star == 'true' && needs.scope.outputs.full != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - run: pnpm install --frozen-lockfile
-      - name: Pet and cooking checks
-        run: |
-          pnpm exec playwright install --with-deps chromium webkit
-          pnpm run test:star
-          pnpm run test:browser:star
-          STAR_BROWSER=webkit node test/star-kitchen-layout-browser.mjs
-          node test/kitchen-live-browser.mjs
-          node test/kitchen-skill-browser.mjs
-          STAR_BROWSER=webkit node test/kitchen-skill-browser.mjs
-      - name: Save cooking visual review evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kitchen-visual-review
-          path: node_modules/.cache/skill-kitchen/*.png
-          include-hidden-files: true
 
   checks:
     needs: scope
@@ -269,25 +205,6 @@ jobs:
           done
           cat /tmp/our-little-list-http.log
           exit 1
-
-      - name: Skill cooking playthroughs and calibration before release
-        if: needs.scope.outputs.star == 'true'
-        run: |
-          pnpm exec playwright install --with-deps chromium webkit
-          pnpm run test:star
-          pnpm run test:browser:star
-          STAR_BROWSER=webkit node test/star-kitchen-layout-browser.mjs
-          node test/kitchen-live-browser.mjs
-          node test/kitchen-skill-browser.mjs
-          STAR_BROWSER=webkit node test/kitchen-skill-browser.mjs
-
-      - name: Save cooking visual review evidence
-        if: always() && needs.scope.outputs.star == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: kitchen-visual-review
-          path: node_modules/.cache/skill-kitchen/*.png
-          include-hidden-files: true
 
       - name: Browser flows fit a phone and stay script-error free
         run: |

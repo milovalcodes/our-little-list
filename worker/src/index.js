@@ -14,7 +14,7 @@ import { focusDelivery,contentSourcePath,contentStillWanted } from '../../delive
 import { questionClock, questionForDay } from '../../question-prompts.js';
 import { activityWindow } from '../../activity-clock.js';
 import {scheduleListReminders,listReminderWanted,listNudgeWanted} from './list-reminders.js';
-import {handleStar,scheduleStar,queuedStarWanted} from './star-api.js';
+import {handleStar} from './star-api.js';
 export {StarNursery} from './star-store.js';
 
 const GRACE_MS = 0;                  // never ring before the time that was chosen
@@ -52,7 +52,6 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
   // schedulers fetch concurrently. Atomic create-only markers let these
   // writers overlap without holding the sender lease during slow checks.
   await Promise.all([
-    scheduleStar(env,db,household).catch(()=>console.error('Nursery notification check will retry next minute.')),
     ...(scheduleReminders?[scheduleListReminders(db,household,now).catch(problem=>console.error(`list reminders skipped: ${problem?.message||problem}`))]:[]),
     ...(scheduleQuestions?[
       ensureQuestionOfDay(db,household,now).catch(problem=>console.error(`daily question skipped: ${problem?.message||problem}`)),
@@ -99,7 +98,7 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
       // lease becomes reclaimable. Never keep sending on an expired lease.
       if(Date.now()>lease.expiresAt-30000){left+=lane.length-position;break;}
       try {
-      if(retiredGameNotification(message.kind)){await db.remove(message.path);dropped++;continue;}
+      if(retiredGameNotification(message.kind)||String(message.kind||'').startsWith('star-')){await db.remove(message.path);dropped++;continue;}
       const receiptPath=`${household}/deliveryLocks/sent-${message.id}`;
       if(await db.get(receiptPath)){
         await db.remove(message.path);dropped+=1;continue;
@@ -108,9 +107,6 @@ export async function deliver(env, { scheduleQuestions = true, scheduleReminders
         await db.remove(message.path);dropped+=1;continue;
       }
       const sourcePath=contentSourcePath(message);
-      if(message.kind?.startsWith('star-')&&!await queuedStarWanted(env,message)){
-        await db.remove(message.path);dropped+=1;continue;
-      }
       if(sourcePath){
         const source=await db.get(`${household}/${sourcePath}`);
         if(!contentStillWanted(message,source)){

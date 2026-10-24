@@ -5,79 +5,36 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {checkScope} from '../scripts/check-scope.mjs';
-// Broad checks need a ready preview before the optional pet browser phase.
-{
- const workflow=readFileSync(new URL('../.github/workflows/checks.yml',import.meta.url),'utf8');
- const preview=workflow.indexOf('- name: Start the isolated preview before browser checks');
- assert.ok(preview>=0&&preview<workflow.indexOf('- name: Skill cooking playthroughs and calibration before release'));
- const app=workflow.slice(workflow.indexOf('- name: Browser flows fit a phone and stay script-error free'));
- assert.doesNotMatch(app,/python3 -c/,'the broad browser phase reuses the preview server');
-}
-const declutter=checkScope(['test/declutter-browser.mjs','scripts/focused-checks.mjs','test/check-scope.test.mjs']);
-assert.equal(declutter.full,false);assert.equal(declutter.star,false);assert.equal(declutter.dailyOnly,false);
-assert.deepEqual(declutter.plan,{syntax:false,unit:[],browser:['declutter','retirement'],pages:[]},'a fixture correction checks both revised navigation expectations');
-assert.deepEqual(checkScope(['test/retirement-browser.mjs']).plan.browser,['declutter','retirement'],'the standalone crossword fixture retains both UI regressions');
-assert.deepEqual(checkScope(['test/declutter-browser.mjs','test/retirement-browser.mjs']).plan.browser,['declutter','retirement']);
-assert.equal(checkScope(['test/unknown-browser.mjs']).full,true,'unknown browser harnesses retain broad coverage');
-const hide=['activities.html','game-comfort.js','guide.html','notification-policy.js','pings-settings.js','service-worker.js'];
-const dock=checkScope(['app-chrome.js','app-life.css','dock-viewport.js','test/dock-scroll-browser.mjs','guide.html','service-worker.js']);
-assert.equal(dock.full,false);assert.equal(dock.star,false);assert.equal(dock.dailyOnly,false);
-for(const name of ['dock-scroll','app-life','appearance','retirement','update-freshness'])assert.ok(dock.plan.browser.includes(name));
-const design=checkScope(['styles.css','app-life.js','interface-icons.js','fonts/nunito-latin.woff2','test/interface-design-browser.mjs']);
-assert.equal(design.full,false);assert.equal(design.star,false);
-for(const name of ['interface-design','retirement','retirement','retirement','memories','routines'])assert.ok(design.plan.browser.includes(name));
-const small=checkScope(hide,{versionOnly:true});
-assert.equal(small.full,false);assert.equal(small.dailyOnly,false);assert.equal(small.star,false);assert.equal(small.focused,true);
-assert.deepEqual(small.plan.pages,['activities','guide','phone-check']);
-assert.deepEqual(small.plan.browser,['retirement']);
-for(const test of ['delivery-worker','notification-paths','precache','offline','guide-contract'])assert.ok(small.plan.unit.includes(test));
-for(const test of ['daily-word','places','routines','star-kitchen','round-engine'])assert.ok(!small.plan.unit.includes(test));
-assert.ok(!small.plan.browser.includes('update-freshness'),'version bumps skip cache implementation browser tests');
-assert.ok(checkScope(['service-worker.js']).plan.browser.includes('update-freshness'),'real service-worker edits retain upgrade coverage');
-const automation=['.github/workflows/checks.yml','scripts/check-scope.mjs','scripts/focused-checks.mjs','scripts/run-focused-checks.mjs','test/check-scope.test.mjs','README.md','CLAUDE.md'];
-const config=checkScope(automation);
-assert.equal(config.full,false);assert.equal(config.dailyOnly,false);assert.equal(config.star,false);
-assert.deepEqual(config.plan,{syntax:false,unit:[],browser:[],pages:[]},'automation-only changes run selector checks only');
-for(const files of [[],['new-unknown.js'],['package.json'],['pnpm-lock.yaml'],['data-hub.js'],['household.js'],['firestore.rules'],['worker/src/index.js']])assert.equal(checkScope(files).full,true,files.join(','));
-assert.equal(checkScope(['word-hints.js','daily-word.js','guide.html','service-worker.js']).dailyOnly,true);
-assert.equal(checkScope(['crossword-view.js','test/crossword-play-browser.mjs']).dailyOnly,true);
-const mixed=checkScope(['daily-word.js','notification-policy.js']);
-assert.equal(mixed.dailyOnly,true);assert.equal(mixed.focused,true);assert.equal(mixed.full,false);
-const overlapping=checkScope(['daily-question.js','guide.html','service-worker.js']);
-assert.equal(overlapping.dailyOnly,true);
-assert.ok(!overlapping.plan.unit.includes('worker-puzzles'));
-assert.ok(!overlapping.plan.unit.includes('daily-calendar'));
-assert.ok(!overlapping.plan.browser.includes('update-freshness'),'daily and focused jobs must not rerun the same tests');
-const pet=checkScope(['little-star-kitchen.js','guide.html','service-worker.js']);
-assert.equal(pet.star,true);assert.equal(pet.full,false);assert.equal(pet.dailyOnly,false);
-assert.equal(checkScope(['word-hints.js','little-star/engine.mjs']).full,false);
-assert.equal(checkScope(['word-hints.js','household.js']).full,true);
-const tasks=checkScope(['tasks.js','service-worker.js'],{versionOnly:true});
-assert.equal(tasks.full,false);assert.ok(tasks.plan.unit.includes('routines'));assert.ok(!tasks.plan.unit.includes('daily-word'));
-assert.deepEqual(checkScope(['test/word-hints.test.mjs']).plan.unit,['word-hints']);
-assert.equal(checkScope(['test/word-rules.test.mjs']).dailyOnly,true,'daily rules keep their emulator suite');
-for(const files of [hide,automation,['tasks.js'],['notes.js'],['memories.js'],['service-worker.js']]){
- const plan=checkScope(files).plan;
- for(const test of plan.unit)assert.ok(existsSync(new URL(`./${test}.test.mjs`,import.meta.url)),test);
- for(const test of plan.browser)assert.ok(existsSync(new URL(`./${test}-browser.mjs`,import.meta.url)),test);
-}
 const workflow=readFileSync(new URL('../.github/workflows/checks.yml',import.meta.url),'utf8');
-const browserSelection=workflow.match(/browsers=\$\(node -e '([^']+)'\)/)?.[1];
-assert.ok(browserSelection,'focused checks select their required browser engines');
-for(const [browser,pages,expected] of [[['declutter','retirement'],[],'chromium webkit'],[['interface-design'],[],'chromium webkit'],[[],['activities'],'chromium webkit']]){
- const selection=spawnSync(process.execPath,['-e',browserSelection],{encoding:'utf8',env:{...process.env,CHECK_PLAN:JSON.stringify({browser,pages})}});
- assert.equal(selection.status,0);assert.equal(selection.stdout.trim(),expected);
+assert.doesNotMatch(workflow,/daily-games:|little-star:|test:star|test:browser:star|test:daily|test:browser:daily|star-kitchen|kitchen-live|kitchen-skill|scope.outputs.star|scope.outputs.daily_only/);
+const empty={syntax:false,unit:[],browser:[],pages:[]};
+for(const file of ['daily-word.js','test/word-hints.test.mjs','test/word-rules.test.mjs','little-star.html','little-star/engine.mjs','worker/src/star-api.js','test/little-star.test.mjs','test/star-polish-browser.mjs','test/kitchen-live-browser.mjs','tools/build-star-kitchen.mjs']){
+ const scope=checkScope([file]);assert.equal(scope.full,false,file);assert.deepEqual(scope.plan,empty,`paused checks stay stopped for ${file}`);
 }
-
-for(const output of ['daily_only','focused','plan','star','full'])assert.match(workflow,new RegExp(`steps.scope.outputs.${output}`));
-assert.match(workflow,/checks:\s+needs: scope\s+if: needs.scope.outputs.full == 'true'/);
-assert.match(workflow,/daily-games:\s+needs: scope\s+if: needs.scope.outputs.daily_only == 'true'/);
-assert.match(workflow,/little-star:\s+needs: scope\s+if: needs.scope.outputs.star == 'true' && needs.scope.outputs.full != 'true'/);
-assert.match(workflow,/focused:\s+needs: scope\s+if: needs.scope.outputs.focused == 'true'/);
+const automation=['.github/workflows/checks.yml','scripts/check-scope.mjs','scripts/focused-checks.mjs','test/check-scope.test.mjs','README.md','CLAUDE.md'];
+assert.deepEqual(checkScope(automation).plan,empty);
+for(const files of [[],['new-unknown.js'],['package.json'],['pnpm-lock.yaml'],['data-hub.js'],['household.js'],['firestore.rules'],['worker/src/index.js']])assert.equal(checkScope(files).full,true,files.join(','));
+const questions=checkScope(['daily-question.js','question-prompts.js','win-history.js','activities.js']);
+assert.equal(questions.full,false);assert.ok(questions.plan.unit.includes('retirement'));assert.ok(questions.plan.browser.includes('retirement'));
+const small=checkScope(['notification-policy.js','guide.html','service-worker.js'],{versionOnly:true});
+assert.equal(small.full,false);assert.ok(small.plan.unit.includes('delivery-worker'));assert.ok(small.plan.pages.includes('guide'));
+assert.ok(!small.plan.browser.includes('update-freshness'));assert.ok(checkScope(['service-worker.js']).plan.browser.includes('update-freshness'));
+const mixed=checkScope(['little-star/engine.mjs','daily-word.js','notes.js']);assert.equal(mixed.full,false);assert.deepEqual(mixed.plan.browser,['delete-recovery']);
+assert.equal(checkScope(['little-star/engine.mjs','household.js']).full,true);
+const tasks=checkScope(['tasks.js']);assert.ok(tasks.plan.unit.includes('routines'));
+for(const files of [automation,['tasks.js'],['notes.js'],['memories.js'],['service-worker.js'],['daily-question.js'],['styles.css']]){
+ const plan=checkScope(files).plan;
+ for(const name of plan.unit)assert.ok(existsSync(new URL(`./${name}.test.mjs`,import.meta.url)),name);
+ for(const name of plan.browser)assert.ok(existsSync(new URL(`./${name}-browser.mjs`,import.meta.url)),name);
+}
+const preview=workflow.indexOf('- name: Start the isolated preview before browser checks');assert.ok(preview>=0&&preview<workflow.indexOf('- name: Browser flows fit a phone and stay script-error free'));
+for(const output of ['focused','plan','full'])assert.match(workflow,new RegExp(`steps.scope.outputs.${output}`));
 assert.match(workflow,/node test\/check-scope.test.mjs && node scripts\/check-scope.mjs/);
-assert.match(workflow,/node scripts\/run-focused-checks.mjs unit/);
-assert.match(workflow,/node scripts\/run-focused-checks.mjs browser/);
-console.log('CHECK SCOPE: small UI/notification changes, mixed areas, pet isolation, automation-only edits and shared/unknown fallback pass');
+const scripts=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')).scripts;
+for(const name of ['test:star','test:browser:star','test:daily','test:browser:daily'])assert.equal(scripts[name],undefined);
+assert.equal(scripts['test:all'],'pnpm test');
+assert.ok(scripts['test:activities']);
+console.log('CHECK SCOPE: paused game suites cannot run; active questions, app, notifications and workflow-only checks retain coverage');
 
 // Exercise the runner with disposable probes, not unrelated application tests.
 const temp=mkdtempSync(join(tmpdir(),'little-list-scope-'));

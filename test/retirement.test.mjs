@@ -49,3 +49,5 @@ for(const file of ['daily-word.js','timed-games.js','practice.js','round-engine.
 console.log('RETIREMENT: question-only scheduler, deduplication, reveal targeting, disabled pings, frozen history, old links and module graph pass');
 
 assert.doesNotMatch(read('little-star.html'),/competition points this week|Daily games|Earnings sync pending/,'pet wallet cannot link back to retired daily games');
+
+assert.doesNotMatch(read("worker/src/index.js"),/scheduleStar|queuedStarWanted|Nursery notification check/);

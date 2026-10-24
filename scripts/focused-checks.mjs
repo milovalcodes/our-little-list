@@ -10,6 +10,9 @@ export function focusedPlan(files,{versionOnly=false}={}){
  let syntax=false;
  for(const file of files){
   if(automation.test(file)||docs.test(file))continue;
+  if(/^(?:(?:daily-question|question-prompts|activity-clock|win-[\w-]+|activities)\.js|activities-layout\.css|test\/retirement\.test\.mjs)$/.test(file)){
+   syntax=true;['retirement','navigation-attention','memory-catalog','precache','offline'].forEach(t=>unit.add(t));browser.add('retirement');continue;
+  }
   // This self-contained UI fixture uses the standard local browser harness.
   const fixture={'test/declutter-browser.mjs':'declutter','test/retirement-browser.mjs':'retirement'}[file];
   if(fixture){browser.add('declutter');browser.add('retirement');continue;}
@@ -24,7 +27,7 @@ export function focusedPlan(files,{versionOnly=false}={}){
   if(['styles.css','app-life.js','interface-icons.js','test/interface-design-browser.mjs'].includes(file)||file.startsWith('fonts/')){
    syntax=true;
    ['branding','home-parity','guide-contract','precache','offline','cache-lifetime'].forEach(test=>unit.add(test));
-   ['interface-design','app-life','appearance','retirement','retirement','retirement','retirement','retirement','retirement','routines','memories','delete-recovery','retirement','dock-scroll'].forEach(test=>browser.add(test));
+   ['interface-design','app-life','appearance','retirement','routines','memories','delete-recovery','dock-scroll'].forEach(test=>browser.add(test));
    continue;
   }
   if(['status.js','status-presets.js'].includes(file)){

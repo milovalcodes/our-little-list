@@ -8,7 +8,7 @@ Live: https://milovalcodes.github.io/our-little-list/
 
 ## v141 maintenance note
 
-Daily games are retired. Use `pnpm run test:daily`, `pnpm run test:browser:daily`, `pnpm run test:rules`, and the selected shared notification/offline checks.
+Daily games are retired. Use `pnpm run test:activities`, `pnpm run test:browser:activities`, `pnpm run test:rules`, and the selected shared notification/offline checks.
 
 ## What it does
 
@@ -184,9 +184,9 @@ whether permission was granted.
 
 ## Checking your work
 
-Choose the scope with `scripts/check-scope.mjs`; shared backend changes need broader regression coverage. `pnpm test` checks the common application and delivery logic. `pnpm run test:daily` checks daily questions, history, retirement and offline contracts. `pnpm run test:browser:daily` checks cache upgrades and both themes in Chromium/WebKit at phone and desktop widths. `pnpm run test:rules` runs the local emulator tests for immutable archives, old-client rejection and question privacy; it requires Java 21. Never run fixtures against production.
+Choose the scope with `scripts/check-scope.mjs`; shared backend changes need broader regression coverage. `pnpm test` checks the common application and delivery logic. `pnpm run test:activities` checks daily questions, history, retirement and offline contracts. `pnpm run test:browser:activities` checks cache upgrades and both themes in Chromium/WebKit at phone and desktop widths. `pnpm run test:rules` runs the local emulator tests for immutable archives, old-client rejection and question privacy; it requires Java 21. Never run fixtures against production.
 
-Browser suites use an isolated local preview at port 8777 with Firebase config replaced by an empty test config. `pnpm run test:browser` exercises shared flows. `pnpm run test:star` covers pet logic when account/backend or nursery code changes. The standalone shared-interface and dock tests remain `test/interface-design-browser.mjs` and `test/dock-scroll-browser.mjs`.
+Browser suites use an isolated local preview at port 8777 with Firebase config replaced by an empty test config. `pnpm run test:browser` exercises shared flows. Little Star and retired puzzle test suites are stopped; their source remains in the backup. The standalone shared-interface and dock tests remain `test/interface-design-browser.mjs` and `test/dock-scroll-browser.mjs`.
 
 ## Notes
 

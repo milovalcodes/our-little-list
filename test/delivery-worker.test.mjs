@@ -172,9 +172,10 @@ function harness({ outbox = [], subs = { her: SUB }, reminders = {}, asks = {}, 
 
 const now = Date.now();
 {
- const kinds=['game','game-turn','game-streak','word-week','activity-result','activity-reset','activities-open'];
+ const kinds=['game','game-turn','game-streak','word-week','activity-result','activity-reset','activities-open','star-care','star-growth','star-ready'];
  const h=harness({subs:{},outbox:kinds.map(kind=>({id:'retired-'+kind,kind,to:'her',sendAt:now,createdAt:now,url:'activities.html#daily'}))});
- const result=await deliver(ENV);assert.equal(result.sent,0);assert.equal(result.dropped,kinds.length);assert.equal(result.left,0);assert.equal(h.pushes.length,0);
+ let nurseryCalls=0;const pausedEnv={...ENV,STAR_NURSERY:{idFromName(){nurseryCalls++;throw Error('Paused nursery must not be contacted');}}};
+ const result=await deliver(pausedEnv);assert.equal(nurseryCalls,0);assert.equal(result.sent,0);assert.equal(result.dropped,kinds.length);assert.equal(result.left,0);assert.equal(h.pushes.length,0);
  console.log(' ok  every retired game kind drains before subscription, focus or quiet-hours handling');
 }
 {

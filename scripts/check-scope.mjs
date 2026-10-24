@@ -1,30 +1,16 @@
 import {execFileSync} from 'node:child_process';
-import {appendFileSync,readFileSync} from 'node:fs';
+import {appendFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
 import {focusedPlan} from './focused-checks.mjs';
 
-const daily = /^(?:(?:daily-(?:word|words|puzzles|results|question|habit)|word-(?!lexicon)|word-lexicon|round-|puzzle-|practice|seasonal-puzzles|timed-|connected-crossword|mini-crossword|themed-crossword|crossword-|activity-clock|game-(?:typing|comfort|progress|reset|sync)|shared-round|win-|weekly-|league-scores|couple-game|activities|games|question-prompts|interface-audio)[^/]*\.(?:js|css|html)|audio\/interface\/|scripts\/(?:compile-worker-crosswords|audit-daily-calendar)\.mjs|test\/(?:daily-|word-|round-|puzzle-|practice|seasonal-puzzles|timed-|shared-round|connected-crossword|mini-crossword|themed-crossword|crossword-|hard-rounds|game-(?:accessibility|sync|reset)|weekly-|search-touch|iphone-crossword|activities|games-navigation|profile-game|interface-audio|clock-budget|worker-puzzles)|worker\/src\/(?:compiled-crosswords\.json|(?:word-|round-|daily-|timed-|puzzle-)[^/]*\.js))/;
-const star = /^(?:little-star(?:\/|-|\.)|worker\/src\/star-|test\/(?:star-|little-star|kitchen-|fixtures\/)|tools\/(?:build-little-star|build-star-kitchen|star-preview)|(?:household|firebase-config|firebase-data|data-hub)\.js|firestore\.rules|worker\/src\/(?:index|firestore)\.js)/;
-
-export function checkScope(files, options={}){
- const focusedFiles=[];
- let dailyNeeded=false,starNeeded=false,full=files.length===0;
- for(const file of files){
-  if(focusedPlan([file],options)){focusedFiles.push(file);continue;}
-  if(daily.test(file)){dailyNeeded=true;continue;}
-  if(star.test(file)&&! /^(?:(?:household|firebase-config|firebase-data|data-hub)\.js|firestore\.rules|worker\/src\/(?:index|firestore)\.js)$/.test(file)){starNeeded=true;continue;}
-  full=true;
- }
- let plan=full?null:focusedPlan(focusedFiles,options);
- if(plan&&dailyNeeded){
-  const scripts=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')).scripts;
-  const unit=new Set([...scripts['test:daily'].matchAll(/node test\/([\w-]+)\.test\.mjs/g)].map(m=>m[1]));
-  const browser=new Set([...scripts['test:browser:daily'].matchAll(/node test\/([\w-]+)-browser\.mjs/g)].map(m=>m[1]));
-  plan={...plan,unit:plan.unit.filter(t=>!unit.has(t)),browser:plan.browser.filter(t=>!browser.has(t))};
- }
-
- return {dailyOnly:!full&&dailyNeeded,focused:!!plan,plan,star:starNeeded||files.some(f=>star.test(f)),full};
+// Paused feature source/tests are preserved for restoration, with no CI jobs.
+const paused=/^(?:little-star(?:\/|-|\.)|worker\/src\/star-|test\/(?:star-|little-star|kitchen-|fixtures\/)|tools\/(?:build-little-star|build-star-kitchen|star-preview))/;
+const retired=/^(?:(?:daily-(?:word|words|puzzles|results|habit)|word-|round-|puzzle-|practice(?:[.-])|seasonal-puzzles|timed-|connected-crossword|mini-crossword|themed-crossword|crossword-|game-(?:typing|progress|reset|sync)|shared-round|weekly-|league-scores|couple-game|arcade-game)|test\/(?:daily-(?!question)|word-|round-|puzzle-|practice|seasonal-puzzles|timed-|shared-round|connected-crossword|mini-crossword|themed-crossword|crossword-|hard-rounds|game-|weekly-|search-touch|iphone-crossword|clock-budget|worker-puzzles|arcade-|couple-game)|worker\/src\/(?:compiled-crosswords|word-|activity-week|puzzles|streak-reminders)|scripts\/(?:compile-.*(?:crossword|practice)|audit-daily-calendar|reset-.*rounds))/;
+export function checkScope(files,options={}){
+ const active=files.filter(file=>!paused.test(file)&&!retired.test(file));
+ const plan=active.length?focusedPlan(active,options):files.length?{syntax:false,unit:[],browser:[],pages:[]}:null;
+ return {focused:!!plan,plan,full:!plan};
 }
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
@@ -38,7 +24,7 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   return clean(execFileSync('git',['show',`${base}:service-worker.js`],{encoding:'utf8'}))===clean(execFileSync('git',['show','HEAD:service-worker.js'],{encoding:'utf8'}));
  })();
  const scope=checkScope(files,{versionOnly});
- if(process.env.GITHUB_OUTPUT)appendFileSync(process.env.GITHUB_OUTPUT,`daily_only=${scope.dailyOnly}\nstar=${scope.star}\nfull=${scope.full}\nfocused=${scope.focused}\nplan=${JSON.stringify(scope.plan)}\n`);
+ if(process.env.GITHUB_OUTPUT)appendFileSync(process.env.GITHUB_OUTPUT,`full=${scope.full}\nfocused=${scope.focused}\nplan=${JSON.stringify(scope.plan)}\n`);
  console.log(JSON.stringify(scope));
 
 }

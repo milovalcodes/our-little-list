@@ -36,23 +36,3 @@ export async function handleStar(request,env){
   return Response.json({...result,scoresPending:false},{headers:auth.headers});
  }catch{return Response.json({error:'Cannot reach the nursery. Reconnect and retry.'},{status:503,headers:auth?.headers||{'Access-Control-Allow-Origin':env.APP_ORIGIN,'Cache-Control':'no-store'}});}
 }
-async function eventKey(value){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(bytes)].map(n=>n.toString(16).padStart(2,'0')).join('');}
-export async function scheduleStar(env,db,household){
- if(!env.STAR_NURSERY)return;
- const {pending=[]}=await starCall(env,{op:'tick'}),ack=[];
- for(const ping of pending){
-  if(!await starCall(env,{op:'wanted',ping})){ack.push(ping.id);continue;}
-  const id=await eventKey(ping.id),marker=`${household}/deliveryLocks/star-event-${id}`;
-  await starCall(env,{op:'remember',ref:'star/'+id,ping});
-  if(await db.get(marker)){ack.push(ping.id);continue;}
-  const created=await db.createMany([{path:marker,fields:{createdAt:Date.now()}},{path:`${household}/outbox/star-${id}`,fields:{to:ping.to,title:ping.title.slice(0,120),body:ping.body.slice(0,400),kind:ping.kind,ref:'star/'+id,url:`little-star.html?pet=${ping.petId}#${ping.route}`,createdAt:Date.now(),sendAt:Date.now()}}]);
-  // Keep the source event after enqueue for a final stale-care check at send.
-  if(created||await db.get(marker))ack.push(ping.id);
- }
- if(ack.length)await starCall(env,{op:'ack',ids:ack});
-}
-export async function queuedStarWanted(env,message){
- if(!env.STAR_NURSERY)return false;
- // Revalidate against the server's durable event history, never outbox input.
- return starCall(env,{op:'queued-wanted',ref:message.ref,to:message.to});
-}
